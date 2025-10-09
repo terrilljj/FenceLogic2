@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Box } from "lucide-react";
 import { FenceDesign } from "@shared/schema";
 
 interface FenceVisualizationProps {
@@ -16,129 +16,142 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
+  const [webglError, setWebglError] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Scene setup
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1a);
-    sceneRef.current = scene;
+    try {
+      // Scene setup
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1a1a1a);
+      sceneRef.current = scene;
 
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(10, 8, 10);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 10, 5);
-    scene.add(directionalLight);
-
-    // Grid floor
-    const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
-    scene.add(gridHelper);
-
-    // Render fence based on design
-    renderFence(scene, design, activeSpanId);
-
-    // Animation loop
-    const animate = () => {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    // Handle window resize
-    const handleResize = () => {
-      if (!containerRef.current || !camera || !renderer) return;
-      camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-    };
-    window.addEventListener("resize", handleResize);
-
-    // Mouse controls
-    const handleMouseDown = (e: MouseEvent) => {
-      isDragging.current = true;
-      previousMousePosition.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current || !camera) return;
-
-      const deltaX = e.clientX - previousMousePosition.current.x;
-      const deltaY = e.clientY - previousMousePosition.current.y;
-
-      const rotationSpeed = 0.005;
-      const radius = Math.sqrt(
-        camera.position.x ** 2 + camera.position.z ** 2
+      // Camera setup
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        containerRef.current.clientWidth / containerRef.current.clientHeight,
+        0.1,
+        1000
       );
-
-      const angle = Math.atan2(camera.position.z, camera.position.x);
-      const newAngle = angle - deltaX * rotationSpeed;
-
-      camera.position.x = radius * Math.cos(newAngle);
-      camera.position.z = radius * Math.sin(newAngle);
-      camera.position.y = Math.max(2, camera.position.y - deltaY * 0.05);
-
+      camera.position.set(10, 8, 10);
       camera.lookAt(0, 0, 0);
+      cameraRef.current = camera;
 
-      previousMousePosition.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const handleMouseUp = () => {
-      isDragging.current = false;
-    };
-
-    const handleWheel = (e: WheelEvent) => {
-      if (!camera) return;
-      e.preventDefault();
-      const zoomSpeed = 0.001;
-      const distance = camera.position.length();
-      const newDistance = Math.max(5, Math.min(30, distance + e.deltaY * zoomSpeed * distance));
-      const scale = newDistance / distance;
-      camera.position.multiplyScalar(scale);
-    };
-
-    renderer.domElement.addEventListener("mousedown", handleMouseDown);
-    renderer.domElement.addEventListener("mousemove", handleMouseMove);
-    renderer.domElement.addEventListener("mouseup", handleMouseUp);
-    renderer.domElement.addEventListener("mouseleave", handleMouseUp);
-    renderer.domElement.addEventListener("wheel", handleWheel, { passive: false });
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      renderer.domElement.removeEventListener("mousedown", handleMouseDown);
-      renderer.domElement.removeEventListener("mousemove", handleMouseMove);
-      renderer.domElement.removeEventListener("mouseup", handleMouseUp);
-      renderer.domElement.removeEventListener("mouseleave", handleMouseUp);
-      renderer.domElement.removeEventListener("wheel", handleWheel);
-      if (containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+      // Renderer setup with error handling
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      
+      // Check if WebGL context was created successfully
+      const gl = renderer.getContext();
+      if (!gl) {
+        throw new Error("WebGL context not available");
       }
-      renderer.dispose();
-    };
+
+      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      containerRef.current.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(5, 10, 5);
+      scene.add(directionalLight);
+
+      // Grid floor
+      const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+      scene.add(gridHelper);
+
+      // Render fence based on design
+      renderFence(scene, design, activeSpanId);
+
+      // Animation loop
+      const animate = () => {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      // Handle window resize
+      const handleResize = () => {
+        if (!containerRef.current || !camera || !renderer) return;
+        camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      };
+      window.addEventListener("resize", handleResize);
+
+      // Mouse controls
+      const handleMouseDown = (e: MouseEvent) => {
+        isDragging.current = true;
+        previousMousePosition.current = { x: e.clientX, y: e.clientY };
+      };
+
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isDragging.current || !camera) return;
+
+        const deltaX = e.clientX - previousMousePosition.current.x;
+        const deltaY = e.clientY - previousMousePosition.current.y;
+
+        const rotationSpeed = 0.005;
+        const radius = Math.sqrt(
+          camera.position.x ** 2 + camera.position.z ** 2
+        );
+
+        const angle = Math.atan2(camera.position.z, camera.position.x);
+        const newAngle = angle - deltaX * rotationSpeed;
+
+        camera.position.x = radius * Math.cos(newAngle);
+        camera.position.z = radius * Math.sin(newAngle);
+        camera.position.y = Math.max(2, camera.position.y - deltaY * 0.05);
+
+        camera.lookAt(0, 0, 0);
+
+        previousMousePosition.current = { x: e.clientX, y: e.clientY };
+      };
+
+      const handleMouseUp = () => {
+        isDragging.current = false;
+      };
+
+      const handleWheel = (e: WheelEvent) => {
+        if (!camera) return;
+        e.preventDefault();
+        const zoomSpeed = 0.001;
+        const distance = camera.position.length();
+        const newDistance = Math.max(5, Math.min(30, distance + e.deltaY * zoomSpeed * distance));
+        const scale = newDistance / distance;
+        camera.position.multiplyScalar(scale);
+      };
+
+      renderer.domElement.addEventListener("mousedown", handleMouseDown);
+      renderer.domElement.addEventListener("mousemove", handleMouseMove);
+      renderer.domElement.addEventListener("mouseup", handleMouseUp);
+      renderer.domElement.addEventListener("mouseleave", handleMouseUp);
+      renderer.domElement.addEventListener("wheel", handleWheel, { passive: false });
+
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        renderer.domElement.removeEventListener("mousedown", handleMouseDown);
+        renderer.domElement.removeEventListener("mousemove", handleMouseMove);
+        renderer.domElement.removeEventListener("mouseup", handleMouseUp);
+        renderer.domElement.removeEventListener("mouseleave", handleMouseUp);
+        renderer.domElement.removeEventListener("wheel", handleWheel);
+        if (containerRef.current && renderer.domElement.parentNode === containerRef.current) {
+          containerRef.current.removeChild(renderer.domElement);
+        }
+        renderer.dispose();
+      };
+    } catch (error) {
+      console.error("WebGL initialization failed:", error);
+      setWebglError(true);
+    }
   }, []);
 
   useEffect(() => {
-    if (sceneRef.current) {
+    if (sceneRef.current && !webglError) {
       // Clear previous fence
       const objectsToRemove = sceneRef.current.children.filter(
         (child) => child.userData.isFence
@@ -148,7 +161,7 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
       // Render new fence
       renderFence(sceneRef.current, design, activeSpanId);
     }
-  }, [design, activeSpanId]);
+  }, [design, activeSpanId, webglError]);
 
   const handleResetView = () => {
     if (cameraRef.current) {
@@ -156,6 +169,21 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
       cameraRef.current.lookAt(0, 0, 0);
     }
   };
+
+  // Fallback UI when WebGL is not available
+  if (webglError) {
+    return (
+      <div className="relative w-full h-full bg-gradient-to-b from-background to-muted/30 flex items-center justify-center" data-testid="fence-visualization">
+        <div className="text-center p-8">
+          <Box className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold mb-2">3D Preview Unavailable</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            WebGL is not available in your current environment. The fence configuration controls are still fully functional.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full bg-gradient-to-b from-background to-muted/30" data-testid="fence-visualization">
