@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Square, Triangle, BoxSelect, Box, Settings } from "lucide-react";
 import { FenceShape } from "@shared/schema";
 
 interface FenceShapeSelectorProps {
@@ -11,6 +10,41 @@ interface FenceShapeSelectorProps {
   onCustomSidesChange: (sides: number) => void;
 }
 
+// Custom SVG icons for fence shapes
+const InlineIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="4" y1="16" x2="28" y2="16" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+  </svg>
+);
+
+const LShapeIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 6 8 L 6 24 L 26 24" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const UShapeIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 6 8 L 6 24 L 26 24 L 26 8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const EnclosedIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="6" width="20" height="20" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const CustomIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="8" y1="7" x2="24" y2="7" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+    <line x1="8" y1="12.5" x2="24" y2="12.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+    <line x1="8" y1="18" x2="24" y2="18" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+    <line x1="8" y1="23.5" x2="24" y2="23.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+    <line x1="8" y1="29" x2="24" y2="29" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+  </svg>
+);
+
 export function FenceShapeSelector({
   selected,
   customSides = 3,
@@ -18,11 +52,11 @@ export function FenceShapeSelector({
   onCustomSidesChange,
 }: FenceShapeSelectorProps) {
   const shapes = [
-    { id: "inline" as FenceShape, label: "Inline", icon: Square },
-    { id: "l-shape" as FenceShape, label: "L Shape", icon: Triangle },
-    { id: "u-shape" as FenceShape, label: "U Shape", icon: BoxSelect },
-    { id: "enclosed" as FenceShape, label: "Enclosed", icon: Box },
-    { id: "custom" as FenceShape, label: "Custom", icon: Settings },
+    { id: "inline" as FenceShape, label: "Inline", icon: InlineIcon },
+    { id: "l-shape" as FenceShape, label: "L Shape", icon: LShapeIcon },
+    { id: "u-shape" as FenceShape, label: "U Shape", icon: UShapeIcon },
+    { id: "enclosed" as FenceShape, label: "Enclosed", icon: EnclosedIcon },
+    { id: "custom" as FenceShape, label: "Custom", icon: CustomIcon },
   ];
 
   return (
@@ -52,9 +86,9 @@ export function FenceShapeSelector({
                     : "bg-card border-card-border hover:border-primary/50"
                 }
               `}
-              data-testid={`shape-${shape.id}`}
+              data-testid={`shape-option-${shape.id}`}
             >
-              <Icon className="w-8 h-8" />
+              <Icon />
               <span className="text-sm font-medium">{shape.label}</span>
             </button>
           );
