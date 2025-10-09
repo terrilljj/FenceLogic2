@@ -83,7 +83,7 @@ export function SpanConfigPanel({
                     value={span.topGap.position}
                     onValueChange={(position: "inside" | "outside") =>
                       updateSpan({
-                        topGap: { ...span.topGap, position },
+                        topGap: { ...span.topGap!, position },
                       })
                     }
                   >
@@ -103,6 +103,9 @@ export function SpanConfigPanel({
                         topGap: { ...span.topGap!, size },
                       })
                     }
+                    min={0}
+                    max={150}
+                    unit="mm"
                     testId={`span-${span.spanId}-top-gap-size`}
                   />
                 </>
@@ -130,7 +133,7 @@ export function SpanConfigPanel({
                     value={span.bottomGap.position}
                     onValueChange={(position: "inside" | "outside") =>
                       updateSpan({
-                        bottomGap: { ...span.bottomGap, position },
+                        bottomGap: { ...span.bottomGap!, position },
                       })
                     }
                   >
@@ -150,6 +153,9 @@ export function SpanConfigPanel({
                         bottomGap: { ...span.bottomGap!, size },
                       })
                     }
+                    min={0}
+                    max={150}
+                    unit="mm"
                     testId={`span-${span.spanId}-bottom-gap-size`}
                   />
                 </>
@@ -177,7 +183,7 @@ export function SpanConfigPanel({
                     value={span.leftGap.position}
                     onValueChange={(position: "inside" | "outside") =>
                       updateSpan({
-                        leftGap: { ...span.leftGap, position },
+                        leftGap: { ...span.leftGap!, position },
                       })
                     }
                   >
@@ -197,6 +203,9 @@ export function SpanConfigPanel({
                         leftGap: { ...span.leftGap!, size },
                       })
                     }
+                    min={0}
+                    max={150}
+                    unit="mm"
                     testId={`span-${span.spanId}-left-gap-size`}
                   />
                 </>
@@ -224,7 +233,7 @@ export function SpanConfigPanel({
                     value={span.rightGap.position}
                     onValueChange={(position: "inside" | "outside") =>
                       updateSpan({
-                        rightGap: { ...span.rightGap, position },
+                        rightGap: { ...span.rightGap!, position },
                       })
                     }
                   >
@@ -244,6 +253,9 @@ export function SpanConfigPanel({
                         rightGap: { ...span.rightGap!, size },
                       })
                     }
+                    min={0}
+                    max={150}
+                    unit="mm"
                     testId={`span-${span.spanId}-right-gap-size`}
                   />
                 </>
@@ -281,8 +293,8 @@ export function SpanConfigPanel({
               label="Panel Gap"
               value={span.maxGap}
               onChange={(maxGap) => updateSpan({ maxGap })}
-              min={30}
-              max={80}
+              min={0}
+              max={99}
               testId={`span-${span.spanId}-gap-slider`}
             />
 
@@ -395,7 +407,7 @@ export function SpanConfigPanel({
               <GateControls
                 config={span.gateConfig}
                 spanId={span.spanId}
-                onUpdate={(gateConfig) => updateSpan({ gateConfig })}
+                onUpdate={(gateConfig: typeof span.gateConfig) => updateSpan({ gateConfig })}
               />
             )}
           </div>

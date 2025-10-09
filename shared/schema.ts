@@ -17,27 +17,27 @@ export const spanConfigSchema = z.object({
   spanId: z.string(),
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
-  maxGap: z.number().min(30).max(80),
+  maxGap: z.number().min(0).max(99),
   allowMixedPanels: z.boolean(),
   topGap: z.object({
     enabled: z.boolean(),
     position: z.enum(["inside", "outside"]),
-    size: z.number().min(0),
+    size: z.number().min(0).max(150),
   }).optional(),
   bottomGap: z.object({
     enabled: z.boolean(),
     position: z.enum(["inside", "outside"]),
-    size: z.number().min(0),
+    size: z.number().min(0).max(150),
   }).optional(),
   leftGap: z.object({
     enabled: z.boolean(),
     position: z.enum(["inside", "outside"]),
-    size: z.number().min(0),
+    size: z.number().min(0).max(150),
   }).optional(),
   rightGap: z.object({
     enabled: z.boolean(),
     position: z.enum(["inside", "outside"]),
-    size: z.number().min(0),
+    size: z.number().min(0).max(150),
   }).optional(),
   gateConfig: z.object({
     required: z.boolean(),

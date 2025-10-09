@@ -317,7 +317,7 @@ export default function FenceBuilder() {
                 >
                   <h4 className="font-semibold">{savedDesign.name}</h4>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {savedDesign.shape} • {savedDesign.spans.length} spans
+                    {savedDesign.shape} • {Array.isArray(savedDesign.spans) ? savedDesign.spans.length : 0} spans
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Saved: {new Date(savedDesign.createdAt).toLocaleDateString()}
@@ -392,7 +392,7 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
   const defaultSpan: Omit<SpanConfig, "spanId"> = {
     length: 5000,
     maxPanelWidth: 1200,
-    maxGap: 50,
+    maxGap: 40,
     allowMixedPanels: false,
   };
 
