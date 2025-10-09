@@ -18,7 +18,7 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
   const [webglError, setWebglError] = useState(false);
-  const [viewMode, setViewMode] = useState<"2d" | "elevation" | "3d">("2d");
+  const [viewMode, setViewMode] = useState<"2d" | "elevation" | "3d">("elevation");
 
   useEffect(() => {
     if (!containerRef.current || viewMode !== "3d") return;
