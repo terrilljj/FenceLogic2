@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Box } from "lucide-react";
+import { RotateCcw, Box, View } from "lucide-react";
 import { FenceDesign } from "@shared/schema";
 
 interface FenceVisualizationProps {
@@ -11,15 +11,17 @@ interface FenceVisualizationProps {
 
 export function FenceVisualization({ design, activeSpanId }: FenceVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
   const [webglError, setWebglError] = useState(false);
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || viewMode === "2d") return;
 
     try {
       // Scene setup
@@ -147,11 +149,12 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
     } catch (error) {
       console.error("WebGL initialization failed:", error);
       setWebglError(true);
+      setViewMode("2d");
     }
-  }, []);
+  }, [viewMode]);
 
   useEffect(() => {
-    if (sceneRef.current && !webglError) {
+    if (sceneRef.current && !webglError && viewMode === "3d") {
       // Clear previous fence
       const objectsToRemove = sceneRef.current.children.filter(
         (child) => child.userData.isFence
@@ -161,48 +164,243 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
       // Render new fence
       renderFence(sceneRef.current, design, activeSpanId);
     }
-  }, [design, activeSpanId, webglError]);
+  }, [design, activeSpanId, webglError, viewMode]);
+
+  useEffect(() => {
+    if (viewMode === "2d" && canvasRef.current) {
+      render2DView(canvasRef.current, design, activeSpanId);
+    }
+  }, [design, activeSpanId, viewMode]);
 
   const handleResetView = () => {
-    if (cameraRef.current) {
+    if (cameraRef.current && viewMode === "3d") {
       cameraRef.current.position.set(10, 8, 10);
       cameraRef.current.lookAt(0, 0, 0);
     }
   };
 
-  // Fallback UI when WebGL is not available
-  if (webglError) {
-    return (
-      <div className="relative w-full h-full bg-gradient-to-b from-background to-muted/30 flex items-center justify-center" data-testid="fence-visualization">
-        <div className="text-center p-8">
-          <Box className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">3D Preview Unavailable</h3>
-          <p className="text-sm text-muted-foreground max-w-md">
-            WebGL is not available in your current environment. The fence configuration controls are still fully functional.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const toggleViewMode = () => {
+    if (webglError) return;
+    setViewMode((prev) => (prev === "2d" ? "3d" : "2d"));
+  };
 
   return (
     <div className="relative w-full h-full bg-gradient-to-b from-background to-muted/30" data-testid="fence-visualization">
-      <div ref={containerRef} className="w-full h-full" />
-      <Button
-        size="icon"
-        variant="outline"
-        className="absolute top-4 right-4"
-        onClick={handleResetView}
-        data-testid="button-reset-view"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </Button>
-      <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-md p-3 text-sm space-y-1">
-        <p className="text-muted-foreground">Click and drag to rotate</p>
-        <p className="text-muted-foreground">Scroll to zoom</p>
+      {viewMode === "3d" ? (
+        <div ref={containerRef} className="w-full h-full" />
+      ) : (
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full"
+          data-testid="fence-2d-canvas"
+        />
+      )}
+
+      <div className="absolute top-4 right-4 flex gap-2">
+        {!webglError && (
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={toggleViewMode}
+            data-testid="button-toggle-view"
+            title={viewMode === "2d" ? "Switch to 3D" : "Switch to 2D"}
+          >
+            <View className="w-4 h-4" />
+          </Button>
+        )}
+        {viewMode === "3d" && !webglError && (
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={handleResetView}
+            data-testid="button-reset-view"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
+        )}
       </div>
+
+      {viewMode === "3d" && !webglError && (
+        <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-md p-3 text-sm space-y-1">
+          <p className="text-muted-foreground">Click and drag to rotate</p>
+          <p className="text-muted-foreground">Scroll to zoom</p>
+        </div>
+      )}
+
+      {viewMode === "2d" && (
+        <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-md p-3 text-sm">
+          <p className="text-muted-foreground">Top-down view</p>
+        </div>
+      )}
+
+      {webglError && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center p-8">
+            <Box className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">3D Preview Unavailable</h3>
+            <p className="text-sm text-muted-foreground max-w-md">
+              WebGL is not available. Showing 2D view instead.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpanId?: string) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // Set canvas size to match container
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  // Clear canvas
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+  ctx.fillRect(0, 0, rect.width, rect.height);
+
+  // Calculate scale to fit design
+  const maxDimension = calculateMaxDimension(design);
+  const scale = Math.min((rect.width - 100) / maxDimension, (rect.height - 100) / maxDimension);
+  
+  // Center the drawing
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+
+  // Draw grid
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 0.5;
+  const gridSize = 1000 * scale;
+  for (let i = -5; i <= 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * gridSize, -5 * gridSize);
+    ctx.lineTo(i * gridSize, 5 * gridSize);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-5 * gridSize, i * gridSize);
+    ctx.lineTo(5 * gridSize, i * gridSize);
+    ctx.stroke();
+  }
+
+  // Draw fence
+  let currentX = 0;
+  let currentY = 0;
+  let currentAngle = 0;
+
+  design.spans.forEach((span) => {
+    const isActive = span.spanId === activeSpanId;
+    const effectiveLength = span.length;
+    const panelWidth = span.maxPanelWidth;
+    const gapSize = span.maxGap;
+    const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
+
+    // Draw panels
+    for (let i = 0; i < numPanels; i++) {
+      const isGate = span.gateConfig?.required && i === 0;
+      
+      const offsetX = Math.cos(currentAngle) * (i * (panelWidth + gapSize) + panelWidth / 2) * scale;
+      const offsetY = Math.sin(currentAngle) * (i * (panelWidth + gapSize) + panelWidth / 2) * scale;
+
+      ctx.save();
+      ctx.translate(currentX + offsetX, currentY + offsetY);
+      ctx.rotate(currentAngle);
+
+      // Panel
+      ctx.fillStyle = isGate ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
+      ctx.globalAlpha = isGate ? 0.6 : isActive ? 0.8 : 0.5;
+      ctx.fillRect(-panelWidth * scale / 2, -6, panelWidth * scale, 12);
+      
+      ctx.strokeStyle = isGate ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-panelWidth * scale / 2, -6, panelWidth * scale, 12);
+
+      ctx.restore();
+
+      // Draw post
+      if (i < numPanels - 1) {
+        const postOffsetX = Math.cos(currentAngle) * ((i + 1) * (panelWidth + gapSize)) * scale;
+        const postOffsetY = Math.sin(currentAngle) * ((i + 1) * (panelWidth + gapSize)) * scale;
+
+        ctx.fillStyle = "#666";
+        ctx.beginPath();
+        ctx.arc(currentX + postOffsetX, currentY + postOffsetY, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Update position for next span
+    const spanEndX = Math.cos(currentAngle) * effectiveLength * scale;
+    const spanEndY = Math.sin(currentAngle) * effectiveLength * scale;
+    currentX += spanEndX;
+    currentY += spanEndY;
+
+    // Update angle based on shape
+    if (design.shape === "l-shape") {
+      currentAngle += Math.PI / 2;
+    } else if (design.shape === "u-shape") {
+      if (design.spans.indexOf(span) === 0) {
+        currentAngle += Math.PI / 2;
+      } else if (design.spans.indexOf(span) === 1) {
+        currentAngle += Math.PI / 2;
+      }
+    } else if (design.shape === "enclosed") {
+      currentAngle += Math.PI / 2;
+    } else if (design.shape === "custom" && design.customSides) {
+      currentAngle += (2 * Math.PI) / design.customSides;
+    }
+
+    // Draw span label
+    ctx.fillStyle = isActive ? "#4488ff" : "#888";
+    ctx.font = "bold 14px Inter";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      `Span ${span.spanId}`,
+      currentX - spanEndX / 2,
+      currentY - spanEndY / 2 - 20
+    );
+  });
+
+  ctx.restore();
+}
+
+function calculateMaxDimension(design: FenceDesign): number {
+  let maxX = 0;
+  let maxY = 0;
+  let currentX = 0;
+  let currentY = 0;
+  let currentAngle = 0;
+
+  design.spans.forEach((span) => {
+    const effectiveLength = span.length;
+    const spanEndX = Math.cos(currentAngle) * effectiveLength;
+    const spanEndY = Math.sin(currentAngle) * effectiveLength;
+    currentX += spanEndX;
+    currentY += spanEndY;
+
+    maxX = Math.max(maxX, Math.abs(currentX));
+    maxY = Math.max(maxY, Math.abs(currentY));
+
+    if (design.shape === "l-shape") {
+      currentAngle += Math.PI / 2;
+    } else if (design.shape === "u-shape") {
+      if (design.spans.indexOf(span) === 0 || design.spans.indexOf(span) === 1) {
+        currentAngle += Math.PI / 2;
+      }
+    } else if (design.shape === "enclosed") {
+      currentAngle += Math.PI / 2;
+    } else if (design.shape === "custom" && design.customSides) {
+      currentAngle += (2 * Math.PI) / design.customSides;
+    }
+  });
+
+  return Math.max(maxX, maxY) * 2;
 }
 
 function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: string) {
