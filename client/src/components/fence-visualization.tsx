@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Box, View } from "lucide-react";
+import { RotateCcw, Box, Layers } from "lucide-react";
 import { FenceDesign } from "@shared/schema";
 
 interface FenceVisualizationProps {
@@ -18,10 +18,10 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
   const [webglError, setWebglError] = useState(false);
-  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+  const [viewMode, setViewMode] = useState<"2d" | "elevation" | "3d">("2d");
 
   useEffect(() => {
-    if (!containerRef.current || viewMode === "2d") return;
+    if (!containerRef.current || viewMode !== "3d") return;
 
     try {
       // Scene setup
@@ -167,8 +167,12 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
   }, [design, activeSpanId, webglError, viewMode]);
 
   useEffect(() => {
-    if (viewMode === "2d" && canvasRef.current) {
-      render2DView(canvasRef.current, design, activeSpanId);
+    if ((viewMode === "2d" || viewMode === "elevation") && canvasRef.current) {
+      if (viewMode === "2d") {
+        render2DView(canvasRef.current, design, activeSpanId);
+      } else {
+        renderElevationView(canvasRef.current, design, activeSpanId);
+      }
     }
   }, [design, activeSpanId, viewMode]);
 
@@ -179,8 +183,18 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
     }
   };
 
-  const toggleViewMode = () => {
-    setViewMode((prev) => (prev === "2d" ? "3d" : "2d"));
+  const cycleViewMode = () => {
+    setViewMode((prev) => {
+      if (prev === "2d") return "elevation";
+      if (prev === "elevation") return webglError ? "2d" : "3d";
+      return "2d";
+    });
+  };
+
+  const getViewModeLabel = () => {
+    if (viewMode === "2d") return "2D Plan";
+    if (viewMode === "elevation") return "Elevation";
+    return "3D View";
   };
 
   return (
@@ -191,19 +205,20 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
         <canvas
           ref={canvasRef}
           className="w-full h-full"
-          data-testid="fence-2d-canvas"
+          data-testid={viewMode === "2d" ? "fence-2d-canvas" : "fence-elevation-canvas"}
         />
       )}
 
       <div className="absolute top-4 right-4 flex gap-2">
         <Button
-          size="icon"
+          size="sm"
           variant="outline"
-          onClick={toggleViewMode}
-          data-testid="button-toggle-view"
-          title={viewMode === "2d" ? "Switch to 3D" : "Switch to 2D"}
+          onClick={cycleViewMode}
+          data-testid="button-cycle-view"
+          className="gap-2"
         >
-          <View className="w-4 h-4" />
+          <Layers className="w-4 h-4" />
+          <span className="hidden sm:inline">{getViewModeLabel()}</span>
         </Button>
         {viewMode === "3d" && !webglError && (
           <Button
@@ -226,23 +241,197 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
 
       {viewMode === "2d" && (
         <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-md p-3 text-sm">
-          <p className="text-muted-foreground">Top-down view</p>
+          <p className="text-muted-foreground">Top-down plan view</p>
         </div>
       )}
 
-      {webglError && (
+      {viewMode === "elevation" && (
+        <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-md p-3 text-sm">
+          <p className="text-muted-foreground">Side elevation view</p>
+        </div>
+      )}
+
+      {webglError && viewMode === "3d" && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center p-8">
             <Box className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">3D Preview Unavailable</h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              WebGL is not available. Showing 2D view instead.
+              WebGL is not available. Use 2D or Elevation view instead.
             </p>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpanId?: string) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // Set canvas size to match container
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  // Clear canvas
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+  ctx.fillRect(0, 0, rect.width, rect.height);
+
+  // Calculate total width for scaling
+  const totalWidth = design.spans.reduce((sum, span) => sum + span.length, 0);
+  const scale = Math.min((rect.width - 100) / totalWidth, 0.15);
+  
+  // Drawing constants
+  const panelHeight = 1200; // 1200mm standard height
+  const groundLevel = rect.height - 100;
+  const startX = 50;
+
+  // Draw ground line
+  ctx.strokeStyle = "#444";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, groundLevel);
+  ctx.lineTo(rect.width, groundLevel);
+  ctx.stroke();
+
+  // Draw measurements
+  ctx.fillStyle = "#888";
+  ctx.font = "11px Inter";
+  ctx.textAlign = "center";
+
+  let currentX = startX;
+
+  design.spans.forEach((span) => {
+    const isActive = span.spanId === activeSpanId;
+    const effectiveLength = span.length;
+    const panelWidth = span.maxPanelWidth;
+    const gapSize = span.maxGap;
+    const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
+
+    // Draw each panel in this span
+    for (let i = 0; i < numPanels; i++) {
+      const isGate = span.gateConfig?.required && i === 0;
+      const scaledPanelWidth = panelWidth * scale;
+      const scaledPanelHeight = panelHeight * scale;
+
+      // Draw panel
+      ctx.fillStyle = isGate ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
+      ctx.globalAlpha = isGate ? 0.4 : isActive ? 0.5 : 0.3;
+      ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+
+      // Panel border
+      ctx.strokeStyle = isGate ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+
+      // Glass panel lines (to show it's glass)
+      ctx.strokeStyle = isGate ? "#9955dd" : isActive ? "#5599ee" : "#99ccee";
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 1;
+      for (let j = 1; j < 4; j++) {
+        const y = groundLevel - (scaledPanelHeight * j / 4);
+        ctx.beginPath();
+        ctx.moveTo(currentX, y);
+        ctx.lineTo(currentX + scaledPanelWidth, y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // Panel width dimension
+      ctx.fillStyle = "#888";
+      ctx.font = "10px JetBrains Mono";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        `${panelWidth}mm`,
+        currentX + scaledPanelWidth / 2,
+        groundLevel + 20
+      );
+
+      if (isGate) {
+        ctx.fillStyle = "#aa66ff";
+        ctx.font = "bold 11px Inter";
+        ctx.fillText(
+          "GATE",
+          currentX + scaledPanelWidth / 2,
+          groundLevel - scaledPanelHeight - 10
+        );
+      }
+
+      currentX += scaledPanelWidth;
+
+      // Draw post between panels
+      if (i < numPanels - 1) {
+        const postWidth = 50 * scale; // 50mm post diameter
+        ctx.fillStyle = "#666";
+        ctx.fillRect(currentX, groundLevel - scaledPanelHeight, postWidth, scaledPanelHeight);
+        
+        // Post highlight
+        ctx.fillStyle = "#888";
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(currentX, groundLevel - scaledPanelHeight, postWidth / 3, scaledPanelHeight);
+        ctx.globalAlpha = 1;
+
+        currentX += gapSize * scale;
+      }
+    }
+
+    // Span label
+    ctx.fillStyle = isActive ? "#4488ff" : "#666";
+    ctx.font = "bold 12px Inter";
+    ctx.textAlign = "center";
+    const spanWidth = effectiveLength * scale;
+    ctx.fillText(
+      `Span ${span.spanId}`,
+      startX + (currentX - startX - spanWidth) / 2 + spanWidth / 2,
+      groundLevel - (panelHeight * scale) - 35
+    );
+
+    // Total span length
+    ctx.fillStyle = "#888";
+    ctx.font = "11px JetBrains Mono";
+    ctx.fillText(
+      `${effectiveLength}mm total`,
+      startX + (currentX - startX - spanWidth) / 2 + spanWidth / 2,
+      groundLevel - (panelHeight * scale) - 50
+    );
+  });
+
+  // Height dimension line
+  const heightDimensionX = rect.width - 40;
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(heightDimensionX, groundLevel);
+  ctx.lineTo(heightDimensionX, groundLevel - (panelHeight * scale));
+  ctx.stroke();
+
+  // Arrows
+  const arrowSize = 5;
+  ctx.beginPath();
+  ctx.moveTo(heightDimensionX, groundLevel);
+  ctx.lineTo(heightDimensionX - arrowSize, groundLevel - arrowSize);
+  ctx.lineTo(heightDimensionX + arrowSize, groundLevel - arrowSize);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(heightDimensionX, groundLevel - (panelHeight * scale));
+  ctx.lineTo(heightDimensionX - arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
+  ctx.lineTo(heightDimensionX + arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
+  ctx.fill();
+
+  // Height label
+  ctx.fillStyle = "#666";
+  ctx.font = "11px JetBrains Mono";
+  ctx.textAlign = "center";
+  ctx.save();
+  ctx.translate(heightDimensionX + 20, groundLevel - (panelHeight * scale) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("1200mm", 0, 0);
+  ctx.restore();
 }
 
 function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpanId?: string) {
