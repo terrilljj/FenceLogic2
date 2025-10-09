@@ -296,6 +296,75 @@ export function SpanConfigPanel({
             </div>
           </div>
 
+          {/* Raked Panels Configuration */}
+          <div className="space-y-4 pt-4 border-t border-card-border">
+            <h4 className="text-sm font-semibold">Raked Panels (for slopes/stairs)</h4>
+            
+            {/* Left Raked Panel */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Left Raked Panel</Label>
+                <Switch
+                  checked={span.leftRakedPanel?.enabled || false}
+                  onCheckedChange={(enabled) =>
+                    updateSpan({
+                      leftRakedPanel: { enabled, height: 1500 },
+                    })
+                  }
+                  data-testid={`span-${span.spanId}-left-raked-toggle`}
+                />
+              </div>
+              {span.leftRakedPanel?.enabled && (
+                <NumericInput
+                  label="Panel Height (top)"
+                  value={span.leftRakedPanel.height}
+                  onChange={(height) =>
+                    updateSpan({
+                      leftRakedPanel: { ...span.leftRakedPanel!, height },
+                    })
+                  }
+                  min={800}
+                  max={2400}
+                  step={50}
+                  unit="mm"
+                  testId={`span-${span.spanId}-left-raked-height`}
+                />
+              )}
+            </div>
+
+            {/* Right Raked Panel */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Right Raked Panel</Label>
+                <Switch
+                  checked={span.rightRakedPanel?.enabled || false}
+                  onCheckedChange={(enabled) =>
+                    updateSpan({
+                      rightRakedPanel: { enabled, height: 1500 },
+                    })
+                  }
+                  data-testid={`span-${span.spanId}-right-raked-toggle`}
+                />
+              </div>
+              {span.rightRakedPanel?.enabled && (
+                <NumericInput
+                  label="Panel Height (top)"
+                  value={span.rightRakedPanel.height}
+                  onChange={(height) =>
+                    updateSpan({
+                      rightRakedPanel: { ...span.rightRakedPanel!, height },
+                    })
+                  }
+                  min={800}
+                  max={2400}
+                  step={50}
+                  unit="mm"
+                  testId={`span-${span.spanId}-right-raked-height`}
+                />
+              )}
+            </div>
+          </div>
+
           {/* Gate Configuration */}
           <div className="space-y-4 pt-4 border-t border-card-border">
             <div className="flex items-center justify-between">

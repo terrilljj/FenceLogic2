@@ -438,13 +438,41 @@ function calculateComponents(design: FenceDesign): Component[] {
     const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
 
     if (numPanels > 0) {
-      components.push({
-        qty: numPanels,
-        description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-        sku: `GP-${panelWidth}-1200-12`,
-      });
+      let standardPanelCount = numPanels;
+      let rakedCount = 0;
+      
+      // Left raked panel (only if there's a panel to replace)
+      if (span.leftRakedPanel?.enabled && numPanels > rakedCount) {
+        components.push({
+          qty: 1,
+          description: `Raked Glass Panel ${panelWidth}mm x 1200mm-${span.leftRakedPanel.height}mm (12mm thick)`,
+          sku: `RP-${panelWidth}-1200-${span.leftRakedPanel.height}-12`,
+        });
+        standardPanelCount--;
+        rakedCount++;
+      }
+      
+      // Right raked panel (only if there's a panel to replace)
+      if (span.rightRakedPanel?.enabled && numPanels > rakedCount) {
+        components.push({
+          qty: 1,
+          description: `Raked Glass Panel ${panelWidth}mm x 1200mm-${span.rightRakedPanel.height}mm (12mm thick)`,
+          sku: `RP-${panelWidth}-1200-${span.rightRakedPanel.height}-12`,
+        });
+        standardPanelCount--;
+        rakedCount++;
+      }
+      
+      // Standard panels (excluding raked panels)
+      if (standardPanelCount > 0) {
+        components.push({
+          qty: standardPanelCount,
+          description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
+          sku: `GP-${panelWidth}-1200-12`,
+        });
+      }
 
-      // Posts (one less than panels)
+      // Posts (one less than total panels)
       if (numPanels > 1) {
         components.push({
           qty: numPanels - 1,

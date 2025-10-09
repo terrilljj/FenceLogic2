@@ -310,23 +310,50 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     const panelWidth = span.maxPanelWidth;
     const gapSize = span.maxGap;
     const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
+    const leftRaked = span.leftRakedPanel?.enabled ? span.leftRakedPanel.height : null;
+    const rightRaked = span.rightRakedPanel?.enabled ? span.rightRakedPanel.height : null;
 
     // Draw each panel in this span
     for (let i = 0; i < numPanels; i++) {
       const isGate = span.gateConfig?.required && i === 0;
       const scaledPanelWidth = panelWidth * scale;
-      const scaledPanelHeight = panelHeight * scale;
-
-      // Draw panel
+      let scaledPanelHeight = panelHeight * scale;
+      
+      // Check if this is a raked panel
+      const isLeftRaked = i === 0 && leftRaked !== null;
+      const isRightRaked = i === numPanels - 1 && rightRaked !== null;
+      
+      // Draw panel (raked or standard)
       ctx.fillStyle = isGate ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
       ctx.globalAlpha = isGate ? 0.4 : isActive ? 0.5 : 0.3;
-      ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+      
+      if (isLeftRaked || isRightRaked) {
+        // Draw raked panel as a trapezoid
+        const leftHeight = isLeftRaked ? leftRaked! * scale : scaledPanelHeight;
+        const rightHeight = isRightRaked ? rightRaked! * scale : scaledPanelHeight;
+        
+        ctx.beginPath();
+        ctx.moveTo(currentX, groundLevel);
+        ctx.lineTo(currentX, groundLevel - leftHeight);
+        ctx.lineTo(currentX + scaledPanelWidth, groundLevel - rightHeight);
+        ctx.lineTo(currentX + scaledPanelWidth, groundLevel);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.strokeStyle = isActive ? "#2266dd" : "#6699cc";
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else {
+        // Standard rectangular panel
+        ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
 
-      // Panel border
-      ctx.strokeStyle = isGate ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+        // Panel border
+        ctx.strokeStyle = isGate ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+      }
 
       // Glass panel lines (to show it's glass)
       ctx.strokeStyle = isGate ? "#9955dd" : isActive ? "#5599ee" : "#99ccee";
