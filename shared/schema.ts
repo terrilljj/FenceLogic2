@@ -1,0 +1,101 @@
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, jsonb, integer } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Fence shape types
+export type FenceShape = "inline" | "l-shape" | "u-shape" | "enclosed" | "custom";
+
+// Gap position types
+export type GapPosition = "inside" | "outside";
+
+// Gate hardware types
+export type GateHardware = "master" | "polaris";
+
+// Span configuration
+export const spanConfigSchema = z.object({
+  spanId: z.string(),
+  length: z.number().min(0),
+  maxPanelWidth: z.number().min(200).max(2000),
+  maxGap: z.number().min(30).max(80),
+  allowMixedPanels: z.boolean(),
+  topGap: z.object({
+    enabled: z.boolean(),
+    position: z.enum(["inside", "outside"]),
+    size: z.number().min(0),
+  }).optional(),
+  bottomGap: z.object({
+    enabled: z.boolean(),
+    position: z.enum(["inside", "outside"]),
+    size: z.number().min(0),
+  }).optional(),
+  leftGap: z.object({
+    enabled: z.boolean(),
+    position: z.enum(["inside", "outside"]),
+    size: z.number().min(0),
+  }).optional(),
+  rightGap: z.object({
+    enabled: z.boolean(),
+    position: z.enum(["inside", "outside"]),
+    size: z.number().min(0),
+  }).optional(),
+  gateConfig: z.object({
+    required: z.boolean(),
+    hardware: z.enum(["master", "polaris"]),
+    hingeFrom: z.enum(["glass", "wall"]),
+    latchTo: z.enum(["glass", "wall"]),
+    gateSize: z.number(),
+    hingePanelSize: z.number(),
+    position: z.number(),
+    flipped: z.boolean(),
+  }).optional(),
+  leftRakedPanel: z.object({
+    enabled: z.boolean(),
+    height: z.number(),
+  }).optional(),
+  rightRakedPanel: z.object({
+    enabled: z.boolean(),
+    height: z.number(),
+  }).optional(),
+});
+
+export type SpanConfig = z.infer<typeof spanConfigSchema>;
+
+// Main fence design configuration
+export const fenceDesignSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1),
+  shape: z.enum(["inline", "l-shape", "u-shape", "enclosed", "custom"]),
+  customSides: z.number().min(3).max(10).optional(),
+  spans: z.array(spanConfigSchema),
+  createdAt: z.date().optional(),
+});
+
+export type FenceDesign = z.infer<typeof fenceDesignSchema>;
+
+// Database table for saved designs
+export const fenceDesigns = pgTable("fence_designs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  shape: text("shape").notNull(),
+  customSides: integer("custom_sides"),
+  spans: jsonb("spans").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertFenceDesignSchema = createInsertSchema(fenceDesigns).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertFenceDesign = z.infer<typeof insertFenceDesignSchema>;
+export type SavedFenceDesign = typeof fenceDesigns.$inferSelect;
+
+// Component list item
+export const componentSchema = z.object({
+  qty: z.number(),
+  description: z.string(),
+  sku: z.string().optional(),
+});
+
+export type Component = z.infer<typeof componentSchema>;
