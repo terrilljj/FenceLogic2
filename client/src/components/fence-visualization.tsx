@@ -286,7 +286,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   
   // Drawing constants
   const panelHeight = 1200; // 1200mm standard height
-  const groundLevel = rect.height - 100;
+  const groundLevel = rect.height - 150;
   const startX = 50;
 
   // Draw ground line
@@ -341,14 +341,52 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       }
       ctx.globalAlpha = 1;
 
-      // Panel width dimension
-      ctx.fillStyle = "#888";
-      ctx.font = "10px JetBrains Mono";
+      // Panel width dimension line with arrows
+      const dimLineY = groundLevel + 35;
+      ctx.strokeStyle = "#666";
+      ctx.lineWidth = 1;
+      
+      // Horizontal dimension line
+      ctx.beginPath();
+      ctx.moveTo(currentX, dimLineY);
+      ctx.lineTo(currentX + scaledPanelWidth, dimLineY);
+      ctx.stroke();
+      
+      // Left arrow
+      ctx.beginPath();
+      ctx.moveTo(currentX, dimLineY);
+      ctx.lineTo(currentX + 5, dimLineY - 3);
+      ctx.lineTo(currentX + 5, dimLineY + 3);
+      ctx.closePath();
+      ctx.fillStyle = "#666";
+      ctx.fill();
+      
+      // Right arrow
+      ctx.beginPath();
+      ctx.moveTo(currentX + scaledPanelWidth, dimLineY);
+      ctx.lineTo(currentX + scaledPanelWidth - 5, dimLineY - 3);
+      ctx.lineTo(currentX + scaledPanelWidth - 5, dimLineY + 3);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Vertical tick marks
+      ctx.beginPath();
+      ctx.moveTo(currentX, groundLevel + 30);
+      ctx.lineTo(currentX, dimLineY + 5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(currentX + scaledPanelWidth, groundLevel + 30);
+      ctx.lineTo(currentX + scaledPanelWidth, dimLineY + 5);
+      ctx.stroke();
+
+      // Panel width label
+      ctx.fillStyle = "#444";
+      ctx.font = "bold 11px JetBrains Mono";
       ctx.textAlign = "center";
       ctx.fillText(
         `${panelWidth}mm`,
         currentX + scaledPanelWidth / 2,
-        groundLevel + 20
+        dimLineY + 15
       );
 
       if (isGate) {
@@ -366,6 +404,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       // Draw post between panels
       if (i < numPanels - 1) {
         const postWidth = 50 * scale; // 50mm post diameter
+        const gapStart = currentX;
+        
         ctx.fillStyle = "#666";
         ctx.fillRect(currentX, groundLevel - scaledPanelHeight, postWidth, scaledPanelHeight);
         
@@ -375,7 +415,48 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillRect(currentX, groundLevel - scaledPanelHeight, postWidth / 3, scaledPanelHeight);
         ctx.globalAlpha = 1;
 
-        currentX += gapSize * scale;
+        currentX += postWidth;
+        const scaledGapSize = gapSize * scale - postWidth;
+        
+        // Gap dimension line with arrows
+        const gapDimLineY = groundLevel + 35;
+        ctx.strokeStyle = "#888";
+        ctx.lineWidth = 1;
+        
+        // Horizontal dimension line for gap
+        ctx.beginPath();
+        ctx.moveTo(gapStart, gapDimLineY);
+        ctx.lineTo(currentX + scaledGapSize, gapDimLineY);
+        ctx.stroke();
+        
+        // Left arrow
+        ctx.beginPath();
+        ctx.moveTo(gapStart, gapDimLineY);
+        ctx.lineTo(gapStart + 4, gapDimLineY - 2);
+        ctx.lineTo(gapStart + 4, gapDimLineY + 2);
+        ctx.closePath();
+        ctx.fillStyle = "#888";
+        ctx.fill();
+        
+        // Right arrow
+        ctx.beginPath();
+        ctx.moveTo(currentX + scaledGapSize, gapDimLineY);
+        ctx.lineTo(currentX + scaledGapSize - 4, gapDimLineY - 2);
+        ctx.lineTo(currentX + scaledGapSize - 4, gapDimLineY + 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Gap label
+        ctx.fillStyle = "#666";
+        ctx.font = "10px JetBrains Mono";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          `${gapSize}mm`,
+          gapStart + (scaledGapSize + postWidth) / 2,
+          gapDimLineY + 13
+        );
+
+        currentX += scaledGapSize;
       }
     }
 
@@ -507,9 +588,19 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
       ctx.lineWidth = 2;
       ctx.strokeRect(-panelWidth * scale / 2, -6, panelWidth * scale, 12);
 
+      // Panel width dimension (rotated with panel)
+      ctx.fillStyle = "#444";
+      ctx.font = "bold 10px JetBrains Mono";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        `${panelWidth}mm`,
+        0,
+        -15
+      );
+
       ctx.restore();
 
-      // Draw post
+      // Draw post and gap
       if (i < numPanels - 1) {
         const postOffsetX = Math.cos(currentAngle) * ((i + 1) * (panelWidth + gapSize)) * scale;
         const postOffsetY = Math.sin(currentAngle) * ((i + 1) * (panelWidth + gapSize)) * scale;
@@ -518,6 +609,25 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
         ctx.beginPath();
         ctx.arc(currentX + postOffsetX, currentY + postOffsetY, 4, 0, Math.PI * 2);
         ctx.fill();
+
+        // Gap dimension (between this panel and next)
+        const gapMidX = Math.cos(currentAngle) * (i * (panelWidth + gapSize) + panelWidth + gapSize / 2) * scale;
+        const gapMidY = Math.sin(currentAngle) * (i * (panelWidth + gapSize) + panelWidth + gapSize / 2) * scale;
+
+        ctx.save();
+        ctx.translate(currentX + gapMidX, currentY + gapMidY);
+        ctx.rotate(currentAngle);
+        
+        ctx.fillStyle = "#666";
+        ctx.font = "9px JetBrains Mono";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          `${gapSize}mm`,
+          0,
+          20
+        );
+        
+        ctx.restore();
       }
     }
 
