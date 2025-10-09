@@ -180,7 +180,6 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
   };
 
   const toggleViewMode = () => {
-    if (webglError) return;
     setViewMode((prev) => (prev === "2d" ? "3d" : "2d"));
   };
 
@@ -197,17 +196,15 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
       )}
 
       <div className="absolute top-4 right-4 flex gap-2">
-        {!webglError && (
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={toggleViewMode}
-            data-testid="button-toggle-view"
-            title={viewMode === "2d" ? "Switch to 3D" : "Switch to 2D"}
-          >
-            <View className="w-4 h-4" />
-          </Button>
-        )}
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={toggleViewMode}
+          data-testid="button-toggle-view"
+          title={viewMode === "2d" ? "Switch to 3D" : "Switch to 2D"}
+        >
+          <View className="w-4 h-4" />
+        </Button>
         {viewMode === "3d" && !webglError && (
           <Button
             size="icon"
