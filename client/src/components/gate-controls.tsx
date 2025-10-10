@@ -1,4 +1,4 @@
-import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,7 @@ interface GateConfig {
   hingePanelSize: number;
   position: number;
   flipped: boolean;
+  savedGlassPosition?: number;
 }
 
 interface GateControlsProps {
@@ -62,7 +63,21 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
             <Label className="text-sm font-medium">Hinge From</Label>
             <Select
               value={config.hingeFrom}
-              onValueChange={(hingeFrom: "glass" | "wall") => updateConfig({ hingeFrom })}
+              onValueChange={(hingeFrom: "glass" | "wall") => {
+                const updates: Partial<GateConfig> = { hingeFrom };
+                
+                if (hingeFrom === "wall" && config.hingeFrom !== "wall") {
+                  // Switching to wall mode: save glass position and normalize to 0 or 1
+                  updates.savedGlassPosition = config.position;
+                  updates.position = config.position > 0 ? 1 : 0;
+                } else if (hingeFrom === "glass" && config.hingeFrom === "wall") {
+                  // Switching back to glass mode: restore saved position
+                  updates.position = config.savedGlassPosition ?? config.position;
+                  updates.savedGlassPosition = undefined;
+                }
+                
+                updateConfig(updates);
+              }}
             >
               <SelectTrigger data-testid={`gate-${spanId}-hinge-from`}>
                 <SelectValue />
@@ -119,76 +134,128 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Hinge Panel</Label>
-            <Select
-              value={config.hingePanelSize.toString()}
-              onValueChange={(hingePanelSize) => updateConfig({ hingePanelSize: parseInt(hingePanelSize) })}
-            >
-              <SelectTrigger data-testid={`gate-${spanId}-hinge-panel`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800].map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}mm
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {config.hingeFrom === "glass" && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Hinge Panel</Label>
+              <Select
+                value={config.hingePanelSize.toString()}
+                onValueChange={(hingePanelSize) => updateConfig({ hingePanelSize: parseInt(hingePanelSize) })}
+              >
+                <SelectTrigger data-testid={`gate-${spanId}-hinge-panel`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800].map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}mm
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="space-y-3 pt-3 border-t border-border">
         <Label className="text-sm font-medium">Gate Position Controls</Label>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => updateConfig({ flipped: !config.flipped })}
-            data-testid={`gate-${spanId}-flip`}
-          >
-            <FlipHorizontal className="w-4 h-4 mr-2" />
-            Flip Orientation
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => updateConfig({ position: Math.max(0, config.position - 1) })}
-            data-testid={`gate-${spanId}-move-left`}
-            disabled={config.position === 0}
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Move Left
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => updateConfig({ position: config.position + 1 })}
-            data-testid={`gate-${spanId}-move-right`}
-          >
-            <ChevronRight className="w-4 h-4 mr-2" />
-            Move Right
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => updateConfig({ hingeFrom: config.hingeFrom === "glass" ? "wall" : "glass" })}
-            data-testid={`gate-${spanId}-switch-end`}
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            Switch End
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Position:</span>
-          <span className="font-mono font-medium">Panel {config.position + 1}</span>
-        </div>
+        {config.hingeFrom === "wall" ? (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => updateConfig({ position: 0 })}
+              data-testid={`gate-${spanId}-start`}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Start of Span
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => updateConfig({ position: 1 })}
+              data-testid={`gate-${spanId}-end`}
+            >
+              <ArrowRight className="w-4 h-4 mr-2" />
+              End of Span
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => updateConfig({ flipped: !config.flipped })}
+                data-testid={`gate-${spanId}-flip`}
+              >
+                <FlipHorizontal className="w-4 h-4 mr-2" />
+                Flip Orientation
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => updateConfig({ position: Math.max(0, config.position - 1) })}
+                data-testid={`gate-${spanId}-move-left`}
+                disabled={config.position === 0}
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Move Left
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => updateConfig({ position: config.position + 1 })}
+                data-testid={`gate-${spanId}-move-right`}
+              >
+                <ChevronRight className="w-4 h-4 mr-2" />
+                Move Right
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const newHingeFrom = config.hingeFrom === "glass" ? "wall" : "glass";
+                  const updates: Partial<GateConfig> = { hingeFrom: newHingeFrom };
+                  
+                  if (newHingeFrom === "wall" && config.hingeFrom !== "wall") {
+                    // Switching to wall mode: save glass position and normalize to 0 or 1
+                    updates.savedGlassPosition = config.position;
+                    updates.position = config.position > 0 ? 1 : 0;
+                  } else if (newHingeFrom === "glass" && config.hingeFrom === "wall") {
+                    // Switching back to glass mode: restore saved position
+                    updates.position = config.savedGlassPosition ?? config.position;
+                    updates.savedGlassPosition = undefined;
+                  }
+                  
+                  updateConfig(updates);
+                }}
+                data-testid={`gate-${spanId}-switch-end`}
+              >
+                <ArrowLeftRight className="w-4 h-4 mr-2" />
+                Switch End
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Position:</span>
+              <span className="font-mono font-medium">Panel {config.position + 1}</span>
+            </div>
+          </>
+        )}
+        {config.hingeFrom === "wall" && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Position:</span>
+            <span className="font-mono font-medium">
+              {config.position <= 0 ? "Start of Span" : "End of Span"}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

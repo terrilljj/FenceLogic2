@@ -74,6 +74,7 @@ export const spanConfigSchema = z.object({
     hingePanelSize: z.number(),
     position: z.number(),
     flipped: z.boolean(),
+    savedGlassPosition: z.number().optional(), // Preserves panel index when switching to wall mode
   }).optional(),
   leftRakedPanel: z.object({
     enabled: z.boolean(),

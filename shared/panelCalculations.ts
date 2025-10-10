@@ -27,6 +27,7 @@ export function calculatePanelLayout(
     hingePanelSize: number;
     position: number;
     flipped: boolean;
+    hingeFrom?: "glass" | "wall";
   }
 ): PanelLayout {
   const effectiveLength = spanLength - endGaps;
@@ -54,9 +55,10 @@ export function calculatePanelLayout(
   const numRakedPanels = (hasLeftRaked ? 1 : 0) + (hasRightRaked ? 1 : 0);
   const rakedPanelSpace = numRakedPanels * RAKED_PANEL_WIDTH;
   
-  // If gate is required, reserve space for gate and hinge panels
+  // If gate is required, reserve space for gate (and hinge panel if glass-to-glass)
   const hasGate = gateConfig?.required === true;
-  const gateSpace = hasGate ? (gateConfig.gateSize + gateConfig.hingePanelSize) : 0;
+  const isWallMounted = gateConfig?.hingeFrom === "wall";
+  const gateSpace = hasGate ? (isWallMounted ? gateConfig.gateSize : gateConfig.gateSize + gateConfig.hingePanelSize) : 0;
   const totalFixedPanelSpace = rakedPanelSpace + gateSpace;
 
   // Single panel case (no raked panels, no gate)
@@ -105,7 +107,8 @@ export function calculatePanelLayout(
   
   // Try different numbers of variable panels
   for (let numVariablePanels = minVariablePanels; numVariablePanels <= maxPossibleVariablePanels; numVariablePanels++) {
-    const numFixedPanels = numRakedPanels + (hasGate ? 2 : 0); // Raked + gate + hinge
+    const numGatePanels = hasGate ? (isWallMounted ? 1 : 2) : 0; // Wall-mounted: 1 panel, Glass-to-glass: 2 panels
+    const numFixedPanels = numRakedPanels + numGatePanels; // Raked + gate + (optional hinge)
     const totalPanels = numVariablePanels + numFixedPanels;
     
     // Need at least 1 total panel
@@ -180,32 +183,51 @@ export function calculatePanelLayout(
     
     // Add variable panels and insert gate if required
     if (hasGate && gateConfig) {
-      // Position is now a panel index (0-based)
-      // Position 0 = gate at start, Position 1 = after first panel, etc.
-      const panelPosition = Math.max(0, Math.floor(gateConfig.position));
-      const beforeCount = Math.min(panelPosition, variablePanels.length);
-      
-      // Panels before gate
-      finalPanels.push(...variablePanels.slice(0, beforeCount));
-      panelTypes.push(...Array(beforeCount).fill("standard"));
-      
-      // Gate assembly (order depends on flipped)
-      if (gateConfig.flipped) {
-        finalPanels.push(gateConfig.hingePanelSize);
-        panelTypes.push("hinge");
-        finalPanels.push(gateConfig.gateSize);
-        panelTypes.push("gate");
+      if (isWallMounted) {
+        // Wall-mounted gate: position is normalized to 0 (start) or 1 (end)
+        const atEnd = gateConfig.position >= 1;
+        
+        if (atEnd) {
+          // All panels first, then gate at end
+          finalPanels.push(...variablePanels);
+          panelTypes.push(...Array(variablePanels.length).fill("standard"));
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+        } else {
+          // Gate at start, then all panels
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+          finalPanels.push(...variablePanels);
+          panelTypes.push(...Array(variablePanels.length).fill("standard"));
+        }
       } else {
-        finalPanels.push(gateConfig.gateSize);
-        panelTypes.push("gate");
-        finalPanels.push(gateConfig.hingePanelSize);
-        panelTypes.push("hinge");
+        // Glass-to-glass gate: position is panel index (0-based)
+        // Position 0 = gate at start, Position 1 = after first panel, etc.
+        const panelPosition = Math.max(0, Math.floor(gateConfig.position));
+        const beforeCount = Math.min(panelPosition, variablePanels.length);
+        
+        // Panels before gate
+        finalPanels.push(...variablePanels.slice(0, beforeCount));
+        panelTypes.push(...Array(beforeCount).fill("standard"));
+        
+        // Gate assembly (order depends on flipped)
+        if (gateConfig.flipped) {
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+        } else {
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
+        }
+        
+        // Panels after gate
+        const afterCount = variablePanels.length - beforeCount;
+        finalPanels.push(...variablePanels.slice(beforeCount));
+        panelTypes.push(...Array(afterCount).fill("standard"));
       }
-      
-      // Panels after gate
-      const afterCount = variablePanels.length - beforeCount;
-      finalPanels.push(...variablePanels.slice(beforeCount));
-      panelTypes.push(...Array(afterCount).fill("standard"));
     } else {
       // No gate, just add all variable panels
       finalPanels.push(...variablePanels);

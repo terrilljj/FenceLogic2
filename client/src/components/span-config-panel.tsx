@@ -62,6 +62,7 @@ export function SpanConfigPanel({
         hingePanelSize: span.gateConfig.hingePanelSize,
         position: span.gateConfig.position,
         flipped: span.gateConfig.flipped,
+        hingeFrom: span.gateConfig.hingeFrom,
       } : undefined
     );
 
@@ -75,7 +76,11 @@ export function SpanConfigPanel({
     }
   }, [span.length, span.desiredGap, span.maxPanelWidth, 
       span.leftGap, span.rightGap, span.topGap, span.bottomGap, 
-      span.leftRakedPanel, span.rightRakedPanel, onUpdate, span]);
+      span.leftRakedPanel, span.rightRakedPanel, 
+      span.gateConfig?.required, span.gateConfig?.gateSize, span.gateConfig?.hingePanelSize,
+      span.gateConfig?.position, span.gateConfig?.flipped, span.gateConfig?.hingeFrom,
+      span.gateConfig?.savedGlassPosition,
+      onUpdate, span]);
 
   // Validate panel layout
   const validatePanelLayout = () => {
