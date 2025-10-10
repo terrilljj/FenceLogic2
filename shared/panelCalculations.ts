@@ -123,16 +123,14 @@ export function calculatePanelLayout(
     let numRegularGaps = numGaps;
     
     if (hasGate && gateConfig.hingeGap !== undefined && gateConfig.latchGap !== undefined) {
-      // Gate has specific gaps on each side
-      const gateGapTotal = gateConfig.hingeGap + gateConfig.latchGap;
-      
       if (isWallMounted) {
-        // Wall-mounted gate: 2 specific gaps (hinge and latch sides)
-        totalGapWidth = gateGapTotal + (numGaps - 2) * targetGap;
-        numRegularGaps = Math.max(0, numGaps - 2);
+        // Wall-mounted gate: only 1 specific gap (latch side), hinge side is attached to wall
+        totalGapWidth = gateConfig.latchGap + Math.max(0, numGaps - 1) * targetGap;
+        numRegularGaps = Math.max(0, numGaps - 1);
       } else {
-        // Glass-to-glass: 2 gate-adjacent gaps use specific values
-        totalGapWidth = gateGapTotal + (numGaps - 2) * targetGap;
+        // Glass-to-glass: 2 gate-adjacent gaps use specific values (hinge and latch)
+        const gateGapTotal = gateConfig.hingeGap + gateConfig.latchGap;
+        totalGapWidth = gateGapTotal + Math.max(0, numGaps - 2) * targetGap;
         numRegularGaps = Math.max(0, numGaps - 2);
       }
     } else {
@@ -296,15 +294,21 @@ export function calculatePanelLayout(
               // Build gaps with specific values at gate positions
               for (let i = 0; i < numGaps; i++) {
                 if (isWallMounted) {
-                  // Wall-mounted: gate has one gap before and one after
-                  if (i === gateIndex - 1 && gateIndex > 0) {
-                    // Gap before gate (hinge side)
-                    gapsArray.push(gateConfig.hingeGap);
-                  } else if (i === gateIndex && gateIndex < finalPanels.length - 1) {
-                    // Gap after gate (latch side)
-                    gapsArray.push(gateConfig.latchGap);
+                  // Wall-mounted: gate is attached to wall on one side, only latch gap on the other
+                  if (gateConfig.position === 0) {
+                    // Gate at start: latch gap is after gate (index 0)
+                    if (i === 0) {
+                      gapsArray.push(gateConfig.latchGap);
+                    } else {
+                      gapsArray.push(actualGap);
+                    }
                   } else {
-                    gapsArray.push(actualGap);
+                    // Gate at end: latch gap is before gate (last gap)
+                    if (i === numGaps - 1) {
+                      gapsArray.push(gateConfig.latchGap);
+                    } else {
+                      gapsArray.push(actualGap);
+                    }
                   }
                 } else {
                   // Glass-to-glass: hinge panel adjacent to gate

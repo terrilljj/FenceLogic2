@@ -11,6 +11,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={FenceBuilder} />
+      <Route path="/fence-builder" component={FenceBuilder} />
       <Route component={NotFound} />
     </Switch>
   );
