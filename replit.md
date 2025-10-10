@@ -76,6 +76,13 @@ Preferred communication style: Simple, everyday language.
   - **Wall/post-mounted**: Gate at start (position=0) or end (position=1) with no hinge panel
 - Panel types: standard, raked, gate, hinge (tracked for visualization)
 - **Gate Position Preservation**: savedGlassPosition field preserves panel index when switching between glass-to-glass and wall-mounted modes
+- **Flexible Gap Tolerance**: When gates are present, algorithm allows up to 50mm total gap deviation (vs 0.01mm for non-gate spans) to accommodate manufacturing constraints and panel increment rounding
+- **Intelligent Remainder Distribution**: Rounds panel remainders to nearest 50mm increment instead of rejecting non-divisible configurations
+- **Gap Scoring**: Penalizes larger gap deviations to prefer configurations closest to target spacing while maintaining flexibility
+
+**Visualization Features:**
+- **Elevation View**: Canvas-based 2D rendering with panel size labels, spigot indicators (rectangles at base), and gate hardware visualization (hinges and latches)
+- **Component List**: Auto-generated from panelLayout arrays, includes 2 spigots per panel, itemizes gate components (hinge panel, gate panel, hinge set, latch) based on mounting type
 
 ### Development Workflow
 
