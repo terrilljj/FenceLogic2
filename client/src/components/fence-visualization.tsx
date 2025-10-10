@@ -280,31 +280,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
   ctx.fillRect(0, 0, rect.width, rect.height);
 
-  // Calculate total width for scaling
-  const totalWidth = design.spans.reduce((sum, span) => sum + span.length, 0);
-  const scale = Math.min((rect.width - 100) / totalWidth, 0.15);
+  // Calculate scaling - each span gets its own horizontal section
+  const longestSpan = Math.max(...design.spans.map(span => span.length));
+  const scale = Math.min((rect.width - 150) / longestSpan, 0.15);
   
   // Drawing constants
   const panelHeight = 1200; // 1200mm standard height
-  const groundLevel = rect.height - 150;
-  const startX = 50;
+  const spanVerticalSpacing = 250; // Space between each span section
+  const startX = 100;
+  const startY = 80;
 
-  // Draw ground line
-  ctx.strokeStyle = "#444";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, groundLevel);
-  ctx.lineTo(rect.width, groundLevel);
-  ctx.stroke();
-
-  // Draw measurements
-  ctx.fillStyle = "#888";
-  ctx.font = "11px Inter";
-  ctx.textAlign = "center";
-
-  let currentX = startX;
-
-  design.spans.forEach((span) => {
+  design.spans.forEach((span, spanIndex) => {
     const isActive = span.spanId === activeSpanId;
     const effectiveLength = span.length;
     const panelWidth = span.maxPanelWidth;
@@ -312,6 +298,24 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
     const leftRaked = span.leftRakedPanel?.enabled ? span.leftRakedPanel.height : null;
     const rightRaked = span.rightRakedPanel?.enabled ? span.rightRakedPanel.height : null;
+
+    // Calculate Y position for this span (stacked vertically)
+    const groundLevel = startY + (spanIndex * spanVerticalSpacing);
+    let currentX = startX;
+
+    // Draw span label
+    ctx.fillStyle = isActive ? "#4488ff" : "#666";
+    ctx.font = "bold 14px Inter";
+    ctx.textAlign = "left";
+    ctx.fillText(`Span ${span.spanId}`, 10, groundLevel - 100);
+
+    // Draw ground line for this span
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX - 20, groundLevel);
+    ctx.lineTo(startX + (span.length * scale) + 20, groundLevel);
+    ctx.stroke();
 
     // Draw each panel in this span
     for (let i = 0; i < numPanels; i++) {
@@ -500,59 +504,50 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       }
     }
 
-    // Span label
-    ctx.fillStyle = isActive ? "#4488ff" : "#666";
-    ctx.font = "bold 12px Inter";
-    ctx.textAlign = "center";
-    const spanWidth = effectiveLength * scale;
-    ctx.fillText(
-      `Span ${span.spanId}`,
-      startX + (currentX - startX - spanWidth) / 2 + spanWidth / 2,
-      groundLevel - (panelHeight * scale) - 35
-    );
-
     // Total span length
     ctx.fillStyle = "#888";
     ctx.font = "11px JetBrains Mono";
+    ctx.textAlign = "left";
     ctx.fillText(
-      `${effectiveLength}mm total`,
-      startX + (currentX - startX - spanWidth) / 2 + spanWidth / 2,
-      groundLevel - (panelHeight * scale) - 50
+      `Total: ${effectiveLength}mm`,
+      startX + (effectiveLength * scale) + 30,
+      groundLevel - 50
     );
+
+    // Height dimension line for this span
+    const heightDimensionX = startX + (effectiveLength * scale) + 60;
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(heightDimensionX, groundLevel);
+    ctx.lineTo(heightDimensionX, groundLevel - (panelHeight * scale));
+    ctx.stroke();
+
+    // Arrows for height dimension
+    const arrowSize = 5;
+    ctx.fillStyle = "#666";
+    ctx.beginPath();
+    ctx.moveTo(heightDimensionX, groundLevel);
+    ctx.lineTo(heightDimensionX - arrowSize, groundLevel - arrowSize);
+    ctx.lineTo(heightDimensionX + arrowSize, groundLevel - arrowSize);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(heightDimensionX, groundLevel - (panelHeight * scale));
+    ctx.lineTo(heightDimensionX - arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
+    ctx.lineTo(heightDimensionX + arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
+    ctx.fill();
+
+    // Height label
+    ctx.fillStyle = "#666";
+    ctx.font = "11px JetBrains Mono";
+    ctx.textAlign = "center";
+    ctx.save();
+    ctx.translate(heightDimensionX + 20, groundLevel - (panelHeight * scale) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("1200mm", 0, 0);
+    ctx.restore();
   });
-
-  // Height dimension line
-  const heightDimensionX = rect.width - 40;
-  ctx.strokeStyle = "#666";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(heightDimensionX, groundLevel);
-  ctx.lineTo(heightDimensionX, groundLevel - (panelHeight * scale));
-  ctx.stroke();
-
-  // Arrows
-  const arrowSize = 5;
-  ctx.beginPath();
-  ctx.moveTo(heightDimensionX, groundLevel);
-  ctx.lineTo(heightDimensionX - arrowSize, groundLevel - arrowSize);
-  ctx.lineTo(heightDimensionX + arrowSize, groundLevel - arrowSize);
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(heightDimensionX, groundLevel - (panelHeight * scale));
-  ctx.lineTo(heightDimensionX - arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
-  ctx.lineTo(heightDimensionX + arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
-  ctx.fill();
-
-  // Height label
-  ctx.fillStyle = "#666";
-  ctx.font = "11px JetBrains Mono";
-  ctx.textAlign = "center";
-  ctx.save();
-  ctx.translate(heightDimensionX + 20, groundLevel - (panelHeight * scale) / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText("1200mm", 0, 0);
-  ctx.restore();
 }
 
 function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpanId?: string) {
