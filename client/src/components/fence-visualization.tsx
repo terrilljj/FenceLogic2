@@ -445,22 +445,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       currentX += scaledPanelWidth;
 
-      // Draw post between panels
+      // Gap between panels (no post - using spigots)
       if (i < numPanels - 1) {
-        const postWidth = 50 * scale; // 50mm post diameter
+        const scaledGapSize = gapSize * scale;
         const gapStart = currentX;
-        
-        ctx.fillStyle = "#666";
-        ctx.fillRect(currentX, groundLevel - scaledPanelHeight, postWidth, scaledPanelHeight);
-        
-        // Post highlight
-        ctx.fillStyle = "#888";
-        ctx.globalAlpha = 0.3;
-        ctx.fillRect(currentX, groundLevel - scaledPanelHeight, postWidth / 3, scaledPanelHeight);
-        ctx.globalAlpha = 1;
-
-        currentX += postWidth;
-        const scaledGapSize = gapSize * scale - postWidth;
         
         // Gap dimension line with arrows
         const gapDimLineY = groundLevel + 35;
@@ -496,7 +484,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.textAlign = "center";
         ctx.fillText(
           `${gapSize}mm`,
-          gapStart + (scaledGapSize + postWidth) / 2,
+          gapStart + scaledGapSize / 2,
           gapDimLineY + 13
         );
 
