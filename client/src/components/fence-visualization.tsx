@@ -273,6 +273,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
+  // Check if this is a channel system
+  const isChannelSystem = design.productVariant === "glass-pool-channel";
+
   // Set canvas size to match container
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width * window.devicePixelRatio;
@@ -540,8 +543,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw spigots at base of panel (left and right) - gates do not have spigots
-      if (!isGate) {
+      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots)
+      if (!isGate && !isChannelSystem) {
         const spigotWidth = 50 * scale;   // 50mm wide
         const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass
@@ -733,6 +736,78 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         `${rightGapSize.toFixed(1)}`,
         gapStart + scaledRightGap / 2,
         gapDimLineY + 18
+      );
+    }
+
+    // Draw channel system (continuous across entire span) - for channel systems only
+    if (isChannelSystem) {
+      const channelHeight = 50 * scale;  // Channel height
+      const channelDepth = 80 * scale;   // Channel depth/thickness
+      const channelGap = 50 * scale;     // 50mm gap below glass (same as spigot)
+      const channelStartX = startX + scaledLeftGap;
+      const channelEndX = currentX;
+      const channelWidth = channelEndX - channelStartX;
+      
+      // Draw main channel body (continuous aluminum channel)
+      ctx.fillStyle = "#a8b2bd";  // Aluminum color
+      ctx.fillRect(
+        channelStartX,
+        groundLevel + channelGap - channelHeight,
+        channelWidth,
+        channelHeight
+      );
+      
+      // Channel border
+      ctx.strokeStyle = "#6b7280";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        channelStartX,
+        groundLevel + channelGap - channelHeight,
+        channelWidth,
+        channelHeight
+      );
+      
+      // Draw friction clamps at 300mm intervals
+      const clampSpacing = 300; // 300mm spacing
+      const clampWidth = 30 * scale;
+      const clampHeight = 70 * scale;
+      const numClamps = Math.floor(span.length / clampSpacing) + 1;
+      
+      for (let c = 0; c <= numClamps; c++) {
+        const clampPosition = channelStartX + (c * clampSpacing * scale);
+        
+        // Only draw if within span bounds
+        if (clampPosition >= channelStartX && clampPosition <= channelEndX - clampWidth) {
+          // Friction clamp
+          ctx.fillStyle = "#4b5563";  // Darker gray for clamps
+          ctx.fillRect(
+            clampPosition,
+            groundLevel + channelGap - channelHeight,
+            clampWidth,
+            clampHeight
+          );
+          
+          // Clamp border
+          ctx.strokeStyle = "#374151";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            clampPosition,
+            groundLevel + channelGap - channelHeight,
+            clampWidth,
+            clampHeight
+          );
+        }
+      }
+      
+      // Channel label
+      const mountingType = span.channelMounting === "wall" ? "Wall" : "Ground";
+      ctx.fillStyle = "#374151";
+      ctx.font = "500 11px Inter";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        `Versatilt Channel (${mountingType} Mount)`,
+        channelStartX + channelWidth / 2,
+        groundLevel + channelGap - channelHeight - 8
       );
     }
 
