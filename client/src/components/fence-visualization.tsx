@@ -356,12 +356,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     const scaledLeftGap = leftGapSize * scale;
     const scaledRightGap = rightGapSize * scale;
 
-    // Draw ground line for this span - cleaner
+    // Draw ground line at bottom of spigots - cleaner
+    const spigotGap = 50 * scale; // 50mm gap below glass
     ctx.strokeStyle = "#c0c0c0";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(startX - 20, groundLevel);
-    ctx.lineTo(startX + (span.length * scale) + 20, groundLevel);
+    ctx.moveTo(startX - 20, groundLevel + spigotGap);
+    ctx.lineTo(startX + (span.length * scale) + 20, groundLevel + spigotGap);
     ctx.stroke();
 
     // Draw left gap if present
@@ -395,7 +396,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Left gap label - cleaner
       ctx.fillStyle = "#6b7280";
-      ctx.font = "600 11px Inter";
+      ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
         `${leftGapSize.toFixed(1)}`,
@@ -682,7 +683,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
         // Gap label - cleaner typography
         ctx.fillStyle = "#6b7280";
-        ctx.font = "600 11px Inter";
+        ctx.font = "600 13px Inter";
         ctx.textAlign = "center";
         ctx.fillText(
           `${gapSize.toFixed(1)}`,
@@ -726,7 +727,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Right gap label - cleaner
       ctx.fillStyle = "#6b7280";
-      ctx.font = "600 11px Inter";
+      ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
         `${rightGapSize.toFixed(1)}`,
