@@ -345,7 +345,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     ctx.font = "500 12px Inter";
     ctx.textAlign = "left";
     ctx.fillText(
-      `Total: ${effectiveLength}mm`,
+      `${effectiveLength}mm`,
       10,
       groundLevel - 80
     );
