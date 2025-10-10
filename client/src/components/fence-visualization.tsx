@@ -342,7 +342,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     
     // Total section length (under the section label) - cleaner
     ctx.fillStyle = "#6b7280";
-    ctx.font = "600 12px Inter";
+    ctx.font = "600 16px Inter";
     ctx.textAlign = "left";
     ctx.fillText(
       `${effectiveLength}mm`,
@@ -506,7 +506,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Panel width dimension label - cleaner
       ctx.fillStyle = "#374151";
-      ctx.font = "500 11px Inter";
+      ctx.font = "600 11px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
         `${currentPanelWidth}`,
