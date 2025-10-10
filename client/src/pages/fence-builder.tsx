@@ -36,8 +36,17 @@ export default function FenceBuilder() {
         spanId: "A",
         length: 5000,
         maxPanelWidth: 1200,
-        maxGap: 50,
-        allowMixedPanels: false,
+        desiredGap: 50,
+        leftGap: {
+          enabled: true,
+          position: "inside",
+          size: 25,
+        },
+        rightGap: {
+          enabled: true,
+          position: "inside",
+          size: 25,
+        },
       },
     ],
   });
@@ -221,7 +230,7 @@ export default function FenceBuilder() {
     design.spans.forEach((span) => {
       total += 3; // length, panel config, gate (if needed)
       if (span.length > 0) completed += 1;
-      if (span.maxPanelWidth && span.maxGap) completed += 1;
+      if (span.maxPanelWidth && span.desiredGap !== undefined) completed += 1;
       if (!span.gateConfig?.required || span.gateConfig) completed += 1;
     });
 
@@ -392,8 +401,17 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
   const defaultSpan: Omit<SpanConfig, "spanId"> = {
     length: 5000,
     maxPanelWidth: 1800,
-    maxGap: 40,
-    allowMixedPanels: false,
+    desiredGap: 50,
+    leftGap: {
+      enabled: true,
+      position: "inside",
+      size: 25,
+    },
+    rightGap: {
+      enabled: true,
+      position: "inside",
+      size: 25,
+    },
   };
 
   switch (shape) {

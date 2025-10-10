@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig } from "@shared/schema";
+import { calculatePanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
@@ -38,56 +39,69 @@ export function SpanConfigPanel({
     onUpdate({ ...span, ...updates });
   };
 
-  // Calculate if configuration exceeds span length
-  const validateSpanLength = () => {
-    const panelWidth = span.maxPanelWidth;
-    const gapSize = span.maxGap;
-    
-    // Calculate effective length (subtract end gaps)
-    let effectiveLength = span.length;
-    if (span.leftGap?.enabled) effectiveLength -= span.leftGap.size;
-    if (span.rightGap?.enabled) effectiveLength -= span.rightGap.size;
-    if (span.topGap?.enabled) effectiveLength -= span.topGap.size;
-    if (span.bottomGap?.enabled) effectiveLength -= span.bottomGap.size;
-    
-    // Correct calculation: N panels need N-1 gaps
-    const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
-    
-    if (numPanels <= 0) {
+  // Calculate panel layout whenever relevant parameters change
+  useEffect(() => {
+    // Calculate total end gaps
+    let endGaps = 0;
+    if (span.leftGap?.enabled) endGaps += span.leftGap.size;
+    if (span.rightGap?.enabled) endGaps += span.rightGap.size;
+    if (span.topGap?.enabled) endGaps += span.topGap.size;
+    if (span.bottomGap?.enabled) endGaps += span.bottomGap.size;
+
+    // Calculate panel layout
+    const layout = calculatePanelLayout(
+      span.length,
+      endGaps,
+      span.desiredGap,
+      span.maxPanelWidth
+    );
+
+    // Update span with calculated layout if it changed
+    const layoutChanged = 
+      !span.panelLayout ||
+      JSON.stringify(span.panelLayout) !== JSON.stringify(layout);
+
+    if (layoutChanged) {
+      onUpdate({ ...span, panelLayout: layout });
+    }
+  }, [span.length, span.desiredGap, span.maxPanelWidth, 
+      span.leftGap, span.rightGap, span.topGap, span.bottomGap, onUpdate, span]);
+
+  // Validate panel layout
+  const validatePanelLayout = () => {
+    if (!span.panelLayout) {
       return {
         valid: false,
-        message: "Span length is too short for the current panel and gap configuration"
+        message: "Calculating panel layout..."
       };
     }
-    
-    // Calculate actual space used
-    const totalPanelWidth = numPanels * panelWidth;
-    const totalGapWidth = (numPanels - 1) * gapSize; // gaps between panels
-    const totalUsed = totalPanelWidth + totalGapWidth;
-    
-    // Add end gaps
-    let totalEndGaps = 0;
-    if (span.leftGap?.enabled) totalEndGaps += span.leftGap.size;
-    if (span.rightGap?.enabled) totalEndGaps += span.rightGap.size;
-    if (span.topGap?.enabled) totalEndGaps += span.topGap.size;
-    if (span.bottomGap?.enabled) totalEndGaps += span.bottomGap.size;
-    
-    const grandTotal = totalUsed + totalEndGaps;
-    
-    if (grandTotal > span.length) {
+
+    if (span.panelLayout.panels.length === 0) {
       return {
         valid: false,
-        message: `Configuration exceeds span length: ${grandTotal}mm used > ${span.length}mm available`
+        message: "Unable to fit panels with current configuration. Try reducing max panel width or desired gap."
       };
     }
+
+    const numPanels = span.panelLayout.panels.length;
+    const totalUsed = span.panelLayout.totalPanelWidth + span.panelLayout.totalGapWidth;
     
+    // Calculate end gaps
+    let endGaps = 0;
+    if (span.leftGap?.enabled) endGaps += span.leftGap.size;
+    if (span.rightGap?.enabled) endGaps += span.rightGap.size;
+    if (span.topGap?.enabled) endGaps += span.topGap.size;
+    if (span.bottomGap?.enabled) endGaps += span.bottomGap.size;
+    
+    const effectiveLength = span.length - endGaps;
+
     return {
       valid: true,
-      message: `${numPanels} panel(s) will fit (${totalUsed}mm used of ${effectiveLength}mm effective length)`
+      message: `${numPanels} panel${numPanels > 1 ? 's' : ''} @ ${span.panelLayout.panels[0]}mm each • Actual gap: ${span.panelLayout.averageGap.toFixed(1)}mm`
     };
   };
 
-  const lengthCheck = validateSpanLength();
+  const layoutValidation = validatePanelLayout();
 
   return (
     <Card className="overflow-hidden" data-testid={`span-${span.spanId}`}>
@@ -106,15 +120,15 @@ export function SpanConfigPanel({
 
       {isExpanded && (
         <div className="p-6 pt-0 space-y-6 border-t border-card-border">
-          {/* Length Validation Message */}
-          {!lengthCheck.valid && (
+          {/* Panel Layout Info */}
+          {!layoutValidation.valid && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3" data-testid={`span-${span.spanId}-validation-error`}>
-              <p className="text-sm text-destructive font-medium">{lengthCheck.message}</p>
+              <p className="text-sm text-destructive font-medium">{layoutValidation.message}</p>
             </div>
           )}
-          {lengthCheck.valid && (
-            <div className="bg-muted/50 border border-border rounded-md p-3" data-testid={`span-${span.spanId}-validation-info`}>
-              <p className="text-xs text-muted-foreground">{lengthCheck.message}</p>
+          {layoutValidation.valid && (
+            <div className="bg-primary/10 border border-primary/20 rounded-md p-3" data-testid={`span-${span.spanId}-panel-layout`}>
+              <p className="text-sm font-medium text-primary">{layoutValidation.message}</p>
             </div>
           )}
 
@@ -286,24 +300,15 @@ export function SpanConfigPanel({
               </div>
             </div>
 
-            {/* Gap Slider */}
+            {/* Gap Slider - Adjusts panel widths */}
             <GapSlider
-              label="Panel Gap"
-              value={span.maxGap}
-              onChange={(maxGap) => updateSpan({ maxGap })}
+              label="Desired Gap Between Panels"
+              value={span.desiredGap}
+              onChange={(desiredGap) => updateSpan({ desiredGap })}
               min={0}
               max={99}
               testId={`span-${span.spanId}-gap-slider`}
             />
-
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Allow Mixed Size Panels</Label>
-              <Switch
-                checked={span.allowMixedPanels}
-                onCheckedChange={(allowMixedPanels) => updateSpan({ allowMixedPanels })}
-                data-testid={`span-${span.spanId}-mixed-panels`}
-              />
-            </div>
           </div>
 
           {/* Raked Panels Configuration */}

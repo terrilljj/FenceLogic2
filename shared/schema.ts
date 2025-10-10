@@ -32,8 +32,14 @@ export const spanConfigSchema = z.object({
   spanId: z.string(),
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
-  maxGap: z.number().min(0).max(99),
-  allowMixedPanels: z.boolean(),
+  desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate
+  panelLayout: z.object({
+    panels: z.array(z.number()),
+    gaps: z.array(z.number()),
+    totalPanelWidth: z.number(),
+    totalGapWidth: z.number(),
+    averageGap: z.number(),
+  }).optional(), // Calculated panel layout
   topGap: z.object({
     enabled: z.boolean(),
     position: z.enum(["inside", "outside"]),
