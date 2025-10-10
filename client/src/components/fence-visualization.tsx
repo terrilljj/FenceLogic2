@@ -336,6 +336,16 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     ctx.font = "bold 14px Inter";
     ctx.textAlign = "left";
     ctx.fillText(`Span ${span.spanId}`, 10, groundLevel - 100);
+    
+    // Total span length (under the span label)
+    ctx.fillStyle = "#888";
+    ctx.font = "11px JetBrains Mono";
+    ctx.textAlign = "left";
+    ctx.fillText(
+      `Total: ${effectiveLength}mm`,
+      10,
+      groundLevel - 82
+    );
 
     // Draw ground line for this span
     ctx.strokeStyle = "#444";
@@ -597,16 +607,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         currentX += scaledGapSize;
       }
     }
-
-    // Total span length
-    ctx.fillStyle = "#888";
-    ctx.font = "11px JetBrains Mono";
-    ctx.textAlign = "left";
-    ctx.fillText(
-      `Total: ${effectiveLength}mm`,
-      startX + (effectiveLength * scale) + 30,
-      groundLevel - 50
-    );
 
     // Height dimension line for this span
     const heightDimensionX = startX + (effectiveLength * scale) + 60;
