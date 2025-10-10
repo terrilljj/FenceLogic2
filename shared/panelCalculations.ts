@@ -26,6 +26,7 @@ export function calculatePanelLayout(
     gateSize: number;
     hingePanelSize: number;
     position: number;
+    flipped: boolean;
   }
 ): PanelLayout {
   const effectiveLength = spanLength - endGaps;

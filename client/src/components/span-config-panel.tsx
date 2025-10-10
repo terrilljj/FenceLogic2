@@ -61,6 +61,7 @@ export function SpanConfigPanel({
         gateSize: span.gateConfig.gateSize,
         hingePanelSize: span.gateConfig.hingePanelSize,
         position: span.gateConfig.position,
+        flipped: span.gateConfig.flipped,
       } : undefined
     );
 
