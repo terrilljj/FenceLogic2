@@ -524,56 +524,59 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
       
       // Draw the panel type below
-      let panelType = "Panel";
-      if (isGate) panelType = "Gate";
-      else if (isHinge) panelType = "Hinge";
-      else if (isRaked) panelType = "Rake";
+      let panelTypeLabel = "Panel";
+      if (isGate) panelTypeLabel = "Gate";
+      else if (isHinge) panelTypeLabel = "Hinge";
+      else if (isRaked) panelTypeLabel = "Rake";
       
       ctx.font = "500 11px Inter";
       ctx.fillText(
-        panelType,
+        panelTypeLabel,
         currentX + scaledPanelWidth / 2,
         groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw spigots at base of panel (left and right) - cleaner styling
-      const spigotWidth = 12;
-      const spigotHeight = 8;
-      const spigotOffset = 15;
-      
-      // Left spigot
-      ctx.fillStyle = "#9ca3af";
-      ctx.fillRect(
-        currentX + spigotOffset - spigotWidth / 2,
-        groundLevel - spigotHeight,
-        spigotWidth,
-        spigotHeight
-      );
-      ctx.strokeStyle = "#6b7280";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(
-        currentX + spigotOffset - spigotWidth / 2,
-        groundLevel - spigotHeight,
-        spigotWidth,
-        spigotHeight
-      );
-      
-      // Right spigot
-      ctx.fillStyle = "#9ca3af";
-      ctx.fillRect(
-        currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
-        groundLevel - spigotHeight,
-        spigotWidth,
-        spigotHeight
-      );
-      ctx.strokeStyle = "#6b7280";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(
-        currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
-        groundLevel - spigotHeight,
-        spigotWidth,
-        spigotHeight
-      );
+      // Draw spigots at base of panel (left and right) - gates do not have spigots
+      if (!isGate) {
+        const spigotWidth = 50 * scale;  // 50mm wide
+        const spigotHeight = 100 * scale; // 100mm height
+        const spigotGap = 50 * scale;     // 50mm gap below glass
+        const spigotOffset = 15;
+        
+        // Left spigot
+        ctx.fillStyle = "#9ca3af";
+        ctx.fillRect(
+          currentX + spigotOffset - spigotWidth / 2,
+          groundLevel + spigotGap - spigotHeight,
+          spigotWidth,
+          spigotHeight
+        );
+        ctx.strokeStyle = "#6b7280";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          currentX + spigotOffset - spigotWidth / 2,
+          groundLevel + spigotGap - spigotHeight,
+          spigotWidth,
+          spigotHeight
+        );
+        
+        // Right spigot
+        ctx.fillStyle = "#9ca3af";
+        ctx.fillRect(
+          currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
+          groundLevel + spigotGap - spigotHeight,
+          spigotWidth,
+          spigotHeight
+        );
+        ctx.strokeStyle = "#6b7280";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
+          groundLevel + spigotGap - spigotHeight,
+          spigotWidth,
+          spigotHeight
+        );
+      }
 
       // Draw hinges and latch for gate - cleaner styling
       if (isGate) {
