@@ -34,9 +34,11 @@ Preferred communication style: Simple, everyday language.
 - Elevation view only (3D and plan views disabled for initial version)
 - Canvas-based 2D side elevation rendering
 - Panel labels show width and type (e.g., "1650 Panel", "1200 Hinge", "900 Gate", "1400H Rake")
-- Proportionate spigot rendering: 50mm wide, 100mm height, 50mm gap below glass
+- Proportionate spigot rendering: 50mm wide, 200mm height, 50mm gap below glass, positioned 10% from panel edge
 - Gates do not display spigots
 - Gate hardware (hinges and latches) positioned at panel edges
+- Latch positioned at top ¼ of gate panel (75% height from ground)
+- Inverted flip logic ensures hinges appear on correct side when gate is flipped
 - Clean, modern visual design with Inter typography
 
 **State Management:**
@@ -85,7 +87,7 @@ Preferred communication style: Simple, everyday language.
   - Polaris Soft Close wall-mounted: latch gap = 9mm (hinge side attached to wall)
   - Polaris Soft Close glass-to-glass: hinge gap = 20mm, latch gap = 9mm
   - Wall-mounted gates use single latch gap; glass-to-glass use both hinge and latch gaps
-- **Flexible Gap Tolerance**: When gates are present, algorithm allows up to 50mm total gap deviation (vs 0.01mm for non-gate spans) to accommodate manufacturing constraints and panel increment rounding
+- **Flexible Gap Tolerance**: Algorithm allows up to 50mm total gap deviation to accommodate manufacturing constraints, panel increment rounding, and decimal gap measurements (e.g., 50.5mm gaps)
 - **Intelligent Remainder Distribution**: Rounds panel remainders to nearest 50mm increment instead of rejecting non-divisible configurations
 - **Gap Scoring**: Penalizes larger gap deviations to prefer configurations closest to target spacing while maintaining flexibility
 
