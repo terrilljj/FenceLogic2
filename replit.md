@@ -71,9 +71,11 @@ Preferred communication style: Simple, everyday language.
 **Panel Calculation System:**
 - Mixed panel width algorithm distributes variable panels to achieve exact gap spacing
 - Supports raked panels (fixed 1200mm width for slopes/stairs)
-- Gate integration: reserves fixed space for gate and hinge panels in layout
+- Gate integration with two mounting modes:
+  - **Glass-to-glass**: Gate positioned by panel index (0, 1, 2, ...) with hinge panel included
+  - **Wall/post-mounted**: Gate at start (position=0) or end (position=1) with no hinge panel
 - Panel types: standard, raked, gate, hinge (tracked for visualization)
-- **Gate Positioning Limitation**: Gates at position=0 work perfectly; non-zero positions use approximation and may deviate from exact millimeter placement. Full precision positioning requires future two-phase solver implementation.
+- **Gate Position Preservation**: savedGlassPosition field preserves panel index when switching between glass-to-glass and wall-mounted modes
 
 ### Development Workflow
 
