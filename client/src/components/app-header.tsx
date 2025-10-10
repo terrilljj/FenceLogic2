@@ -20,10 +20,10 @@ export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false 
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">FB</span>
+              <span className="text-primary-foreground font-bold text-lg">FL</span>
             </div>
             <div>
-              <h1 className="text-lg font-semibold">Fence Builder</h1>
+              <h1 className="text-lg font-semibold">Fence Logic</h1>
               <p className="text-xs text-muted-foreground">Glass Pool Fence Calculator</p>
             </div>
           </div>

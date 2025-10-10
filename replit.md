@@ -1,8 +1,8 @@
-# Fence Builder - Modern Glass Pool Fence Calculator
+# Fence Logic - Modern Glass Pool Fence Calculator
 
 ## Overview
 
-Fence Builder is a web-based configurator tool for designing custom glass pool fences. The application provides an interactive 3D visualization system combined with precise configuration controls, allowing users to design fence layouts, specify spans and gates, and generate automated component lists. The tool supports multiple fence shapes (inline, L-shape, U-shape, enclosed, and custom configurations) with real-time visual feedback and calculation of required materials.
+Fence Logic is a web-based configurator tool for designing custom glass pool fences. The application provides an interactive 3D visualization system combined with precise configuration controls, allowing users to design fence layouts, specify spans and gates, and generate automated component lists. The tool supports multiple fence shapes (inline, L-shape, U-shape, enclosed, and custom configurations) with real-time visual feedback and calculation of required materials.
 
 ## User Preferences
 
