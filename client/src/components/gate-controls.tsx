@@ -16,7 +16,7 @@ interface GateConfig {
 
 interface GateControlsProps {
   config: GateConfig;
-  spanId: string;
+  spanId: number;
   onUpdate: (config: GateConfig) => void;
 }
 

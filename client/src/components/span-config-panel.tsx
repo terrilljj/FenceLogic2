@@ -95,9 +95,29 @@ export function SpanConfigPanel({
     
     const effectiveLength = span.length - endGaps;
 
+    // Format panel width display - show individual widths if they vary
+    const panelWidths = span.panelLayout.panels;
+    const allSameWidth = panelWidths.every(w => w === panelWidths[0]);
+    let panelWidthText: string;
+    
+    if (allSameWidth) {
+      panelWidthText = `${numPanels} panel${numPanels > 1 ? 's' : ''} @ ${panelWidths[0]}mm each`;
+    } else {
+      // Count occurrences of each width
+      const widthCounts = new Map<number, number>();
+      panelWidths.forEach(w => widthCounts.set(w, (widthCounts.get(w) || 0) + 1));
+      
+      // Format as "1x1650mm + 2x1600mm"
+      const parts = Array.from(widthCounts.entries())
+        .sort((a, b) => b[0] - a[0]) // Sort by width descending
+        .map(([width, count]) => count > 1 ? `${count}x${width}mm` : `${width}mm`);
+      
+      panelWidthText = parts.join(' + ');
+    }
+
     return {
       valid: true,
-      message: `${numPanels} panel${numPanels > 1 ? 's' : ''} @ ${span.panelLayout.panels[0]}mm each • Actual gap: ${span.panelLayout.averageGap.toFixed(1)}mm`
+      message: `${panelWidthText} • Actual gap: ${span.panelLayout.averageGap.toFixed(1)}mm`
     };
   };
 
