@@ -148,7 +148,7 @@ export function SpanConfigPanel({
         className="w-full flex items-center justify-between p-6 hover-elevate active-elevate-2 text-left"
         data-testid={`span-${span.spanId}-toggle`}
       >
-        <h3 className="text-lg font-semibold">Span {span.spanId}</h3>
+        <h3 className="text-lg font-semibold">Section {span.spanId}</h3>
         {isExpanded ? (
           <ChevronUp className="w-5 h-5 text-muted-foreground" />
         ) : (
@@ -158,21 +158,16 @@ export function SpanConfigPanel({
 
       {isExpanded && (
         <div className="p-6 pt-0 space-y-6 border-t border-card-border">
-          {/* Panel Layout Info */}
+          {/* Panel Layout Info - Hidden */}
           {!layoutValidation.valid && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3" data-testid={`span-${span.spanId}-validation-error`}>
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 hidden" data-testid={`span-${span.spanId}-validation-error`}>
               <p className="text-sm text-destructive font-medium">{layoutValidation.message}</p>
             </div>
           )}
-          {layoutValidation.valid && (
-            <div className="bg-primary/10 border border-primary/20 rounded-md p-3" data-testid={`span-${span.spanId}-panel-layout`}>
-              <p className="text-sm font-medium text-primary">{layoutValidation.message}</p>
-            </div>
-          )}
 
-          {/* Span Length */}
+          {/* Section Length */}
           <NumericInput
-            label="Span Length"
+            label="Section Length"
             value={span.length}
             onChange={(length) => updateSpan({ length })}
             min={0}
@@ -283,34 +278,38 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {showLeftGap && (
-            <GapSlider
-              label="Left Gap (Connects to adjacent side)"
-              value={span.leftGap?.enabled ? span.leftGap.size : 0}
-              onChange={(size) =>
-                updateSpan({
-                  leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
-                })
-              }
-              min={0}
-              max={150}
-              testId={`span-${span.spanId}-left-gap`}
-            />
-          )}
+          {(showLeftGap || showRightGap) && (
+            <div className="grid grid-cols-2 gap-4">
+              {showLeftGap && (
+                <GapSlider
+                  label="Left Gap (Connects to adjacent side)"
+                  value={span.leftGap?.enabled ? span.leftGap.size : 0}
+                  onChange={(size) =>
+                    updateSpan({
+                      leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                    })
+                  }
+                  min={0}
+                  max={150}
+                  testId={`span-${span.spanId}-left-gap`}
+                />
+              )}
 
-          {showRightGap && (
-            <GapSlider
-              label="Right Gap (Connects to adjacent side)"
-              value={span.rightGap?.enabled ? span.rightGap.size : 0}
-              onChange={(size) =>
-                updateSpan({
-                  rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
-                })
-              }
-              min={0}
-              max={150}
-              testId={`span-${span.spanId}-right-gap`}
-            />
+              {showRightGap && (
+                <GapSlider
+                  label="Right Gap (Connects to adjacent side)"
+                  value={span.rightGap?.enabled ? span.rightGap.size : 0}
+                  onChange={(size) =>
+                    updateSpan({
+                      rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                    })
+                  }
+                  min={0}
+                  max={150}
+                  testId={`span-${span.spanId}-right-gap`}
+                />
+              )}
+            </div>
           )}
 
           {/* Panel Configuration */}
@@ -392,6 +391,47 @@ export function SpanConfigPanel({
                 </Select>
               </div>
             </div>
+          </div>
+
+          {/* Gate Configuration */}
+          <div className="space-y-4 pt-4 border-t border-card-border">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold">Gate Required</Label>
+              <Switch
+                checked={span.gateConfig?.required || false}
+                onCheckedChange={(required) => {
+                  if (required) {
+                    const gaps = getGateGaps("polaris", "glass");
+                    updateSpan({
+                      gateConfig: {
+                        required: true,
+                        hardware: "polaris",
+                        hingeFrom: "glass",
+                        latchTo: "glass",
+                        hingeType: "standard",
+                        latchType: "key-lock",
+                        gateSize: 900,
+                        hingePanelSize: 1200,
+                        position: 0,
+                        flipped: false,
+                        ...gaps,
+                      },
+                    });
+                  } else {
+                    updateSpan({ gateConfig: undefined });
+                  }
+                }}
+                data-testid={`span-${span.spanId}-gate-toggle`}
+              />
+            </div>
+
+            {span.gateConfig?.required && (
+              <GateControls
+                config={span.gateConfig}
+                spanId={span.spanId}
+                onUpdate={(gateConfig: typeof span.gateConfig) => updateSpan({ gateConfig })}
+              />
+            )}
           </div>
 
           {/* Raked Panels Configuration */}
@@ -485,47 +525,6 @@ export function SpanConfigPanel({
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Gate Configuration */}
-          <div className="space-y-4 pt-4 border-t border-card-border">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Gate Required</Label>
-              <Switch
-                checked={span.gateConfig?.required || false}
-                onCheckedChange={(required) => {
-                  if (required) {
-                    const gaps = getGateGaps("polaris", "glass");
-                    updateSpan({
-                      gateConfig: {
-                        required: true,
-                        hardware: "polaris",
-                        hingeFrom: "glass",
-                        latchTo: "glass",
-                        hingeType: "standard",
-                        latchType: "key-lock",
-                        gateSize: 900,
-                        hingePanelSize: 1200,
-                        position: 0,
-                        flipped: false,
-                        ...gaps,
-                      },
-                    });
-                  } else {
-                    updateSpan({ gateConfig: undefined });
-                  }
-                }}
-                data-testid={`span-${span.spanId}-gate-toggle`}
-              />
-            </div>
-
-            {span.gateConfig?.required && (
-              <GateControls
-                config={span.gateConfig}
-                spanId={span.spanId}
-                onUpdate={(gateConfig: typeof span.gateConfig) => updateSpan({ gateConfig })}
-              />
-            )}
           </div>
         </div>
       )}
