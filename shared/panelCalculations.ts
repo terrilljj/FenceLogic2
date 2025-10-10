@@ -167,7 +167,7 @@ export function calculatePanelLayout(
       const remainder = totalVariablePanelWidth - currentTotal;
       
       // Distribute remainder to first panel(s) to achieve exact fit
-      if (remainder > 0) {
+      if (Math.abs(remainder) > 0.001) { // Use tolerance for floating point comparison
         // Round remainder to nearest panel increment
         const roundedRemainder = Math.round(remainder / PANEL_INCREMENT) * PANEL_INCREMENT;
         
@@ -182,9 +182,16 @@ export function calculatePanelLayout(
               variablePanels[i] += roundedAdd;
               remainingToAdd -= roundedAdd;
             }
-            if (remainingToAdd > 0) {
+            if (remainingToAdd > PANEL_INCREMENT / 2) { // Allow small remainder tolerance
               continue;
             }
+          }
+        } else if (roundedRemainder < 0) {
+          // Handle negative remainder (need to reduce panel size)
+          if (idealPanelWidth + roundedRemainder >= MIN_PANEL) {
+            variablePanels[0] += roundedRemainder;
+          } else {
+            continue; // Can't fit with negative remainder
           }
         }
       }
@@ -268,8 +275,8 @@ export function calculatePanelLayout(
     const actualTotalGapWidth = effectiveLength - actualTotalPanelWidth;
     
     // Check if we achieved exact or near-exact gap spacing
-    // Allow larger tolerance when gates are involved due to rounding
-    const tolerance = hasGate ? PANEL_INCREMENT : 0.01;
+    // Allow larger tolerance to accommodate rounding from panel increments
+    const tolerance = PANEL_INCREMENT;
     
     if (Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance) {
       const actualGap = actualTotalGapWidth / numGaps;

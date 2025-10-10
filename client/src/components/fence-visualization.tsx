@@ -541,10 +541,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Draw spigots at base of panel (left and right) - gates do not have spigots
       if (!isGate) {
-        const spigotWidth = 50 * scale;  // 50mm wide
-        const spigotHeight = 100 * scale; // 100mm height
+        const spigotWidth = 50 * scale;   // 50mm wide
+        const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass
-        const spigotOffset = 15;
+        const spigotOffset = scaledPanelWidth * 0.1; // 10% from panel edge
         
         // Left spigot
         ctx.fillStyle = "#9ca3af";
@@ -589,8 +589,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         const latchWidth = 10;
         const latchHeight = 24;
         
-        // Determine hinge side based on flipped config - positioned at edge but fully visible
-        const hingeOffset = gateConfig?.flipped ? scaledPanelWidth - hingeWidth / 2 : hingeWidth / 2;
+        // Determine hinge side based on flipped config (inverted logic)
+        const hingeOffset = gateConfig?.flipped ? hingeWidth / 2 : scaledPanelWidth - hingeWidth / 2;
         
         // Top hinge
         ctx.fillStyle = "#4b5563";
@@ -626,12 +626,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           hingeHeight
         );
         
-        // Latch on opposite side - positioned at edge but fully visible
-        const latchOffset = gateConfig?.flipped ? latchWidth / 2 : scaledPanelWidth - latchWidth / 2;
+        // Latch on opposite side at top ¼ of panel
+        const latchOffset = gateConfig?.flipped ? scaledPanelWidth - latchWidth / 2 : latchWidth / 2;
         ctx.fillStyle = "#4b5563";
         ctx.fillRect(
           currentX + latchOffset - latchWidth / 2,
-          groundLevel - scaledPanelHeight * 0.5 - latchHeight / 2,
+          groundLevel - scaledPanelHeight * 0.75 - latchHeight / 2,
           latchWidth,
           latchHeight
         );
@@ -639,7 +639,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.lineWidth = 1;
         ctx.strokeRect(
           currentX + latchOffset - latchWidth / 2,
-          groundLevel - scaledPanelHeight * 0.5 - latchHeight / 2,
+          groundLevel - scaledPanelHeight * 0.75 - latchHeight / 2,
           latchWidth,
           latchHeight
         );
