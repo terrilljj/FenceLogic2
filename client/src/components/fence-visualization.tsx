@@ -348,7 +348,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     // Draw each panel in this span
     for (let i = 0; i < numPanels; i++) {
       const isGate = span.gateConfig?.required && i === 0;
-      const scaledPanelWidth = panelWidth * scale;
+      // Get individual panel width (may vary for mixed panels)
+      const currentPanelWidth = span.panelLayout?.panels[i] || panelWidth;
+      const scaledPanelWidth = currentPanelWidth * scale;
       let scaledPanelHeight = panelHeight * scale;
       
       // Check if this is a raked panel
@@ -456,7 +458,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.font = "bold 11px JetBrains Mono";
       ctx.textAlign = "center";
       ctx.fillText(
-        `${panelWidth}mm`,
+        `${currentPanelWidth}mm`,
         currentX + scaledPanelWidth / 2,
         dimLineY + 15
       );
@@ -632,12 +634,15 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
       gapSize = fallbackGapSize;
     }
 
-    // Draw panels
+    // Draw panels (track cumulative position for mixed widths)
+    let cumulativePos = 0;
     for (let i = 0; i < numPanels; i++) {
       const isGate = span.gateConfig?.required && i === 0;
+      const currentPanelWidth = span.panelLayout?.panels[i] || panelWidth;
       
-      const offsetX = Math.cos(currentAngle) * (i * (panelWidth + gapSize) + panelWidth / 2) * scale;
-      const offsetY = Math.sin(currentAngle) * (i * (panelWidth + gapSize) + panelWidth / 2) * scale;
+      const panelCenterOffset = cumulativePos + currentPanelWidth / 2;
+      const offsetX = Math.cos(currentAngle) * panelCenterOffset * scale;
+      const offsetY = Math.sin(currentAngle) * panelCenterOffset * scale;
 
       ctx.save();
       ctx.translate(currentX + offsetX, currentY + offsetY);
@@ -646,29 +651,31 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
       // Panel
       ctx.fillStyle = isGate ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
       ctx.globalAlpha = isGate ? 0.6 : isActive ? 0.8 : 0.5;
-      ctx.fillRect(-panelWidth * scale / 2, -6, panelWidth * scale, 12);
+      ctx.fillRect(-currentPanelWidth * scale / 2, -6, currentPanelWidth * scale, 12);
       
       ctx.strokeStyle = isGate ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
       ctx.globalAlpha = 1;
       ctx.lineWidth = 2;
-      ctx.strokeRect(-panelWidth * scale / 2, -6, panelWidth * scale, 12);
+      ctx.strokeRect(-currentPanelWidth * scale / 2, -6, currentPanelWidth * scale, 12);
 
       // Panel width dimension (rotated with panel)
       ctx.fillStyle = "#444";
       ctx.font = "bold 10px JetBrains Mono";
       ctx.textAlign = "center";
       ctx.fillText(
-        `${panelWidth}mm`,
+        `${currentPanelWidth}mm`,
         0,
         -15
       );
 
       ctx.restore();
 
+      cumulativePos += currentPanelWidth;
+
       // Draw post and gap
       if (i < numPanels - 1) {
-        const postOffsetX = Math.cos(currentAngle) * ((i + 1) * (panelWidth + gapSize)) * scale;
-        const postOffsetY = Math.sin(currentAngle) * ((i + 1) * (panelWidth + gapSize)) * scale;
+        const postOffsetX = Math.cos(currentAngle) * cumulativePos * scale;
+        const postOffsetY = Math.sin(currentAngle) * cumulativePos * scale;
 
         ctx.fillStyle = "#666";
         ctx.beginPath();
@@ -676,8 +683,10 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
         ctx.fill();
 
         // Gap dimension (between this panel and next)
-        const gapMidX = Math.cos(currentAngle) * (i * (panelWidth + gapSize) + panelWidth + gapSize / 2) * scale;
-        const gapMidY = Math.sin(currentAngle) * (i * (panelWidth + gapSize) + panelWidth + gapSize / 2) * scale;
+        const gapMidX = Math.cos(currentAngle) * (cumulativePos + gapSize / 2) * scale;
+        const gapMidY = Math.sin(currentAngle) * (cumulativePos + gapSize / 2) * scale;
+        
+        cumulativePos += gapSize;
 
         ctx.save();
         ctx.translate(currentX + gapMidX, currentY + gapMidY);
@@ -837,14 +846,17 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
       gapSize = fallbackGapSize;
     }
 
-    // Render panels
+    // Render panels (track cumulative position for mixed widths)
+    let cumulativePos = 0;
     for (let i = 0; i < numPanels; i++) {
-      const panelGeometry = new THREE.BoxGeometry(panelWidth, panelHeight, panelThickness);
+      const currentPanelWidth = (span.panelLayout?.panels[i] || panelWidth * 1000) / 1000;
+      const panelGeometry = new THREE.BoxGeometry(currentPanelWidth, panelHeight, panelThickness);
       const isGate = span.gateConfig?.required && i === 0;
       const panel = new THREE.Mesh(panelGeometry, isGate ? gateMaterial : material);
 
-      const offsetX = Math.cos(currentAngle) * (i * (panelWidth + gapSize) + panelWidth / 2);
-      const offsetZ = Math.sin(currentAngle) * (i * (panelWidth + gapSize) + panelWidth / 2);
+      const panelCenterOffset = cumulativePos + currentPanelWidth / 2;
+      const offsetX = Math.cos(currentAngle) * panelCenterOffset;
+      const offsetZ = Math.sin(currentAngle) * panelCenterOffset;
 
       panel.position.set(currentX + offsetX, panelHeight / 2, currentZ + offsetZ);
       panel.rotation.y = currentAngle;
@@ -852,18 +864,22 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
 
       scene.add(panel);
 
+      cumulativePos += currentPanelWidth;
+
       // Add post
       if (i < numPanels - 1) {
         const postGeometry = new THREE.CylinderGeometry(postRadius, postRadius, panelHeight);
         const post = new THREE.Mesh(postGeometry, postMaterial);
 
-        const postOffsetX = Math.cos(currentAngle) * ((i + 1) * (panelWidth + gapSize));
-        const postOffsetZ = Math.sin(currentAngle) * ((i + 1) * (panelWidth + gapSize));
+        const postOffsetX = Math.cos(currentAngle) * cumulativePos;
+        const postOffsetZ = Math.sin(currentAngle) * cumulativePos;
 
         post.position.set(currentX + postOffsetX, panelHeight / 2, currentZ + postOffsetZ);
         post.userData.isFence = true;
 
         scene.add(post);
+        
+        cumulativePos += gapSize;
       }
     }
 
