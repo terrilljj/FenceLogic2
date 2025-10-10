@@ -342,7 +342,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     
     // Total section length (under the section label) - cleaner
     ctx.fillStyle = "#6b7280";
-    ctx.font = "500 12px Inter";
+    ctx.font = "600 12px Inter";
     ctx.textAlign = "left";
     ctx.fillText(
       `${effectiveLength}mm`,
@@ -395,12 +395,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Left gap label - cleaner
       ctx.fillStyle = "#6b7280";
-      ctx.font = "11px Inter";
+      ctx.font = "600 11px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
         `${leftGapSize.toFixed(1)}`,
         currentX + scaledLeftGap / 2,
-        gapDimLineY + 14
+        gapDimLineY + 18
       );
 
       currentX += scaledLeftGap;
@@ -682,12 +682,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
         // Gap label - cleaner typography
         ctx.fillStyle = "#6b7280";
-        ctx.font = "11px Inter";
+        ctx.font = "600 11px Inter";
         ctx.textAlign = "center";
         ctx.fillText(
           `${gapSize.toFixed(1)}`,
           gapStart + scaledGapSize / 2,
-          gapDimLineY + 14
+          gapDimLineY + 18
         );
 
         currentX += scaledGapSize;
@@ -726,12 +726,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Right gap label - cleaner
       ctx.fillStyle = "#6b7280";
-      ctx.font = "11px Inter";
+      ctx.font = "600 11px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
         `${rightGapSize.toFixed(1)}`,
         gapStart + scaledRightGap / 2,
-        gapDimLineY + 14
+        gapDimLineY + 18
       );
     }
 
