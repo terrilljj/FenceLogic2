@@ -35,7 +35,7 @@ export default function FenceBuilder() {
       {
         spanId: "A",
         length: 5000,
-        maxPanelWidth: 1200,
+        maxPanelWidth: 2000,
         desiredGap: 50,
         leftGap: {
           enabled: true,
@@ -164,9 +164,18 @@ export default function FenceBuilder() {
         {
           spanId: "A",
           length: 5000,
-          maxPanelWidth: 1200,
-          maxGap: 50,
-          allowMixedPanels: false,
+          maxPanelWidth: 2000,
+          desiredGap: 50,
+          leftGap: {
+            enabled: true,
+            position: "inside",
+            size: 25,
+          },
+          rightGap: {
+            enabled: true,
+            position: "inside",
+            size: 25,
+          },
         },
       ],
     });
