@@ -553,6 +553,7 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
 
 function calculateComponents(design: FenceDesign): Component[] {
   const components: Component[] = [];
+  const isChannelSystem = design.productVariant === "glass-pool-channel";
 
   design.spans.forEach((span) => {
     // Use calculated panel layout with fallback
@@ -602,17 +603,51 @@ function calculateComponents(design: FenceDesign): Component[] {
           });
         }
         
-        // Add 2 spigots per panel
-        const spigotDetails = getSpigotDetails(
-          span.spigotMounting || "base-plate",
-          span.spigotColor || "polished"
-        );
+        // Add hardware per panel - either spigots OR channel clamps
+        if (!isChannelSystem) {
+          // Spigot system: Add 2 spigots per panel
+          const spigotDetails = getSpigotDetails(
+            span.spigotMounting || "base-plate",
+            span.spigotColor || "polished"
+          );
+          components.push({
+            qty: 2,
+            description: spigotDetails.description,
+            sku: spigotDetails.sku,
+          });
+        }
+      });
+
+      // Channel system hardware (per span)
+      if (isChannelSystem) {
+        const spanLength = span.length;
+        const channelLength = 4200; // Versatilt channel is 4200mm
+        
+        // Calculate number of channels needed
+        const numChannels = Math.ceil(spanLength / channelLength);
+        const mountingType = span.channelMounting === "wall" ? "Wall" : "Ground";
+        
+        components.push({
+          qty: numChannels,
+          description: `Versatilt Aluminum Channel 4200mm (${mountingType} Mount)`,
+          sku: `VC-4200-${span.channelMounting || "ground"}`,
+        });
+        
+        // Calculate friction clamps (one every 300mm + extras for ends)
+        const numClamps = Math.ceil(spanLength / 300) + 2;
+        components.push({
+          qty: numClamps,
+          description: `Channel Friction Clamp (300mm spacing)`,
+          sku: `CFC-300`,
+        });
+        
+        // End caps (2 per span)
         components.push({
           qty: 2,
-          description: spigotDetails.description,
-          sku: spigotDetails.sku,
+          description: `Channel End Cap`,
+          sku: `CEC-STD`,
         });
-      });
+      }
 
       // Gate hardware components (hinge set and latch)
       if (span.gateConfig?.required) {
@@ -650,16 +685,44 @@ function calculateComponents(design: FenceDesign): Component[] {
           sku: `GP-${fallbackPanelWidth}-1200-12`,
         });
         
-        // Add 2 spigots per panel
-        const spigotDetails = getSpigotDetails(
-          span.spigotMounting || "base-plate",
-          span.spigotColor || "polished"
-        );
-        components.push({
-          qty: numPanels * 2,
-          description: spigotDetails.description,
-          sku: spigotDetails.sku,
-        });
+        // Add hardware - either spigots OR channel system
+        if (!isChannelSystem) {
+          // Add 2 spigots per panel
+          const spigotDetails = getSpigotDetails(
+            span.spigotMounting || "base-plate",
+            span.spigotColor || "polished"
+          );
+          components.push({
+            qty: numPanels * 2,
+            description: spigotDetails.description,
+            sku: spigotDetails.sku,
+          });
+        } else {
+          // Channel system hardware
+          const spanLength = span.length;
+          const channelLength = 4200;
+          const numChannels = Math.ceil(spanLength / channelLength);
+          const mountingType = span.channelMounting === "wall" ? "Wall" : "Ground";
+          
+          components.push({
+            qty: numChannels,
+            description: `Versatilt Aluminum Channel 4200mm (${mountingType} Mount)`,
+            sku: `VC-4200-${span.channelMounting || "ground"}`,
+          });
+          
+          const numClamps = Math.ceil(spanLength / 300) + 2;
+          components.push({
+            qty: numClamps,
+            description: `Channel Friction Clamp (300mm spacing)`,
+            sku: `CFC-300`,
+          });
+          
+          components.push({
+            qty: 2,
+            description: `Channel End Cap`,
+            sku: `CEC-STD`,
+          });
+        }
         
         // Gate hardware if configured
         if (span.gateConfig?.required) {
@@ -710,10 +773,11 @@ function calculateComponents(design: FenceDesign): Component[] {
         return 1; // Glass panels
       }
       if (desc.includes('Spigot')) return 2;
-      if (desc.includes('Post')) return 3;
-      if (desc.includes('Hinge Set')) return 4;
-      if (desc.includes('Latch')) return 5;
-      return 6; // Other hardware/accessories
+      if (desc.includes('Channel')) return 3; // Channel system components
+      if (desc.includes('Post')) return 4;
+      if (desc.includes('Hinge Set')) return 5;
+      if (desc.includes('Latch')) return 6;
+      return 7; // Other hardware/accessories
     };
 
     const categoryA = getCategory(a.description);
