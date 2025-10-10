@@ -2,13 +2,15 @@ import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, A
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getGateGaps } from "@shared/schema";
+import { getGateGaps, HingeType, LatchType } from "@shared/schema";
 
 interface GateConfig {
   required: boolean;
   hardware: "master" | "polaris";
   hingeFrom: "glass" | "wall";
   latchTo: "glass" | "wall";
+  hingeType: HingeType;
+  latchType: LatchType;
   gateSize: number;
   hingePanelSize: number;
   position: number;
@@ -64,6 +66,44 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
               <SelectItem value="polaris">Polaris Soft Close</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Hinge Type</Label>
+            <Select
+              value={config.hingeType || "standard"}
+              onValueChange={(hingeType: HingeType) => updateConfig({ hingeType })}
+            >
+              <SelectTrigger data-testid={`gate-${spanId}-hinge-type`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard Heavy Duty</SelectItem>
+                <SelectItem value="self-close">Premium Self-Closing</SelectItem>
+                <SelectItem value="soft-close">Soft Close</SelectItem>
+                <SelectItem value="dd-magnamatic">D&D Magnamatic</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Latch Type</Label>
+            <Select
+              value={config.latchType || "key-lock"}
+              onValueChange={(latchType: LatchType) => updateConfig({ latchType })}
+            >
+              <SelectTrigger data-testid={`gate-${spanId}-latch-type`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="key-lock">Key Lock</SelectItem>
+                <SelectItem value="magnetic">Magnetic</SelectItem>
+                <SelectItem value="self-latch">Self-Latching</SelectItem>
+                <SelectItem value="double-action">Double-Action</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

@@ -349,6 +349,51 @@ export function SpanConfigPanel({
             />
           </div>
 
+          {/* Spigot Configuration */}
+          <div className="space-y-4 pt-4 border-t border-card-border">
+            <h4 className="text-sm font-semibold">Spigot Hardware</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Mounting Type</Label>
+                <Select
+                  value={span.spigotMounting || "base-plate"}
+                  onValueChange={(spigotMounting: "base-plate" | "core-drilled" | "side-mounted") => 
+                    updateSpan({ spigotMounting })
+                  }
+                >
+                  <SelectTrigger data-testid={`span-${span.spanId}-spigot-mounting`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="base-plate">Base Plate</SelectItem>
+                    <SelectItem value="core-drilled">Core Drilled</SelectItem>
+                    <SelectItem value="side-mounted">Side Mounted</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Color/Finish</Label>
+                <Select
+                  value={span.spigotColor || "polished"}
+                  onValueChange={(spigotColor: "polished" | "satin" | "black" | "white") => 
+                    updateSpan({ spigotColor })
+                  }
+                >
+                  <SelectTrigger data-testid={`span-${span.spanId}-spigot-color`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="polished">Polished</SelectItem>
+                    <SelectItem value="satin">Satin</SelectItem>
+                    <SelectItem value="black">Black</SelectItem>
+                    <SelectItem value="white">White</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
           {/* Raked Panels Configuration */}
           <div className="space-y-4 pt-4 border-t border-card-border">
             <h4 className="text-sm font-semibold">Raked Panels (for slopes/stairs)</h4>
@@ -457,6 +502,8 @@ export function SpanConfigPanel({
                         hardware: "polaris",
                         hingeFrom: "glass",
                         latchTo: "glass",
+                        hingeType: "standard",
+                        latchType: "key-lock",
                         gateSize: 900,
                         hingePanelSize: 1200,
                         position: 0,

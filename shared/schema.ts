@@ -12,6 +12,18 @@ export type GapPosition = "inside" | "outside";
 // Gate hardware types
 export type GateHardware = "master" | "polaris";
 
+// Spigot mounting types
+export type SpigotMounting = "base-plate" | "core-drilled" | "side-mounted";
+
+// Spigot color/finish types
+export type SpigotColor = "polished" | "satin" | "black" | "white";
+
+// Hinge types
+export type HingeType = "standard" | "self-close" | "soft-close" | "dd-magnamatic";
+
+// Latch types
+export type LatchType = "key-lock" | "magnetic" | "self-latch" | "double-action";
+
 // Panel size constraints (custom cut in 50mm increments)
 export const PANEL_SIZE_MIN = 200; // mm
 export const PANEL_SIZE_MAX = 2000; // mm
@@ -37,6 +49,8 @@ export const spanConfigSchema = z.object({
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
   desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate
+  spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
+  spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
   panelLayout: z.object({
     panels: z.array(z.number()),
     gaps: z.array(z.number()),
@@ -70,6 +84,8 @@ export const spanConfigSchema = z.object({
     hardware: z.enum(["master", "polaris"]),
     hingeFrom: z.enum(["glass", "wall"]),
     latchTo: z.enum(["glass", "wall"]),
+    hingeType: z.enum(["standard", "self-close", "soft-close", "dd-magnamatic"]).default("standard"),
+    latchType: z.enum(["key-lock", "magnetic", "self-latch", "double-action"]).default("key-lock"),
     gateSize: z.number(),
     hingePanelSize: z.number(),
     position: z.number(),
@@ -148,4 +164,49 @@ export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall")
       return { hingeGap: 20, latchGap: 9 };
     }
   }
+}
+
+// Helper function to get spigot details
+export function getSpigotDetails(mounting: SpigotMounting, color: SpigotColor): { description: string; sku: string } {
+  const mountingNames = {
+    "base-plate": "Base Plate Mount",
+    "core-drilled": "Core Drilled",
+    "side-mounted": "Side Mounted",
+  };
+  
+  const colorNames = {
+    "polished": "Polished",
+    "satin": "Satin",
+    "black": "Black",
+    "white": "White",
+  };
+  
+  const description = `Spigot ${mountingNames[mounting]} (${colorNames[color]})`;
+  const mountingSku = mounting ? mounting.replace(/-/g, "_").toUpperCase() : "BASE_PLATE";
+  const colorSku = color ? color.toUpperCase() : "POLISHED";
+  const sku = `SPIGOT-${mountingSku}-${colorSku}`;
+  
+  return { description, sku };
+}
+
+// Helper function to get hinge details
+export function getHingeDetails(type: HingeType): { description: string; sku: string } {
+  const hingeMap = {
+    "standard": { description: "Standard Heavy Duty Hinge Set", sku: "HINGE-STANDARD" },
+    "self-close": { description: "Premium Self-Closing Hinge Set", sku: "HINGE-SELF-CLOSE" },
+    "soft-close": { description: "Soft Close Hinge Set", sku: "HINGE-SOFT-CLOSE" },
+    "dd-magnamatic": { description: "D&D Magnamatic Hinge Set", sku: "HINGE-DD-MAGNAMATIC" },
+  };
+  return hingeMap[type];
+}
+
+// Helper function to get latch details
+export function getLatchDetails(type: LatchType): { description: string; sku: string } {
+  const latchMap = {
+    "key-lock": { description: "Key Lock Latch", sku: "LATCH-KEY" },
+    "magnetic": { description: "Magnetic Latch", sku: "LATCH-MAGNETIC" },
+    "self-latch": { description: "Self-Latching Mechanism", sku: "LATCH-SELF" },
+    "double-action": { description: "Double-Action Latch", sku: "LATCH-DOUBLE" },
+  };
+  return latchMap[type];
 }

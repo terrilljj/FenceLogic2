@@ -6,7 +6,7 @@ import { FenceVisualization } from "@/components/fence-visualization";
 import { ComponentList } from "@/components/component-list";
 import { AppHeader } from "@/components/app-header";
 import { useToast } from "@/hooks/use-toast";
-import { FenceDesign, FenceShape, SpanConfig, Component, SavedFenceDesign } from "@shared/schema";
+import { FenceDesign, FenceShape, SpanConfig, Component, SavedFenceDesign, SpigotMounting, SpigotColor, getSpigotDetails, getHingeDetails, getLatchDetails } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
 export default function FenceBuilder() {
@@ -37,6 +38,8 @@ export default function FenceBuilder() {
         length: 5000,
         maxPanelWidth: 2000,
         desiredGap: 50,
+        spigotMounting: "base-plate",
+        spigotColor: "polished",
         leftGap: {
           enabled: true,
           position: "inside",
@@ -142,11 +145,24 @@ export default function FenceBuilder() {
   };
 
   const handleLoadDesign = (savedDesign: SavedFenceDesign) => {
+    const loadedSpans = savedDesign.spans as any;
+    // Normalize spans to have default values for new fields
+    const normalizedSpans = Array.isArray(loadedSpans) ? loadedSpans.map((span: any) => ({
+      ...span,
+      spigotMounting: span.spigotMounting || "base-plate",
+      spigotColor: span.spigotColor || "polished",
+      gateConfig: span.gateConfig ? {
+        ...span.gateConfig,
+        hingeType: span.gateConfig.hingeType || "standard",
+        latchType: span.gateConfig.latchType || "key-lock",
+      } : undefined,
+    })) : [];
+    
     setDesign({
       name: savedDesign.name,
       shape: savedDesign.shape as FenceShape,
       customSides: savedDesign.customSides || 3,
-      spans: savedDesign.spans as SpanConfig[],
+      spans: normalizedSpans,
     });
     setShowLoadDialog(false);
     toast({
@@ -166,6 +182,8 @@ export default function FenceBuilder() {
           length: 5000,
           maxPanelWidth: 2000,
           desiredGap: 50,
+          spigotMounting: "base-plate",
+          spigotColor: "polished",
           leftGap: {
             enabled: true,
             position: "inside",
@@ -411,6 +429,8 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
     length: 5000,
     maxPanelWidth: 2000,
     desiredGap: 50,
+    spigotMounting: "base-plate",
+    spigotColor: "polished",
     leftGap: {
       enabled: true,
       position: "inside",
@@ -507,30 +527,36 @@ function calculateComponents(design: FenceDesign): Component[] {
         }
         
         // Add 2 spigots per panel
+        const spigotDetails = getSpigotDetails(
+          span.spigotMounting || "base-plate",
+          span.spigotColor || "polished"
+        );
         components.push({
           qty: 2,
-          description: "Spigot (stainless steel base mount)",
-          sku: "SPIGOT-SS",
+          description: spigotDetails.description,
+          sku: spigotDetails.sku,
         });
       });
 
       // Gate hardware components (hinge set and latch)
       if (span.gateConfig?.required) {
-        const hardware = span.gateConfig.hardware === "polaris" ? "Polaris Soft Close" : "Master Range";
-        const isGlassToGlass = span.gateConfig.hingeFrom === "glass";
+        const hingeType = span.gateConfig.hingeType || "standard";
+        const latchType = span.gateConfig.latchType || "key-lock";
+        const hingeDetails = getHingeDetails(hingeType);
+        const latchDetails = getLatchDetails(latchType);
         
         // Hinge set
         components.push({
           qty: 1,
-          description: `${hardware} Hinge Set (for ${span.gateConfig.gateSize}mm gate)`,
-          sku: `GH-HINGE-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+          description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+          sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
         });
         
         // Latch
         components.push({
           qty: 1,
-          description: `${hardware} Gate Latch (for ${span.gateConfig.gateSize}mm gate)`,
-          sku: `GH-LATCH-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+          description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+          sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
         });
       }
     } else {
@@ -549,26 +575,33 @@ function calculateComponents(design: FenceDesign): Component[] {
         });
         
         // Add 2 spigots per panel
+        const spigotDetails = getSpigotDetails(
+          span.spigotMounting || "base-plate",
+          span.spigotColor || "polished"
+        );
         components.push({
           qty: numPanels * 2,
-          description: "Spigot (stainless steel base mount)",
-          sku: "SPIGOT-SS",
+          description: spigotDetails.description,
+          sku: spigotDetails.sku,
         });
         
         // Gate hardware if configured
         if (span.gateConfig?.required) {
-          const hardware = span.gateConfig.hardware === "polaris" ? "Polaris Soft Close" : "Master Range";
+          const hingeType = span.gateConfig.hingeType || "standard";
+          const latchType = span.gateConfig.latchType || "key-lock";
+          const hingeDetails = getHingeDetails(hingeType);
+          const latchDetails = getLatchDetails(latchType);
           
           components.push({
             qty: 1,
-            description: `${hardware} Hinge Set (for ${span.gateConfig.gateSize}mm gate)`,
-            sku: `GH-HINGE-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+            description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+            sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
           });
           
           components.push({
             qty: 1,
-            description: `${hardware} Gate Latch (for ${span.gateConfig.gateSize}mm gate)`,
-            sku: `GH-LATCH-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+            description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+            sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
           });
         }
       }
