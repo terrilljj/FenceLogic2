@@ -498,14 +498,22 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2
       );
 
-      // Draw spigots at base of panel (left and right)
-      const spigotWidth = 8;
-      const spigotHeight = 6;
-      const spigotOffset = 10;
-      ctx.fillStyle = "#444444";
+      // Draw spigots at base of panel (left and right) - larger and more visible
+      const spigotWidth = 14;
+      const spigotHeight = 10;
+      const spigotOffset = 15;
       
       // Left spigot
+      ctx.fillStyle = "#1a1a1a";
       ctx.fillRect(
+        currentX + spigotOffset - spigotWidth / 2,
+        groundLevel - spigotHeight,
+        spigotWidth,
+        spigotHeight
+      );
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
         currentX + spigotOffset - spigotWidth / 2,
         groundLevel - spigotHeight,
         spigotWidth,
@@ -513,45 +521,79 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
       
       // Right spigot
+      ctx.fillStyle = "#1a1a1a";
       ctx.fillRect(
         currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
         groundLevel - spigotHeight,
         spigotWidth,
         spigotHeight
       );
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
+        groundLevel - spigotHeight,
+        spigotWidth,
+        spigotHeight
+      );
 
-      // Draw hinges and latch for gate
+      // Draw hinges and latch for gate - larger and more visible
       if (isGate) {
         const gateConfig = span.gateConfig;
-        const hingeWidth = 10;
-        const hingeHeight = 10;
-        const latchWidth = 8;
-        const latchHeight = 20;
-        
-        ctx.fillStyle = "#333333";
+        const hingeWidth = 16;
+        const hingeHeight = 16;
+        const latchWidth = 12;
+        const latchHeight = 28;
         
         // Determine hinge side based on flipped config
-        const hingeOffset = gateConfig?.flipped ? scaledPanelWidth - 15 : 15;
+        const hingeOffset = gateConfig?.flipped ? scaledPanelWidth - 20 : 20;
         
-        // Top hinge
+        // Top hinge - with border for visibility
+        ctx.fillStyle = "#2a2a2a";
         ctx.fillRect(
           currentX + hingeOffset - hingeWidth / 2,
           groundLevel - scaledPanelHeight * 0.8 - hingeHeight / 2,
           hingeWidth,
           hingeHeight
         );
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          currentX + hingeOffset - hingeWidth / 2,
+          groundLevel - scaledPanelHeight * 0.8 - hingeHeight / 2,
+          hingeWidth,
+          hingeHeight
+        );
         
-        // Bottom hinge
+        // Bottom hinge - with border for visibility
+        ctx.fillStyle = "#2a2a2a";
         ctx.fillRect(
           currentX + hingeOffset - hingeWidth / 2,
           groundLevel - scaledPanelHeight * 0.2 - hingeHeight / 2,
           hingeWidth,
           hingeHeight
         );
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          currentX + hingeOffset - hingeWidth / 2,
+          groundLevel - scaledPanelHeight * 0.2 - hingeHeight / 2,
+          hingeWidth,
+          hingeHeight
+        );
         
-        // Latch on opposite side
-        const latchOffset = gateConfig?.flipped ? 15 : scaledPanelWidth - 15;
+        // Latch on opposite side - with border for visibility
+        const latchOffset = gateConfig?.flipped ? 20 : scaledPanelWidth - 20;
+        ctx.fillStyle = "#2a2a2a";
         ctx.fillRect(
+          currentX + latchOffset - latchWidth / 2,
+          groundLevel - scaledPanelHeight * 0.5 - latchHeight / 2,
+          latchWidth,
+          latchHeight
+        );
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
           currentX + latchOffset - latchWidth / 2,
           groundLevel - scaledPanelHeight * 0.5 - latchHeight / 2,
           latchWidth,
