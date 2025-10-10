@@ -400,7 +400,7 @@ export default function FenceBuilder() {
 function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[] {
   const defaultSpan: Omit<SpanConfig, "spanId"> = {
     length: 5000,
-    maxPanelWidth: 1800,
+    maxPanelWidth: 2000,
     desiredGap: 50,
     leftGap: {
       enabled: true,
@@ -450,9 +450,21 @@ function calculateComponents(design: FenceDesign): Component[] {
   const components: Component[] = [];
 
   design.spans.forEach((span) => {
-    // Use calculated panel layout
-    const panelWidth = span.panelLayout?.panels[0] || span.maxPanelWidth;
-    const numPanels = span.panelLayout?.panels.length || 0;
+    // Use calculated panel layout with fallback
+    let numPanels: number;
+    let panelWidth: number;
+    
+    if (span.panelLayout && span.panelLayout.panels.length > 0) {
+      numPanels = span.panelLayout.panels.length;
+      panelWidth = span.panelLayout.panels[0];
+    } else {
+      // Fallback calculation when panelLayout not yet calculated
+      const effectiveLength = span.length;
+      const fallbackPanelWidth = span.maxPanelWidth;
+      const fallbackGapSize = span.desiredGap;
+      numPanels = Math.floor((effectiveLength + fallbackGapSize) / (fallbackPanelWidth + fallbackGapSize));
+      panelWidth = fallbackPanelWidth;
+    }
 
     if (numPanels > 0) {
       let standardPanelCount = numPanels;
