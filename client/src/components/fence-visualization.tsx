@@ -347,6 +347,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       groundLevel - 82
     );
 
+    // Calculate left and right gaps
+    const leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
+    const rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
+    const scaledLeftGap = leftGapSize * scale;
+    const scaledRightGap = rightGapSize * scale;
+
     // Draw ground line for this span
     ctx.strokeStyle = "#444";
     ctx.lineWidth = 2;
@@ -354,6 +360,48 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     ctx.moveTo(startX - 20, groundLevel);
     ctx.lineTo(startX + (span.length * scale) + 20, groundLevel);
     ctx.stroke();
+
+    // Draw left gap if present
+    if (leftGapSize > 0) {
+      const gapDimLineY = groundLevel + 35;
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 1;
+      
+      // Horizontal dimension line for left gap
+      ctx.beginPath();
+      ctx.moveTo(currentX, gapDimLineY);
+      ctx.lineTo(currentX + scaledLeftGap, gapDimLineY);
+      ctx.stroke();
+      
+      // Left arrow
+      ctx.beginPath();
+      ctx.moveTo(currentX, gapDimLineY);
+      ctx.lineTo(currentX + 4, gapDimLineY - 2);
+      ctx.lineTo(currentX + 4, gapDimLineY + 2);
+      ctx.closePath();
+      ctx.fillStyle = "#888";
+      ctx.fill();
+      
+      // Right arrow
+      ctx.beginPath();
+      ctx.moveTo(currentX + scaledLeftGap, gapDimLineY);
+      ctx.lineTo(currentX + scaledLeftGap - 4, gapDimLineY - 2);
+      ctx.lineTo(currentX + scaledLeftGap - 4, gapDimLineY + 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Left gap label
+      ctx.fillStyle = "#666";
+      ctx.font = "10px JetBrains Mono";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        `L: ${leftGapSize.toFixed(1)}mm`,
+        currentX + scaledLeftGap / 2,
+        gapDimLineY + 13
+      );
+
+      currentX += scaledLeftGap;
+    }
 
     // Draw each panel in this span
     for (let i = 0; i < numPanels; i++) {
@@ -648,6 +696,47 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
         currentX += scaledGapSize;
       }
+    }
+
+    // Draw right gap if present
+    if (rightGapSize > 0) {
+      const gapStart = currentX;
+      const gapDimLineY = groundLevel + 35;
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 1;
+      
+      // Horizontal dimension line for right gap
+      ctx.beginPath();
+      ctx.moveTo(gapStart, gapDimLineY);
+      ctx.lineTo(currentX + scaledRightGap, gapDimLineY);
+      ctx.stroke();
+      
+      // Left arrow
+      ctx.beginPath();
+      ctx.moveTo(gapStart, gapDimLineY);
+      ctx.lineTo(gapStart + 4, gapDimLineY - 2);
+      ctx.lineTo(gapStart + 4, gapDimLineY + 2);
+      ctx.closePath();
+      ctx.fillStyle = "#888";
+      ctx.fill();
+      
+      // Right arrow
+      ctx.beginPath();
+      ctx.moveTo(currentX + scaledRightGap, gapDimLineY);
+      ctx.lineTo(currentX + scaledRightGap - 4, gapDimLineY - 2);
+      ctx.lineTo(currentX + scaledRightGap - 4, gapDimLineY + 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right gap label
+      ctx.fillStyle = "#666";
+      ctx.font = "10px JetBrains Mono";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        `R: ${rightGapSize.toFixed(1)}mm`,
+        gapStart + scaledRightGap / 2,
+        gapDimLineY + 13
+      );
     }
 
     // Height dimension line for this span
