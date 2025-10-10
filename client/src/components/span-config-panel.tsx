@@ -31,8 +31,8 @@ export function SpanConfigPanel({
   const [isExpanded, setIsExpanded] = useState(true);
 
   const updateSpan = (updates: Partial<SpanConfig>) => {
-    // Disable raked panels if max panel width is changed from 1200mm
-    if (updates.maxPanelWidth !== undefined && updates.maxPanelWidth !== 1200) {
+    // Disable raked panels if max panel width is changed to below 1200mm
+    if (updates.maxPanelWidth !== undefined && updates.maxPanelWidth < 1200) {
       updates.leftRakedPanel = undefined;
       updates.rightRakedPanel = undefined;
     }
@@ -350,9 +350,9 @@ export function SpanConfigPanel({
           <div className="space-y-4 pt-4 border-t border-card-border">
             <h4 className="text-sm font-semibold">Raked Panels (for slopes/stairs)</h4>
             
-            {span.maxPanelWidth !== 1200 && (
+            {span.maxPanelWidth < 1200 && (
               <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-                Raked panels require 1200mm panel width. Please set Max Panel Width to 1200mm to enable raked panels.
+                Raked panels require 1200mm or greater panel width. Please set Max Panel Width to 1200mm or above to enable raked panels.
               </p>
             )}
             
@@ -362,7 +362,7 @@ export function SpanConfigPanel({
                 <Label className="text-sm font-medium">Left Raked Panel</Label>
                 <Switch
                   checked={span.leftRakedPanel?.enabled || false}
-                  disabled={span.maxPanelWidth !== 1200}
+                  disabled={span.maxPanelWidth < 1200}
                   onCheckedChange={(enabled) =>
                     updateSpan({
                       leftRakedPanel: { enabled, height: 1500 },
@@ -403,7 +403,7 @@ export function SpanConfigPanel({
                 <Label className="text-sm font-medium">Right Raked Panel</Label>
                 <Switch
                   checked={span.rightRakedPanel?.enabled || false}
-                  disabled={span.maxPanelWidth !== 1200}
+                  disabled={span.maxPanelWidth < 1200}
                   onCheckedChange={(enabled) =>
                     updateSpan({
                       rightRakedPanel: { enabled, height: 1500 },
