@@ -5,9 +5,9 @@ import { SpanConfigPanel } from "@/components/span-config-panel";
 import { FenceVisualization } from "@/components/fence-visualization";
 import { ComponentList } from "@/components/component-list";
 import { AppHeader } from "@/components/app-header";
-import { ProductSelectorMockup } from "@/components/product-selector-mockup";
+import { ProductSelector } from "@/components/product-selector";
 import { useToast } from "@/hooks/use-toast";
-import { FenceDesign, FenceShape, SpanConfig, Component, SavedFenceDesign, SpigotMounting, SpigotColor, getSpigotDetails, getHingeDetails, getLatchDetails } from "@shared/schema";
+import { FenceDesign, FenceShape, SpanConfig, Component, SavedFenceDesign, SpigotMounting, SpigotColor, ProductType, ProductVariant, getSpigotDetails, getHingeDetails, getLatchDetails } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Dialog,
@@ -32,6 +32,8 @@ export default function FenceBuilder() {
 
   const [design, setDesign] = useState<FenceDesign>({
     name: "Untitled Design",
+    productType: "glass-pool",
+    productVariant: "glass-pool-spigots",
     shape: "inline",
     customSides: 3,
     spans: [
@@ -66,6 +68,8 @@ export default function FenceBuilder() {
     mutationFn: async (designToSave: FenceDesign) => {
       const response = await apiRequest("POST", "/api/designs", {
         name: designToSave.name,
+        productType: designToSave.productType,
+        productVariant: designToSave.productVariant,
         shape: designToSave.shape,
         customSides: designToSave.customSides,
         spans: designToSave.spans,
@@ -162,6 +166,8 @@ export default function FenceBuilder() {
     
     setDesign({
       name: savedDesign.name,
+      productType: (savedDesign.productType as any) || "glass-pool",
+      productVariant: (savedDesign.productVariant as any) || "glass-pool-spigots",
       shape: savedDesign.shape as FenceShape,
       customSides: savedDesign.customSides || 3,
       spans: normalizedSpans,
@@ -176,6 +182,8 @@ export default function FenceBuilder() {
   const handleReset = () => {
     setDesign({
       name: "Untitled Design",
+      productType: "glass-pool",
+      productVariant: "glass-pool-spigots",
       shape: "inline",
       customSides: 3,
       spans: [
@@ -285,22 +293,38 @@ export default function FenceBuilder() {
         {/* Controls Panel */}
         <div className="h-full overflow-y-auto bg-card border-l border-card-border">
           <div className="p-6 space-y-6">
-            {/* Product Type Mockup Banner */}
+            {/* Product Type Selector Banner */}
             <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
               <div className="flex items-start gap-3">
                 <Package className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium">Glass Pool Fencing - Frameless with Spigots</p>
+                  <p className="text-sm font-medium">
+                    {design.productVariant === "glass-pool-spigots" && "Glass Pool Fencing - Frameless with Spigots"}
+                    {design.productVariant === "glass-pool-channel" && "Glass Pool Fencing - Channel"}
+                    {design.productVariant === "glass-bal-spigots" && "Glass Balustrade - Frameless with Spigots"}
+                    {design.productVariant === "glass-bal-channel" && "Glass Balustrade - Channel"}
+                    {design.productVariant === "glass-bal-standoffs" && "Glass Balustrade - Standoffs"}
+                    {design.productVariant === "alu-pool-tubular" && "Aluminium Pool Fencing - Tubular Flat Top"}
+                    {design.productVariant === "alu-pool-barr" && "Aluminium Pool Fencing - BARR"}
+                    {design.productVariant === "alu-pool-blade" && "Aluminium Pool Fencing - Blade"}
+                    {design.productVariant === "alu-pool-pik" && "Aluminium Pool Fencing - PIK"}
+                    {design.productVariant === "alu-bal-barr" && "Aluminium Balustrade - Barr"}
+                    {design.productVariant === "alu-bal-blade" && "Aluminium Balustrade - Blade"}
+                    {design.productVariant === "alu-bal-visor" && "Aluminium Balustrade - Visor"}
+                    {design.productVariant === "general-zeus" && "General Fencing - Zeus"}
+                    {design.productVariant === "general-blade" && "General Fencing - Blade"}
+                    {design.productVariant === "general-barr" && "General Fencing - Barr"}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    View mockup for product variants including Glass Balustrade, Aluminium options, and General Fencing
+                    Click to switch between Glass Balustrade, Aluminium, and General Fencing options
                   </p>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setShowProductMockup(true)}
-                    data-testid="button-view-mockup"
+                    data-testid="button-change-product"
                   >
-                    View Product Selector Mockup
+                    Change Product Type
                   </Button>
                 </div>
               </div>
@@ -444,17 +468,31 @@ export default function FenceBuilder() {
         </DialogContent>
       </Dialog>
 
-      {/* Product Selector Mockup Dialog */}
+      {/* Product Selector Dialog */}
       <Dialog open={showProductMockup} onOpenChange={setShowProductMockup}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Product Selector - Mockup Preview</DialogTitle>
+            <DialogTitle>Select Product Type</DialogTitle>
             <DialogDescription>
-              This is a mockup showing how the product selector will work with multiple product categories
+              Choose the type of fencing or balustrade you want to configure
             </DialogDescription>
           </DialogHeader>
           
-          <ProductSelectorMockup />
+          <ProductSelector 
+            currentVariant={design.productVariant}
+            onSelectVariant={(type, variant) => {
+              setDesign((prev) => ({
+                ...prev,
+                productType: type,
+                productVariant: variant,
+              }));
+              setShowProductMockup(false);
+              toast({
+                title: "Product Changed",
+                description: `Switched to ${variant.replace(/-/g, ' ')}`,
+              });
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>

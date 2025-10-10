@@ -3,6 +3,30 @@ import { pgTable, text, varchar, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Product types
+export type ProductType = "glass-pool" | "glass-balustrade" | "aluminium-pool" | "aluminium-balustrade" | "general";
+
+// Product variants
+export type ProductVariant = 
+  | "glass-pool-spigots" 
+  | "glass-pool-channel"
+  | "glass-bal-spigots"
+  | "glass-bal-channel"
+  | "glass-bal-standoffs"
+  | "alu-pool-tubular"
+  | "alu-pool-barr"
+  | "alu-pool-blade"
+  | "alu-pool-pik"
+  | "alu-bal-barr"
+  | "alu-bal-blade"
+  | "alu-bal-visor"
+  | "general-zeus"
+  | "general-blade"
+  | "general-barr";
+
+// Channel mounting types (for glass channel systems)
+export type ChannelMounting = "wall" | "ground";
+
 // Fence shape types
 export type FenceShape = "inline" | "l-shape" | "u-shape" | "enclosed" | "custom";
 
@@ -51,6 +75,7 @@ export const spanConfigSchema = z.object({
   desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
+  channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems
   panelLayout: z.object({
     panels: z.array(z.number()),
     gaps: z.array(z.number()),
@@ -114,6 +139,24 @@ export type SpanConfig = z.infer<typeof spanConfigSchema>;
 export const fenceDesignSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
+  productType: z.enum(["glass-pool", "glass-balustrade", "aluminium-pool", "aluminium-balustrade", "general"]).default("glass-pool"),
+  productVariant: z.enum([
+    "glass-pool-spigots", 
+    "glass-pool-channel",
+    "glass-bal-spigots",
+    "glass-bal-channel",
+    "glass-bal-standoffs",
+    "alu-pool-tubular",
+    "alu-pool-barr",
+    "alu-pool-blade",
+    "alu-pool-pik",
+    "alu-bal-barr",
+    "alu-bal-blade",
+    "alu-bal-visor",
+    "general-zeus",
+    "general-blade",
+    "general-barr"
+  ]).default("glass-pool-spigots"),
   shape: z.enum(["inline", "l-shape", "u-shape", "enclosed", "custom"]),
   customSides: z.number().min(3).max(10).optional(),
   spans: z.array(spanConfigSchema),
@@ -126,6 +169,8 @@ export type FenceDesign = z.infer<typeof fenceDesignSchema>;
 export const fenceDesigns = pgTable("fence_designs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  productType: text("product_type").notNull().default("glass-pool"),
+  productVariant: text("product_variant").notNull().default("glass-pool-spigots"),
   shape: text("shape").notNull(),
   customSides: integer("custom_sides"),
   spans: jsonb("spans").notNull(),
