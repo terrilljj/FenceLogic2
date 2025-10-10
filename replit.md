@@ -65,7 +65,15 @@ Preferred communication style: Simple, everyday language.
 - FenceDesign: Main entity containing shape, spans, and configuration
 - SpanConfig: Individual fence section with length, panels, gaps, and gates
 - Component: Generated parts list with SKU, descriptions, and quantities
+- PanelLayout: Calculated panel widths and gaps with panel type identification
 - Support for complex gate configurations (hardware types, hinge positions)
+
+**Panel Calculation System:**
+- Mixed panel width algorithm distributes variable panels to achieve exact gap spacing
+- Supports raked panels (fixed 1200mm width for slopes/stairs)
+- Gate integration: reserves fixed space for gate and hinge panels in layout
+- Panel types: standard, raked, gate, hinge (tracked for visualization)
+- **Gate Positioning Limitation**: Gates at position=0 work perfectly; non-zero positions use approximation and may deviate from exact millimeter placement. Full precision positioning requires future two-phase solver implementation.
 
 ### Development Workflow
 
