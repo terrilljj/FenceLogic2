@@ -468,13 +468,84 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         dimLineY + 15
       );
 
+      // Panel type label on the panel itself
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.font = "bold 11px Inter";
+      ctx.textAlign = "center";
+      let panelLabel = `${currentPanelWidth}mm`;
       if (isGate) {
-        ctx.fillStyle = "#aa66ff";
-        ctx.font = "bold 11px Inter";
-        ctx.fillText(
-          "GATE",
-          currentX + scaledPanelWidth / 2,
-          groundLevel - scaledPanelHeight - 10
+        panelLabel = `${currentPanelWidth}mm Gate`;
+      } else if (isHinge) {
+        panelLabel = `${currentPanelWidth}mm Hinge`;
+      } else if (isRaked) {
+        panelLabel = `${currentPanelWidth}mm Raked`;
+      } else {
+        panelLabel = `${currentPanelWidth}mm Panel`;
+      }
+      ctx.fillText(
+        panelLabel,
+        currentX + scaledPanelWidth / 2,
+        groundLevel - scaledPanelHeight / 2
+      );
+
+      // Draw spigots at base of panel (left and right)
+      const spigotWidth = 8;
+      const spigotHeight = 6;
+      const spigotOffset = 10;
+      ctx.fillStyle = "#444444";
+      
+      // Left spigot
+      ctx.fillRect(
+        currentX + spigotOffset - spigotWidth / 2,
+        groundLevel - spigotHeight,
+        spigotWidth,
+        spigotHeight
+      );
+      
+      // Right spigot
+      ctx.fillRect(
+        currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
+        groundLevel - spigotHeight,
+        spigotWidth,
+        spigotHeight
+      );
+
+      // Draw hinges and latch for gate
+      if (isGate) {
+        const gateConfig = span.gateConfig;
+        const hingeWidth = 10;
+        const hingeHeight = 10;
+        const latchWidth = 8;
+        const latchHeight = 20;
+        
+        ctx.fillStyle = "#333333";
+        
+        // Determine hinge side based on flipped config
+        const hingeOffset = gateConfig?.flipped ? scaledPanelWidth - 15 : 15;
+        
+        // Top hinge
+        ctx.fillRect(
+          currentX + hingeOffset - hingeWidth / 2,
+          groundLevel - scaledPanelHeight * 0.8 - hingeHeight / 2,
+          hingeWidth,
+          hingeHeight
+        );
+        
+        // Bottom hinge
+        ctx.fillRect(
+          currentX + hingeOffset - hingeWidth / 2,
+          groundLevel - scaledPanelHeight * 0.2 - hingeHeight / 2,
+          hingeWidth,
+          hingeHeight
+        );
+        
+        // Latch on opposite side
+        const latchOffset = gateConfig?.flipped ? 15 : scaledPanelWidth - 15;
+        ctx.fillRect(
+          currentX + latchOffset - latchWidth / 2,
+          groundLevel - scaledPanelHeight * 0.5 - latchHeight / 2,
+          latchWidth,
+          latchHeight
         );
       }
 

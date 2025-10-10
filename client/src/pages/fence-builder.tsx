@@ -460,74 +460,117 @@ function calculateComponents(design: FenceDesign): Component[] {
 
   design.spans.forEach((span) => {
     // Use calculated panel layout with fallback
-    let numPanels: number;
-    let panelWidth: number;
-    
     if (span.panelLayout && span.panelLayout.panels.length > 0) {
-      numPanels = span.panelLayout.panels.length;
-      panelWidth = span.panelLayout.panels[0];
+      const panels = span.panelLayout.panels;
+      const panelTypes = span.panelLayout.panelTypes || [];
+      
+      // Process each panel individually
+      panels.forEach((panelWidth, index) => {
+        const panelType = panelTypes[index] || "standard";
+        
+        if (panelType === "standard") {
+          components.push({
+            qty: 1,
+            description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
+            sku: `GP-${panelWidth}-1200-12`,
+          });
+        } else if (panelType === "raked") {
+          // Determine if left or right raked
+          const isLeftRaked = index === 0 && span.leftRakedPanel?.enabled;
+          const height = isLeftRaked ? span.leftRakedPanel?.height : span.rightRakedPanel?.height;
+          
+          if (isLeftRaked) {
+            components.push({
+              qty: 1,
+              description: `Raked Glass Panel 1200mm wide (400mm horizontal at ${height}mm, slopes to 1200mm) 12mm thick`,
+              sku: `RP-L-1200-${height}-12`,
+            });
+          } else {
+            components.push({
+              qty: 1,
+              description: `Raked Glass Panel 1200mm wide (slopes from 1200mm to ${height}mm over 800mm, horizontal 400mm) 12mm thick`,
+              sku: `RP-R-1200-${height}-12`,
+            });
+          }
+        } else if (panelType === "gate") {
+          components.push({
+            qty: 1,
+            description: `Gate Panel ${panelWidth}mm x 1200mm (12mm thick)`,
+            sku: `GP-GATE-${panelWidth}-1200-12`,
+          });
+        } else if (panelType === "hinge") {
+          components.push({
+            qty: 1,
+            description: `Hinge Panel ${panelWidth}mm x 1200mm (12mm thick)`,
+            sku: `GP-HINGE-${panelWidth}-1200-12`,
+          });
+        }
+        
+        // Add 2 spigots per panel
+        components.push({
+          qty: 2,
+          description: "Spigot (stainless steel base mount)",
+          sku: "SPIGOT-SS",
+        });
+      });
+
+      // Gate hardware components (hinge set and latch)
+      if (span.gateConfig?.required) {
+        const hardware = span.gateConfig.hardware === "polaris" ? "Polaris Soft Close" : "Master Range";
+        const isGlassToGlass = span.gateConfig.hingeFrom === "glass";
+        
+        // Hinge set
+        components.push({
+          qty: 1,
+          description: `${hardware} Hinge Set (for ${span.gateConfig.gateSize}mm gate)`,
+          sku: `GH-HINGE-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+        });
+        
+        // Latch
+        components.push({
+          qty: 1,
+          description: `${hardware} Gate Latch (for ${span.gateConfig.gateSize}mm gate)`,
+          sku: `GH-LATCH-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+        });
+      }
     } else {
       // Fallback calculation when panelLayout not yet calculated
       const effectiveLength = span.length;
       const fallbackPanelWidth = span.maxPanelWidth;
       const fallbackGapSize = span.desiredGap;
-      numPanels = Math.floor((effectiveLength + fallbackGapSize) / (fallbackPanelWidth + fallbackGapSize));
-      panelWidth = fallbackPanelWidth;
-    }
-
-    if (numPanels > 0) {
-      let standardPanelCount = numPanels;
-      let rakedCount = 0;
+      const numPanels = Math.floor((effectiveLength + fallbackGapSize) / (fallbackPanelWidth + fallbackGapSize));
       
-      // Left raked panel (only if there's a panel to replace)
-      // Raked panels are always 1200mm wide with 400mm horizontal at top, then slope to 1200mm
-      if (span.leftRakedPanel?.enabled && numPanels > rakedCount) {
+      if (numPanels > 0) {
+        // Add fallback panels
         components.push({
-          qty: 1,
-          description: `Raked Glass Panel 1200mm wide (400mm horizontal at ${span.leftRakedPanel.height}mm, slopes to 1200mm) 12mm thick`,
-          sku: `RP-L-1200-${span.leftRakedPanel.height}-12`,
+          qty: numPanels,
+          description: `Glass Panel ${fallbackPanelWidth}mm x 1200mm (12mm thick) [provisional]`,
+          sku: `GP-${fallbackPanelWidth}-1200-12`,
         });
-        standardPanelCount--;
-        rakedCount++;
-      }
-      
-      // Right raked panel (only if there's a panel to replace)
-      if (span.rightRakedPanel?.enabled && numPanels > rakedCount) {
+        
+        // Add 2 spigots per panel
         components.push({
-          qty: 1,
-          description: `Raked Glass Panel 1200mm wide (slopes from 1200mm to ${span.rightRakedPanel.height}mm over 800mm, horizontal 400mm) 12mm thick`,
-          sku: `RP-R-1200-${span.rightRakedPanel.height}-12`,
+          qty: numPanels * 2,
+          description: "Spigot (stainless steel base mount)",
+          sku: "SPIGOT-SS",
         });
-        standardPanelCount--;
-        rakedCount++;
-      }
-      
-      // Standard panels (excluding raked panels)
-      if (standardPanelCount > 0) {
-        components.push({
-          qty: standardPanelCount,
-          description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-          sku: `GP-${panelWidth}-1200-12`,
-        });
-      }
-
-      // Posts (one less than total panels)
-      if (numPanels > 1) {
-        components.push({
-          qty: numPanels - 1,
-          description: "Spigot Post (50mm diameter, 1200mm height)",
-          sku: "SP-50-1200",
-        });
-      }
-
-      // Gate hardware if configured
-      if (span.gateConfig?.required) {
-        const hardware = span.gateConfig.hardware === "polaris" ? "Polaris Soft Close" : "Master Range";
-        components.push({
-          qty: 1,
-          description: `${hardware} Gate Hardware Set (${span.gateConfig.gateSize}mm gate)`,
-          sku: `GH-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
-        });
+        
+        // Gate hardware if configured
+        if (span.gateConfig?.required) {
+          const hardware = span.gateConfig.hardware === "polaris" ? "Polaris Soft Close" : "Master Range";
+          
+          components.push({
+            qty: 1,
+            description: `${hardware} Hinge Set (for ${span.gateConfig.gateSize}mm gate)`,
+            sku: `GH-HINGE-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+          });
+          
+          components.push({
+            qty: 1,
+            description: `${hardware} Gate Latch (for ${span.gateConfig.gateSize}mm gate)`,
+            sku: `GH-LATCH-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
+          });
+        }
       }
     }
   });

@@ -146,23 +146,26 @@ export function calculatePanelLayout(
       const remainder = totalVariablePanelWidth - currentTotal;
       
       // Distribute remainder to first panel(s) to achieve exact fit
-      if (remainder > 0 && remainder % PANEL_INCREMENT === 0) {
-        if (idealPanelWidth + remainder <= MAX_PANEL) {
-          variablePanels[0] += remainder;
-        } else {
-          let remainingToAdd = remainder;
-          for (let i = 0; i < numVariablePanels && remainingToAdd > 0; i++) {
-            const canAdd = Math.min(MAX_PANEL - variablePanels[i], remainingToAdd);
-            const roundedAdd = Math.floor(canAdd / PANEL_INCREMENT) * PANEL_INCREMENT;
-            variablePanels[i] += roundedAdd;
-            remainingToAdd -= roundedAdd;
-          }
-          if (remainingToAdd > 0) {
-            continue;
+      if (remainder > 0) {
+        // Round remainder to nearest panel increment
+        const roundedRemainder = Math.round(remainder / PANEL_INCREMENT) * PANEL_INCREMENT;
+        
+        if (roundedRemainder > 0) {
+          if (idealPanelWidth + roundedRemainder <= MAX_PANEL) {
+            variablePanels[0] += roundedRemainder;
+          } else {
+            let remainingToAdd = roundedRemainder;
+            for (let i = 0; i < numVariablePanels && remainingToAdd > 0; i++) {
+              const canAdd = Math.min(MAX_PANEL - variablePanels[i], remainingToAdd);
+              const roundedAdd = Math.floor(canAdd / PANEL_INCREMENT) * PANEL_INCREMENT;
+              variablePanels[i] += roundedAdd;
+              remainingToAdd -= roundedAdd;
+            }
+            if (remainingToAdd > 0) {
+              continue;
+            }
           }
         }
-      } else if (remainder !== 0) {
-        continue;
       }
       
       // Verify all variable panels are within valid range
@@ -243,14 +246,18 @@ export function calculatePanelLayout(
     const actualTotalPanelWidth = finalPanels.reduce((sum, p) => sum + p, 0);
     const actualTotalGapWidth = effectiveLength - actualTotalPanelWidth;
     
-    // Check if we achieved exact gap spacing
-    if (Math.abs(actualTotalGapWidth - totalGapWidth) < 0.01) {
+    // Check if we achieved exact or near-exact gap spacing
+    // Allow larger tolerance when gates are involved due to rounding
+    const tolerance = hasGate ? PANEL_INCREMENT : 0.01;
+    
+    if (Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance) {
       const actualGap = actualTotalGapWidth / numGaps;
       
       if (actualGap >= MIN_GAP && actualGap <= MAX_GAP) {
-        // Exact match! Prefer fewer panels, then larger panels
+        // Good match! Prefer fewer panels, then larger panels
         const panelSizeScore = -Math.max(...finalPanels);
-        const score = totalPanels * 100 + panelSizeScore;
+        const gapDiffPenalty = Math.abs(actualGap - targetGap) * 10;
+        const score = totalPanels * 100 + panelSizeScore + gapDiffPenalty;
         
         if (score < bestScore) {
           bestScore = score;
