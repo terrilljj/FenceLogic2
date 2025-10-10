@@ -442,11 +442,12 @@ function calculateComponents(design: FenceDesign): Component[] {
       let rakedCount = 0;
       
       // Left raked panel (only if there's a panel to replace)
+      // Raked panels are always 1200mm wide with 400mm horizontal at top, then slope to 1200mm
       if (span.leftRakedPanel?.enabled && numPanels > rakedCount) {
         components.push({
           qty: 1,
-          description: `Raked Glass Panel ${panelWidth}mm x 1200mm-${span.leftRakedPanel.height}mm (12mm thick)`,
-          sku: `RP-${panelWidth}-1200-${span.leftRakedPanel.height}-12`,
+          description: `Raked Glass Panel 1200mm wide (400mm horizontal at ${span.leftRakedPanel.height}mm, slopes to 1200mm) 12mm thick`,
+          sku: `RP-L-1200-${span.leftRakedPanel.height}-12`,
         });
         standardPanelCount--;
         rakedCount++;
@@ -456,8 +457,8 @@ function calculateComponents(design: FenceDesign): Component[] {
       if (span.rightRakedPanel?.enabled && numPanels > rakedCount) {
         components.push({
           qty: 1,
-          description: `Raked Glass Panel ${panelWidth}mm x 1200mm-${span.rightRakedPanel.height}mm (12mm thick)`,
-          sku: `RP-${panelWidth}-1200-${span.rightRakedPanel.height}-12`,
+          description: `Raked Glass Panel 1200mm wide (slopes from 1200mm to ${span.rightRakedPanel.height}mm over 800mm, horizontal 400mm) 12mm thick`,
+          sku: `RP-R-1200-${span.rightRakedPanel.height}-12`,
         });
         standardPanelCount--;
         rakedCount++;

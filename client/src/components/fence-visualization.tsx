@@ -328,15 +328,28 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.globalAlpha = isGate ? 0.4 : isActive ? 0.5 : 0.3;
       
       if (isLeftRaked || isRightRaked) {
-        // Draw raked panel as a trapezoid
-        const leftHeight = isLeftRaked ? leftRaked! * scale : scaledPanelHeight;
-        const rightHeight = isRightRaked ? rightRaked! * scale : scaledPanelHeight;
+        // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
+        // For left raked: high on left (400mm), slopes down on right
+        // For right raked: slopes down on left, high on right (400mm)
+        const rakedHeight = (isLeftRaked ? leftRaked! : rightRaked!) * scale;
+        const horizontalWidth = 400 * scale; // 400mm horizontal section
         
         ctx.beginPath();
-        ctx.moveTo(currentX, groundLevel);
-        ctx.lineTo(currentX, groundLevel - leftHeight);
-        ctx.lineTo(currentX + scaledPanelWidth, groundLevel - rightHeight);
-        ctx.lineTo(currentX + scaledPanelWidth, groundLevel);
+        if (isLeftRaked) {
+          // Left raked: horizontal at top for first 400mm, then slope down
+          ctx.moveTo(currentX, groundLevel);
+          ctx.lineTo(currentX, groundLevel - rakedHeight);
+          ctx.lineTo(currentX + horizontalWidth, groundLevel - rakedHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, groundLevel - scaledPanelHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, groundLevel);
+        } else {
+          // Right raked: slope up, then horizontal at top for last 400mm
+          ctx.moveTo(currentX, groundLevel);
+          ctx.lineTo(currentX, groundLevel - scaledPanelHeight);
+          ctx.lineTo(currentX + scaledPanelWidth - horizontalWidth, groundLevel - rakedHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, groundLevel - rakedHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, groundLevel);
+        }
         ctx.closePath();
         ctx.fill();
         
