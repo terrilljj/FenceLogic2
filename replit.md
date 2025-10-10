@@ -2,11 +2,32 @@
 
 ## Overview
 
-Fence Logic is a web-based configurator tool for designing custom glass pool fences. The application provides an interactive 3D visualization system combined with precise configuration controls, allowing users to design fence layouts, specify spans and gates, and generate automated component lists. The tool supports multiple fence shapes (inline, L-shape, U-shape, enclosed, and custom configurations) with real-time visual feedback and calculation of required materials.
+Fence Logic is a web-based configurator tool for designing custom fencing and balustrade systems. The application provides an interactive visualization system combined with precise configuration controls, allowing users to design fence layouts, specify spans and gates, and generate automated component lists. The tool supports multiple product types (Glass Pool Fencing, Glass Balustrade, Aluminium Pool Fencing, Aluminium Balustrade, General Fencing) with product-specific configuration options, multiple fence shapes (inline, L-shape, U-shape, enclosed, and custom configurations), and real-time calculation of required materials.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Product System
+
+**Product Types & Variants (October 2025):**
+- **Glass Pool Fencing**: Spigots (base-plate/core-drilled/side-mounted), Channel System (wall/ground mounting)
+- **Glass Balustrade**: Frameless with Spigots, Channel, Standoffs
+- **Aluminium Pool Fencing**: Tubular Flat Top, BARR, Blade, PIK
+- **Aluminium Balustrade**: Barr, Blade, Visor
+- **General Fencing**: Zeus, Blade, Barr
+
+**Channel System Specifications:**
+- Versatilt 4200mm aluminum channel (wall or ground mounted)
+- Friction clamps positioned at 300mm centers
+- End caps for channel termination
+- Replaces spigot hardware in component calculations
+
+**Product Selection:**
+- ProductSelector component allows switching between product variants
+- Each product type has specific configuration options in SpanConfigPanel
+- Component calculations adapt based on selected product (spigots vs. channel vs. posts)
+- Product state persists through save/load operations
 
 ## System Architecture
 
