@@ -275,8 +275,8 @@ export default function FenceBuilder() {
                     onUpdate={(updatedSpan) => handleSpanUpdate(span.spanId, updatedSpan)}
                     showTopGap={design.shape === "u-shape" && index === 0}
                     showBottomGap={design.shape === "u-shape" && index === 0}
-                    showLeftGap={design.shape === "l-shape" || design.shape === "u-shape"}
-                    showRightGap={design.shape === "l-shape" || design.shape === "u-shape"}
+                    showLeftGap={true}
+                    showRightGap={true}
                   />
                 </div>
               ))}
@@ -391,7 +391,7 @@ export default function FenceBuilder() {
 function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[] {
   const defaultSpan: Omit<SpanConfig, "spanId"> = {
     length: 5000,
-    maxPanelWidth: 1200,
+    maxPanelWidth: 1800,
     maxGap: 40,
     allowMixedPanels: false,
   };

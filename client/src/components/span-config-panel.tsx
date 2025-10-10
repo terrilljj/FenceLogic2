@@ -38,6 +38,56 @@ export function SpanConfigPanel({
     onUpdate({ ...span, ...updates });
   };
 
+  // Calculate if configuration exceeds span length
+  const validateSpanLength = () => {
+    const panelWidth = span.maxPanelWidth;
+    const gapSize = span.maxGap;
+    
+    // Calculate effective length (subtract end gaps)
+    let effectiveLength = span.length;
+    if (span.leftGap?.enabled) effectiveLength -= span.leftGap.size;
+    if (span.rightGap?.enabled) effectiveLength -= span.rightGap.size;
+    if (span.topGap?.enabled) effectiveLength -= span.topGap.size;
+    if (span.bottomGap?.enabled) effectiveLength -= span.bottomGap.size;
+    
+    const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
+    
+    if (numPanels <= 0) {
+      return {
+        valid: false,
+        message: "Span length is too short for the current panel and gap configuration"
+      };
+    }
+    
+    // Calculate actual space used
+    const totalPanelWidth = numPanels * panelWidth;
+    const totalGapWidth = (numPanels - 1) * gapSize; // gaps between panels
+    const totalUsed = totalPanelWidth + totalGapWidth;
+    
+    // Add end gaps
+    let totalEndGaps = 0;
+    if (span.leftGap?.enabled) totalEndGaps += span.leftGap.size;
+    if (span.rightGap?.enabled) totalEndGaps += span.rightGap.size;
+    if (span.topGap?.enabled) totalEndGaps += span.topGap.size;
+    if (span.bottomGap?.enabled) totalEndGaps += span.bottomGap.size;
+    
+    const grandTotal = totalUsed + totalEndGaps;
+    
+    if (grandTotal > span.length) {
+      return {
+        valid: false,
+        message: `Configuration exceeds span length: ${grandTotal}mm used > ${span.length}mm available`
+      };
+    }
+    
+    return {
+      valid: true,
+      message: `${numPanels} panel(s) will fit (${totalUsed}mm used of ${effectiveLength}mm effective length)`
+    };
+  };
+
+  const lengthCheck = validateSpanLength();
+
   return (
     <Card className="overflow-hidden" data-testid={`span-${span.spanId}`}>
       <button
@@ -55,6 +105,18 @@ export function SpanConfigPanel({
 
       {isExpanded && (
         <div className="p-6 pt-0 space-y-6 border-t border-card-border">
+          {/* Length Validation Message */}
+          {!lengthCheck.valid && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3" data-testid={`span-${span.spanId}-validation-error`}>
+              <p className="text-sm text-destructive font-medium">{lengthCheck.message}</p>
+            </div>
+          )}
+          {lengthCheck.valid && (
+            <div className="bg-muted/50 border border-border rounded-md p-3" data-testid={`span-${span.spanId}-validation-info`}>
+              <p className="text-xs text-muted-foreground">{lengthCheck.message}</p>
+            </div>
+          )}
+
           {/* Span Length */}
           <NumericInput
             label="Span Length"
