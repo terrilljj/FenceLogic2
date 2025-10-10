@@ -63,6 +63,8 @@ export function SpanConfigPanel({
         position: span.gateConfig.position,
         flipped: span.gateConfig.flipped,
         hingeFrom: span.gateConfig.hingeFrom,
+        hingeGap: span.gateConfig.hingeGap,
+        latchGap: span.gateConfig.latchGap,
       } : undefined
     );
 
@@ -79,6 +81,7 @@ export function SpanConfigPanel({
       span.leftRakedPanel, span.rightRakedPanel, 
       span.gateConfig?.required, span.gateConfig?.gateSize, span.gateConfig?.hingePanelSize,
       span.gateConfig?.position, span.gateConfig?.flipped, span.gateConfig?.hingeFrom,
+      span.gateConfig?.hingeGap, span.gateConfig?.latchGap,
       span.gateConfig?.savedGlassPosition,
       onUpdate, span]);
 

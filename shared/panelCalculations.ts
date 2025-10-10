@@ -28,6 +28,8 @@ export function calculatePanelLayout(
     position: number;
     flipped: boolean;
     hingeFrom?: "glass" | "wall";
+    hingeGap?: number;
+    latchGap?: number;
   }
 ): PanelLayout {
   const effectiveLength = spanLength - endGaps;
@@ -115,7 +117,28 @@ export function calculatePanelLayout(
     if (totalPanels < 1) continue;
     
     const numGaps = totalPanels - 1;
-    const totalGapWidth = numGaps * targetGap;
+    
+    // Calculate total gap width, accounting for specific gate gaps if present
+    let totalGapWidth = 0;
+    let numRegularGaps = numGaps;
+    
+    if (hasGate && gateConfig.hingeGap !== undefined && gateConfig.latchGap !== undefined) {
+      // Gate has specific gaps on each side
+      const gateGapTotal = gateConfig.hingeGap + gateConfig.latchGap;
+      
+      if (isWallMounted) {
+        // Wall-mounted gate: 2 specific gaps (hinge and latch sides)
+        totalGapWidth = gateGapTotal + (numGaps - 2) * targetGap;
+        numRegularGaps = Math.max(0, numGaps - 2);
+      } else {
+        // Glass-to-glass: 2 gate-adjacent gaps use specific values
+        totalGapWidth = gateGapTotal + (numGaps - 2) * targetGap;
+        numRegularGaps = Math.max(0, numGaps - 2);
+      }
+    } else {
+      totalGapWidth = numGaps * targetGap;
+    }
+    
     const totalVariablePanelWidth = effectiveLength - totalFixedPanelSpace - totalGapWidth;
     
     // Skip if we can't fit variable panels
@@ -261,9 +284,65 @@ export function calculatePanelLayout(
         
         if (score < bestScore) {
           bestScore = score;
+          
+          // Build gaps array with specific gate gaps if present
+          let gapsArray: number[] = [];
+          
+          if (hasGate && gateConfig.hingeGap !== undefined && gateConfig.latchGap !== undefined) {
+            // Find gate position in final panels array
+            const gateIndex = panelTypes.findIndex(t => t === "gate");
+            
+            if (gateIndex !== -1) {
+              // Build gaps with specific values at gate positions
+              for (let i = 0; i < numGaps; i++) {
+                if (isWallMounted) {
+                  // Wall-mounted: gate has one gap before and one after
+                  if (i === gateIndex - 1 && gateIndex > 0) {
+                    // Gap before gate (hinge side)
+                    gapsArray.push(gateConfig.hingeGap);
+                  } else if (i === gateIndex && gateIndex < finalPanels.length - 1) {
+                    // Gap after gate (latch side)
+                    gapsArray.push(gateConfig.latchGap);
+                  } else {
+                    gapsArray.push(actualGap);
+                  }
+                } else {
+                  // Glass-to-glass: hinge panel adjacent to gate
+                  const hingeIndex = panelTypes.findIndex(t => t === "hinge");
+                  
+                  if (!gateConfig.flipped) {
+                    // Gate first, then hinge: [... gate(latch) gap hinge(hinge) ...]
+                    if (i === gateIndex - 1 && gateIndex > 0) {
+                      gapsArray.push(gateConfig.latchGap);
+                    } else if (i === hingeIndex && hingeIndex < finalPanels.length - 1) {
+                      gapsArray.push(gateConfig.hingeGap);
+                    } else {
+                      gapsArray.push(actualGap);
+                    }
+                  } else {
+                    // Hinge first, then gate: [... hinge(hinge) gap gate(latch) ...]
+                    if (i === hingeIndex - 1 && hingeIndex > 0) {
+                      gapsArray.push(gateConfig.hingeGap);
+                    } else if (i === gateIndex && gateIndex < finalPanels.length - 1) {
+                      gapsArray.push(gateConfig.latchGap);
+                    } else {
+                      gapsArray.push(actualGap);
+                    }
+                  }
+                }
+              }
+            } else {
+              // Fallback if gate not found
+              gapsArray = Array(numGaps).fill(actualGap);
+            }
+          } else {
+            // No specific gate gaps, use uniform gaps
+            gapsArray = Array(numGaps).fill(actualGap);
+          }
+          
           bestLayout = {
             panels: finalPanels,
-            gaps: Array(numGaps).fill(actualGap),
+            gaps: gapsArray,
             totalPanelWidth: actualTotalPanelWidth,
             totalGapWidth: actualTotalGapWidth,
             averageGap: actualGap,
