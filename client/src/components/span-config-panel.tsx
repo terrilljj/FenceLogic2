@@ -450,10 +450,10 @@ export function SpanConfigPanel({
                     gateConfig: required
                       ? {
                           required: true,
-                          hardware: "master",
+                          hardware: "polaris",
                           hingeFrom: "glass",
                           latchTo: "glass",
-                          gateSize: 890,
+                          gateSize: 900,
                           hingePanelSize: 1200,
                           position: 0,
                           flipped: false,

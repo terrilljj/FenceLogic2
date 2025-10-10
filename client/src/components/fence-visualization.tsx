@@ -782,12 +782,37 @@ function calculateMaxDimension(design: FenceDesign): number {
   return Math.max(maxX, maxY) * 2;
 }
 
+// Helper function to create text sprite for panel labels
+function createTextSprite(text: string, textColor = "#ffffff", bgColor = "rgba(0, 0, 0, 0.6)") {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d')!;
+  
+  canvas.width = 512;
+  canvas.height = 128;
+  
+  context.fillStyle = bgColor;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  
+  context.font = 'Bold 48px Inter, sans-serif';
+  context.fillStyle = textColor;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, canvas.width / 2, canvas.height / 2);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.scale.set(0.5, 0.125, 1);
+  
+  return sprite;
+}
+
 function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: string) {
   const panelHeight = 1.2;
   const panelThickness = 0.012;
   const postRadius = 0.05;
 
-  // Glass material
+  // Glass material (no edges/wireframe)
   const glassMaterial = new THREE.MeshPhysicalMaterial({
     color: 0x88ccff,
     transparent: true,
@@ -819,6 +844,18 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
     transmission: 0.9,
     thickness: 0.5,
     emissive: 0xaa66ff,
+    emissiveIntensity: 0.3,
+  });
+
+  const hingeMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xdd88ff,
+    transparent: true,
+    opacity: 0.4,
+    roughness: 0.1,
+    metalness: 0.1,
+    transmission: 0.9,
+    thickness: 0.5,
+    emissive: 0xdd88ff,
     emissiveIntensity: 0.3,
   });
 
@@ -861,13 +898,13 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
       const currentPanelWidth = (span.panelLayout?.panels[i] || panelWidth * 1000) / 1000;
       const panelGeometry = new THREE.BoxGeometry(currentPanelWidth, panelHeight, panelThickness);
       
-      // Determine panel material based on type
+      // Determine panel material and type
       const panelType = span.panelLayout?.panelTypes?.[i] || "standard";
       let panelMaterial = material;
       if (panelType === "gate") {
         panelMaterial = gateMaterial;
       } else if (panelType === "hinge") {
-        panelMaterial = gateMaterial; // Use same material for hinge panel
+        panelMaterial = hingeMaterial;
       }
       
       const panel = new THREE.Mesh(panelGeometry, panelMaterial);
@@ -881,6 +918,86 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
       panel.userData.isFence = true;
 
       scene.add(panel);
+
+      // Add text label to panel
+      const panelWidthMm = Math.round((span.panelLayout?.panels[i] || panelWidth * 1000));
+      let labelText = `${panelWidthMm}mm`;
+      if (panelType === "gate") {
+        labelText = `${panelWidthMm}mm Gate`;
+      } else if (panelType === "hinge") {
+        labelText = `${panelWidthMm}mm Hinge`;
+      } else if (panelType === "raked") {
+        labelText = `${panelWidthMm}mm Raked`;
+      } else {
+        labelText = `${panelWidthMm}mm Panel`;
+      }
+      
+      const label = createTextSprite(labelText);
+      label.position.set(currentX + offsetX, panelHeight * 0.6, currentZ + offsetZ);
+      scene.add(label);
+
+      // Add spigots (at base of panel, left and right)
+      const spigotMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.3 });
+      const spigotRadius = 0.02;
+      const spigotHeight = 0.06;
+      
+      // Left spigot
+      const leftSpigot = new THREE.Mesh(
+        new THREE.CylinderGeometry(spigotRadius, spigotRadius, spigotHeight),
+        spigotMaterial
+      );
+      const leftSpigotOffsetX = Math.cos(currentAngle) * (cumulativePos + 0.05);
+      const leftSpigotOffsetZ = Math.sin(currentAngle) * (cumulativePos + 0.05);
+      leftSpigot.position.set(currentX + leftSpigotOffsetX, spigotHeight / 2, currentZ + leftSpigotOffsetZ);
+      scene.add(leftSpigot);
+      
+      // Right spigot
+      const rightSpigot = new THREE.Mesh(
+        new THREE.CylinderGeometry(spigotRadius, spigotRadius, spigotHeight),
+        spigotMaterial
+      );
+      const rightSpigotOffsetX = Math.cos(currentAngle) * (cumulativePos + currentPanelWidth - 0.05);
+      const rightSpigotOffsetZ = Math.sin(currentAngle) * (cumulativePos + currentPanelWidth - 0.05);
+      rightSpigot.position.set(currentX + rightSpigotOffsetX, spigotHeight / 2, currentZ + rightSpigotOffsetZ);
+      scene.add(rightSpigot);
+
+      // Add hinges and latch to gate
+      if (panelType === "gate") {
+        const hingeMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9, roughness: 0.2 });
+        
+        // Determine hinge side based on gate configuration
+        const gateConfig = span.gateConfig;
+        const hingeOffset = gateConfig?.flipped ? currentPanelWidth - 0.1 : 0.1;
+        
+        // Top hinge
+        const topHinge = new THREE.Mesh(
+          new THREE.BoxGeometry(0.08, 0.08, 0.04),
+          hingeMaterial
+        );
+        const topHingeOffsetX = Math.cos(currentAngle) * (cumulativePos + hingeOffset);
+        const topHingeOffsetZ = Math.sin(currentAngle) * (cumulativePos + hingeOffset);
+        topHinge.position.set(currentX + topHingeOffsetX, panelHeight * 0.8, currentZ + topHingeOffsetZ);
+        scene.add(topHinge);
+        
+        // Bottom hinge
+        const bottomHinge = new THREE.Mesh(
+          new THREE.BoxGeometry(0.08, 0.08, 0.04),
+          hingeMaterial
+        );
+        bottomHinge.position.set(currentX + topHingeOffsetX, panelHeight * 0.2, currentZ + topHingeOffsetZ);
+        scene.add(bottomHinge);
+        
+        // Latch (on opposite side from hinges)
+        const latchOffset = gateConfig?.flipped ? 0.1 : currentPanelWidth - 0.1;
+        const latch = new THREE.Mesh(
+          new THREE.BoxGeometry(0.06, 0.15, 0.04),
+          hingeMaterial
+        );
+        const latchOffsetX = Math.cos(currentAngle) * (cumulativePos + latchOffset);
+        const latchOffsetZ = Math.sin(currentAngle) * (cumulativePos + latchOffset);
+        latch.position.set(currentX + latchOffsetX, panelHeight * 0.5, currentZ + latchOffsetZ);
+        scene.add(latch);
+      }
 
       cumulativePos += currentPanelWidth;
 
