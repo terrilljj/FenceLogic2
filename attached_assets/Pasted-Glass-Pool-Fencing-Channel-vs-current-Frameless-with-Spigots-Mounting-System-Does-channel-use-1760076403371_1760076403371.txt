@@ -1,0 +1,42 @@
+Glass Pool Fencing - Channel
+(vs. current Frameless with Spigots)
+
+Mounting System: Does channel use top/bottom channel rails instead of spigots?
+Hardware: What hardware is needed? (channel profiles, end caps, drainage, etc.)
+Gates: Do gates work the same way, or do they attach differently with channel?
+Panel Sizes: Same panel size constraints as spigots (max width, gaps, etc.)?
+Glass Balustrade (3 variants)
+For Frameless with Spigots:
+5. Is this identical to pool fencing spigots, or different hardware/heights?
+
+Different height options for balustrades vs pool fencing?
+For Channel:
+7. Top channel, bottom channel, or both?
+
+Different from pool fencing channel?
+For Standoffs:
+9. What are standoffs? (wall-mounted brackets?)
+
+Spacing requirements for standoffs?
+Do standoffs replace spigots entirely?
+Aluminium Pool Fencing (Tubular Flat Top, BARR, Blade, PIK)
+Post Spacing: Do these use posts instead of panels? What's max/min spacing?
+Infill Types: Horizontal rails? Vertical pickets? Mesh? (what differs between Tubular/BARR/Blade/PIK?)
+Heights: Standard heights for each type?
+Gates: How do gates work? Hinged panels between posts?
+Components: What gets calculated? (posts, rails, infill panels, brackets, etc.)
+No glass panels - so no gap calculations between panels?
+Aluminium Balustrade (Barr, Blade, Visor)
+Same as aluminium pool but different mounting? (deck mount vs ground mount?)
+Different height requirements?
+Top rail options?
+General Fencing (Zeus, Blade, Barr)
+Materials: What materials? Colorbond steel? Aluminium?
+Post Spacing: Similar to aluminium fencing?
+Panel Types: Solid panels? Slatted? What's different between Zeus/Blade/Barr?
+Heights: Standard heights available?
+Universal Questions:
+Visualization: Do aluminium/general fencing still show elevation view? Or different visualization?
+Shapes: Do all products support the same shapes (inline, L, U, enclosed, custom)?
+Raked Panels: Do any aluminium/general fencing support raked sections for stairs?
+Component Lists: Each product generates different SKUs and components, correct?
