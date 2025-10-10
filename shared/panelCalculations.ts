@@ -180,60 +180,32 @@ export function calculatePanelLayout(
     
     // Add variable panels and insert gate if required
     if (hasGate && gateConfig) {
-      // NOTE: Current implementation places gate after an integer number of panels
-      // For precise positioning at arbitrary mm values, a two-phase solver is needed
-      // This works correctly when position=0 (gate at start of variable panels)
+      // Position is now a panel index (0-based)
+      // Position 0 = gate at start, Position 1 = after first panel, etc.
+      const panelPosition = Math.max(0, Math.floor(gateConfig.position));
+      const beforeCount = Math.min(panelPosition, variablePanels.length);
       
-      const startPos = hasLeftRaked ? RAKED_PANEL_WIDTH + targetGap : 0;
-      const isGateAtStart = gateConfig.position <= startPos + 1; // Allow 1mm tolerance
+      // Panels before gate
+      finalPanels.push(...variablePanels.slice(0, beforeCount));
+      panelTypes.push(...Array(beforeCount).fill("standard"));
       
-      if (isGateAtStart) {
-        // Gate at start of variable panels (most common case)
-        if (gateConfig.flipped) {
-          finalPanels.push(gateConfig.hingePanelSize);
-          panelTypes.push("hinge");
-          finalPanels.push(gateConfig.gateSize);
-          panelTypes.push("gate");
-        } else {
-          finalPanels.push(gateConfig.gateSize);
-          panelTypes.push("gate");
-          finalPanels.push(gateConfig.hingePanelSize);
-          panelTypes.push("hinge");
-        }
-        finalPanels.push(...variablePanels);
-        panelTypes.push(...Array(variablePanels.length).fill("standard"));
+      // Gate assembly (order depends on flipped)
+      if (gateConfig.flipped) {
+        finalPanels.push(gateConfig.hingePanelSize);
+        panelTypes.push("hinge");
+        finalPanels.push(gateConfig.gateSize);
+        panelTypes.push("gate");
       } else {
-        // Gate at non-zero position - approximate placement
-        // TODO: Implement two-phase solver for exact positioning
-        const avgPanelWidth = variablePanels.length > 0 ? (totalVariablePanelWidth / variablePanels.length) : 0;
-        const numPanelsBeforeGate = avgPanelWidth > 0
-          ? Math.max(0, Math.round((gateConfig.position - startPos) / (avgPanelWidth + targetGap)))
-          : 0;
-        
-        const beforeCount = Math.min(numPanelsBeforeGate, variablePanels.length);
-        
-        // Panels before gate
-        finalPanels.push(...variablePanels.slice(0, beforeCount));
-        panelTypes.push(...Array(beforeCount).fill("standard"));
-        
-        // Gate assembly
-        if (gateConfig.flipped) {
-          finalPanels.push(gateConfig.hingePanelSize);
-          panelTypes.push("hinge");
-          finalPanels.push(gateConfig.gateSize);
-          panelTypes.push("gate");
-        } else {
-          finalPanels.push(gateConfig.gateSize);
-          panelTypes.push("gate");
-          finalPanels.push(gateConfig.hingePanelSize);
-          panelTypes.push("hinge");
-        }
-        
-        // Panels after gate
-        const afterCount = variablePanels.length - beforeCount;
-        finalPanels.push(...variablePanels.slice(beforeCount));
-        panelTypes.push(...Array(afterCount).fill("standard"));
+        finalPanels.push(gateConfig.gateSize);
+        panelTypes.push("gate");
+        finalPanels.push(gateConfig.hingePanelSize);
+        panelTypes.push("hinge");
       }
+      
+      // Panels after gate
+      const afterCount = variablePanels.length - beforeCount;
+      finalPanels.push(...variablePanels.slice(beforeCount));
+      panelTypes.push(...Array(afterCount).fill("standard"));
     } else {
       // No gate, just add all variable panels
       finalPanels.push(...variablePanels);

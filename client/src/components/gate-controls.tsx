@@ -25,6 +25,10 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
     onUpdate({ ...config, ...updates });
   };
 
+  // Valid gate sizes for each hardware type
+  const polarisGateSizes = [800, 900];
+  const masterGateSizes = [750, 834, 890, 1000];
+
   return (
     <div className="space-y-4 bg-muted/30 rounded-md p-4" data-testid={`gate-controls-${spanId}`}>
       <div className="space-y-3">
@@ -33,9 +37,14 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
           <Select
             value={config.hardware}
             onValueChange={(hardware: "master" | "polaris") => {
-              // Set appropriate default gate size for each hardware type
-              const defaultGateSize = hardware === "polaris" ? 900 : 890;
-              updateConfig({ hardware, gateSize: defaultGateSize });
+              // Check if current gate size is valid for new hardware type
+              const validSizes = hardware === "polaris" ? polarisGateSizes : masterGateSizes;
+              const currentSizeValid = validSizes.includes(config.gateSize);
+              
+              // If current size is invalid, use default for new hardware type
+              const newGateSize = currentSizeValid ? config.gateSize : (hardware === "polaris" ? 900 : 890);
+              
+              updateConfig({ hardware, gateSize: newGateSize });
             }}
           >
             <SelectTrigger data-testid={`gate-${spanId}-hardware`}>
@@ -148,8 +157,9 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => updateConfig({ position: Math.max(0, config.position - 100) })}
+            onClick={() => updateConfig({ position: Math.max(0, config.position - 1) })}
             data-testid={`gate-${spanId}-move-left`}
+            disabled={config.position === 0}
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Move Left
@@ -158,7 +168,7 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => updateConfig({ position: config.position + 100 })}
+            onClick={() => updateConfig({ position: config.position + 1 })}
             data-testid={`gate-${spanId}-move-right`}
           >
             <ChevronRight className="w-4 h-4 mr-2" />
@@ -177,8 +187,7 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
         </div>
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Position:</span>
-          <span className="font-mono font-medium">{config.position}mm</span>
-          <span className="text-muted-foreground">from start</span>
+          <span className="font-mono font-medium">Panel {config.position + 1}</span>
         </div>
       </div>
     </div>
