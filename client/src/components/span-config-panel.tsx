@@ -53,7 +53,9 @@ export function SpanConfigPanel({
       span.length,
       endGaps,
       span.desiredGap,
-      span.maxPanelWidth
+      span.maxPanelWidth,
+      span.leftRakedPanel?.enabled || false,
+      span.rightRakedPanel?.enabled || false
     );
 
     // Update span with calculated layout if it changed
@@ -65,7 +67,8 @@ export function SpanConfigPanel({
       onUpdate({ ...span, panelLayout: layout });
     }
   }, [span.length, span.desiredGap, span.maxPanelWidth, 
-      span.leftGap, span.rightGap, span.topGap, span.bottomGap, onUpdate, span]);
+      span.leftGap, span.rightGap, span.topGap, span.bottomGap, 
+      span.leftRakedPanel, span.rightRakedPanel, onUpdate, span]);
 
   // Validate panel layout
   const validatePanelLayout = () => {
