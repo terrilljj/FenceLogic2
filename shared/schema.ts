@@ -18,6 +18,9 @@ export const PANEL_SIZE_MAX = 2000; // mm
 export const PANEL_SIZE_INCREMENT = 50; // mm
 export const MAX_GAP_SIZE = 99; // mm
 
+// Panel type enumeration
+export type PanelType = "standard" | "raked" | "gate" | "hinge";
+
 // Panel layout calculation result
 export type PanelLayout = {
   panels: number[]; // Array of panel widths in mm
@@ -25,6 +28,7 @@ export type PanelLayout = {
   totalPanelWidth: number; // Sum of all panel widths
   totalGapWidth: number; // Sum of all gaps
   averageGap: number; // Average gap size
+  panelTypes?: PanelType[]; // Type of each panel (same length as panels array)
 };
 
 // Span configuration
@@ -39,6 +43,7 @@ export const spanConfigSchema = z.object({
     totalPanelWidth: z.number(),
     totalGapWidth: z.number(),
     averageGap: z.number(),
+    panelTypes: z.array(z.enum(["standard", "raked", "gate", "hinge"])).optional(),
   }).optional(), // Calculated panel layout
   topGap: z.object({
     enabled: z.boolean(),

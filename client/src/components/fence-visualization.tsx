@@ -347,19 +347,24 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
     // Draw each panel in this span
     for (let i = 0; i < numPanels; i++) {
-      const isGate = span.gateConfig?.required && i === 0;
+      const panelType = span.panelLayout?.panelTypes?.[i] || "standard";
+      const isGate = panelType === "gate";
+      const isHinge = panelType === "hinge";
+      const isGateOrHinge = isGate || isHinge;
+      
       // Get individual panel width (may vary for mixed panels)
       const currentPanelWidth = span.panelLayout?.panels[i] || panelWidth;
       const scaledPanelWidth = currentPanelWidth * scale;
       let scaledPanelHeight = panelHeight * scale;
       
       // Check if this is a raked panel
+      const isRaked = panelType === "raked";
       const isLeftRaked = i === 0 && leftRaked !== null;
       const isRightRaked = i === numPanels - 1 && rightRaked !== null;
       
       // Draw panel (raked or standard)
-      ctx.fillStyle = isGate ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
-      ctx.globalAlpha = isGate ? 0.4 : isActive ? 0.5 : 0.3;
+      ctx.fillStyle = isGateOrHinge ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
+      ctx.globalAlpha = isGateOrHinge ? 0.4 : isActive ? 0.5 : 0.3;
       
       if (isLeftRaked || isRightRaked) {
         // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
@@ -396,14 +401,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
 
         // Panel border
-        ctx.strokeStyle = isGate ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
+        ctx.strokeStyle = isGateOrHinge ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
         ctx.globalAlpha = 1;
         ctx.lineWidth = 2;
         ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
       }
 
       // Glass panel lines (to show it's glass)
-      ctx.strokeStyle = isGate ? "#9955dd" : isActive ? "#5599ee" : "#99ccee";
+      ctx.strokeStyle = isGateOrHinge ? "#9955dd" : isActive ? "#5599ee" : "#99ccee";
       ctx.globalAlpha = 0.3;
       ctx.lineWidth = 1;
       for (let j = 1; j < 4; j++) {
@@ -637,7 +642,11 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
     // Draw panels (track cumulative position for mixed widths)
     let cumulativePos = 0;
     for (let i = 0; i < numPanels; i++) {
-      const isGate = span.gateConfig?.required && i === 0;
+      const panelType = span.panelLayout?.panelTypes?.[i] || "standard";
+      const isGate = panelType === "gate";
+      const isHinge = panelType === "hinge";
+      const isGateOrHinge = isGate || isHinge;
+      
       const currentPanelWidth = span.panelLayout?.panels[i] || panelWidth;
       
       const panelCenterOffset = cumulativePos + currentPanelWidth / 2;
@@ -649,11 +658,11 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
       ctx.rotate(currentAngle);
 
       // Panel
-      ctx.fillStyle = isGate ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
-      ctx.globalAlpha = isGate ? 0.6 : isActive ? 0.8 : 0.5;
+      ctx.fillStyle = isGateOrHinge ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
+      ctx.globalAlpha = isGateOrHinge ? 0.6 : isActive ? 0.8 : 0.5;
       ctx.fillRect(-currentPanelWidth * scale / 2, -6, currentPanelWidth * scale, 12);
       
-      ctx.strokeStyle = isGate ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
+      ctx.strokeStyle = isGateOrHinge ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
       ctx.globalAlpha = 1;
       ctx.lineWidth = 2;
       ctx.strokeRect(-currentPanelWidth * scale / 2, -6, currentPanelWidth * scale, 12);
@@ -851,8 +860,17 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
     for (let i = 0; i < numPanels; i++) {
       const currentPanelWidth = (span.panelLayout?.panels[i] || panelWidth * 1000) / 1000;
       const panelGeometry = new THREE.BoxGeometry(currentPanelWidth, panelHeight, panelThickness);
-      const isGate = span.gateConfig?.required && i === 0;
-      const panel = new THREE.Mesh(panelGeometry, isGate ? gateMaterial : material);
+      
+      // Determine panel material based on type
+      const panelType = span.panelLayout?.panelTypes?.[i] || "standard";
+      let panelMaterial = material;
+      if (panelType === "gate") {
+        panelMaterial = gateMaterial;
+      } else if (panelType === "hinge") {
+        panelMaterial = gateMaterial; // Use same material for hinge panel
+      }
+      
+      const panel = new THREE.Mesh(panelGeometry, panelMaterial);
 
       const panelCenterOffset = cumulativePos + currentPanelWidth / 2;
       const offsetX = Math.cos(currentAngle) * panelCenterOffset;

@@ -1,4 +1,4 @@
-import { PanelLayout } from "./schema";
+import { PanelLayout, PanelType } from "./schema";
 
 /**
  * Calculate panel layout based on desired gap size
@@ -11,6 +11,7 @@ import { PanelLayout } from "./schema";
  * @param maxPanelWidth Maximum panel width constraint (200-2000mm)
  * @param hasLeftRaked Whether the left panel is a raked panel (fixed 1200mm)
  * @param hasRightRaked Whether the right panel is a raked panel (fixed 1200mm)
+ * @param gateConfig Gate configuration if gate is required
  * @returns Panel layout where panels + gaps exactly equals effective length
  */
 export function calculatePanelLayout(
@@ -19,7 +20,13 @@ export function calculatePanelLayout(
   desiredGap: number = 50,
   maxPanelWidth: number = 2000,
   hasLeftRaked: boolean = false,
-  hasRightRaked: boolean = false
+  hasRightRaked: boolean = false,
+  gateConfig?: {
+    required: boolean;
+    gateSize: number;
+    hingePanelSize: number;
+    position: number;
+  }
 ): PanelLayout {
   const effectiveLength = spanLength - endGaps;
   const MIN_PANEL = 200;
@@ -42,12 +49,17 @@ export function calculatePanelLayout(
     };
   }
 
-  // Calculate space reserved for raked panels
+  // Calculate space reserved for fixed panels (raked + gate)
   const numRakedPanels = (hasLeftRaked ? 1 : 0) + (hasRightRaked ? 1 : 0);
   const rakedPanelSpace = numRakedPanels * RAKED_PANEL_WIDTH;
+  
+  // If gate is required, reserve space for gate and hinge panels
+  const hasGate = gateConfig?.required === true;
+  const gateSpace = hasGate ? (gateConfig.gateSize + gateConfig.hingePanelSize) : 0;
+  const totalFixedPanelSpace = rakedPanelSpace + gateSpace;
 
-  // Single panel case (no raked panels)
-  if (numRakedPanels === 0 && effectiveLength >= MIN_PANEL && effectiveLength <= MAX_PANEL) {
+  // Single panel case (no raked panels, no gate)
+  if (numRakedPanels === 0 && !hasGate && effectiveLength >= MIN_PANEL && effectiveLength <= MAX_PANEL) {
     const roundedPanel = Math.round(effectiveLength / PANEL_INCREMENT) * PANEL_INCREMENT;
     if (roundedPanel === effectiveLength) {
       return {
@@ -86,20 +98,21 @@ export function calculatePanelLayout(
   let bestScore = Infinity;
   
   // Determine the range of variable panels to try
-  const minVariablePanels = numRakedPanels === 0 ? 2 : 0;
-  const maxSpaceForVariables = effectiveLength - rakedPanelSpace;
+  const minVariablePanels = (numRakedPanels === 0 && !hasGate) ? 2 : 0;
+  const maxSpaceForVariables = effectiveLength - totalFixedPanelSpace;
   const maxPossibleVariablePanels = Math.floor(maxSpaceForVariables / MIN_PANEL);
   
   // Try different numbers of variable panels
   for (let numVariablePanels = minVariablePanels; numVariablePanels <= maxPossibleVariablePanels; numVariablePanels++) {
-    const totalPanels = numVariablePanels + numRakedPanels;
+    const numFixedPanels = numRakedPanels + (hasGate ? 2 : 0); // Raked + gate + hinge
+    const totalPanels = numVariablePanels + numFixedPanels;
     
     // Need at least 1 total panel
     if (totalPanels < 1) continue;
     
     const numGaps = totalPanels - 1;
     const totalGapWidth = numGaps * targetGap;
-    const totalVariablePanelWidth = effectiveLength - rakedPanelSpace - totalGapWidth;
+    const totalVariablePanelWidth = effectiveLength - totalFixedPanelSpace - totalGapWidth;
     
     // Skip if we can't fit variable panels
     if (numVariablePanels > 0 && (totalVariablePanelWidth < numVariablePanels * MIN_PANEL || 
@@ -154,14 +167,82 @@ export function calculatePanelLayout(
       }
     }
     
-    // Assemble final panel array with raked panels in correct positions
+    // Assemble final panel array with raked panels and gate in correct positions
     let finalPanels: number[] = [];
+    let panelTypes: PanelType[] = [];
+    
+    // Add left raked panel if enabled
     if (hasLeftRaked) {
       finalPanels.push(RAKED_PANEL_WIDTH);
+      panelTypes.push("raked");
     }
-    finalPanels.push(...variablePanels);
+    
+    // Add variable panels and insert gate if required
+    if (hasGate && gateConfig) {
+      // NOTE: Current implementation places gate after an integer number of panels
+      // For precise positioning at arbitrary mm values, a two-phase solver is needed
+      // This works correctly when position=0 (gate at start of variable panels)
+      
+      const startPos = hasLeftRaked ? RAKED_PANEL_WIDTH + targetGap : 0;
+      const isGateAtStart = gateConfig.position <= startPos + 1; // Allow 1mm tolerance
+      
+      if (isGateAtStart) {
+        // Gate at start of variable panels (most common case)
+        if (gateConfig.flipped) {
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+        } else {
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
+        }
+        finalPanels.push(...variablePanels);
+        panelTypes.push(...Array(variablePanels.length).fill("standard"));
+      } else {
+        // Gate at non-zero position - approximate placement
+        // TODO: Implement two-phase solver for exact positioning
+        const avgPanelWidth = variablePanels.length > 0 ? (totalVariablePanelWidth / variablePanels.length) : 0;
+        const numPanelsBeforeGate = avgPanelWidth > 0
+          ? Math.max(0, Math.round((gateConfig.position - startPos) / (avgPanelWidth + targetGap)))
+          : 0;
+        
+        const beforeCount = Math.min(numPanelsBeforeGate, variablePanels.length);
+        
+        // Panels before gate
+        finalPanels.push(...variablePanels.slice(0, beforeCount));
+        panelTypes.push(...Array(beforeCount).fill("standard"));
+        
+        // Gate assembly
+        if (gateConfig.flipped) {
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+        } else {
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
+        }
+        
+        // Panels after gate
+        const afterCount = variablePanels.length - beforeCount;
+        finalPanels.push(...variablePanels.slice(beforeCount));
+        panelTypes.push(...Array(afterCount).fill("standard"));
+      }
+    } else {
+      // No gate, just add all variable panels
+      finalPanels.push(...variablePanels);
+      panelTypes.push(...Array(variablePanels.length).fill("standard"));
+    }
+    
+    // Add right raked panel if enabled
     if (hasRightRaked) {
       finalPanels.push(RAKED_PANEL_WIDTH);
+      panelTypes.push("raked");
     }
     
     const actualTotalPanelWidth = finalPanels.reduce((sum, p) => sum + p, 0);
@@ -184,6 +265,7 @@ export function calculatePanelLayout(
             totalPanelWidth: actualTotalPanelWidth,
             totalGapWidth: actualTotalGapWidth,
             averageGap: actualGap,
+            panelTypes: panelTypes,
           };
         }
       }

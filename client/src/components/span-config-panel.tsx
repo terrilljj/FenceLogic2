@@ -55,7 +55,13 @@ export function SpanConfigPanel({
       span.desiredGap,
       span.maxPanelWidth,
       span.leftRakedPanel?.enabled || false,
-      span.rightRakedPanel?.enabled || false
+      span.rightRakedPanel?.enabled || false,
+      span.gateConfig?.required ? {
+        required: span.gateConfig.required,
+        gateSize: span.gateConfig.gateSize,
+        hingePanelSize: span.gateConfig.hingePanelSize,
+        position: span.gateConfig.position,
+      } : undefined
     );
 
     // Update span with calculated layout if it changed
