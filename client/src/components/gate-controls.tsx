@@ -32,7 +32,11 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
           <Label className="text-sm font-medium">Gate Hardware</Label>
           <Select
             value={config.hardware}
-            onValueChange={(hardware: "master" | "polaris") => updateConfig({ hardware })}
+            onValueChange={(hardware: "master" | "polaris") => {
+              // Set appropriate default gate size for each hardware type
+              const defaultGateSize = hardware === "polaris" ? 900 : 890;
+              updateConfig({ hardware, gateSize: defaultGateSize });
+            }}
           >
             <SelectTrigger data-testid={`gate-${spanId}-hardware`}>
               <SelectValue />
@@ -89,10 +93,19 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="750">750mm</SelectItem>
-                <SelectItem value="834">834mm</SelectItem>
-                <SelectItem value="890">890mm</SelectItem>
-                <SelectItem value="1000">1000mm</SelectItem>
+                {config.hardware === "polaris" ? (
+                  <>
+                    <SelectItem value="800">800mm</SelectItem>
+                    <SelectItem value="900">900mm</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="750">750mm</SelectItem>
+                    <SelectItem value="834">834mm</SelectItem>
+                    <SelectItem value="890">890mm</SelectItem>
+                    <SelectItem value="1000">1000mm</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
