@@ -589,7 +589,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.font = "10px JetBrains Mono";
         ctx.textAlign = "center";
         ctx.fillText(
-          `${gapSize}mm`,
+          `${gapSize.toFixed(1)}mm`,
           gapStart + scaledGapSize / 2,
           gapDimLineY + 13
         );
@@ -776,7 +776,7 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
         ctx.font = "9px JetBrains Mono";
         ctx.textAlign = "center";
         ctx.fillText(
-          `${gapSize}mm`,
+          `${gapSize.toFixed(1)}mm`,
           0,
           20
         );
