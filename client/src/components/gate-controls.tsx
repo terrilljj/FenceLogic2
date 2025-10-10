@@ -2,6 +2,7 @@ import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, A
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getGateGaps } from "@shared/schema";
 
 interface GateConfig {
   required: boolean;
@@ -13,6 +14,8 @@ interface GateConfig {
   position: number;
   flipped: boolean;
   savedGlassPosition?: number;
+  hingeGap: number;
+  latchGap: number;
 }
 
 interface GateControlsProps {
@@ -23,7 +26,12 @@ interface GateControlsProps {
 
 export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
   const updateConfig = (updates: Partial<GateConfig>) => {
-    onUpdate({ ...config, ...updates });
+    // Automatically update gaps when hardware or hingeFrom changes
+    const newHardware = updates.hardware ?? config.hardware;
+    const newHingeFrom = updates.hingeFrom ?? config.hingeFrom;
+    const gaps = getGateGaps(newHardware, newHingeFrom);
+    
+    onUpdate({ ...config, ...updates, ...gaps });
   };
 
   // Valid gate sizes for each hardware type

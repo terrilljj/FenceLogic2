@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { SpanConfig } from "@shared/schema";
+import { SpanConfig, getGateGaps } from "@shared/schema";
 import { calculatePanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
@@ -445,22 +445,26 @@ export function SpanConfigPanel({
               <Label className="text-sm font-semibold">Gate Required</Label>
               <Switch
                 checked={span.gateConfig?.required || false}
-                onCheckedChange={(required) =>
-                  updateSpan({
-                    gateConfig: required
-                      ? {
-                          required: true,
-                          hardware: "polaris",
-                          hingeFrom: "glass",
-                          latchTo: "glass",
-                          gateSize: 900,
-                          hingePanelSize: 1200,
-                          position: 0,
-                          flipped: false,
-                        }
-                      : undefined,
-                  })
-                }
+                onCheckedChange={(required) => {
+                  if (required) {
+                    const gaps = getGateGaps("polaris", "glass");
+                    updateSpan({
+                      gateConfig: {
+                        required: true,
+                        hardware: "polaris",
+                        hingeFrom: "glass",
+                        latchTo: "glass",
+                        gateSize: 900,
+                        hingePanelSize: 1200,
+                        position: 0,
+                        flipped: false,
+                        ...gaps,
+                      },
+                    });
+                  } else {
+                    updateSpan({ gateConfig: undefined });
+                  }
+                }}
                 data-testid={`span-${span.spanId}-gate-toggle`}
               />
             </div>

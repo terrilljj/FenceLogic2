@@ -75,6 +75,8 @@ export const spanConfigSchema = z.object({
     position: z.number(),
     flipped: z.boolean(),
     savedGlassPosition: z.number().optional(), // Preserves panel index when switching to wall mode
+    hingeGap: z.number(), // Gap on hinge side (varies by hardware and mounting)
+    latchGap: z.number(), // Gap on latch side (varies by hardware and mounting)
   }).optional(),
   leftRakedPanel: z.object({
     enabled: z.boolean(),
@@ -130,3 +132,20 @@ export const componentSchema = z.object({
 });
 
 export type Component = z.infer<typeof componentSchema>;
+
+// Helper function to get gate gaps based on hardware and mounting type
+export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall"): { hingeGap: number; latchGap: number } {
+  if (hardware === "master") {
+    if (hingeFrom === "wall") {
+      return { hingeGap: 22, latchGap: 9 };
+    } else {
+      return { hingeGap: 9, latchGap: 9 };
+    }
+  } else { // polaris
+    if (hingeFrom === "wall") {
+      return { hingeGap: 8, latchGap: 9 };
+    } else {
+      return { hingeGap: 20, latchGap: 9 };
+    }
+  }
+}
