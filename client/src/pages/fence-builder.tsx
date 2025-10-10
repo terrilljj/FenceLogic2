@@ -586,7 +586,47 @@ function calculateComponents(design: FenceDesign): Component[] {
     }
   });
 
-  return consolidated;
+  // Sort components: glass panels (largest to smallest), then spigots, posts, hinges, latches, other hardware
+  const sorted = consolidated.sort((a, b) => {
+    // Helper function to extract panel width from description
+    const extractPanelWidth = (desc: string): number => {
+      const match = desc.match(/(\d+)mm/);
+      return match ? parseInt(match[1]) : 0;
+    };
+
+    // Helper function to determine component category
+    const getCategory = (desc: string): number => {
+      if (desc.includes('Glass Panel') || desc.includes('Raked Glass Panel') || 
+          desc.includes('Gate Panel') || desc.includes('Hinge Panel')) {
+        return 1; // Glass panels
+      }
+      if (desc.includes('Spigot')) return 2;
+      if (desc.includes('Post')) return 3;
+      if (desc.includes('Hinge Set')) return 4;
+      if (desc.includes('Latch')) return 5;
+      return 6; // Other hardware/accessories
+    };
+
+    const categoryA = getCategory(a.description);
+    const categoryB = getCategory(b.description);
+
+    // Sort by category first
+    if (categoryA !== categoryB) {
+      return categoryA - categoryB;
+    }
+
+    // Within glass panels category, sort by width (largest to smallest)
+    if (categoryA === 1) {
+      const widthA = extractPanelWidth(a.description);
+      const widthB = extractPanelWidth(b.description);
+      return widthB - widthA; // Descending order (largest first)
+    }
+
+    // For other categories, maintain order
+    return 0;
+  });
+
+  return sorted;
 }
 
 function generateComponentCSV(components: Component[]): string {
