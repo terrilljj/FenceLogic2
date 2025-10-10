@@ -450,11 +450,9 @@ function calculateComponents(design: FenceDesign): Component[] {
   const components: Component[] = [];
 
   design.spans.forEach((span) => {
-    const effectiveLength = span.length;
-    const panelWidth = span.maxPanelWidth;
-    const gapSize = span.maxGap;
-    // Correct calculation: N panels need N-1 gaps
-    const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
+    // Use calculated panel layout
+    const panelWidth = span.panelLayout?.panels[0] || span.maxPanelWidth;
+    const numPanels = span.panelLayout?.panels.length || 0;
 
     if (numPanels > 0) {
       let standardPanelCount = numPanels;

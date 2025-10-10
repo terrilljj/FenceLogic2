@@ -306,10 +306,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   design.spans.forEach((span, spanIndex) => {
     const isActive = span.spanId === activeSpanId;
     const effectiveLength = span.length;
-    const panelWidth = span.maxPanelWidth;
-    const gapSize = span.maxGap;
-    // Correct calculation: N panels need N-1 gaps, so we add one gap to the length before dividing
-    const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
+    // Use calculated panel layout
+    const numPanels = span.panelLayout?.panels.length || 0;
+    const panelWidth = span.panelLayout?.panels[0] || span.maxPanelWidth;
+    const gapSize = span.panelLayout?.averageGap || 0;
     const leftRaked = span.leftRakedPanel?.enabled ? span.leftRakedPanel.height : null;
     const rightRaked = span.rightRakedPanel?.enabled ? span.rightRakedPanel.height : null;
 
@@ -600,10 +600,10 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
   design.spans.forEach((span) => {
     const isActive = span.spanId === activeSpanId;
     const effectiveLength = span.length;
-    const panelWidth = span.maxPanelWidth;
-    const gapSize = span.maxGap;
-    // Correct calculation: N panels need N-1 gaps
-    const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
+    // Use calculated panel layout
+    const panelWidth = span.panelLayout?.panels[0] || span.maxPanelWidth;
+    const gapSize = span.panelLayout?.averageGap || 0;
+    const numPanels = span.panelLayout?.panels.length || 0;
 
     // Draw panels
     for (let i = 0; i < numPanels; i++) {
@@ -791,12 +791,11 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
     const isActive = span.spanId === activeSpanId;
     const material = isActive ? activeGlassMaterial : glassMaterial;
 
-    // Calculate number of panels
+    // Use calculated panel layout
     const effectiveLength = span.length / 1000; // Convert to meters
-    const panelWidth = span.maxPanelWidth / 1000;
-    const gapSize = span.maxGap / 1000;
-    // Correct calculation: N panels need N-1 gaps
-    const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
+    const panelWidth = (span.panelLayout?.panels[0] || span.maxPanelWidth) / 1000;
+    const gapSize = (span.panelLayout?.averageGap || 0) / 1000;
+    const numPanels = span.panelLayout?.panels.length || 0;
 
     // Render panels
     for (let i = 0; i < numPanels; i++) {
