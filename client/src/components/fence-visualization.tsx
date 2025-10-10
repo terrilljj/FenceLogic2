@@ -276,8 +276,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   canvas.height = rect.height * window.devicePixelRatio;
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-  // Clear canvas
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+  // Clear canvas with clean light background
+  ctx.fillStyle = "#f8f9fa";
   ctx.fillRect(0, 0, rect.width, rect.height);
 
   // Calculate scaling - each span gets its own horizontal section
@@ -331,20 +331,20 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     const groundLevel = startY + (spanIndex * spanVerticalSpacing);
     let currentX = startX;
 
-    // Draw span label
-    ctx.fillStyle = isActive ? "#4488ff" : "#666";
-    ctx.font = "bold 14px Inter";
+    // Draw span label - cleaner typography
+    ctx.fillStyle = isActive ? "#3b82f6" : "#374151";
+    ctx.font = "600 15px Inter";
     ctx.textAlign = "left";
     ctx.fillText(`Span ${span.spanId}`, 10, groundLevel - 100);
     
-    // Total span length (under the span label)
-    ctx.fillStyle = "#888";
-    ctx.font = "11px JetBrains Mono";
+    // Total span length (under the span label) - cleaner
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "500 12px Inter";
     ctx.textAlign = "left";
     ctx.fillText(
       `Total: ${effectiveLength}mm`,
       10,
-      groundLevel - 82
+      groundLevel - 80
     );
 
     // Calculate left and right gaps
@@ -353,9 +353,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     const scaledLeftGap = leftGapSize * scale;
     const scaledRightGap = rightGapSize * scale;
 
-    // Draw ground line for this span
-    ctx.strokeStyle = "#444";
-    ctx.lineWidth = 2;
+    // Draw ground line for this span - cleaner
+    ctx.strokeStyle = "#c0c0c0";
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(startX - 20, groundLevel);
     ctx.lineTo(startX + (span.length * scale) + 20, groundLevel);
@@ -390,14 +390,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.closePath();
       ctx.fill();
 
-      // Left gap label
-      ctx.fillStyle = "#666";
-      ctx.font = "10px JetBrains Mono";
+      // Left gap label - cleaner
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "11px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
-        `L: ${leftGapSize.toFixed(1)}mm`,
+        `${leftGapSize.toFixed(1)}`,
         currentX + scaledLeftGap / 2,
-        gapDimLineY + 13
+        gapDimLineY + 14
       );
 
       currentX += scaledLeftGap;
@@ -420,9 +420,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       const isLeftRaked = i === 0 && leftRaked !== null;
       const isRightRaked = i === numPanels - 1 && rightRaked !== null;
       
-      // Draw panel (raked or standard)
-      ctx.fillStyle = isGateOrHinge ? "#aa66ff" : isActive ? "#4488ff" : "#88ccff";
-      ctx.globalAlpha = isGateOrHinge ? 0.4 : isActive ? 0.5 : 0.3;
+      // Draw panel (raked or standard) - cleaner colors
+      ctx.fillStyle = isGateOrHinge ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
+      ctx.globalAlpha = 1;
       
       if (isLeftRaked || isRightRaked) {
         // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
@@ -450,33 +450,18 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.closePath();
         ctx.fill();
         
-        ctx.strokeStyle = isActive ? "#2266dd" : "#6699cc";
-        ctx.globalAlpha = 1;
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = isGateOrHinge ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       } else {
         // Standard rectangular panel
         ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
 
-        // Panel border
-        ctx.strokeStyle = isGateOrHinge ? "#8844cc" : isActive ? "#2266dd" : "#6699cc";
-        ctx.globalAlpha = 1;
-        ctx.lineWidth = 2;
+        // Panel border - cleaner, more subtle
+        ctx.strokeStyle = isGateOrHinge ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
+        ctx.lineWidth = 1.5;
         ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
       }
-
-      // Glass panel lines (to show it's glass)
-      ctx.strokeStyle = isGateOrHinge ? "#9955dd" : isActive ? "#5599ee" : "#99ccee";
-      ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 1;
-      for (let j = 1; j < 4; j++) {
-        const y = groundLevel - (scaledPanelHeight * j / 4);
-        ctx.beginPath();
-        ctx.moveTo(currentX, y);
-        ctx.lineTo(currentX + scaledPanelWidth, y);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
 
       // Panel width dimension line with arrows
       const dimLineY = groundLevel + 35;
@@ -516,51 +501,56 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.lineTo(currentX + scaledPanelWidth, dimLineY + 5);
       ctx.stroke();
 
-      // Panel width label
-      ctx.fillStyle = "#444";
-      ctx.font = "bold 11px JetBrains Mono";
+      // Panel width dimension label - cleaner
+      ctx.fillStyle = "#374151";
+      ctx.font = "500 11px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
-        `${currentPanelWidth}mm`,
+        `${currentPanelWidth}`,
         currentX + scaledPanelWidth / 2,
-        dimLineY + 15
+        dimLineY + 16
       );
 
-      // Panel type label on the panel itself
-      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-      ctx.font = "bold 11px Inter";
+      // Panel width label on the panel itself - number and type
+      ctx.fillStyle = "#000000";
+      ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
-      let panelLabel = `${currentPanelWidth}mm`;
-      if (isGate) {
-        panelLabel = `${currentPanelWidth}mm Gate`;
-      } else if (isHinge) {
-        panelLabel = `${currentPanelWidth}mm Hinge`;
-      } else if (isRaked) {
-        panelLabel = `${currentPanelWidth}mm Raked`;
-      } else {
-        panelLabel = `${currentPanelWidth}mm Panel`;
-      }
+      
+      // Draw the width number
       ctx.fillText(
-        panelLabel,
+        `${currentPanelWidth}${isRaked ? 'H' : ''}`,
         currentX + scaledPanelWidth / 2,
-        groundLevel - scaledPanelHeight / 2
+        groundLevel - scaledPanelHeight / 2 - 4
+      );
+      
+      // Draw the panel type below
+      let panelType = "Panel";
+      if (isGate) panelType = "Gate";
+      else if (isHinge) panelType = "Hinge";
+      else if (isRaked) panelType = "Rake";
+      
+      ctx.font = "500 11px Inter";
+      ctx.fillText(
+        panelType,
+        currentX + scaledPanelWidth / 2,
+        groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw spigots at base of panel (left and right) - larger and more visible
-      const spigotWidth = 14;
-      const spigotHeight = 10;
+      // Draw spigots at base of panel (left and right) - cleaner styling
+      const spigotWidth = 12;
+      const spigotHeight = 8;
       const spigotOffset = 15;
       
       // Left spigot
-      ctx.fillStyle = "#1a1a1a";
+      ctx.fillStyle = "#9ca3af";
       ctx.fillRect(
         currentX + spigotOffset - spigotWidth / 2,
         groundLevel - spigotHeight,
         spigotWidth,
         spigotHeight
       );
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#6b7280";
+      ctx.lineWidth = 1;
       ctx.strokeRect(
         currentX + spigotOffset - spigotWidth / 2,
         groundLevel - spigotHeight,
@@ -569,15 +559,15 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
       
       // Right spigot
-      ctx.fillStyle = "#1a1a1a";
+      ctx.fillStyle = "#9ca3af";
       ctx.fillRect(
         currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
         groundLevel - spigotHeight,
         spigotWidth,
         spigotHeight
       );
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#6b7280";
+      ctx.lineWidth = 1;
       ctx.strokeRect(
         currentX + scaledPanelWidth - spigotOffset - spigotWidth / 2,
         groundLevel - spigotHeight,
@@ -585,27 +575,27 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         spigotHeight
       );
 
-      // Draw hinges and latch for gate - larger and more visible
+      // Draw hinges and latch for gate - cleaner styling
       if (isGate) {
         const gateConfig = span.gateConfig;
-        const hingeWidth = 16;
-        const hingeHeight = 16;
-        const latchWidth = 12;
-        const latchHeight = 28;
+        const hingeWidth = 14;
+        const hingeHeight = 14;
+        const latchWidth = 10;
+        const latchHeight = 24;
         
         // Determine hinge side based on flipped config
         const hingeOffset = gateConfig?.flipped ? scaledPanelWidth - 20 : 20;
         
-        // Top hinge - with border for visibility
-        ctx.fillStyle = "#2a2a2a";
+        // Top hinge
+        ctx.fillStyle = "#4b5563";
         ctx.fillRect(
           currentX + hingeOffset - hingeWidth / 2,
           groundLevel - scaledPanelHeight * 0.8 - hingeHeight / 2,
           hingeWidth,
           hingeHeight
         );
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#374151";
+        ctx.lineWidth = 1;
         ctx.strokeRect(
           currentX + hingeOffset - hingeWidth / 2,
           groundLevel - scaledPanelHeight * 0.8 - hingeHeight / 2,
@@ -613,16 +603,16 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           hingeHeight
         );
         
-        // Bottom hinge - with border for visibility
-        ctx.fillStyle = "#2a2a2a";
+        // Bottom hinge
+        ctx.fillStyle = "#4b5563";
         ctx.fillRect(
           currentX + hingeOffset - hingeWidth / 2,
           groundLevel - scaledPanelHeight * 0.2 - hingeHeight / 2,
           hingeWidth,
           hingeHeight
         );
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#374151";
+        ctx.lineWidth = 1;
         ctx.strokeRect(
           currentX + hingeOffset - hingeWidth / 2,
           groundLevel - scaledPanelHeight * 0.2 - hingeHeight / 2,
@@ -630,17 +620,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           hingeHeight
         );
         
-        // Latch on opposite side - with border for visibility
+        // Latch on opposite side
         const latchOffset = gateConfig?.flipped ? 20 : scaledPanelWidth - 20;
-        ctx.fillStyle = "#2a2a2a";
+        ctx.fillStyle = "#4b5563";
         ctx.fillRect(
           currentX + latchOffset - latchWidth / 2,
           groundLevel - scaledPanelHeight * 0.5 - latchHeight / 2,
           latchWidth,
           latchHeight
         );
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#374151";
+        ctx.lineWidth = 1;
         ctx.strokeRect(
           currentX + latchOffset - latchWidth / 2,
           groundLevel - scaledPanelHeight * 0.5 - latchHeight / 2,
@@ -684,14 +674,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.closePath();
         ctx.fill();
 
-        // Gap label
-        ctx.fillStyle = "#666";
-        ctx.font = "10px JetBrains Mono";
+        // Gap label - cleaner typography
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "11px Inter";
         ctx.textAlign = "center";
         ctx.fillText(
-          `${gapSize.toFixed(1)}mm`,
+          `${gapSize.toFixed(1)}`,
           gapStart + scaledGapSize / 2,
-          gapDimLineY + 13
+          gapDimLineY + 14
         );
 
         currentX += scaledGapSize;
@@ -728,14 +718,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.closePath();
       ctx.fill();
 
-      // Right gap label
-      ctx.fillStyle = "#666";
-      ctx.font = "10px JetBrains Mono";
+      // Right gap label - cleaner
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "11px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
-        `R: ${rightGapSize.toFixed(1)}mm`,
+        `${rightGapSize.toFixed(1)}`,
         gapStart + scaledRightGap / 2,
-        gapDimLineY + 13
+        gapDimLineY + 14
       );
     }
 
@@ -763,14 +753,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     ctx.lineTo(heightDimensionX + arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
     ctx.fill();
 
-    // Height label
-    ctx.fillStyle = "#666";
-    ctx.font = "11px JetBrains Mono";
+    // Height label - cleaner
+    ctx.fillStyle = "#374151";
+    ctx.font = "500 11px Inter";
     ctx.textAlign = "center";
     ctx.save();
     ctx.translate(heightDimensionX + 20, groundLevel - (panelHeight * scale) / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText("1200mm", 0, 0);
+    ctx.fillText(`${panelHeight}`, 0, 0);
     ctx.restore();
   });
 }
