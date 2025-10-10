@@ -51,11 +51,15 @@ export const spanConfigSchema = z.object({
   }).optional(),
   leftRakedPanel: z.object({
     enabled: z.boolean(),
-    height: z.number(),
+    height: z.number().refine((val) => [1400, 1500, 1600, 1700, 1800].includes(val), {
+      message: "Height must be one of: 1400, 1500, 1600, 1700, 1800",
+    }),
   }).optional(),
   rightRakedPanel: z.object({
     enabled: z.boolean(),
-    height: z.number(),
+    height: z.number().refine((val) => [1400, 1500, 1600, 1700, 1800].includes(val), {
+      message: "Height must be one of: 1400, 1500, 1600, 1700, 1800",
+    }),
   }).optional(),
 });
 

@@ -339,20 +339,28 @@ export function SpanConfigPanel({
                 />
               </div>
               {span.leftRakedPanel?.enabled && (
-                <NumericInput
-                  label="Panel Height (top)"
-                  value={span.leftRakedPanel.height}
-                  onChange={(height) =>
-                    updateSpan({
-                      leftRakedPanel: { ...span.leftRakedPanel!, height },
-                    })
-                  }
-                  min={800}
-                  max={2400}
-                  step={50}
-                  unit="mm"
-                  testId={`span-${span.spanId}-left-raked-height`}
-                />
+                <div className="space-y-2">
+                  <Label className="text-sm">Panel Height (top)</Label>
+                  <Select
+                    value={span.leftRakedPanel.height.toString()}
+                    onValueChange={(value) =>
+                      updateSpan({
+                        leftRakedPanel: { ...span.leftRakedPanel!, height: parseInt(value) },
+                      })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-left-raked-height`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1400">1400mm</SelectItem>
+                      <SelectItem value="1500">1500mm</SelectItem>
+                      <SelectItem value="1600">1600mm</SelectItem>
+                      <SelectItem value="1700">1700mm</SelectItem>
+                      <SelectItem value="1800">1800mm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             </div>
 
@@ -372,20 +380,28 @@ export function SpanConfigPanel({
                 />
               </div>
               {span.rightRakedPanel?.enabled && (
-                <NumericInput
-                  label="Panel Height (top)"
-                  value={span.rightRakedPanel.height}
-                  onChange={(height) =>
-                    updateSpan({
-                      rightRakedPanel: { ...span.rightRakedPanel!, height },
-                    })
-                  }
-                  min={800}
-                  max={2400}
-                  step={50}
-                  unit="mm"
-                  testId={`span-${span.spanId}-right-raked-height`}
-                />
+                <div className="space-y-2">
+                  <Label className="text-sm">Panel Height (top)</Label>
+                  <Select
+                    value={span.rightRakedPanel.height.toString()}
+                    onValueChange={(value) =>
+                      updateSpan({
+                        rightRakedPanel: { ...span.rightRakedPanel!, height: parseInt(value) },
+                      })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-right-raked-height`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1400">1400mm</SelectItem>
+                      <SelectItem value="1500">1500mm</SelectItem>
+                      <SelectItem value="1600">1600mm</SelectItem>
+                      <SelectItem value="1700">1700mm</SelectItem>
+                      <SelectItem value="1800">1800mm</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             </div>
           </div>
