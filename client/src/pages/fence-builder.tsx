@@ -5,6 +5,7 @@ import { SpanConfigPanel } from "@/components/span-config-panel";
 import { FenceVisualization } from "@/components/fence-visualization";
 import { ComponentList } from "@/components/component-list";
 import { AppHeader } from "@/components/app-header";
+import { ProductSelectorMockup } from "@/components/product-selector-mockup";
 import { useToast } from "@/hooks/use-toast";
 import { FenceDesign, FenceShape, SpanConfig, Component, SavedFenceDesign, SpigotMounting, SpigotColor, getSpigotDetails, getHingeDetails, getLatchDetails } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -19,13 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Package } from "lucide-react";
 
 export default function FenceBuilder() {
   const { toast } = useToast();
   const [activeSpanId, setActiveSpanId] = useState<string | undefined>();
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showProductMockup, setShowProductMockup] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
 
   const [design, setDesign] = useState<FenceDesign>({
@@ -283,6 +285,27 @@ export default function FenceBuilder() {
         {/* Controls Panel */}
         <div className="h-full overflow-y-auto bg-card border-l border-card-border">
           <div className="p-6 space-y-6">
+            {/* Product Type Mockup Banner */}
+            <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Package className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm font-medium">Currently: Glass Pool Fencing</p>
+                  <p className="text-xs text-muted-foreground">
+                    View mockup for upcoming product variants: Glass Balustrade, Aluminium, and General Fencing
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowProductMockup(true)}
+                    data-testid="button-view-mockup"
+                  >
+                    View Product Selector Mockup
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             {/* Shape Selector */}
             <FenceShapeSelector
               selected={design.shape}
@@ -418,6 +441,20 @@ export default function FenceBuilder() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Product Selector Mockup Dialog */}
+      <Dialog open={showProductMockup} onOpenChange={setShowProductMockup}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Product Selector - Mockup Preview</DialogTitle>
+            <DialogDescription>
+              This is a mockup showing how the product selector will work with multiple product categories
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ProductSelectorMockup />
         </DialogContent>
       </Dialog>
     </div>
