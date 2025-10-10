@@ -12,12 +12,11 @@ export type GapPosition = "inside" | "outside";
 // Gate hardware types
 export type GateHardware = "master" | "polaris";
 
-// Stock panel widths (in mm) - standard sizes available from manufacturer
-export const STOCK_PANEL_WIDTHS = [
-  600, 650, 700, 750, 800, 850, 900, 950, 1000, 
-  1050, 1100, 1150, 1200, 1250, 1300, 1350, 1400, 
-  1450, 1500, 1550, 1600, 1650, 1700, 1750, 1800
-] as const;
+// Panel size constraints (custom cut in 50mm increments)
+export const PANEL_SIZE_MIN = 200; // mm
+export const PANEL_SIZE_MAX = 2000; // mm
+export const PANEL_SIZE_INCREMENT = 50; // mm
+export const MAX_GAP_SIZE = 99; // mm
 
 // Panel layout calculation result
 export type PanelLayout = {
