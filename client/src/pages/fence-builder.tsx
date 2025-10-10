@@ -290,9 +290,9 @@ export default function FenceBuilder() {
               <div className="flex items-start gap-3">
                 <Package className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium">Currently: Glass Pool Fencing</p>
+                  <p className="text-sm font-medium">Glass Pool Fencing - Frameless with Spigots</p>
                   <p className="text-xs text-muted-foreground">
-                    View mockup for upcoming product variants: Glass Balustrade, Aluminium, and General Fencing
+                    View mockup for product variants including Glass Balustrade, Aluminium options, and General Fencing
                   </p>
                   <Button 
                     variant="outline" 

@@ -19,9 +19,10 @@ const productCategories: ProductCategory[] = [
   {
     id: "glass-pool",
     name: "Glass Pool Fencing",
-    description: "Premium frameless glass pool fencing with spigot mounting",
+    description: "Premium glass pool fencing with spigot or channel mounting",
     variants: [
-      { id: "glass-pool-standard", name: "Standard Pool Fencing", badge: "Current" }
+      { id: "glass-pool-spigots", name: "Frameless with Spigots", badge: "Current" },
+      { id: "glass-pool-channel", name: "Channel" }
     ]
   },
   {
@@ -29,30 +30,40 @@ const productCategories: ProductCategory[] = [
     name: "Glass Balustrade",
     description: "Glass balustrade systems for decks, balconies, and stairs",
     variants: [
-      { id: "frameless", name: "Frameless" },
-      { id: "semi-frameless", name: "Semi-Frameless" },
-      { id: "juliet", name: "Juliet Balcony" },
-      { id: "channel", name: "Channel System" }
+      { id: "glass-bal-spigots", name: "Frameless with Spigots" },
+      { id: "glass-bal-channel", name: "Channel" },
+      { id: "glass-bal-standoffs", name: "Standoffs" }
     ]
   },
   {
-    id: "aluminium",
+    id: "aluminium-pool",
     name: "Aluminium Pool Fencing",
-    description: "Durable powder-coated aluminium fencing solutions",
+    description: "Durable powder-coated aluminium pool fencing solutions",
     variants: [
-      { id: "slat", name: "Slat Style" },
-      { id: "tube", name: "Tube Style" },
-      { id: "privacy", name: "Privacy Screen" }
+      { id: "alu-pool-tubular", name: "Tubular Flat Top" },
+      { id: "alu-pool-barr", name: "BARR" },
+      { id: "alu-pool-blade", name: "Blade" },
+      { id: "alu-pool-pik", name: "PIK" }
+    ]
+  },
+  {
+    id: "aluminium-balustrade",
+    name: "Aluminium Balustrade",
+    description: "Aluminium balustrade systems for decks and balconies",
+    variants: [
+      { id: "alu-bal-barr", name: "Barr" },
+      { id: "alu-bal-blade", name: "Blade" },
+      { id: "alu-bal-visor", name: "Visor" }
     ]
   },
   {
     id: "general",
     name: "General Fencing",
-    description: "Traditional fencing options for residential and commercial",
+    description: "Premium fencing options for residential and commercial",
     variants: [
-      { id: "colorbond", name: "Colorbond" },
-      { id: "timber", name: "Timber" },
-      { id: "composite", name: "Composite" }
+      { id: "general-zeus", name: "Zeus" },
+      { id: "general-blade", name: "Blade" },
+      { id: "general-barr", name: "Barr" }
     ]
   }
 ];
