@@ -732,39 +732,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
     }
 
-    // Height dimension line for this span
-    const heightDimensionX = startX + (effectiveLength * scale) + 60;
-    ctx.strokeStyle = "#666";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(heightDimensionX, groundLevel);
-    ctx.lineTo(heightDimensionX, groundLevel - (panelHeight * scale));
-    ctx.stroke();
-
-    // Arrows for height dimension
-    const arrowSize = 5;
-    ctx.fillStyle = "#666";
-    ctx.beginPath();
-    ctx.moveTo(heightDimensionX, groundLevel);
-    ctx.lineTo(heightDimensionX - arrowSize, groundLevel - arrowSize);
-    ctx.lineTo(heightDimensionX + arrowSize, groundLevel - arrowSize);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(heightDimensionX, groundLevel - (panelHeight * scale));
-    ctx.lineTo(heightDimensionX - arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
-    ctx.lineTo(heightDimensionX + arrowSize, groundLevel - (panelHeight * scale) + arrowSize);
-    ctx.fill();
-
-    // Height label - cleaner
-    ctx.fillStyle = "#374151";
-    ctx.font = "500 11px Inter";
-    ctx.textAlign = "center";
-    ctx.save();
-    ctx.translate(heightDimensionX + 20, groundLevel - (panelHeight * scale) / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText(`${panelHeight}`, 0, 0);
-    ctx.restore();
+    // Height dimension removed per user request
   });
 }
 
