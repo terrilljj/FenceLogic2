@@ -209,28 +209,31 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
         />
       )}
 
-      <div className="absolute top-4 right-4 flex gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={cycleViewMode}
-          data-testid="button-cycle-view"
-          className="gap-2"
-        >
-          <Layers className="w-4 h-4" />
-          <span className="hidden sm:inline">{getViewModeLabel()}</span>
-        </Button>
-        {viewMode === "3d" && !webglError && (
+      {/* View cycling disabled - only elevation view for v1 */}
+      {false && (
+        <div className="absolute top-4 right-4 flex gap-2">
           <Button
-            size="icon"
+            size="sm"
             variant="outline"
-            onClick={handleResetView}
-            data-testid="button-reset-view"
+            onClick={cycleViewMode}
+            data-testid="button-cycle-view"
+            className="gap-2"
           >
-            <RotateCcw className="w-4 h-4" />
+            <Layers className="w-4 h-4" />
+            <span className="hidden sm:inline">{getViewModeLabel()}</span>
           </Button>
-        )}
-      </div>
+          {viewMode === "3d" && !webglError && (
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={handleResetView}
+              data-testid="button-reset-view"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      )}
 
       {viewMode === "3d" && !webglError && (
         <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-md p-3 text-sm space-y-1">
