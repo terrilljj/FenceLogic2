@@ -76,6 +76,12 @@ Preferred communication style: Simple, everyday language.
   - **Wall/post-mounted**: Gate at start (position=0) or end (position=1) with no hinge panel
 - Panel types: standard, raked, gate, hinge (tracked for visualization)
 - **Gate Position Preservation**: savedGlassPosition field preserves panel index when switching between glass-to-glass and wall-mounted modes
+- **Hardware-Specific Gate Gaps**: Automatic calculation of correct gaps based on hardware type and mounting:
+  - Master Range wall-mounted: latch gap = 9mm (hinge side attached to wall)
+  - Master Range glass-to-glass: hinge gap = 9mm, latch gap = 9mm
+  - Polaris Soft Close wall-mounted: latch gap = 9mm (hinge side attached to wall)
+  - Polaris Soft Close glass-to-glass: hinge gap = 20mm, latch gap = 9mm
+  - Wall-mounted gates use single latch gap; glass-to-glass use both hinge and latch gaps
 - **Flexible Gap Tolerance**: When gates are present, algorithm allows up to 50mm total gap deviation (vs 0.01mm for non-gate spans) to accommodate manufacturing constraints and panel increment rounding
 - **Intelligent Remainder Distribution**: Rounds panel remainders to nearest 50mm increment instead of rejecting non-divisible configurations
 - **Gap Scoring**: Penalizes larger gap deviations to prefer configurations closest to target spacing while maintaining flexibility
