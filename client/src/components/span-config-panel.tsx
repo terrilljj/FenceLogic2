@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { SpanConfig, getGateGaps } from "@shared/schema";
+import { SpanConfig, getGateGaps, ProductVariant } from "@shared/schema";
 import { calculatePanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
@@ -14,6 +14,7 @@ import { GateControls } from "./gate-controls";
 interface SpanConfigPanelProps {
   span: SpanConfig;
   onUpdate: (span: SpanConfig) => void;
+  productVariant?: ProductVariant;
   showTopGap?: boolean;
   showBottomGap?: boolean;
   showLeftGap?: boolean;
@@ -23,6 +24,7 @@ interface SpanConfigPanelProps {
 export function SpanConfigPanel({
   span,
   onUpdate,
+  productVariant = "glass-pool-spigots",
   showTopGap,
   showBottomGap,
   showLeftGap,
@@ -348,50 +350,81 @@ export function SpanConfigPanel({
             />
           </div>
 
-          {/* Spigot Configuration */}
-          <div className="space-y-4 pt-4 border-t border-card-border">
-            <h4 className="text-sm font-semibold">Spigot Hardware</h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Mounting Type</Label>
-                <Select
-                  value={span.spigotMounting || "base-plate"}
-                  onValueChange={(spigotMounting: "base-plate" | "core-drilled" | "side-mounted") => 
-                    updateSpan({ spigotMounting })
-                  }
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-spigot-mounting`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="base-plate">Base Plate</SelectItem>
-                    <SelectItem value="core-drilled">Core Drilled</SelectItem>
-                    <SelectItem value="side-mounted">Side Mounted</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Hardware Configuration - Show spigot OR channel based on product type */}
+          {productVariant === "glass-pool-channel" ? (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <h4 className="text-sm font-semibold">Channel Hardware</h4>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Channel Mounting</Label>
+                  <Select
+                    value={span.channelMounting || "ground"}
+                    onValueChange={(channelMounting: "wall" | "ground") => 
+                      updateSpan({ channelMounting })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-channel-mounting`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="wall">Wall Mounted</SelectItem>
+                      <SelectItem value="ground">Ground Mounted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Color/Finish</Label>
-                <Select
-                  value={span.spigotColor || "polished"}
-                  onValueChange={(spigotColor: "polished" | "satin" | "black" | "white") => 
-                    updateSpan({ spigotColor })
-                  }
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-spigot-color`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="polished">Polished</SelectItem>
-                    <SelectItem value="satin">Satin</SelectItem>
-                    <SelectItem value="black">Black</SelectItem>
-                    <SelectItem value="white">White</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-1">
+                  <p><strong>Channel System:</strong> Versatilt 4200mm aluminum channel</p>
+                  <p><strong>Friction Clamps:</strong> Positioned at 300mm centers</p>
+                  <p><strong>Mounting:</strong> {span.channelMounting === "wall" ? "Base mounted" : "Side mounted"}</p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <h4 className="text-sm font-semibold">Spigot Hardware</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Mounting Type</Label>
+                  <Select
+                    value={span.spigotMounting || "base-plate"}
+                    onValueChange={(spigotMounting: "base-plate" | "core-drilled" | "side-mounted") => 
+                      updateSpan({ spigotMounting })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-spigot-mounting`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="base-plate">Base Plate</SelectItem>
+                      <SelectItem value="core-drilled">Core Drilled</SelectItem>
+                      <SelectItem value="side-mounted">Side Mounted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Color/Finish</Label>
+                  <Select
+                    value={span.spigotColor || "polished"}
+                    onValueChange={(spigotColor: "polished" | "satin" | "black" | "white") => 
+                      updateSpan({ spigotColor })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-spigot-color`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="polished">Polished</SelectItem>
+                      <SelectItem value="satin">Satin</SelectItem>
+                      <SelectItem value="black">Black</SelectItem>
+                      <SelectItem value="white">White</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Gate Configuration */}
           <div className="space-y-4 pt-4 border-t border-card-border">
