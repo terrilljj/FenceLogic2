@@ -50,7 +50,8 @@ export function SpanConfigPanel({
     if (span.topGap?.enabled) effectiveLength -= span.topGap.size;
     if (span.bottomGap?.enabled) effectiveLength -= span.bottomGap.size;
     
-    const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
+    // Correct calculation: N panels need N-1 gaps
+    const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
     
     if (numPanels <= 0) {
       return {
@@ -231,103 +232,33 @@ export function SpanConfigPanel({
           )}
 
           {showLeftGap && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Left Gap (Connects to adjacent side)</Label>
-                <Switch
-                  checked={span.leftGap?.enabled || false}
-                  onCheckedChange={(enabled) =>
-                    updateSpan({
-                      leftGap: { enabled, position: "inside", size: 100 },
-                    })
-                  }
-                  data-testid={`span-${span.spanId}-left-gap-toggle`}
-                />
-              </div>
-              {span.leftGap?.enabled && (
-                <>
-                  <Select
-                    value={span.leftGap.position}
-                    onValueChange={(position: "inside" | "outside") =>
-                      updateSpan({
-                        leftGap: { ...span.leftGap!, position },
-                      })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-left-gap-position`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inside">Inside</SelectItem>
-                      <SelectItem value="outside">Outside</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <NumericInput
-                    label="Gap Size"
-                    value={span.leftGap.size}
-                    onChange={(size) =>
-                      updateSpan({
-                        leftGap: { ...span.leftGap!, size },
-                      })
-                    }
-                    min={0}
-                    max={150}
-                    unit="mm"
-                    testId={`span-${span.spanId}-left-gap-size`}
-                  />
-                </>
-              )}
-            </div>
+            <GapSlider
+              label="Left Gap (Connects to adjacent side)"
+              value={span.leftGap?.enabled ? span.leftGap.size : 0}
+              onChange={(size) =>
+                updateSpan({
+                  leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                })
+              }
+              min={0}
+              max={150}
+              testId={`span-${span.spanId}-left-gap`}
+            />
           )}
 
           {showRightGap && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Right Gap (Connects to adjacent side)</Label>
-                <Switch
-                  checked={span.rightGap?.enabled || false}
-                  onCheckedChange={(enabled) =>
-                    updateSpan({
-                      rightGap: { enabled, position: "inside", size: 100 },
-                    })
-                  }
-                  data-testid={`span-${span.spanId}-right-gap-toggle`}
-                />
-              </div>
-              {span.rightGap?.enabled && (
-                <>
-                  <Select
-                    value={span.rightGap.position}
-                    onValueChange={(position: "inside" | "outside") =>
-                      updateSpan({
-                        rightGap: { ...span.rightGap!, position },
-                      })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-right-gap-position`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inside">Inside</SelectItem>
-                      <SelectItem value="outside">Outside</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <NumericInput
-                    label="Gap Size"
-                    value={span.rightGap.size}
-                    onChange={(size) =>
-                      updateSpan({
-                        rightGap: { ...span.rightGap!, size },
-                      })
-                    }
-                    min={0}
-                    max={150}
-                    unit="mm"
-                    testId={`span-${span.spanId}-right-gap-size`}
-                  />
-                </>
-              )}
-            </div>
+            <GapSlider
+              label="Right Gap (Connects to adjacent side)"
+              value={span.rightGap?.enabled ? span.rightGap.size : 0}
+              onChange={(size) =>
+                updateSpan({
+                  rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                })
+              }
+              min={0}
+              max={150}
+              testId={`span-${span.spanId}-right-gap`}
+            />
           )}
 
           {/* Panel Configuration */}

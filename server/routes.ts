@@ -102,7 +102,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const effectiveLength = span.length;
         const panelWidth = span.maxPanelWidth;
         const gapSize = span.maxGap;
-        const numPanels = Math.floor(effectiveLength / (panelWidth + gapSize));
+        // Correct calculation: N panels need N-1 gaps
+        const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
 
         if (numPanels > 0) {
           components.push({

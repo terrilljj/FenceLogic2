@@ -12,6 +12,22 @@ export type GapPosition = "inside" | "outside";
 // Gate hardware types
 export type GateHardware = "master" | "polaris";
 
+// Stock panel widths (in mm) - standard sizes available from manufacturer
+export const STOCK_PANEL_WIDTHS = [
+  600, 650, 700, 750, 800, 850, 900, 950, 1000, 
+  1050, 1100, 1150, 1200, 1250, 1300, 1350, 1400, 
+  1450, 1500, 1550, 1600, 1650, 1700, 1750, 1800
+] as const;
+
+// Panel layout calculation result
+export type PanelLayout = {
+  panels: number[]; // Array of panel widths in mm
+  gaps: number[]; // Array of gap sizes in mm (length = panels.length - 1)
+  totalPanelWidth: number; // Sum of all panel widths
+  totalGapWidth: number; // Sum of all gaps
+  averageGap: number; // Average gap size
+};
+
 // Span configuration
 export const spanConfigSchema = z.object({
   spanId: z.string(),
