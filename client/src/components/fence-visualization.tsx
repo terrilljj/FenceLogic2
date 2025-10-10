@@ -589,8 +589,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         const latchWidth = 10;
         const latchHeight = 24;
         
-        // Determine hinge side based on flipped config - at edge of panel
-        const hingeOffset = gateConfig?.flipped ? scaledPanelWidth : 0;
+        // Determine hinge side based on flipped config - positioned at edge but fully visible
+        const hingeOffset = gateConfig?.flipped ? scaledPanelWidth - hingeWidth / 2 : hingeWidth / 2;
         
         // Top hinge
         ctx.fillStyle = "#4b5563";
@@ -626,8 +626,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           hingeHeight
         );
         
-        // Latch on opposite side - at edge of panel
-        const latchOffset = gateConfig?.flipped ? 0 : scaledPanelWidth;
+        // Latch on opposite side - positioned at edge but fully visible
+        const latchOffset = gateConfig?.flipped ? latchWidth / 2 : scaledPanelWidth - latchWidth / 2;
         ctx.fillStyle = "#4b5563";
         ctx.fillRect(
           currentX + latchOffset - latchWidth / 2,

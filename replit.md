@@ -30,11 +30,14 @@ Preferred communication style: Simple, everyday language.
 - Custom color palette with semantic HSL values for light/dark themes
 - Consistent spacing scale using Tailwind units (2, 4, 6, 8, 12, 16, 24)
 
-**3D Visualization:**
-- Three.js integration for real-time 3D fence rendering
-- Interactive camera controls with mouse-based rotation
-- Material visualization with transparency for glass panels
-- Visual highlighting for active spans and gate configurations
+**Visualization System (V1 - Elevation Only):**
+- Elevation view only (3D and plan views disabled for initial version)
+- Canvas-based 2D side elevation rendering
+- Panel labels show width and type (e.g., "1650 Panel", "1200 Hinge", "900 Gate", "1400H Rake")
+- Proportionate spigot rendering: 50mm wide, 100mm height, 50mm gap below glass
+- Gates do not display spigots
+- Gate hardware (hinges and latches) positioned at panel edges
+- Clean, modern visual design with Inter typography
 
 **State Management:**
 - Local React state for fence design configuration
