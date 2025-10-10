@@ -288,7 +288,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const panelHeight = 1200; // 1200mm standard height
   const spanVerticalSpacing = 250; // Space between each span section
   const startX = 100;
-  const startY = 80;
+  const startY = 150; // Increased top margin to prevent cutoff
 
   design.spans.forEach((span, spanIndex) => {
     const isActive = span.spanId === activeSpanId;
