@@ -181,7 +181,7 @@ export function SpanConfigPanel({
           {showTopGap && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Top Gap (Connects to adjacent side)</Label>
+                <Label className="text-sm font-medium">Top Gap</Label>
                 <Switch
                   checked={span.topGap?.enabled || false}
                   onCheckedChange={(enabled) =>
@@ -231,7 +231,7 @@ export function SpanConfigPanel({
           {showBottomGap && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Bottom Gap (Connects to adjacent side)</Label>
+                <Label className="text-sm font-medium">Bottom Gap</Label>
                 <Switch
                   checked={span.bottomGap?.enabled || false}
                   onCheckedChange={(enabled) =>
@@ -282,7 +282,7 @@ export function SpanConfigPanel({
             <div className="grid grid-cols-2 gap-4">
               {showLeftGap && (
                 <GapSlider
-                  label="Left Gap (Connects to adjacent side)"
+                  label="Left Gap"
                   value={span.leftGap?.enabled ? span.leftGap.size : 0}
                   onChange={(size) =>
                     updateSpan({
@@ -297,7 +297,7 @@ export function SpanConfigPanel({
 
               {showRightGap && (
                 <GapSlider
-                  label="Right Gap (Connects to adjacent side)"
+                  label="Right Gap"
                   value={span.rightGap?.enabled ? span.rightGap.size : 0}
                   onChange={(size) =>
                     updateSpan({

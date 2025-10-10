@@ -291,12 +291,12 @@ export default function FenceBuilder() {
               onCustomSidesChange={handleCustomSidesChange}
             />
 
-            {/* Span Configuration */}
+            {/* Section Configuration */}
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-semibold mb-2">Span Configuration</h2>
+                <h2 className="text-xl font-semibold mb-2">Section Configuration</h2>
                 <p className="text-sm text-muted-foreground">
-                  Configure each span of your fence
+                  Configure each section of your fence
                 </p>
               </div>
 

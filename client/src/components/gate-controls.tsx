@@ -217,7 +217,7 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
               data-testid={`gate-${spanId}-start`}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Start of Span
+              Start of Section
             </Button>
             <Button
               type="button"
@@ -227,7 +227,7 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
               data-testid={`gate-${spanId}-end`}
             >
               <ArrowRight className="w-4 h-4 mr-2" />
-              End of Span
+              End of Section
             </Button>
           </div>
         ) : (
@@ -300,7 +300,7 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Position:</span>
             <span className="font-mono font-medium">
-              {config.position <= 0 ? "Start of Span" : "End of Span"}
+              {config.position <= 0 ? "Start of Section" : "End of Section"}
             </span>
           </div>
         )}

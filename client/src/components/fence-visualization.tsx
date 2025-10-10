@@ -334,13 +334,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     const groundLevel = startY + (spanIndex * spanVerticalSpacing);
     let currentX = startX;
 
-    // Draw span label - cleaner typography
+    // Draw section label - cleaner typography
     ctx.fillStyle = isActive ? "#3b82f6" : "#374151";
     ctx.font = "600 15px Inter";
     ctx.textAlign = "left";
-    ctx.fillText(`Span ${span.spanId}`, 10, groundLevel - 100);
+    ctx.fillText(`Section ${span.spanId}`, 10, groundLevel - 100);
     
-    // Total span length (under the span label) - cleaner
+    // Total section length (under the section label) - cleaner
     ctx.fillStyle = "#6b7280";
     ctx.font = "500 12px Inter";
     ctx.textAlign = "left";
@@ -901,12 +901,12 @@ function render2DView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpan
       currentAngle += (2 * Math.PI) / design.customSides;
     }
 
-    // Draw span label
+    // Draw section label
     ctx.fillStyle = isActive ? "#4488ff" : "#888";
     ctx.font = "bold 14px Inter";
     ctx.textAlign = "center";
     ctx.fillText(
-      `Span ${span.spanId}`,
+      `Section ${span.spanId}`,
       currentX - spanEndX / 2,
       currentY - spanEndY / 2 - 20
     );
