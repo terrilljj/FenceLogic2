@@ -51,6 +51,9 @@ Preferred communication style: Simple, everyday language.
 - Custom color palette with semantic HSL values for light/dark themes
 - Consistent spacing scale using Tailwind units (2, 4, 6, 8, 12, 16, 24)
 - **Info Tooltips**: Contextual help system using info icons (ⓘ) with hover tooltips:
+  - Fence Shape Selector: Explains section count and configuration options
+  - Section Configuration: Explains section layout, panels, gaps, gates, and special features
+  - Section Length: Explains default 25mm gap for junctions, max 150mm for posts
   - Panel Configuration: Explains max panel width and gap spacing calculation
   - Gate Required: Explains gate hardware types, mounting styles, and positioning
   - Raked Panels: Explains slope/stair panels with 1200mm fixed width

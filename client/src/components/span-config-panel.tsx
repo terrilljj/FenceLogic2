@@ -17,8 +17,6 @@ interface SpanConfigPanelProps {
   span: SpanConfig;
   onUpdate: (span: SpanConfig) => void;
   productVariant?: ProductVariant;
-  showTopGap?: boolean;
-  showBottomGap?: boolean;
   showLeftGap?: boolean;
   showRightGap?: boolean;
 }
@@ -27,8 +25,6 @@ export function SpanConfigPanel({
   span,
   onUpdate,
   productVariant = "glass-pool-spigots",
-  showTopGap,
-  showBottomGap,
   showLeftGap,
   showRightGap,
 }: SpanConfigPanelProps) {
@@ -60,8 +56,6 @@ export function SpanConfigPanel({
     }
     
     let endGaps = leftEndGap + rightEndGap;
-    if (span.topGap?.enabled) endGaps += span.topGap.size;
-    if (span.bottomGap?.enabled) endGaps += span.bottomGap.size;
 
     // Calculate auto hinge panel size if enabled
     // For auto mode, calculate a temporary layout first to determine the most common panel size
@@ -152,7 +146,7 @@ export function SpanConfigPanel({
       onUpdate({ ...span, panelLayout: layout });
     }
   }, [span.length, span.desiredGap, span.maxPanelWidth, 
-      span.leftGap, span.rightGap, span.topGap, span.bottomGap, 
+      span.leftGap, span.rightGap, 
       span.leftRakedPanel, span.rightRakedPanel, 
       span.gateConfig?.required, span.gateConfig?.gateSize, span.gateConfig?.hingePanelSize, span.gateConfig?.autoHingePanel,
       span.gateConfig?.position, span.gateConfig?.flipped, span.gateConfig?.hingeFrom, span.gateConfig?.latchTo,
@@ -207,8 +201,6 @@ export function SpanConfigPanel({
     }
     
     let endGaps = leftEndGap + rightEndGap;
-    if (span.topGap?.enabled) endGaps += span.topGap.size;
-    if (span.bottomGap?.enabled) endGaps += span.bottomGap.size;
     
     const effectiveLength = span.length - endGaps;
 
@@ -297,21 +289,26 @@ export function SpanConfigPanel({
 
   return (
     <Card className="overflow-hidden" data-testid={`span-${span.spanId}`}>
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-6 hover-elevate active-elevate-2 text-left"
-        data-testid={`span-${span.spanId}-toggle`}
-      >
-        <h3 className="text-lg font-semibold">Section {span.spanId}</h3>
-        {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-muted-foreground" />
-        )}
-      </button>
+      <div className="flex items-center justify-between p-6 border-b border-card-border">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold">Section {span.spanId}</h3>
+          <InfoTooltip content="Configure this section's length, panel layout, gaps, gates, and special features. Each section can have custom panels, raked panels for slopes, and independently positioned gates." />
+        </div>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-1 rounded-md hover-elevate active-elevate-2"
+          data-testid={`span-${span.spanId}-toggle`}
+        >
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+          )}
+        </button>
+      </div>
 
       {isExpanded && (
-        <div className="p-6 pt-0 space-y-6 border-t border-card-border">
+        <div className="p-6 pt-6 space-y-6">
           {/* Panel Layout Info - Hidden */}
           {!layoutValidation.valid && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 hidden" data-testid={`span-${span.spanId}-validation-error`}>
@@ -329,109 +326,10 @@ export function SpanConfigPanel({
             step={100}
             unit="mm"
             testId={`span-${span.spanId}-length`}
+            tooltip="Enter the total length of this fence section. The default end gap is 25mm for corner junctions. Maximum end gap is 150mm to allow for adding a post or other non-fence item into the section."
           />
 
           {/* Gap Configurations */}
-          {showTopGap && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Top Gap</Label>
-                <Switch
-                  checked={span.topGap?.enabled || false}
-                  onCheckedChange={(enabled) =>
-                    updateSpan({
-                      topGap: { enabled, position: "inside", size: 100 },
-                    })
-                  }
-                  data-testid={`span-${span.spanId}-top-gap-toggle`}
-                />
-              </div>
-              {span.topGap?.enabled && (
-                <>
-                  <Select
-                    value={span.topGap.position}
-                    onValueChange={(position: "inside" | "outside") =>
-                      updateSpan({
-                        topGap: { ...span.topGap!, position },
-                      })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-top-gap-position`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inside">Inside</SelectItem>
-                      <SelectItem value="outside">Outside</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <NumericInput
-                    label="Gap Size"
-                    value={span.topGap.size}
-                    onChange={(size) =>
-                      updateSpan({
-                        topGap: { ...span.topGap!, size },
-                      })
-                    }
-                    min={0}
-                    max={150}
-                    unit="mm"
-                    testId={`span-${span.spanId}-top-gap-size`}
-                  />
-                </>
-              )}
-            </div>
-          )}
-
-          {showBottomGap && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Bottom Gap</Label>
-                <Switch
-                  checked={span.bottomGap?.enabled || false}
-                  onCheckedChange={(enabled) =>
-                    updateSpan({
-                      bottomGap: { enabled, position: "inside", size: 100 },
-                    })
-                  }
-                  data-testid={`span-${span.spanId}-bottom-gap-toggle`}
-                />
-              </div>
-              {span.bottomGap?.enabled && (
-                <>
-                  <Select
-                    value={span.bottomGap.position}
-                    onValueChange={(position: "inside" | "outside") =>
-                      updateSpan({
-                        bottomGap: { ...span.bottomGap!, position },
-                      })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-bottom-gap-position`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="inside">Inside</SelectItem>
-                      <SelectItem value="outside">Outside</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <NumericInput
-                    label="Gap Size"
-                    value={span.bottomGap.size}
-                    onChange={(size) =>
-                      updateSpan({
-                        bottomGap: { ...span.bottomGap!, size },
-                      })
-                    }
-                    min={0}
-                    max={150}
-                    unit="mm"
-                    testId={`span-${span.spanId}-bottom-gap-size`}
-                  />
-                </>
-              )}
-            </div>
-          )}
-
           {(showLeftGap || showRightGap) && (
             <div className="grid grid-cols-2 gap-4">
               {showLeftGap && (
@@ -646,7 +544,7 @@ export function SpanConfigPanel({
               <GateControls
                 config={span.gateConfig}
                 spanId={span.spanId}
-                onUpdate={(gateConfig: typeof span.gateConfig) => updateSpan({ gateConfig })}
+                onUpdate={(gateConfig) => updateSpan({ gateConfig })}
                 calculatedHingePanelSize={autoHingePanelSize}
                 numPanels={span.panelLayout?.panels.length}
               />

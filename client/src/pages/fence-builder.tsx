@@ -357,8 +357,6 @@ export default function FenceBuilder() {
                     span={span}
                     onUpdate={(updatedSpan) => handleSpanUpdate(span.spanId, updatedSpan)}
                     productVariant={design.productVariant}
-                    showTopGap={design.shape === "u-shape" && index === 0}
-                    showBottomGap={design.shape === "u-shape" && index === 0}
                     showLeftGap={true}
                     showRightGap={true}
                   />

@@ -13,7 +13,7 @@ interface GateConfig {
   latchType: LatchType;
   gateSize: number;
   hingePanelSize: number;
-  autoHingePanel?: boolean;
+  autoHingePanel: boolean;
   position: number;
   flipped: boolean;
   savedGlassPosition?: number;

@@ -2,6 +2,7 @@ import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InfoTooltip } from "@/components/info-tooltip";
 
 interface NumericInputProps {
   label: string;
@@ -12,6 +13,7 @@ interface NumericInputProps {
   step?: number;
   unit?: string;
   testId?: string;
+  tooltip?: string;
 }
 
 export function NumericInput({
@@ -23,6 +25,7 @@ export function NumericInput({
   step = 10,
   unit = "mm",
   testId = "numeric-input",
+  tooltip,
 }: NumericInputProps) {
   const handleIncrement = () => {
     const newValue = Math.min(value + step, max);
@@ -41,7 +44,10 @@ export function NumericInput({
 
   return (
     <div className="space-y-2" data-testid={testId}>
-      <Label className="text-sm font-medium">{label}</Label>
+      <div className="flex items-center gap-2">
+        <Label className="text-sm font-medium">{label}</Label>
+        {tooltip && <InfoTooltip content={tooltip} />}
+      </div>
       <div className="flex items-center gap-2">
         <Button
           type="button"
