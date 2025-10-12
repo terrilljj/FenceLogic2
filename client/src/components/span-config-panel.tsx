@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps, ProductVariant } from "@shared/schema";
-import { calculatePanelLayout, calculateBarrPanelLayout, calculateBladePanelLayout, calculateTubularPanelLayout } from "@shared/panelCalculations";
+import { calculatePanelLayout, calculateBarrPanelLayout, calculateBladePanelLayout, calculateTubularPanelLayout, calculateHamptonsPanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
@@ -101,6 +101,24 @@ export function SpanConfigPanel({
         gateSize,
         gatePosition
       );
+    }
+    // Hamptons PVC uses a different calculation
+    else if (productVariant.startsWith("pvc-hamptons-")) {
+      // Get Hamptons PVC specifications
+      const hamptonsStyle = productVariant.replace("pvc-hamptons-", "") as "full-privacy" | "combo" | "vertical-paling" | "semi-privacy" | "3rail";
+      const layoutMode = span.hamptonsLayoutMode || "full-panels-cut-end";
+      const hasGate = gatesAllowed && span.gateConfig?.required;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
+      const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
+
+      layout = calculateHamptonsPanelLayout(
+        span.length,
+        hamptonsStyle,
+        layoutMode,
+        hasGate,
+        gateSize,
+        gatePosition
+      );
     } else {
       // Glass/standoff/general fencing calculation
       // Calculate total end gaps, using latch gap when gate latch is at wall boundary
@@ -169,6 +187,7 @@ export function SpanConfigPanel({
       span.bladeHeight, span.bladeLayoutMode, // Add Blade-specific dependencies
       span.barrHeight, span.barrLayoutMode, // Add BARR-specific dependencies
       span.tubularHeight, span.tubularPanelWidth, span.tubularLayoutMode, // Add Tubular-specific dependencies
+      span.hamptonsStyle, span.hamptonsLayoutMode, // Add Hamptons PVC-specific dependencies
       productVariant, gatesAllowed, onUpdate]);
 
   // Validate panel layout
@@ -900,8 +919,131 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Gap Configurations - Hide for BARR, Blade, and Tubular */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (showLeftGap || showRightGap) && (
+          {/* Hamptons PVC Configuration - appears right after section length */}
+          {productVariant.startsWith("pvc-hamptons-") && (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Hamptons PVC Configuration</h4>
+                <InfoTooltip content="Hamptons PVC fencing features 127mm square posts with 2388mm wide panels. All styles use the same panel width. Choose layout mode for your installation." />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Layout Mode</Label>
+                    <InfoTooltip content="Full Panels + Cut End: Uses full 2388mm panels with one cut panel at the end. Equally Spaced: All panels cut to the same custom size to fit the span exactly." />
+                  </div>
+                  <Select
+                    value={span.hamptonsLayoutMode || "full-panels-cut-end"}
+                    onValueChange={(value) => updateSpan({ hamptonsLayoutMode: value as "full-panels-cut-end" | "equally-spaced" })}
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-hamptons-layout-mode`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full-panels-cut-end">Full Panels + Cut End</SelectItem>
+                      <SelectItem value="equally-spaced">Equally Spaced (All Cut)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Finish</Label>
+                  <Select
+                    value={span.hamptonsFinish || "white"}
+                    onValueChange={(value) => updateSpan({ hamptonsFinish: value as "white" | "almond" | "clay" })}
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-hamptons-finish`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="white">White</SelectItem>
+                      <SelectItem value="almond">Almond</SelectItem>
+                      <SelectItem value="clay">Clay</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {gatesAllowed && (
+                <div className="space-y-3 pt-4 border-t border-card-border">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Gate Required</Label>
+                    <Switch
+                      checked={span.gateConfig?.required || false}
+                      onCheckedChange={(required) => {
+                        if (required) {
+                          updateSpan({
+                            gateConfig: {
+                              required: true,
+                              hardware: "master",
+                              hingeFrom: "wall",
+                              latchTo: "wall",
+                              hingeType: "wall-to-glass",
+                              latchType: "glass-to-wall",
+                              gateSize: 1000,
+                              hingePanelSize: 0,
+                              autoHingePanel: false,
+                              position: 0,
+                              flipped: false,
+                              postAdapterPlate: false,
+                              hingeGap: 0,
+                              latchGap: 0,
+                            },
+                          });
+                        } else {
+                          updateSpan({ gateConfig: undefined });
+                        }
+                      }}
+                      data-testid={`span-${span.spanId}-gate-toggle`}
+                    />
+                  </div>
+
+                  {span.gateConfig?.required && (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Gate Position</Label>
+                        <Select
+                          value={(span.gateConfig.position || 0).toString()}
+                          onValueChange={(value) => updateSpan({ 
+                            gateConfig: {
+                              ...span.gateConfig!,
+                              position: parseInt(value)
+                            }
+                          })}
+                        >
+                          <SelectTrigger data-testid={`span-${span.spanId}-gate-position`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(() => {
+                              const numPanels = span.panelLayout?.panels.filter(p => span.panelLayout?.panelTypes?.[span.panelLayout.panels.indexOf(p)] !== "gate").length || 3;
+                              const positions = [];
+                              for (let i = 0; i <= numPanels; i++) {
+                                if (i === 0) {
+                                  positions.push(<SelectItem key={i} value={i.toString()}>Start (before panel 1)</SelectItem>);
+                                } else if (i === numPanels) {
+                                  positions.push(<SelectItem key={i} value={i.toString()}>End (after panel {numPanels})</SelectItem>);
+                                } else {
+                                  positions.push(<SelectItem key={i} value={i.toString()}>Between panel {i} and {i + 1}</SelectItem>);
+                                }
+                              }
+                              return positions;
+                            })()}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Choose where to position the gate within this section
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Gap Configurations - Hide for BARR, Blade, Tubular, and Hamptons PVC */}
+          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
             <div className="grid grid-cols-2 gap-4">
               {showLeftGap && (
                 <div className="space-y-1">
@@ -939,8 +1081,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Panel Configuration - Hide for BARR, Blade, and Tubular */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {/* Panel Configuration - Hide for BARR, Blade, Tubular, and Hamptons PVC */}
+          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Panel Configuration</h4>
