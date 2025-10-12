@@ -55,6 +55,14 @@ const productCategories: ProductCategory[] = [
     ]
   },
   {
+    id: "pvc",
+    name: "PVC Fencing",
+    description: "Low-maintenance PVC fencing solutions",
+    variants: [
+      { id: "pvc-privacy", name: "Privacy" }
+    ]
+  },
+  {
     id: "general",
     name: "General Fencing",
     description: "Premium fencing options for residential and commercial",

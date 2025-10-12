@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Product types
-export type ProductType = "glass-pool" | "glass-balustrade" | "aluminium-pool" | "aluminium-balustrade" | "general";
+export type ProductType = "glass-pool" | "glass-balustrade" | "aluminium-pool" | "aluminium-balustrade" | "pvc" | "general";
 
 // Product variants
 export type ProductVariant = 
@@ -20,6 +20,7 @@ export type ProductVariant =
   | "alu-bal-barr"
   | "alu-bal-blade"
   | "alu-bal-visor"
+  | "pvc-privacy"
   | "general-zeus"
   | "general-blade"
   | "general-barr";
@@ -147,7 +148,7 @@ export type SpanConfig = z.infer<typeof spanConfigSchema>;
 export const fenceDesignSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
-  productType: z.enum(["glass-pool", "glass-balustrade", "aluminium-pool", "aluminium-balustrade", "general"]).default("glass-pool"),
+  productType: z.enum(["glass-pool", "glass-balustrade", "aluminium-pool", "aluminium-balustrade", "pvc", "general"]).default("glass-pool"),
   productVariant: z.enum([
     "glass-pool-spigots", 
     "glass-pool-channel",
@@ -161,6 +162,9 @@ export const fenceDesignSchema = z.object({
     "alu-bal-barr",
     "alu-bal-blade",
     "alu-bal-visor",
+    "pvc-privacy",
+    "pvc-picket",
+    "pvc-ranch",
     "general-zeus",
     "general-blade",
     "general-barr"

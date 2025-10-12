@@ -30,6 +30,9 @@ export function SpanConfigPanel({
 }: SpanConfigPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
+  // Determine if gates are allowed for this product variant
+  const gatesAllowed = !productVariant.includes("bal-");
+
   const updateSpan = (updates: Partial<SpanConfig>) => {
     // Disable raked panels if max panel width is changed to below 1200mm
     if (updates.maxPanelWidth !== undefined && updates.maxPanelWidth < 1200) {
@@ -61,6 +64,7 @@ export function SpanConfigPanel({
     const effectiveHingePanelSize = span.gateConfig?.hingePanelSize || 1200;
 
     // Calculate final panel layout with the configured hinge panel size
+    // Only include gate config if gates are allowed for this product variant
     const layout = calculatePanelLayout(
       span.length,
       endGaps,
@@ -68,7 +72,7 @@ export function SpanConfigPanel({
       span.maxPanelWidth,
       span.leftRakedPanel?.enabled || false,
       span.rightRakedPanel?.enabled || false,
-      span.gateConfig?.required ? {
+      (gatesAllowed && span.gateConfig?.required) ? {
         required: span.gateConfig.required,
         gateSize: span.gateConfig.gateSize,
         hingePanelSize: effectiveHingePanelSize,
@@ -486,71 +490,74 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Gate Configuration */}
-          <div className="space-y-4 pt-4 border-t border-card-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-semibold">Gate Required</Label>
-                <InfoTooltip content="Add a gate panel to this section. Choose hardware type (Master Range or Polaris Soft Close), mounting style (glass-to-glass or wall-mounted), and position the gate within the section." />
+          {/* Gate Configuration - only for pool fencing and general fencing (not balustrades) */}
+          {gatesAllowed && (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold">Gate Required</Label>
+                  <InfoTooltip content="Add a gate panel to this section. Choose hardware type (Master Range or Polaris Soft Close), mounting style (glass-to-glass or wall-mounted), and position the gate within the section." />
+                </div>
+                <Switch
+                  checked={span.gateConfig?.required || false}
+                  onCheckedChange={(required) => {
+                    if (required) {
+                      const gaps = getGateGaps("polaris", "glass");
+                      updateSpan({
+                        gateConfig: {
+                          required: true,
+                          hardware: "polaris",
+                          hingeFrom: "glass",
+                          latchTo: "glass",
+                          hingeType: "glass-to-glass",
+                          latchType: "glass-to-glass",
+                          gateSize: 900,
+                          hingePanelSize: 1200,
+                          autoHingePanel: false,
+                          position: 0,
+                          flipped: false,
+                          postAdapterPlate: false,
+                          ...gaps,
+                        },
+                      });
+                    } else {
+                      updateSpan({ gateConfig: undefined });
+                    }
+                  }}
+                  data-testid={`span-${span.spanId}-gate-toggle`}
+                />
               </div>
-              <Switch
-                checked={span.gateConfig?.required || false}
-                onCheckedChange={(required) => {
-                  if (required) {
-                    const gaps = getGateGaps("polaris", "glass");
-                    updateSpan({
-                      gateConfig: {
-                        required: true,
-                        hardware: "polaris",
-                        hingeFrom: "glass",
-                        latchTo: "glass",
-                        hingeType: "glass-to-glass",
-                        latchType: "glass-to-glass",
-                        gateSize: 900,
-                        hingePanelSize: 1200,
-                        autoHingePanel: false,
-                        position: 0,
-                        flipped: false,
-                        postAdapterPlate: false,
-                        ...gaps,
-                      },
-                    });
-                  } else {
-                    updateSpan({ gateConfig: undefined });
-                  }
-                }}
-                data-testid={`span-${span.spanId}-gate-toggle`}
-              />
-            </div>
 
-            {span.gateConfig?.required && (
-              <GateControls
-                config={span.gateConfig}
-                spanId={span.spanId}
-                onUpdate={(gateConfig) => updateSpan({ 
-                  gateConfig: {
-                    ...gateConfig,
-                    postAdapterPlate: gateConfig.postAdapterPlate ?? false
-                  }
-                })}
-                calculatedHingePanelSize={optimalHingePanelSize}
-                numPanels={span.panelLayout?.panels.length}
-              />
-            )}
-          </div>
-
-          {/* Raked Panels Configuration */}
-          <div className="space-y-4 pt-4 border-t border-card-border">
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
-              <InfoTooltip content="Raked panels are designed for step ups at retaining walls and changes in heights. They have a fixed width of 1200mm with a sloped top edge to follow the ground level. Configure the height of the highest point." />
+              {span.gateConfig?.required && (
+                <GateControls
+                  config={span.gateConfig}
+                  spanId={span.spanId}
+                  onUpdate={(gateConfig) => updateSpan({ 
+                    gateConfig: {
+                      ...gateConfig,
+                      postAdapterPlate: gateConfig.postAdapterPlate ?? false
+                    }
+                  })}
+                  calculatedHingePanelSize={optimalHingePanelSize}
+                  numPanels={span.panelLayout?.panels.length}
+                />
+              )}
             </div>
-            
-            {span.maxPanelWidth < 1200 && (
-              <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-                Raked panels require 1200mm or greater panel width. Please set Max Panel Width to 1200mm or above to enable raked panels.
-              </p>
-            )}
+          )}
+
+          {/* Raked Panels Configuration - only for pool fencing and general fencing (not balustrades) */}
+          {gatesAllowed && (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
+                <InfoTooltip content="Raked panels are designed for step ups at retaining walls and changes in heights. They have a fixed width of 1200mm with a sloped top edge to follow the ground level. Configure the height of the highest point." />
+              </div>
+              
+              {span.maxPanelWidth < 1200 && (
+                <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+                  Raked panels require 1200mm or greater panel width. Please set Max Panel Width to 1200mm or above to enable raked panels.
+                </p>
+              )}
             
             {/* Left Raked Panel */}
             <div className="space-y-3">
@@ -633,9 +640,11 @@ export function SpanConfigPanel({
                 </div>
               )}
             </div>
+          </div>
+          )}
 
-            {/* Custom Panel */}
-            <div className="space-y-3">
+          {/* Custom Panel */}
+          <div className="space-y-3 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Label className="text-sm font-medium">Custom Panel</Label>
@@ -666,7 +675,6 @@ export function SpanConfigPanel({
                 />
               )}
             </div>
-          </div>
         </div>
       )}
     </Card>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { FenceShapeSelector } from "@/components/fence-shape-selector";
 import { SpanConfigPanel } from "@/components/span-config-panel";
@@ -30,10 +30,15 @@ export default function FenceBuilder() {
   const [showProductMockup, setShowProductMockup] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
 
+  // Get URL params for pre-selecting product
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlType = urlParams.get("type") as ProductType | null;
+  const urlVariant = urlParams.get("variant") as ProductVariant | null;
+
   const [design, setDesign] = useState<FenceDesign>({
     name: "Untitled Design",
-    productType: "glass-pool",
-    productVariant: "glass-pool-spigots",
+    productType: urlType || "glass-pool",
+    productVariant: urlVariant || "glass-pool-spigots",
     shape: "inline",
     customSides: 3,
     spans: [
@@ -311,6 +316,7 @@ export default function FenceBuilder() {
                     {design.productVariant === "alu-bal-barr" && "Aluminium Balustrade - Barr"}
                     {design.productVariant === "alu-bal-blade" && "Aluminium Balustrade - Blade"}
                     {design.productVariant === "alu-bal-visor" && "Aluminium Balustrade - Visor"}
+                    {design.productVariant === "pvc-privacy" && "PVC Fencing"}
                     {design.productVariant === "general-zeus" && "General Fencing - Zeus"}
                     {design.productVariant === "general-blade" && "General Fencing - Blade"}
                     {design.productVariant === "general-barr" && "General Fencing - Barr"}
@@ -486,9 +492,14 @@ export default function FenceBuilder() {
                 productVariant: variant,
               }));
               setShowProductMockup(false);
+              
+              // Inform user if switching to balustrade (gates will be hidden but preserved)
+              const isBalustrade = variant.includes("bal-");
               toast({
                 title: "Product Changed",
-                description: `Switched to ${variant.replace(/-/g, ' ')}`,
+                description: isBalustrade 
+                  ? `Switched to ${variant.replace(/-/g, ' ')} - Gate controls hidden for balustrade products`
+                  : `Switched to ${variant.replace(/-/g, ' ')}`,
               });
             }}
           />
@@ -552,6 +563,7 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
 function calculateComponents(design: FenceDesign): Component[] {
   const components: Component[] = [];
   const isChannelSystem = design.productVariant === "glass-pool-channel";
+  const gatesAllowed = !design.productVariant.includes("bal-");
 
   design.spans.forEach((span) => {
     // Use calculated panel layout with fallback
@@ -655,8 +667,8 @@ function calculateComponents(design: FenceDesign): Component[] {
         });
       }
 
-      // Gate hardware components (hinge set and latch)
-      if (span.gateConfig?.required) {
+      // Gate hardware components (hinge set and latch) - only for gate-capable products
+      if (gatesAllowed && span.gateConfig?.required) {
         const hingeType = span.gateConfig.hingeType || "glass-to-glass";
         const latchType = span.gateConfig.latchType || "glass-to-glass";
         const hardware = span.gateConfig.hardware || "polaris";
@@ -740,8 +752,8 @@ function calculateComponents(design: FenceDesign): Component[] {
           });
         }
         
-        // Gate hardware if configured
-        if (span.gateConfig?.required) {
+        // Gate hardware if configured - only for gate-capable products
+        if (gatesAllowed && span.gateConfig?.required) {
           const hingeType = span.gateConfig.hingeType || "glass-to-glass";
           const latchType = span.gateConfig.latchType || "glass-to-glass";
           const hardware = span.gateConfig.hardware || "polaris";
