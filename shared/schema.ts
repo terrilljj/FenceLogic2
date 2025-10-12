@@ -20,7 +20,11 @@ export type ProductVariant =
   | "alu-bal-barr"
   | "alu-bal-blade"
   | "alu-bal-visor"
-  | "pvc-privacy"
+  | "pvc-hamptons-full-privacy"
+  | "pvc-hamptons-combo"
+  | "pvc-hamptons-vertical-paling"
+  | "pvc-hamptons-semi-privacy"
+  | "pvc-hamptons-3rail"
   | "general-zeus"
   | "general-blade"
   | "general-barr";
@@ -224,6 +228,67 @@ export const BLADE_PANEL_SPECS = {
   },
 };
 
+// Hamptons PVC style types
+export type HamptonsStyle = 
+  | "full-privacy" 
+  | "combo" 
+  | "vertical-paling" 
+  | "semi-privacy" 
+  | "3rail";
+
+// Hamptons PVC finish types
+export type HamptonsFinish = "white" | "almond" | "clay";
+
+// Hamptons PVC layout modes
+export type HamptonsLayoutMode = "full-panels-cut-end" | "equally-spaced";
+
+// Hamptons PVC post types
+export type HamptonsPostType = "1-way" | "2-way" | "90-degree" | "gate-post";
+
+// Hamptons PVC panel specifications by style
+export const HAMPTONS_PANEL_SPECS = {
+  "full-privacy": {
+    height: 1800,
+    panelWidth: 2388,
+    postSize: "127mm",
+    postAllowance: 127, // 127mm square posts
+    gateWidth: 1000,
+    description: "Full Privacy Fencing - solid vertical slats",
+  },
+  "combo": {
+    height: 1800,
+    panelWidth: 2388,
+    postSize: "127mm",
+    postAllowance: 127,
+    gateWidth: 1000,
+    description: "Combo Fencing - Cowgirl/Slat Topper style",
+  },
+  "vertical-paling": {
+    height: 1800,
+    panelWidth: 2388,
+    postSize: "127mm",
+    postAllowance: 127,
+    gateWidth: 1000,
+    description: "Vertical Paling - ideal for front/boundary fencing",
+  },
+  "semi-privacy": {
+    height: 1000,
+    panelWidth: 2388,
+    postSize: "127mm",
+    postAllowance: 127,
+    gateWidth: 1000,
+    description: "Semi Privacy - ideal for front/boundary fencing",
+  },
+  "3rail": {
+    height: 1525, // Adjustable 1000-1500mm
+    panelWidth: 2388,
+    postSize: "127mm",
+    postAllowance: 127,
+    gateWidth: 1000,
+    description: "3 Rail Fencing - ideal for front/boundary fencing",
+  },
+};
+
 // Hinge types (mounting configurations)
 export type HingeType = "glass-to-glass" | "glass-to-wall" | "wall-to-glass";
 
@@ -280,6 +345,10 @@ export const spanConfigSchema = z.object({
   tubularLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Tubular panel layout mode
   tubularPostType: z.enum(["welded-base-plate", "standard"]).optional(), // Tubular post type
   tubularPostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // Tubular post mounting (for standard posts)
+  hamptonsStyle: z.enum(["full-privacy", "combo", "vertical-paling", "semi-privacy", "3rail"]).optional(), // Hamptons PVC style selection
+  hamptonsFinish: z.enum(["white", "almond", "clay"]).optional(), // Hamptons PVC finish
+  hamptonsLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Hamptons panel layout mode
+  hamptonsPostType: z.enum(["1-way", "2-way", "90-degree", "gate-post"]).optional(), // Hamptons post type
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems
@@ -368,9 +437,11 @@ export const fenceDesignSchema = z.object({
     "alu-bal-barr",
     "alu-bal-blade",
     "alu-bal-visor",
-    "pvc-privacy",
-    "pvc-picket",
-    "pvc-ranch",
+    "pvc-hamptons-full-privacy",
+    "pvc-hamptons-combo",
+    "pvc-hamptons-vertical-paling",
+    "pvc-hamptons-semi-privacy",
+    "pvc-hamptons-3rail",
     "general-zeus",
     "general-blade",
     "general-barr"
