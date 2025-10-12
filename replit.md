@@ -31,9 +31,24 @@ Preferred communication style: Simple, everyday language.
   - 1800mm H × 1969mm W (50×25mm pickets)
 - **Construction**: 50×25mm aluminum pickets with horizontal rails passing through punched holes, welded construction
 - **Finishes**: Satin Black (CN150A), Pearl White (GA078A)
-- **Gates**: 1200mm × 975mm, 1800mm × 975mm
-- **Posts**: Welded base plate (1280mm), standard lengths (1800mm, 2500mm)
-- **Features**: Pre-inserted caps on pickets, vertical slat design
+- **Gates**: 975mm post-mounted gates with D&D hardware
+- **Posts**: 50x25mm (1200mm height), 50mm (1000mm/1800mm heights)
+- **Post Types**: Welded base plate (1280mm), standard (1800mm/2500mm)
+- **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
+- **Features**: Pre-inserted caps on pickets, N+1 post structure
+
+**Blade Fencing Specifications (October 2025):**
+- **Two Heights Available**: 1000mm, 1200mm
+- **Panel Dimensions**:
+  - 1000mm H × 1700mm W (50×16mm vertical blades)
+  - 1200mm H × 2200mm W (50×16mm vertical blades)
+- **Construction**: 50×16mm aluminum vertical blades with 40×40mm horizontal rails (inset 80mm from top/bottom)
+- **Finishes**: Satin Black (CN150A), Pearl White (GA078A)
+- **Gates**: 975mm post-mounted gates with D&D hardware
+- **Posts**: 50×50mm square posts (all heights)
+- **Post Types**: Welded base plate (1280mm), standard (1800mm/2500mm)
+- **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
+- **Features**: Modern blade design, N+1 post structure, 15mm blade-to-post gap
 
 **Glass Specifications:**
 - **12mm Glass**: 300-1500mm width, 970mm height

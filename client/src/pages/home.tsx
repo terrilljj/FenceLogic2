@@ -66,7 +66,7 @@ const productOptions: ProductOption[] = [
     type: "aluminium-pool",
     name: "Blade Pool Fence",
     description: "Modern blade aluminium design",
-    visual: "aluminium-slats"
+    visual: "aluminium-vertical"
   },
   {
     id: "alu-bal-barr",

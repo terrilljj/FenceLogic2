@@ -275,6 +275,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
   // Check product type
   const isChannelSystem = design.productVariant === "glass-pool-channel";
+  const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
 
   // Set canvas size to match container
@@ -363,8 +364,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // For BARR, use gaps from panelLayout array (N+1 gaps for N panels)
-    if (isBarrFencing && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+    // For Blade and BARR, use gaps from panelLayout array (N+1 gaps for N panels)
+    if ((isBladeFencing || isBarrFencing) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
@@ -485,8 +486,68 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         scaledPanelHeight = span.customPanel.height * scale;
       }
       
+      // Blade panels have different rendering
+      if (isBladeFencing) {
+        // Blade panel configuration
+        const railSize = 40 * scale; // 40x40mm horizontal rail
+        const bladeWidth = 16 * scale; // 50x16mm blades (16mm width for vertical blades)
+        const bladeSpacing = 80 * scale; // Space between vertical blades
+        const postWidth = 50 * scale; // 50x50mm posts
+        const bladeGap = 15 * scale; // Gap between blades and posts
+        
+        // Draw Blade panel with vertical blades - sits on ground
+        const panelBottom = groundLevel;
+        const panelTop = panelBottom - scaledPanelHeight;
+        
+        // Draw vertical blades (slats) - FULL HEIGHT with gaps at posts
+        ctx.fillStyle = isGate ? "#b0b0b0" : "#9a9a9a";
+        const bladeStart = currentX + postWidth / 2 + bladeGap;
+        const bladeEnd = currentX + scaledPanelWidth - postWidth / 2 - bladeGap;
+        
+        let bladeX = bladeStart + (bladeSpacing / 2);
+        while (bladeX < bladeEnd - bladeWidth) {
+          ctx.fillRect(
+            bladeX - bladeWidth / 2,
+            panelTop,
+            bladeWidth,
+            scaledPanelHeight
+          );
+          bladeX += bladeSpacing;
+        }
+        
+        // Draw horizontal rails (40x40mm) - inset from top and bottom
+        ctx.fillStyle = isGate ? "#a0a0a0" : "#888888";
+        const railInset = 80 * scale; // Rails inset from panel edges
+        // Top rail (inset from top edge)
+        ctx.fillRect(currentX, panelTop + railInset, scaledPanelWidth, railSize);
+        // Bottom rail (inset from bottom edge)
+        ctx.fillRect(currentX, panelBottom - railInset - railSize, scaledPanelWidth, railSize);
+        
+        // Draw posts at panel edges (posts extend to ground)
+        // For Blade: N panels need N+1 posts (one before first panel, one after each panel)
+        ctx.fillStyle = "#707070";
+        
+        // Draw start post only for first panel
+        if (i === 0) {
+          ctx.fillRect(
+            currentX - postWidth / 2,
+            panelTop,
+            postWidth,
+            groundLevel - panelTop
+          );
+        }
+        
+        // Always draw post after this panel
+        ctx.fillRect(
+          currentX + scaledPanelWidth - postWidth / 2,
+          panelTop,
+          postWidth,
+          groundLevel - panelTop
+        );
+        
+      } 
       // BARR panels have different rendering
-      if (isBarrFencing) {
+      else if (isBarrFencing) {
         // BARR panel configuration
         const barrBottomClearance = 100 * scale; // Panels float above ground
         const railHeight = 25 * scale; // Top and bottom rails (thinner)
@@ -667,8 +728,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, BARR uses posts)
-      if (!isGate && !isChannelSystem && !isBarrFencing) {
+      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR use posts)
+      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing) {
         const spigotWidth = 50 * scale;   // 50mm wide
         const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass

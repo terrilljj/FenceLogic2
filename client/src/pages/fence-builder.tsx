@@ -563,12 +563,98 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
 function calculateComponents(design: FenceDesign): Component[] {
   const components: Component[] = [];
   const isChannelSystem = design.productVariant === "glass-pool-channel";
+  const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
   const gatesAllowed = !design.productVariant.includes("bal-");
 
   design.spans.forEach((span) => {
+    // Blade Fencing has its own component generation logic
+    if (isBladeFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
+      const bladeHeight = span.bladeHeight || "1200mm";
+      const bladeFinish = span.bladeFinish || "satin-black";
+      const bladePostType = span.bladePostType || "welded-base-plate";
+      
+      // Blade Panel specifications
+      const panelSpecs = {
+        "1000mm": { width: 1700, height: 1000, sku: "BLADE-1000" },
+        "1200mm": { width: 2200, height: 1200, sku: "BLADE-1200" },
+      };
+      const spec = panelSpecs[bladeHeight];
+      
+      // Finish details
+      const finishName = bladeFinish === "satin-black" ? "Satin Black (CN150A)" : "Pearl White (GA078A)";
+      const finishSku = bladeFinish === "satin-black" ? "CN150A" : "GA078A";
+      
+      // Add panels from layout
+      const panelTypes = span.panelLayout.panelTypes || [];
+      span.panelLayout.panels.forEach((panelWidth, index) => {
+        const panelType = panelTypes[index] || "standard";
+        
+        if (panelType === "gate") {
+          // Blade gate panel
+          components.push({
+            qty: 1,
+            description: `Blade Gate Panel ${bladeHeight} x ${panelWidth}mm (${finishName})`,
+            sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
+          });
+        } else if (panelWidth === spec.width) {
+          // Full standard Blade panel
+          components.push({
+            qty: 1,
+            description: `Blade Panel ${bladeHeight} x ${spec.width}mm (${finishName})`,
+            sku: `${spec.sku}-${spec.width}-${finishSku}`,
+          });
+        } else {
+          // Cut Blade panel
+          components.push({
+            qty: 1,
+            description: `Blade Panel ${bladeHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
+            sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
+          });
+        }
+      });
+      
+      // Add posts from gaps array (each gap represents a 50x50mm post)
+      const numPosts = span.panelLayout.gaps.length;
+      if (bladePostType === "welded-base-plate") {
+        components.push({
+          qty: numPosts,
+          description: `Blade 50x50mm Welded Base Plate Post 1300mm (${finishName})`,
+          sku: `BLADE-POST-WBP-1300-${finishSku}`,
+        });
+      } else {
+        // Standard posts - assume 1800mm or 2400mm
+        const postLength = bladeHeight === "1200mm" ? 2400 : 1800;
+        components.push({
+          qty: numPosts,
+          description: `Blade 50x50mm Standard Post ${postLength}mm (${finishName})`,
+          sku: `BLADE-POST-STD-${postLength}-${finishSku}`,
+        });
+      }
+      
+      // Gate hardware for Blade
+      if (gatesAllowed && span.gateConfig?.required) {
+        // Blade gates use D&D hardware
+        const gateHeight = spec.height;
+        const gateWidth = span.gateConfig.gateSize || 975;
+        
+        components.push({
+          qty: 1,
+          description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
+          sku: `DD-HINGE-BLADE-${gateHeight}-${gateWidth}`,
+        });
+        
+        components.push({
+          qty: 1,
+          description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
+          sku: `DD-LATCH-BLADE-${gateHeight}-${gateWidth}`,
+        });
+      }
+      
+      return; // Skip glass/channel logic for Blade
+    }
     // BARR Fencing has its own component generation logic
-    if (isBarrFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
+    else if (isBarrFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
       const barrHeight = span.barrHeight || "1200mm";
       const barrFinish = span.barrFinish || "satin-black";
       const barrPostType = span.barrPostType || "welded-base-plate";

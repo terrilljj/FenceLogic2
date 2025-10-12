@@ -141,6 +141,91 @@ export const BARR_PANEL_SPECS = {
   },
 };
 
+// Blade fencing height options
+export type BladeHeight = "1000mm" | "1200mm";
+
+// Blade fencing finish types
+export type BladeFinish = "satin-black" | "pearl-white";
+
+// Blade panel layout modes
+export type BladeLayoutMode = "full-panels-cut-end" | "equally-spaced";
+
+// Blade post types
+export type BladePostType = "welded-base-plate" | "standard";
+
+// Blade post mounting for standard posts
+export type BladePostMounting = "inground" | "wall" | "core-drilled";
+
+// Tubular Flat Top fencing height options
+export type TubularHeight = "1200mm" | "900mm";
+
+// Tubular fencing finish types
+export type TubularFinish = "black" | "white" | "monument";
+
+// Tubular panel width options
+export type TubularPanelWidth = "2400mm" | "2450mm" | "3000mm";
+
+// Tubular panel layout modes
+export type TubularLayoutMode = "full-panels-cut-end" | "equally-spaced";
+
+// Tubular post types
+export type TubularPostType = "welded-base-plate" | "standard";
+
+// Tubular post mounting for standard posts
+export type TubularPostMounting = "inground" | "wall" | "core-drilled";
+
+// Tubular panel specifications by height and width
+export const TUBULAR_PANEL_SPECS = {
+  "1200mm": {
+    height: 1200,
+    widths: {
+      "2400mm": 2400,
+      "2450mm": 2450,
+      "3000mm": 3000,
+    },
+    picketDiameter: "16mm",
+    railSize: "38x25mm",
+    postSize: "50mm",
+    postAllowance: 50, // 50mm gap for 50mm posts
+    type: "pool" as const,
+  },
+  "900mm": {
+    height: 900,
+    widths: {
+      "2400mm": 2400,
+      "2450mm": 2450,
+      "3000mm": 3000,
+    },
+    picketDiameter: "16mm",
+    railSize: "38x25mm",
+    postSize: "50mm",
+    postAllowance: 50, // 50mm gap for 50mm posts
+    type: "non-pool" as const,
+  },
+};
+
+// Blade panel specifications by height
+export const BLADE_PANEL_SPECS = {
+  "1000mm": {
+    height: 1000,
+    panelWidth: 1700,
+    bladeSize: "50x16mm",
+    postSize: "50x50mm",
+    railSize: "40x40mm",
+    postAllowance: 50, // 50mm gap for 50x50mm posts
+    type: "pool" as const,
+  },
+  "1200mm": {
+    height: 1200,
+    panelWidth: 2200,
+    bladeSize: "50x16mm",
+    postSize: "50x50mm",
+    railSize: "40x40mm",
+    postAllowance: 50, // 50mm gap for 50x50mm posts
+    type: "pool" as const,
+  },
+};
+
 // Hinge types (mounting configurations)
 export type HingeType = "glass-to-glass" | "glass-to-wall" | "wall-to-glass";
 
@@ -186,6 +271,17 @@ export const spanConfigSchema = z.object({
   barrLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // BARR panel layout mode
   barrPostType: z.enum(["welded-base-plate", "standard"]).optional(), // BARR post type
   barrPostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // BARR post mounting (for standard posts)
+  bladeHeight: z.enum(["1000mm", "1200mm"]).optional(), // Blade fencing height selection
+  bladeFinish: z.enum(["satin-black", "pearl-white"]).optional(), // Blade fencing finish
+  bladeLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Blade panel layout mode
+  bladePostType: z.enum(["welded-base-plate", "standard"]).optional(), // Blade post type
+  bladePostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // Blade post mounting (for standard posts)
+  tubularHeight: z.enum(["1200mm", "900mm"]).optional(), // Tubular fencing height selection
+  tubularFinish: z.enum(["black", "white", "monument"]).optional(), // Tubular fencing finish
+  tubularPanelWidth: z.enum(["2400mm", "2450mm", "3000mm"]).optional(), // Tubular panel width selection
+  tubularLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Tubular panel layout mode
+  tubularPostType: z.enum(["welded-base-plate", "standard"]).optional(), // Tubular post type
+  tubularPostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // Tubular post mounting (for standard posts)
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems
