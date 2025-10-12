@@ -62,6 +62,9 @@ export function SpanConfigPanel({
     let effectiveHingePanelSize = span.gateConfig?.hingePanelSize || 1200;
     
     if (span.gateConfig?.required && span.gateConfig.autoHingePanel) {
+      // Valid hinge panel sizes
+      const validHingeSizes = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
+      
       // Calculate a temporary layout with default hinge size to determine panel sizes
       const tempLayout = calculatePanelLayout(
         span.length,
@@ -88,10 +91,10 @@ export function SpanConfigPanel({
         } : undefined
       );
       
-      // Find most common panel size from temp layout (excluding gate and hinge panels)
+      // Find most common panel size from temp layout (excluding gate, hinge, raked, and custom panels)
       const regularPanels = tempLayout.panels.filter((_, i) => {
         const type = tempLayout.panelTypes?.[i];
-        return type !== "gate" && type !== "hinge";
+        return type === "standard"; // Only include standard panels
       });
       
       if (regularPanels.length > 0) {
@@ -104,10 +107,17 @@ export function SpanConfigPanel({
         const mostCommon = Array.from(panelCounts.entries())
           .sort((a, b) => b[1] - a[1])[0];
         
-        effectiveHingePanelSize = mostCommon[0];
+        const calculatedSize = mostCommon[0];
+        
+        // Round to nearest valid hinge panel size
+        effectiveHingePanelSize = validHingeSizes.reduce((prev, curr) => {
+          return Math.abs(curr - calculatedSize) < Math.abs(prev - calculatedSize) ? curr : prev;
+        });
       } else {
-        // No regular panels yet, use max panel width as default
-        effectiveHingePanelSize = span.maxPanelWidth;
+        // No regular panels yet, use max panel width rounded to nearest valid size
+        effectiveHingePanelSize = validHingeSizes.reduce((prev, curr) => {
+          return Math.abs(curr - span.maxPanelWidth) < Math.abs(prev - span.maxPanelWidth) ? curr : prev;
+        });
       }
     }
 
@@ -238,11 +248,14 @@ export function SpanConfigPanel({
       return undefined;
     }
     
+    // Valid hinge panel sizes
+    const validHingeSizes = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
+    
     // Use the current panelLayout if available
     if (span.panelLayout?.panels) {
       const regularPanels = span.panelLayout.panels.filter((_, i) => {
         const type = span.panelLayout?.panelTypes?.[i];
-        return type !== "gate" && type !== "hinge";
+        return type === "standard"; // Only include standard panels
       });
       
       if (regularPanels.length > 0) {
@@ -254,11 +267,19 @@ export function SpanConfigPanel({
         const mostCommon = Array.from(panelCounts.entries())
           .sort((a, b) => b[1] - a[1])[0];
         
-        return mostCommon[0];
+        const calculatedSize = mostCommon[0];
+        
+        // Round to nearest valid hinge panel size
+        return validHingeSizes.reduce((prev, curr) => {
+          return Math.abs(curr - calculatedSize) < Math.abs(prev - calculatedSize) ? curr : prev;
+        });
       }
     }
     
-    return span.maxPanelWidth;
+    // Round max panel width to nearest valid size
+    return validHingeSizes.reduce((prev, curr) => {
+      return Math.abs(curr - span.maxPanelWidth) < Math.abs(prev - span.maxPanelWidth) ? curr : prev;
+    });
   };
   
   const autoHingePanelSize = calculateAutoHingePanelSize();
