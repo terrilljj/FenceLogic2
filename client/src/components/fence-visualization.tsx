@@ -292,10 +292,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   
   // Drawing constants
   const panelHeight = 1200; // 1200mm standard height
-  const spanVerticalSpacing = 250; // Space between each span section
   const startX = 100;
   
-  // Find max panel height including raked panels (which can be up to 1800mm)
+  // Find max panel height including raked panels (which can be up to 1800mm) and custom panels
   let maxPanelHeight = panelHeight;
   design.spans.forEach(span => {
     if (span.leftRakedPanel?.enabled && span.leftRakedPanel.height > maxPanelHeight) {
@@ -304,7 +303,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     if (span.rightRakedPanel?.enabled && span.rightRakedPanel.height > maxPanelHeight) {
       maxPanelHeight = span.rightRakedPanel.height;
     }
+    if (span.customPanel?.enabled && span.customPanel.height > maxPanelHeight) {
+      maxPanelHeight = span.customPanel.height;
+    }
   });
+  
+  // Dynamic vertical spacing based on tallest panel to ensure panels don't overlap
+  const spanVerticalSpacing = Math.max(250, (maxPanelHeight * scale) + 80);
   
   // Need enough margin for: max panel height (scaled) + label + buffer
   const startY = (maxPanelHeight * scale) + 40; // Dynamic top margin based on tallest panel
