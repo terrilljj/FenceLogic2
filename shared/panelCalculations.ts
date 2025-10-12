@@ -43,7 +43,8 @@ export function calculatePanelLayout(
   const MIN_PANEL = 200;
   const MAX_PANEL = Math.min(maxPanelWidth, 2000);
   const PANEL_INCREMENT = 50;
-  const MAX_GAP = 99;
+  const MAX_GAP = 99; // Max gap for middle gaps (between panels)
+  const MAX_END_GAP = 150; // Max gap for left/right end gaps
   const MIN_GAP = 0;
   const RAKED_PANEL_WIDTH = 1200;
   
@@ -306,9 +307,17 @@ export function calculatePanelLayout(
     const actualTotalPanelWidth = finalPanels.reduce((sum, p) => sum + p, 0);
     const actualTotalGapWidth = effectiveLength - actualTotalPanelWidth;
     
+    // Debug gate configurations
+    if (hasGate && numVariablePanels === 2) {
+      console.log('Config check - panels:', finalPanels, 'total:', actualTotalPanelWidth, 'effectiveLength:', effectiveLength, 'gaps:', actualTotalGapWidth);
+    }
+    
     // STRICT CONSTRAINT: Total must never exceed section length
     // Also ensure we have enough space for minimum required gaps
     if (actualTotalPanelWidth > effectiveLength || actualTotalGapWidth < 0) {
+      if (hasGate) {
+        console.log('REJECTED - panels too large:', actualTotalPanelWidth, '> effectiveLength:', effectiveLength);
+      }
       continue; // Skip configurations that are too large
     }
     
@@ -330,6 +339,29 @@ export function calculatePanelLayout(
       const actualGap = actualTotalGapWidth / numGaps;
       
       if (actualGap >= MIN_GAP && actualGap <= MAX_GAP) {
+        // VALIDATE GATE GAPS FIRST (before scoring)
+        // If gate is present, check that regular gaps don't exceed 99mm
+        if (hasGate && gateConfig.hingeGap !== undefined && gateConfig.latchGap !== undefined) {
+          let regularGapSize: number;
+          
+          if (isWallMounted) {
+            // Wall-mounted: 1 hardware gap (latch), rest are regular
+            const numRegularGaps = numGaps - 1;
+            const remainingGapSpace = actualTotalGapWidth - gateConfig.latchGap;
+            regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
+          } else {
+            // Glass-to-glass: 2 hardware gaps (hinge + latch), rest are regular
+            const numRegularGaps = numGaps - 2;
+            const remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap - gateConfig.latchGap;
+            regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
+          }
+          
+          // Regular gaps must not exceed 99mm
+          if (regularGapSize > MAX_GAP) {
+            continue; // Skip this configuration
+          }
+        }
+        
         // Good match! Prefer configurations with gate/custom panels, then fewer panels, then larger panels
         const hasRequiredComponents = (hasGate || hasCustomPanel) ? (numGatePanels + numCustomPanels > 0 ? 0 : 1000) : 0;
         const panelSizeScore = -Math.max(...finalPanels);
@@ -417,6 +449,23 @@ export function calculatePanelLayout(
           } else {
             // No specific gate gaps, use uniform gaps
             gapsArray = Array(numGaps).fill(actualGap);
+          }
+          
+          // Validate that middle gaps (excluding left and right end gaps) don't exceed 99mm
+          // End gaps can be up to 150mm, but gaps between panels must be <= 99mm
+          let gapsValid = true;
+          for (let i = 0; i < gapsArray.length; i++) {
+            const isEndGap = (i === 0 || i === gapsArray.length - 1);
+            const maxAllowed = isEndGap ? MAX_END_GAP : MAX_GAP;
+            
+            if (gapsArray[i] > maxAllowed) {
+              gapsValid = false;
+              break;
+            }
+          }
+          
+          if (!gapsValid) {
+            continue; // Skip configurations with gaps exceeding limits
           }
           
           bestLayout = {
