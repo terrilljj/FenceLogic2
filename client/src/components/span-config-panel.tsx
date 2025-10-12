@@ -243,6 +243,9 @@ export function SpanConfigPanel({
       return type === "standard";
     });
     
+    console.log('Auto calc - layout with 600mm hinge:', layoutWithSmallHinge.panels, 'types:', layoutWithSmallHinge.panelTypes);
+    console.log('Auto calc - standard panels:', regularPanels);
+    
     if (regularPanels.length > 0) {
       const panelCounts = new Map<number, number>();
       regularPanels.forEach(panel => {
@@ -253,20 +256,24 @@ export function SpanConfigPanel({
         .sort((a, b) => b[1] - a[1])[0];
       
       const calculatedSize = mostCommon[0];
-      
-      // Round to nearest valid hinge panel size
-      return validHingeSizes.reduce((prev, curr) => {
+      const rounded = validHingeSizes.reduce((prev, curr) => {
         return Math.abs(curr - calculatedSize) < Math.abs(prev - calculatedSize) ? curr : prev;
       });
+      
+      console.log('Auto calc - most common standard panel:', calculatedSize, '→ rounded hinge:', rounded);
+      return rounded;
     } else {
       // No standard panels, use max panel width
-      return validHingeSizes.reduce((prev, curr) => {
+      const rounded = validHingeSizes.reduce((prev, curr) => {
         return Math.abs(curr - span.maxPanelWidth) < Math.abs(prev - span.maxPanelWidth) ? curr : prev;
       });
+      console.log('Auto calc - no standard panels, using max width rounded:', rounded);
+      return rounded;
     }
   };
   
   const optimalHingePanelSize = calculateOptimalHingePanelSize();
+  console.log('Auto button will use:', optimalHingePanelSize);
 
   // Calculate total measurements and variance for elevation view
   const calculateTotalAndVariance = () => {
