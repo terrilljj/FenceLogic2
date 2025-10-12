@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps, ProductVariant } from "@shared/schema";
-import { calculatePanelLayout, calculateBarrPanelLayout, calculateBladePanelLayout } from "@shared/panelCalculations";
+import { calculatePanelLayout, calculateBarrPanelLayout, calculateBladePanelLayout, calculateTubularPanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
@@ -81,6 +81,26 @@ export function SpanConfigPanel({
         gateSize,
         gatePosition
       );
+    } 
+    // Tubular Flat Top uses a different calculation
+    else if (productVariant === "alu-pool-tubular") {
+      // Get Tubular specifications
+      const tubularHeight = span.tubularHeight || "1200mm";
+      const tubularPanelWidth = span.tubularPanelWidth || "2400mm";
+      const layoutMode = span.tubularLayoutMode || "full-panels-cut-end";
+      const hasGate = gatesAllowed && span.gateConfig?.required;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
+      const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
+
+      layout = calculateTubularPanelLayout(
+        span.length,
+        tubularHeight,
+        tubularPanelWidth,
+        layoutMode,
+        hasGate,
+        gateSize,
+        gatePosition
+      );
     } else {
       // Glass/standoff/general fencing calculation
       // Calculate total end gaps, using latch gap when gate latch is at wall boundary
@@ -148,6 +168,7 @@ export function SpanConfigPanel({
       span.customPanel?.enabled, span.customPanel?.width, span.customPanel?.height, span.customPanel?.position,
       span.bladeHeight, span.bladeLayoutMode, // Add Blade-specific dependencies
       span.barrHeight, span.barrLayoutMode, // Add BARR-specific dependencies
+      span.tubularHeight, span.tubularPanelWidth, span.tubularLayoutMode, // Add Tubular-specific dependencies
       productVariant, gatesAllowed, onUpdate]);
 
   // Validate panel layout
