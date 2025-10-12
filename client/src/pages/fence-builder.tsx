@@ -563,9 +563,98 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
 function calculateComponents(design: FenceDesign): Component[] {
   const components: Component[] = [];
   const isChannelSystem = design.productVariant === "glass-pool-channel";
+  const isBarrFencing = design.productVariant === "alu-pool-barr";
   const gatesAllowed = !design.productVariant.includes("bal-");
 
   design.spans.forEach((span) => {
+    // BARR Fencing has its own component generation logic
+    if (isBarrFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
+      const barrHeight = span.barrHeight || "1200mm";
+      const barrFinish = span.barrFinish || "satin-black";
+      const barrPostType = span.barrPostType || "welded-base-plate";
+      
+      // BARR Panel specifications
+      const panelSpecs = {
+        "1000mm": { width: 1733, height: 1000, sku: "BARR-1000" },
+        "1200mm": { width: 2205, height: 1200, sku: "BARR-1200" },
+        "1800mm": { width: 1969, height: 1800, sku: "BARR-1800" },
+      };
+      const spec = panelSpecs[barrHeight];
+      
+      // Finish details
+      const finishName = barrFinish === "satin-black" ? "Satin Black (CN150A)" : "Pearl White (GA078A)";
+      const finishSku = barrFinish === "satin-black" ? "CN150A" : "GA078A";
+      
+      // Add panels from layout
+      const panelTypes = span.panelLayout.panelTypes || [];
+      span.panelLayout.panels.forEach((panelWidth, index) => {
+        const panelType = panelTypes[index] || "standard";
+        
+        if (panelType === "gate") {
+          // BARR gate panel
+          components.push({
+            qty: 1,
+            description: `BARR Gate Panel ${barrHeight} x ${panelWidth}mm (${finishName})`,
+            sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
+          });
+        } else if (panelWidth === spec.width) {
+          // Full standard BARR panel
+          components.push({
+            qty: 1,
+            description: `BARR Panel ${barrHeight} x ${spec.width}mm (${finishName})`,
+            sku: `${spec.sku}-${spec.width}-${finishSku}`,
+          });
+        } else {
+          // Cut BARR panel
+          components.push({
+            qty: 1,
+            description: `BARR Panel ${barrHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
+            sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
+          });
+        }
+      });
+      
+      // Add posts from gaps array (each gap represents a post)
+      const numPosts = span.panelLayout.gaps.length;
+      if (barrPostType === "welded-base-plate") {
+        components.push({
+          qty: numPosts,
+          description: `BARR Welded Base Plate Post 1280mm (${finishName})`,
+          sku: `BARR-POST-WBP-1280-${finishSku}`,
+        });
+      } else {
+        // Standard posts - assume 1800mm for 1000mm and 1200mm heights, 2500mm for 1800mm
+        const postLength = barrHeight === "1800mm" ? 2500 : 1800;
+        components.push({
+          qty: numPosts,
+          description: `BARR Standard Post ${postLength}mm (${finishName})`,
+          sku: `BARR-POST-STD-${postLength}-${finishSku}`,
+        });
+      }
+      
+      // Gate hardware for BARR
+      if (gatesAllowed && span.gateConfig?.required) {
+        // BARR gates use D&D hardware
+        const gateHeight = spec.height;
+        const gateWidth = span.gateConfig.gateSize || 975;
+        
+        components.push({
+          qty: 1,
+          description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
+          sku: `DD-HINGE-BARR-${gateHeight}-${gateWidth}`,
+        });
+        
+        components.push({
+          qty: 1,
+          description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
+          sku: `DD-LATCH-BARR-${gateHeight}-${gateWidth}`,
+        });
+      }
+      
+      return; // Skip glass/channel logic for BARR
+    }
+    
+    // Glass and other fencing types
     // Use calculated panel layout with fallback
     if (span.panelLayout && span.panelLayout.panels.length > 0) {
       const panels = span.panelLayout.panels;
@@ -810,11 +899,14 @@ function calculateComponents(design: FenceDesign): Component[] {
           desc.includes('Gate Panel') || desc.includes('Hinge Panel') || desc.includes('Custom Glass Panel')) {
         return 1; // Glass panels
       }
+      if (desc.includes('BARR Panel') || desc.includes('BARR Gate Panel')) {
+        return 1; // BARR panels (treated like glass panels for sorting)
+      }
       if (desc.includes('Spigot')) return 2;
       if (desc.includes('Channel')) return 3; // Channel system components
       if (desc.includes('Post')) return 4;
-      if (desc.includes('Hinge Set')) return 5;
-      if (desc.includes('Latch')) return 6;
+      if (desc.includes('Hinge Set') || desc.includes('D&D Hinge')) return 5;
+      if (desc.includes('Latch') || desc.includes('D&D Latch')) return 6;
       return 7; // Other hardware/accessories
     };
 
