@@ -210,8 +210,11 @@ export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall")
       return { hingeGap: 9, latchGap: 9 };
     }
   } else { // polaris
-    // Polaris hinge gap is 8mm for both wall and glass mounting
-    return { hingeGap: 8, latchGap: 9 };
+    if (hingeFrom === "wall") {
+      return { hingeGap: 0, latchGap: 9 }; // Wall-mounted: hinge at wall (no gap), latch gap 9mm
+    } else {
+      return { hingeGap: 20, latchGap: 9 }; // Glass-to-glass: hinge gap 20mm, latch gap 9mm
+    }
   }
 }
 
