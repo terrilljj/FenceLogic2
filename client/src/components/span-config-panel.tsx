@@ -52,7 +52,7 @@ export function SpanConfigPanel({
       const bladeHeight = span.bladeHeight || "1200mm";
       const layoutMode = span.bladeLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
       const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateBladePanelLayout(
@@ -70,7 +70,7 @@ export function SpanConfigPanel({
       const barrHeight = span.barrHeight || "1200mm";
       const layoutMode = span.barrLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
       const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateBarrPanelLayout(
@@ -89,7 +89,7 @@ export function SpanConfigPanel({
       const tubularPanelWidth = span.tubularPanelWidth || "2450mm";
       const layoutMode = span.tubularLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
       const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateTubularPanelLayout(
@@ -478,7 +478,7 @@ export function SpanConfigPanel({
                               latchTo: "wall",
                               hingeType: "wall-to-glass",
                               latchType: "glass-to-wall",
-                              gateSize: 975,
+                              gateSize: 1000,
                               hingePanelSize: 0,
                               autoHingePanel: false,
                               position: 0,
@@ -657,7 +657,7 @@ export function SpanConfigPanel({
                               latchTo: "wall",
                               hingeType: "wall-to-glass",
                               latchType: "glass-to-wall",
-                              gateSize: 975,
+                              gateSize: 1000,
                               hingePanelSize: 0,
                               autoHingePanel: false,
                               position: 0,
@@ -820,7 +820,7 @@ export function SpanConfigPanel({
                               latchTo: "wall",
                               hingeType: "wall-to-glass",
                               latchType: "glass-to-wall",
-                              gateSize: 975,
+                              gateSize: 1000,
                               hingePanelSize: 0,
                               autoHingePanel: false,
                               position: 0,

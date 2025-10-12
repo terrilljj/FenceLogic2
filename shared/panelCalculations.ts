@@ -549,13 +549,13 @@ export function calculateBarrPanelLayout(
   barrHeight: "1000mm" | "1200mm" | "1800mm",
   layoutMode: "full-panels-cut-end" | "equally-spaced",
   hasGate: boolean = false,
-  gateSize: number = 975,
+  gateSize: number = 1000,
   gatePosition: number = 0
 ): PanelLayout {
   const BARR_SPECS = {
-    "1000mm": { panelWidth: 1733, postAllowance: 50 },
-    "1200mm": { panelWidth: 2205, postAllowance: 25 },
-    "1800mm": { panelWidth: 1969, postAllowance: 50 },
+    "1000mm": { panelWidth: 1733, postAllowance: 0 },
+    "1200mm": { panelWidth: 2205, postAllowance: 0 },
+    "1800mm": { panelWidth: 1969, postAllowance: 0 },
   };
 
   const specs = BARR_SPECS[barrHeight];
@@ -565,8 +565,8 @@ export function calculateBarrPanelLayout(
 
   // BARR structure: [POST]-[ELEMENT]-[POST]-[ELEMENT]-[POST]...
   // For N elements, need N+1 posts
-  // All gaps use post allowance (25mm or 50mm) - gate and panels treated equally
-  // (The 12.5mm gate clearance is internal physical clearance, not a gap in our layout)
+  // Panels butt directly together with no gaps (post allowance = 0)
+  // Gates have side stiles and butt directly against panels/posts
   
   if (layoutMode === "full-panels-cut-end") {
     // Mode 1: Full standard panels + cut end piece
@@ -932,12 +932,12 @@ export function calculateBladePanelLayout(
   bladeHeight: "1000mm" | "1200mm",
   layoutMode: "full-panels-cut-end" | "equally-spaced",
   hasGate: boolean = false,
-  gateSize: number = 975,
+  gateSize: number = 1000,
   gatePosition: number = 0
 ): PanelLayout {
   const BLADE_SPECS = {
-    "1000mm": { panelWidth: 1700, postAllowance: 50 },
-    "1200mm": { panelWidth: 2200, postAllowance: 50 },
+    "1000mm": { panelWidth: 1700, postAllowance: 0 },
+    "1200mm": { panelWidth: 2200, postAllowance: 0 },
   };
 
   const specs = BLADE_SPECS[bladeHeight];
@@ -947,7 +947,8 @@ export function calculateBladePanelLayout(
 
   // Blade structure: [POST]-[ELEMENT]-[POST]-[ELEMENT]-[POST]...
   // For N elements, need N+1 posts
-  // All gaps use 50mm post allowance - gate and panels treated equally
+  // Panels butt directly together with no gaps (post allowance = 0)
+  // Gates have side stiles and butt directly against panels/posts
   
   if (layoutMode === "full-panels-cut-end") {
     // Mode 1: Full standard panels + cut end piece
@@ -1321,20 +1322,19 @@ export function calculateBladePanelLayout(
 export function calculateTubularPanelLayout(
   spanLength: number,
   tubularHeight: "1200mm" | "900mm",
-  tubularPanelWidth: "2400mm" | "2450mm" | "3000mm",
+  tubularPanelWidth: "2450mm" | "3000mm",
   layoutMode: "full-panels-cut-end" | "equally-spaced",
   hasGate: boolean = false,
-  gateSize: number = 975,
+  gateSize: number = 1000,
   gatePosition: number = 0
 ): PanelLayout {
   const TUBULAR_WIDTHS = {
-    "2400mm": 2400,
     "2450mm": 2450,
     "3000mm": 3000,
   };
   
   const standardPanelWidth = TUBULAR_WIDTHS[tubularPanelWidth];
-  const post = 50; // 50mm post allowance for all Tubular heights
+  const post = 0; // No gap - panels butt directly together
   const MIN_PANEL = 200;
   
   if (layoutMode === "full-panels-cut-end") {

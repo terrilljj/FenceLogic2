@@ -276,7 +276,7 @@ export const spanConfigSchema = z.object({
   bladePostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // Blade post mounting (for standard posts)
   tubularHeight: z.enum(["1200mm", "900mm"]).optional(), // Tubular fencing height selection
   tubularFinish: z.enum(["black", "white", "monument"]).optional(), // Tubular fencing finish
-  tubularPanelWidth: z.enum(["2400mm", "2450mm", "3000mm"]).optional(), // Tubular panel width selection
+  tubularPanelWidth: z.enum(["2450mm", "3000mm"]).optional(), // Tubular panel width selection
   tubularLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Tubular panel layout mode
   tubularPostType: z.enum(["welded-base-plate", "standard"]).optional(), // Tubular post type
   tubularPostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // Tubular post mounting (for standard posts)
