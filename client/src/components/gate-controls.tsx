@@ -26,9 +26,10 @@ interface GateControlsProps {
   spanId: string | number;
   onUpdate: (config: GateConfig) => void;
   calculatedHingePanelSize?: number; // Auto-calculated hinge panel size when auto is enabled
+  numPanels?: number; // Number of panels in the span for position limits
 }
 
-export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSize }: GateControlsProps) {
+export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSize, numPanels = 1 }: GateControlsProps) {
   const updateConfig = (updates: Partial<GateConfig>) => {
     // Automatically update gaps when hardware or hingeFrom changes
     const newHardware = updates.hardware ?? config.hardware;
@@ -41,6 +42,19 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
   // Valid gate sizes for each hardware type
   const polarisGateSizes = [800, 900];
   const masterGateSizes = [750, 834, 890, 1000];
+
+  // Calculate position limits based on mount type
+  const getPositionLimits = () => {
+    if (config.hingeFrom === "wall") {
+      // Wall-mounted: only positions 0 (left) or 1 (right) allowed
+      return { min: 0, max: 1 };
+    } else {
+      // Glass-to-glass: 0 to (numPanels - 1)
+      return { min: 0, max: Math.max(0, numPanels - 1) };
+    }
+  };
+
+  const positionLimits = getPositionLimits();
 
   return (
     <div className="space-y-4 bg-muted/30 rounded-md p-4" data-testid={`gate-controls-${spanId}`}>
@@ -264,9 +278,9 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => updateConfig({ position: Math.max(0, config.position - 1) })}
+                onClick={() => updateConfig({ position: Math.max(positionLimits.min, config.position - 1) })}
                 data-testid={`gate-${spanId}-move-left`}
-                disabled={config.position === 0}
+                disabled={config.position <= positionLimits.min}
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Move Left
@@ -275,8 +289,9 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => updateConfig({ position: config.position + 1 })}
+                onClick={() => updateConfig({ position: Math.min(positionLimits.max, config.position + 1) })}
                 data-testid={`gate-${spanId}-move-right`}
+                disabled={config.position >= positionLimits.max}
               >
                 <ChevronRight className="w-4 h-4 mr-2" />
                 Move Right

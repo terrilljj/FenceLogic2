@@ -43,38 +43,9 @@ export function SpanConfigPanel({
 
   // Calculate panel layout whenever relevant parameters change
   useEffect(() => {
-    // Calculate total end gaps with gate latch override
+    // Calculate total end gaps (no override - let calculatePanelLayout handle gate gaps)
     let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
-    
-    // Override end gaps when gate latch is at the boundary (must be 9mm)
-    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
-      const latchGap = span.gateConfig.latchGap || 9;
-      
-      if (span.gateConfig.hingeFrom === "wall") {
-        // Wall-mounted gate: position determines which end
-        if (span.gateConfig.position === 0) {
-          // Gate at left end, latch faces left wall
-          leftEndGap = latchGap;
-        } else if (span.gateConfig.position >= 1) {
-          // Gate at right end, latch faces right wall
-          rightEndGap = latchGap;
-        }
-      } else {
-        // Glass-to-glass: check if gate is at the ends
-        const isAtLeftEnd = span.gateConfig.position === 0;
-        const numPanels = span.panelLayout?.panels.length || 0;
-        const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
-        
-        if (isAtLeftEnd && !span.gateConfig.flipped) {
-          // Gate at left, not flipped [gate, hinge]: latch faces left wall
-          leftEndGap = latchGap;
-        } else if (isAtRightEnd && span.gateConfig.flipped) {
-          // Gate at right, flipped [hinge, gate]: latch faces right wall
-          rightEndGap = latchGap;
-        }
-      }
-    }
     
     let endGaps = leftEndGap + rightEndGap;
     if (span.topGap?.enabled) endGaps += span.topGap.size;
@@ -243,38 +214,6 @@ export function SpanConfigPanel({
   };
 
   const layoutValidation = validatePanelLayout();
-  
-  // Check if end gaps are being overridden due to gate latch at wall
-  const getGapOverride = (side: 'left' | 'right'): number | null => {
-    if (!span.gateConfig?.required || span.gateConfig.latchTo !== "wall") {
-      return null;
-    }
-    
-    const latchGap = span.gateConfig.latchGap || 9;
-    const numPanels = span.panelLayout?.panels.length || 0;
-    
-    if (span.gateConfig.hingeFrom === "wall") {
-      if (side === 'left' && span.gateConfig.position === 0) {
-        return latchGap;
-      } else if (side === 'right' && span.gateConfig.position >= 1) {
-        return latchGap;
-      }
-    } else {
-      const isAtLeftEnd = span.gateConfig.position === 0;
-      const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
-      
-      if (side === 'left' && isAtLeftEnd && !span.gateConfig.flipped) {
-        return latchGap;
-      } else if (side === 'right' && isAtRightEnd && span.gateConfig.flipped) {
-        return latchGap;
-      }
-    }
-    
-    return null;
-  };
-  
-  const leftGapOverride = getGapOverride('left');
-  const rightGapOverride = getGapOverride('right');
 
   // Calculate auto hinge panel size for display
   const calculateAutoHingePanelSize = (): number | undefined => {
@@ -319,9 +258,9 @@ export function SpanConfigPanel({
     // Sum individual gaps (as shown on elevation - these are the actual gap values displayed)
     const internalGapsTotal = span.panelLayout.gaps.reduce((sum, gap) => sum + gap, 0);
     
-    // Add end gaps (with overrides if applicable)
-    const leftEndGap = leftGapOverride ?? (span.leftGap?.enabled ? span.leftGap.size : 0);
-    const rightEndGap = rightGapOverride ?? (span.rightGap?.enabled ? span.rightGap.size : 0);
+    // Add end gaps
+    const leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
+    const rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
     
     const total = panelsTotal + internalGapsTotal + leftEndGap + rightEndGap;
     const variance = span.length - total;
@@ -484,11 +423,6 @@ export function SpanConfigPanel({
                     max={150}
                     testId={`span-${span.spanId}-left-gap`}
                   />
-                  {leftGapOverride !== null && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium" data-testid={`span-${span.spanId}-left-gap-override`}>
-                      Overridden to {leftGapOverride}mm (latch at wall)
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -506,11 +440,6 @@ export function SpanConfigPanel({
                     max={150}
                     testId={`span-${span.spanId}-right-gap`}
                   />
-                  {rightGapOverride !== null && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium" data-testid={`span-${span.spanId}-right-gap-override`}>
-                      Overridden to {rightGapOverride}mm (latch at wall)
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -688,6 +617,7 @@ export function SpanConfigPanel({
                 spanId={span.spanId}
                 onUpdate={(gateConfig: typeof span.gateConfig) => updateSpan({ gateConfig })}
                 calculatedHingePanelSize={autoHingePanelSize}
+                numPanels={span.panelLayout?.panels.length}
               />
             )}
           </div>
