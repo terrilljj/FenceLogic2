@@ -43,9 +43,23 @@ export function SpanConfigPanel({
 
   // Calculate panel layout whenever relevant parameters change
   useEffect(() => {
-    // Calculate total end gaps (no override - let calculatePanelLayout handle gate gaps)
+    // Calculate total end gaps, using latch gap when gate latch is at wall boundary
     let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
+    
+    // When latchTo="wall", use latch gap at the boundary instead of configured end gap
+    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
+      const latchGap = span.gateConfig.latchGap || 9;
+      
+      if (span.gateConfig.hingeFrom === "wall") {
+        // Wall-mounted: position determines which end has the latch
+        if (span.gateConfig.position === 0) {
+          leftEndGap = latchGap;
+        } else if (span.gateConfig.position >= 1) {
+          rightEndGap = latchGap;
+        }
+      }
+    }
     
     let endGaps = leftEndGap + rightEndGap;
     if (span.topGap?.enabled) endGaps += span.topGap.size;

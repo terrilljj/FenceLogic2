@@ -236,7 +236,7 @@ export default function FenceBuilder() {
   };
 
   const handleDownloadList = () => {
-    const csvContent = generateComponentCSV(components);
+    const csvContent = generateComponentCSV(components, design);
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -247,7 +247,7 @@ export default function FenceBuilder() {
 
     toast({
       title: "List Downloaded",
-      description: "Component list has been downloaded as CSV.",
+      description: "Component list with panel layout has been downloaded as CSV.",
     });
   };
 
@@ -802,14 +802,33 @@ function calculateComponents(design: FenceDesign): Component[] {
   return sorted;
 }
 
-function generateComponentCSV(components: Component[]): string {
-  const headers = ["QTY", "Description", "SKU"];
-  const rows = components.map((comp) => [comp.qty, comp.description, comp.sku || ""]);
+function generateComponentCSV(components: Component[], design: FenceDesign): string {
+  const lines: string[] = [];
   
-  const csvContent = [
-    headers.join(","),
-    ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-  ].join("\n");
-
-  return csvContent;
+  // Add panel layout section for each span
+  lines.push("PANEL LAYOUT");
+  lines.push("Section,Panel #,Width (mm),Type,Gap After (mm)");
+  
+  design.spans.forEach((span, spanIndex) => {
+    if (span.panelLayout && span.panelLayout.panels.length > 0) {
+      span.panelLayout.panels.forEach((panelWidth, panelIndex) => {
+        const panelType = span.panelLayout?.panelTypes?.[panelIndex] || "standard";
+        const gapAfter = span.panelLayout?.gaps[panelIndex] || 0;
+        const sectionName = span.spanId || `${spanIndex + 1}`;
+        lines.push(`"${sectionName}",${panelIndex + 1},${panelWidth},"${panelType}",${gapAfter}`);
+      });
+    }
+  });
+  
+  // Add blank line separator
+  lines.push("");
+  
+  // Add component list section
+  lines.push("COMPONENT LIST");
+  lines.push("QTY,Description,SKU");
+  components.forEach((comp) => {
+    lines.push(`${comp.qty},"${comp.description}","${comp.sku || ""}"`);
+  });
+  
+  return lines.join("\n");
 }
