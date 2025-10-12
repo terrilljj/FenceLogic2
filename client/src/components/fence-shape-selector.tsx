@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FenceShape } from "@shared/schema";
+import { InfoTooltip } from "@/components/info-tooltip";
 
 interface FenceShapeSelectorProps {
   selected: FenceShape;
@@ -52,17 +53,20 @@ export function FenceShapeSelector({
   onCustomSidesChange,
 }: FenceShapeSelectorProps) {
   const shapes = [
-    { id: "inline" as FenceShape, label: "Inline", icon: InlineIcon },
-    { id: "l-shape" as FenceShape, label: "L Shape", icon: LShapeIcon },
-    { id: "u-shape" as FenceShape, label: "U Shape", icon: UShapeIcon },
-    { id: "enclosed" as FenceShape, label: "Enclosed", icon: EnclosedIcon },
-    { id: "custom" as FenceShape, label: "Custom", icon: CustomIcon },
+    { id: "inline" as FenceShape, label: "1 Section", icon: InlineIcon },
+    { id: "l-shape" as FenceShape, label: "2 Sections", icon: LShapeIcon },
+    { id: "u-shape" as FenceShape, label: "3 Sections", icon: UShapeIcon },
+    { id: "enclosed" as FenceShape, label: "4 Sections", icon: EnclosedIcon },
+    { id: "custom" as FenceShape, label: "5+ Sections", icon: CustomIcon },
   ];
 
   return (
     <div className="space-y-4" data-testid="fence-shape-selector">
       <div>
-        <h2 className="text-xl font-semibold mb-2">Select Fence Shape</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-xl font-semibold">Select Fence Shape</h2>
+          <InfoTooltip content="Choose the number of fence sections needed for your area. Each section can be configured independently with its own length, panels, gaps, and gate settings. 1 Section is a straight run, 2 Sections forms an L-shape, 3 Sections forms a U-shape, 4 Sections encloses an area, and 5+ Sections allows custom configurations." />
+        </div>
         <p className="text-sm text-muted-foreground">
           Choose the configuration that matches your pool area
         </p>

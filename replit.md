@@ -2,7 +2,7 @@
 
 ## Overview
 
-Fence Logic is a web-based configurator tool for designing custom fencing and balustrade systems. The application provides an interactive visualization system combined with precise configuration controls, allowing users to design fence layouts, specify spans and gates, and generate automated component lists. The tool supports multiple product types (Glass Pool Fencing, Glass Balustrade, Aluminium Pool Fencing, Aluminium Balustrade, General Fencing) with product-specific configuration options, multiple fence shapes (inline, L-shape, U-shape, enclosed, and custom configurations), and real-time calculation of required materials.
+Fence Logic is a web-based configurator tool for designing custom fencing and balustrade systems. The application provides an interactive visualization system combined with precise configuration controls, allowing users to design fence layouts, specify spans and gates, and generate automated component lists. The tool supports multiple product types (Glass Pool Fencing, Glass Balustrade, Aluminium Pool Fencing, Aluminium Balustrade, General Fencing) with product-specific configuration options, multiple fence shapes (1 section, 2 sections, 3 sections, 4 sections, and 5+ sections for custom configurations), and real-time calculation of required materials.
 
 ## User Preferences
 
