@@ -207,73 +207,38 @@ export function SpanConfigPanel({
     // Valid hinge panel sizes
     const validHingeSizes = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
     
-    // Use a temporary small hinge (600mm) to see what the standard panels become
     const leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
     const rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
     const endGaps = leftEndGap + rightEndGap;
     
-    const layoutWithSmallHinge = calculatePanelLayout(
-      span.length,
-      endGaps,
-      span.desiredGap,
-      span.maxPanelWidth,
-      span.leftRakedPanel?.enabled || false,
-      span.rightRakedPanel?.enabled || false,
-      {
-        required: true,
-        gateSize: span.gateConfig.gateSize,
-        hingePanelSize: 600, // Use smallest hinge to maximize standard panel sizes
-        position: span.gateConfig.position,
-        flipped: span.gateConfig.flipped,
-        hingeFrom: span.gateConfig.hingeFrom,
-        hingeGap: span.gateConfig.hingeGap,
-        latchGap: span.gateConfig.latchGap,
-      },
-      span.customPanel?.enabled ? {
-        enabled: span.customPanel.enabled,
-        width: span.customPanel.width,
-        height: span.customPanel.height,
-        position: span.customPanel.position,
-      } : undefined
-    );
+    // Calculate as if ALL panels (gate + hinge + standards) were equal size
+    // This finds the "natural" panel size for the section
+    const effectiveLength = span.length - endGaps;
+    const gateSize = span.gateConfig.gateSize;
     
-    // Find most common STANDARD panel size (not gate, not hinge)
-    const regularPanels = layoutWithSmallHinge.panels.filter((_, i) => {
-      const type = layoutWithSmallHinge.panelTypes?.[i];
-      return type === "standard";
+    // Estimate number of panels: usually gate + hinge + 2 standards = 4 panels
+    const estimatedPanels = 4;
+    const estimatedGaps = estimatedPanels - 1; // 3 gaps
+    const totalGapWidth = estimatedGaps * span.desiredGap;
+    const availableForPanels = effectiveLength - totalGapWidth;
+    
+    // What if all 4 panels were equal? (gate + hinge + 2 standards)
+    // But gate is fixed, so: gate + (3 × equalPanel) + gaps = effectiveLength
+    const remainingForThreePanels = availableForPanels - gateSize;
+    const equalPanelSize = remainingForThreePanels / 3;
+    
+    // Round to nearest valid hinge size
+    const rounded = validHingeSizes.reduce((prev, curr) => {
+      return Math.abs(curr - equalPanelSize) < Math.abs(prev - equalPanelSize) ? curr : prev;
     });
     
-    console.log('Auto calc - layout with 600mm hinge:', layoutWithSmallHinge.panels, 'types:', layoutWithSmallHinge.panelTypes);
-    console.log('Auto calc - standard panels:', regularPanels);
+    console.log('Auto calc - equal panel approach: effectiveLength:', effectiveLength, 'gate:', gateSize, 'gaps:', totalGapWidth);
+    console.log('Auto calc - remaining for 3 panels:', remainingForThreePanels, 'equal size:', equalPanelSize, '→ rounded:', rounded);
     
-    if (regularPanels.length > 0) {
-      const panelCounts = new Map<number, number>();
-      regularPanels.forEach(panel => {
-        panelCounts.set(panel, (panelCounts.get(panel) || 0) + 1);
-      });
-      
-      const mostCommon = Array.from(panelCounts.entries())
-        .sort((a, b) => b[1] - a[1])[0];
-      
-      const calculatedSize = mostCommon[0];
-      const rounded = validHingeSizes.reduce((prev, curr) => {
-        return Math.abs(curr - calculatedSize) < Math.abs(prev - calculatedSize) ? curr : prev;
-      });
-      
-      console.log('Auto calc - most common standard panel:', calculatedSize, '→ rounded hinge:', rounded);
-      return rounded;
-    } else {
-      // No standard panels, use max panel width
-      const rounded = validHingeSizes.reduce((prev, curr) => {
-        return Math.abs(curr - span.maxPanelWidth) < Math.abs(prev - span.maxPanelWidth) ? curr : prev;
-      });
-      console.log('Auto calc - no standard panels, using max width rounded:', rounded);
-      return rounded;
-    }
+    return rounded;
   };
   
   const optimalHingePanelSize = calculateOptimalHingePanelSize();
-  console.log('Auto button will use:', optimalHingePanelSize);
 
   // Calculate total measurements and variance for elevation view
   const calculateTotalAndVariance = () => {
