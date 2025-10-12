@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps, ProductVariant } from "@shared/schema";
-import { calculatePanelLayout } from "@shared/panelCalculations";
+import { calculatePanelLayout, calculateBarrPanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
@@ -44,51 +44,71 @@ export function SpanConfigPanel({
 
   // Calculate panel layout whenever relevant parameters change
   useEffect(() => {
-    // Calculate total end gaps, using latch gap when gate latch is at wall boundary
-    let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
-    let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
-    
-    // When gate is wall-mounted, the hinge end has 0 gap (attached to wall)
-    if (span.gateConfig?.required && span.gateConfig.hingeFrom === "wall") {
-      // Wall-mounted: hinge is at boundary, so that end gap is 0
-      if (span.gateConfig.position === 0) {
-        leftEndGap = 0; // Hinge at left wall
-      } else if (span.gateConfig.position >= 1) {
-        rightEndGap = 0; // Hinge at right wall
+    let layout;
+
+    // BARR fencing uses a different calculation
+    if (productVariant === "alu-pool-barr") {
+      // Get BARR specifications
+      const barrHeight = span.barrHeight || "1200mm";
+      const layoutMode = span.barrLayoutMode || "full-panels-cut-end";
+      const hasGate = gatesAllowed && span.gateConfig?.required;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 900) : undefined;
+
+      layout = calculateBarrPanelLayout(
+        span.length,
+        barrHeight,
+        layoutMode,
+        hasGate,
+        gateSize
+      );
+    } else {
+      // Glass/standoff/general fencing calculation
+      // Calculate total end gaps, using latch gap when gate latch is at wall boundary
+      let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
+      let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
+      
+      // When gate is wall-mounted, the hinge end has 0 gap (attached to wall)
+      if (span.gateConfig?.required && span.gateConfig.hingeFrom === "wall") {
+        // Wall-mounted: hinge is at boundary, so that end gap is 0
+        if (span.gateConfig.position === 0) {
+          leftEndGap = 0; // Hinge at left wall
+        } else if (span.gateConfig.position >= 1) {
+          rightEndGap = 0; // Hinge at right wall
+        }
       }
+      
+      let endGaps = leftEndGap + rightEndGap;
+
+      // Use the configured hinge panel size (default 1200mm)
+      const effectiveHingePanelSize = span.gateConfig?.hingePanelSize || 1200;
+
+      // Calculate final panel layout with the configured hinge panel size
+      // Only include gate config if gates are allowed for this product variant
+      layout = calculatePanelLayout(
+        span.length,
+        endGaps,
+        span.desiredGap,
+        span.maxPanelWidth,
+        span.leftRakedPanel?.enabled || false,
+        span.rightRakedPanel?.enabled || false,
+        (gatesAllowed && span.gateConfig?.required) ? {
+          required: span.gateConfig.required,
+          gateSize: span.gateConfig.gateSize,
+          hingePanelSize: effectiveHingePanelSize,
+          position: span.gateConfig.position,
+          flipped: span.gateConfig.flipped,
+          hingeFrom: span.gateConfig.hingeFrom,
+          hingeGap: span.gateConfig.hingeGap,
+          latchGap: span.gateConfig.latchGap,
+        } : undefined,
+        span.customPanel?.enabled ? {
+          enabled: span.customPanel.enabled,
+          width: span.customPanel.width,
+          height: span.customPanel.height,
+          position: span.customPanel.position,
+        } : undefined
+      );
     }
-    
-    let endGaps = leftEndGap + rightEndGap;
-
-    // Use the configured hinge panel size (default 1200mm)
-    const effectiveHingePanelSize = span.gateConfig?.hingePanelSize || 1200;
-
-    // Calculate final panel layout with the configured hinge panel size
-    // Only include gate config if gates are allowed for this product variant
-    const layout = calculatePanelLayout(
-      span.length,
-      endGaps,
-      span.desiredGap,
-      span.maxPanelWidth,
-      span.leftRakedPanel?.enabled || false,
-      span.rightRakedPanel?.enabled || false,
-      (gatesAllowed && span.gateConfig?.required) ? {
-        required: span.gateConfig.required,
-        gateSize: span.gateConfig.gateSize,
-        hingePanelSize: effectiveHingePanelSize,
-        position: span.gateConfig.position,
-        flipped: span.gateConfig.flipped,
-        hingeFrom: span.gateConfig.hingeFrom,
-        hingeGap: span.gateConfig.hingeGap,
-        latchGap: span.gateConfig.latchGap,
-      } : undefined,
-      span.customPanel?.enabled ? {
-        enabled: span.customPanel.enabled,
-        width: span.customPanel.width,
-        height: span.customPanel.height,
-        position: span.customPanel.position,
-      } : undefined
-    );
 
     // Update span with calculated layout if it changed
     const layoutChanged = 
@@ -106,7 +126,8 @@ export function SpanConfigPanel({
       span.gateConfig?.hingeGap, span.gateConfig?.latchGap,
       span.gateConfig?.savedGlassPosition,
       span.customPanel?.enabled, span.customPanel?.width, span.customPanel?.height, span.customPanel?.position,
-      onUpdate]);
+      span.barrHeight, span.barrLayoutMode, // Add BARR-specific dependencies
+      productVariant, gatesAllowed, onUpdate]);
 
   // Validate panel layout
   const validatePanelLayout = () => {
@@ -486,6 +507,89 @@ export function SpanConfigPanel({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* BARR Fencing Configuration */}
+          {productVariant === "alu-pool-barr" && (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <h4 className="text-sm font-semibold">BARR Fencing Configuration</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Panel Height</Label>
+                  <Select
+                    value={span.barrHeight || "1200mm"}
+                    onValueChange={(value) => updateSpan({ barrHeight: value as "1000mm" | "1200mm" | "1800mm" })}
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-barr-height`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1000mm">1000mm (1733mm wide panels)</SelectItem>
+                      <SelectItem value="1200mm">1200mm (2205mm wide panels)</SelectItem>
+                      <SelectItem value="1800mm">1800mm (1969mm wide panels)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Finish</Label>
+                  <Select
+                    value={span.barrFinish || "satin-black"}
+                    onValueChange={(value) => updateSpan({ barrFinish: value as "satin-black" | "pearl-white" })}
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-barr-finish`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="satin-black">Satin Black (CN150A)</SelectItem>
+                      <SelectItem value="pearl-white">Pearl White (GA078A)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Layout Mode</Label>
+                <Select
+                  value={span.barrLayoutMode || "full-panels-cut-end"}
+                  onValueChange={(value) => updateSpan({ barrLayoutMode: value as "full-panels-cut-end" | "equally-spaced" })}
+                >
+                  <SelectTrigger data-testid={`span-${span.spanId}-barr-layout-mode`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full-panels-cut-end">Full Panels + Cut End</SelectItem>
+                    <SelectItem value="equally-spaced">Equally Spaced (All Cut)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {(span.barrLayoutMode || "full-panels-cut-end") === "full-panels-cut-end" 
+                    ? "Uses full standard panels with a cut panel at the end (minimum 200mm)" 
+                    : "Cuts all panels to equal widths for uniform appearance"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Post Type</Label>
+                <Select
+                  value={span.barrPostType || "welded-base-plate"}
+                  onValueChange={(value) => updateSpan({ barrPostType: value as "welded-base-plate" | "standard" })}
+                >
+                  <SelectTrigger data-testid={`span-${span.spanId}-barr-post-type`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="welded-base-plate">Welded Base Plate (1280mm)</SelectItem>
+                    <SelectItem value="standard">Standard (1800mm/2500mm)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {(span.barrPostType || "welded-base-plate") === "welded-base-plate" 
+                    ? "Bolted down base plates for concrete surfaces" 
+                    : "Inground, wall, or core drilled mounting"}
+                </p>
               </div>
             </div>
           )}
