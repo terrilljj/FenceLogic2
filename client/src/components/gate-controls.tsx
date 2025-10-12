@@ -21,6 +21,7 @@ interface GateConfig {
   savedGlassPosition?: number;
   hingeGap: number;
   latchGap: number;
+  postAdapterPlate?: boolean;
 }
 
 interface GateControlsProps {
@@ -83,7 +84,7 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="master">Master Range</SelectItem>
-              <SelectItem value="polaris">Polaris Soft Close</SelectItem>
+              <SelectItem value="polaris">Polaris/Atlantic</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -92,17 +93,24 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
           <div className="space-y-2">
             <Label className="text-sm font-medium">Hinge Type</Label>
             <Select
-              value={config.hingeType || "standard"}
+              value={config.hingeType || "glass-to-glass"}
               onValueChange={(hingeType: HingeType) => updateConfig({ hingeType })}
             >
               <SelectTrigger data-testid={`gate-${spanId}-hinge-type`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="standard">Standard Heavy Duty</SelectItem>
-                <SelectItem value="self-close">Premium Self-Closing</SelectItem>
-                <SelectItem value="soft-close">Soft Close</SelectItem>
-                <SelectItem value="dd-magnamatic">D&D Magnamatic</SelectItem>
+                {config.hardware === "master" ? (
+                  <>
+                    <SelectItem value="glass-to-glass">Glass to Glass</SelectItem>
+                    <SelectItem value="glass-to-wall">Glass to Wall/Post</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="glass-to-glass">Glass to Glass</SelectItem>
+                    <SelectItem value="wall-to-glass">Wall to Glass</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -125,6 +133,20 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
             </Select>
           </div>
         </div>
+
+        {config.hardware === "polaris" && (
+          <div className="flex items-center gap-2 bg-muted/30 rounded-md p-3">
+            <Checkbox
+              id={`post-adapter-${spanId}`}
+              checked={config.postAdapterPlate ?? false}
+              onCheckedChange={(checked) => updateConfig({ postAdapterPlate: checked === true })}
+              data-testid={`gate-${spanId}-post-adapter`}
+            />
+            <label htmlFor={`post-adapter-${spanId}`} className="text-sm font-medium cursor-pointer flex-1">
+              Add Post Adapter Plate
+            </label>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">

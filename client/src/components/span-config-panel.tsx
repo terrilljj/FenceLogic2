@@ -499,13 +499,14 @@ export function SpanConfigPanel({
                         hardware: "polaris",
                         hingeFrom: "glass",
                         latchTo: "glass",
-                        hingeType: "standard",
+                        hingeType: "glass-to-glass",
                         latchType: "key-lock",
                         gateSize: 900,
                         hingePanelSize: 1200,
                         autoHingePanel: false,
                         position: 0,
                         flipped: false,
+                        postAdapterPlate: false,
                         ...gaps,
                       },
                     });
@@ -521,7 +522,12 @@ export function SpanConfigPanel({
               <GateControls
                 config={span.gateConfig}
                 spanId={span.spanId}
-                onUpdate={(gateConfig) => updateSpan({ gateConfig })}
+                onUpdate={(gateConfig) => updateSpan({ 
+                  gateConfig: {
+                    ...gateConfig,
+                    postAdapterPlate: gateConfig.postAdapterPlate ?? false
+                  }
+                })}
                 calculatedHingePanelSize={optimalHingePanelSize}
                 numPanels={span.panelLayout?.panels.length}
               />

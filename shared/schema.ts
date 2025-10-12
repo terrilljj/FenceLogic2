@@ -42,8 +42,8 @@ export type SpigotMounting = "base-plate" | "core-drilled" | "side-mounted";
 // Spigot color/finish types
 export type SpigotColor = "polished" | "satin" | "black" | "white";
 
-// Hinge types
-export type HingeType = "standard" | "self-close" | "soft-close" | "dd-magnamatic";
+// Hinge types (mounting configurations)
+export type HingeType = "glass-to-glass" | "glass-to-wall" | "wall-to-glass";
 
 // Latch types
 export type LatchType = "key-lock" | "magnetic" | "self-latch" | "double-action";
@@ -109,7 +109,7 @@ export const spanConfigSchema = z.object({
     hardware: z.enum(["master", "polaris"]),
     hingeFrom: z.enum(["glass", "wall"]),
     latchTo: z.enum(["glass", "wall"]),
-    hingeType: z.enum(["standard", "self-close", "soft-close", "dd-magnamatic"]).default("standard"),
+    hingeType: z.enum(["glass-to-glass", "glass-to-wall", "wall-to-glass"]).default("glass-to-glass"),
     latchType: z.enum(["key-lock", "magnetic", "self-latch", "double-action"]).default("key-lock"),
     gateSize: z.number(),
     hingePanelSize: z.number(),
@@ -119,6 +119,7 @@ export const spanConfigSchema = z.object({
     savedGlassPosition: z.number().optional(), // Preserves panel index when switching to wall mode
     hingeGap: z.number(), // Gap on hinge side (varies by hardware and mounting)
     latchGap: z.number(), // Gap on latch side (varies by hardware and mounting)
+    postAdapterPlate: z.boolean().default(false), // For Polaris/Atlantic: adds post adapter plate
   }).optional(),
   leftRakedPanel: z.object({
     enabled: z.boolean(),
@@ -242,14 +243,23 @@ export function getSpigotDetails(mounting: SpigotMounting, color: SpigotColor): 
 }
 
 // Helper function to get hinge details
-export function getHingeDetails(type: HingeType): { description: string; sku: string } {
-  const hingeMap = {
-    "standard": { description: "Standard Heavy Duty Hinge Set", sku: "HINGE-STANDARD" },
-    "self-close": { description: "Premium Self-Closing Hinge Set", sku: "HINGE-SELF-CLOSE" },
-    "soft-close": { description: "Soft Close Hinge Set", sku: "HINGE-SOFT-CLOSE" },
-    "dd-magnamatic": { description: "D&D Magnamatic Hinge Set", sku: "HINGE-DD-MAGNAMATIC" },
-  };
-  return hingeMap[type];
+export function getHingeDetails(type: HingeType, hardware: GateHardware): { description: string; sku: string } {
+  if (hardware === "master") {
+    const hingeMap = {
+      "glass-to-glass": { description: "Master Range Glass-to-Glass Hinge Set", sku: "HINGE-MASTER-G2G" },
+      "glass-to-wall": { description: "Master Range Glass-to-Wall/Post Hinge Set", sku: "HINGE-MASTER-G2W" },
+      "wall-to-glass": { description: "Master Range Glass-to-Wall/Post Hinge Set", sku: "HINGE-MASTER-G2W" }, // Same as glass-to-wall for Master
+    };
+    return hingeMap[type];
+  } else {
+    // Polaris/Atlantic
+    const hingeMap = {
+      "glass-to-glass": { description: "Polaris/Atlantic Glass-to-Glass Hinge Set", sku: "HINGE-POLARIS-G2G" },
+      "wall-to-glass": { description: "Polaris/Atlantic Wall-to-Glass Hinge Set", sku: "HINGE-POLARIS-W2G" },
+      "glass-to-wall": { description: "Polaris/Atlantic Glass-to-Glass Hinge Set", sku: "HINGE-POLARIS-G2G" }, // Not used for Polaris, fallback
+    };
+    return hingeMap[type];
+  }
 }
 
 // Helper function to get latch details

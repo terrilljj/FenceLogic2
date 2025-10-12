@@ -657,9 +657,10 @@ function calculateComponents(design: FenceDesign): Component[] {
 
       // Gate hardware components (hinge set and latch)
       if (span.gateConfig?.required) {
-        const hingeType = span.gateConfig.hingeType || "standard";
+        const hingeType = span.gateConfig.hingeType || "glass-to-glass";
         const latchType = span.gateConfig.latchType || "key-lock";
-        const hingeDetails = getHingeDetails(hingeType);
+        const hardware = span.gateConfig.hardware || "polaris";
+        const hingeDetails = getHingeDetails(hingeType, hardware);
         const latchDetails = getLatchDetails(latchType);
         
         // Hinge set
@@ -675,6 +676,15 @@ function calculateComponents(design: FenceDesign): Component[] {
           description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
           sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
         });
+        
+        // Post adapter plate (Polaris/Atlantic only)
+        if (hardware === "polaris" && span.gateConfig.postAdapterPlate) {
+          components.push({
+            qty: 1,
+            description: `Polaris/Atlantic Post Adapter Plate`,
+            sku: `PAP-POLARIS`,
+          });
+        }
       }
     } else {
       // Fallback calculation when panelLayout not yet calculated
@@ -732,9 +742,10 @@ function calculateComponents(design: FenceDesign): Component[] {
         
         // Gate hardware if configured
         if (span.gateConfig?.required) {
-          const hingeType = span.gateConfig.hingeType || "standard";
+          const hingeType = span.gateConfig.hingeType || "glass-to-glass";
           const latchType = span.gateConfig.latchType || "key-lock";
-          const hingeDetails = getHingeDetails(hingeType);
+          const hardware = span.gateConfig.hardware || "polaris";
+          const hingeDetails = getHingeDetails(hingeType, hardware);
           const latchDetails = getLatchDetails(latchType);
           
           components.push({
@@ -748,6 +759,15 @@ function calculateComponents(design: FenceDesign): Component[] {
             description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
             sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
           });
+          
+          // Post adapter plate (Polaris/Atlantic only)
+          if (hardware === "polaris" && span.gateConfig.postAdapterPlate) {
+            components.push({
+              qty: 1,
+              description: `Polaris/Atlantic Post Adapter Plate`,
+              sku: `PAP-POLARIS`,
+            });
+          }
         }
       }
     }
