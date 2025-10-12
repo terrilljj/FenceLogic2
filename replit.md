@@ -50,6 +50,19 @@ Preferred communication style: Simple, everyday language.
 - **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
 - **Features**: Modern blade design, N+1 post structure, 15mm blade-to-post gap
 
+**Tubular Flat Top Specifications (October 2025):**
+- **Two Heights Available**: 1200mm (pool fencing), 900mm (non-pool)
+- **Panel Widths**: 2400mm (standard), 2450mm, 3000mm (large)
+- **Pickets**: 16mm diameter round tubes, 72mm gap spacing (88mm center-to-center)
+- **Rails**: 38×25mm top and bottom rails only (no mid-rail)
+- **Construction**: 6-point welded round pickets with flat top design
+- **Finishes**: Black, White, Monument Grey
+- **Gates**: 975mm post-mounted gates with D&D hardware
+- **Posts**: 50mm square posts (all heights)
+- **Post Types**: Welded base plate (1280mm), standard (1800mm)
+- **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
+- **Features**: Clean minimalist design, N+1 post structure, panels sit on ground (no bottom clearance)
+
 **Glass Specifications:**
 - **12mm Glass**: 300-1500mm width, 970mm height
 - **15mm Glass**: 300-1400mm width, 1000mm height
@@ -104,8 +117,10 @@ Preferred communication style: Simple, everyday language.
 - Panel labels show width and type (e.g., "1650 Panel", "1200 Hinge", "900 Gate", "1400H Rake")
 - **Glass Panels**: Proportionate spigot rendering (50mm wide, 200mm height, 50mm gap below glass, positioned 10% from panel edge)
 - **BARR Panels**: Vertical slat rendering with top/bottom rails, panels float 100mm above ground, posts extend to ground line
-- BARR posts: N panels = N+1 posts (one before first panel, one after each panel)
-- Gates do not display spigots (glass) or are rendered with BARR slat pattern
+- **Blade Panels**: Vertical blade rendering with inset top/bottom rails, panels sit on ground, posts extend to ground line
+- **Tubular Panels**: Round vertical pickets (16mm diameter circles in elevation) with top/bottom rails only, panels sit on ground, 50mm square posts
+- N panels = N+1 posts for all aluminium products (one before first panel, one after each panel)
+- Gates do not display spigots (glass) or are rendered with product-specific pattern (BARR/Blade/Tubular)
 - Gate hardware (hinges and latches) positioned at panel edges
 - Latch positioned at top ¼ of gate panel (75% height from ground)
 - Inverted flip logic ensures hinges appear on correct side when gate is flipped
