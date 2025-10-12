@@ -12,6 +12,7 @@ import { PanelLayout, PanelType } from "./schema";
  * @param hasLeftRaked Whether the left panel is a raked panel (fixed 1200mm)
  * @param hasRightRaked Whether the right panel is a raked panel (fixed 1200mm)
  * @param gateConfig Gate configuration if gate is required
+ * @param customPanelConfig Custom panel configuration if custom panel is required
  * @returns Panel layout where panels + gaps exactly equals effective length
  */
 export function calculatePanelLayout(
@@ -30,6 +31,12 @@ export function calculatePanelLayout(
     hingeFrom?: "glass" | "wall";
     hingeGap?: number;
     latchGap?: number;
+  },
+  customPanelConfig?: {
+    enabled: boolean;
+    width: number;
+    height: number;
+    position: number;
   }
 ): PanelLayout {
   const effectiveLength = spanLength - endGaps;
@@ -53,7 +60,7 @@ export function calculatePanelLayout(
     };
   }
 
-  // Calculate space reserved for fixed panels (raked + gate)
+  // Calculate space reserved for fixed panels (raked + gate + custom)
   const numRakedPanels = (hasLeftRaked ? 1 : 0) + (hasRightRaked ? 1 : 0);
   const rakedPanelSpace = numRakedPanels * RAKED_PANEL_WIDTH;
   
@@ -61,7 +68,12 @@ export function calculatePanelLayout(
   const hasGate = gateConfig?.required === true;
   const isWallMounted = gateConfig?.hingeFrom === "wall";
   const gateSpace = hasGate ? (isWallMounted ? gateConfig.gateSize : gateConfig.gateSize + gateConfig.hingePanelSize) : 0;
-  const totalFixedPanelSpace = rakedPanelSpace + gateSpace;
+  
+  // If custom panel is required, reserve space for it
+  const hasCustomPanel = customPanelConfig?.enabled === true;
+  const customPanelSpace = hasCustomPanel ? customPanelConfig.width : 0;
+  
+  const totalFixedPanelSpace = rakedPanelSpace + gateSpace + customPanelSpace;
 
   // Single panel case (no raked panels, no gate)
   if (numRakedPanels === 0 && !hasGate && effectiveLength >= MIN_PANEL && effectiveLength <= MAX_PANEL) {
@@ -103,14 +115,15 @@ export function calculatePanelLayout(
   let bestScore = Infinity;
   
   // Determine the range of variable panels to try
-  const minVariablePanels = (numRakedPanels === 0 && !hasGate) ? 2 : 0;
+  const minVariablePanels = (numRakedPanels === 0 && !hasGate && !hasCustomPanel) ? 2 : 0;
   const maxSpaceForVariables = effectiveLength - totalFixedPanelSpace;
   const maxPossibleVariablePanels = Math.floor(maxSpaceForVariables / MIN_PANEL);
   
   // Try different numbers of variable panels
   for (let numVariablePanels = minVariablePanels; numVariablePanels <= maxPossibleVariablePanels; numVariablePanels++) {
     const numGatePanels = hasGate ? (isWallMounted ? 1 : 2) : 0; // Wall-mounted: 1 panel, Glass-to-glass: 2 panels
-    const numFixedPanels = numRakedPanels + numGatePanels; // Raked + gate + (optional hinge)
+    const numCustomPanels = hasCustomPanel ? 1 : 0; // Custom panel if enabled
+    const numFixedPanels = numRakedPanels + numGatePanels + numCustomPanels; // Raked + gate + custom + (optional hinge)
     const totalPanels = numVariablePanels + numFixedPanels;
     
     // Need at least 1 total panel
@@ -263,6 +276,15 @@ export function calculatePanelLayout(
       // No gate, just add all variable panels
       finalPanels.push(...variablePanels);
       panelTypes.push(...Array(variablePanels.length).fill("standard"));
+    }
+    
+    // Insert custom panel at specified position (if enabled and gate is not present, or if position is valid)
+    if (hasCustomPanel && customPanelConfig) {
+      const customPosition = Math.max(0, Math.min(customPanelConfig.position, finalPanels.length));
+      
+      // Insert custom panel at the specified position
+      finalPanels.splice(customPosition, 0, customPanelConfig.width);
+      panelTypes.splice(customPosition, 0, "custom");
     }
     
     // Add right raked panel if enabled

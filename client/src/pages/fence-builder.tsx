@@ -595,6 +595,14 @@ function calculateComponents(design: FenceDesign): Component[] {
             description: `Gate Panel ${panelWidth}mm x 1200mm (12mm thick)`,
             sku: `GP-GATE-${panelWidth}-1200-12`,
           });
+        } else if (panelType === "custom") {
+          // Custom panel with user-specified dimensions
+          const customHeight = span.customPanel?.height || 1200;
+          components.push({
+            qty: 1,
+            description: `Custom Glass Panel ${panelWidth}mm x ${customHeight}mm (12mm thick)`,
+            sku: `GP-CUSTOM-${panelWidth}-${customHeight}-12`,
+          });
         } else if (panelType === "hinge") {
           components.push({
             qty: 1,
@@ -769,7 +777,7 @@ function calculateComponents(design: FenceDesign): Component[] {
     // Helper function to determine component category
     const getCategory = (desc: string): number => {
       if (desc.includes('Glass Panel') || desc.includes('Raked Glass Panel') || 
-          desc.includes('Gate Panel') || desc.includes('Hinge Panel')) {
+          desc.includes('Gate Panel') || desc.includes('Hinge Panel') || desc.includes('Custom Glass Panel')) {
         return 1; // Glass panels
       }
       if (desc.includes('Spigot')) return 2;

@@ -435,11 +435,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       
       // Check if this is a raked panel
       const isRaked = panelType === "raked";
+      const isCustom = panelType === "custom";
       const isLeftRaked = i === 0 && leftRaked !== null;
       const isRightRaked = i === numPanels - 1 && rightRaked !== null;
       
-      // Draw panel (raked or standard) - cleaner colors
-      ctx.fillStyle = isGateOrHinge ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
+      // Get custom panel height if this is a custom panel
+      if (isCustom && span.customPanel?.enabled) {
+        scaledPanelHeight = span.customPanel.height * scale;
+      }
+      
+      // Draw panel (raked, custom, or standard) - cleaner colors
+      ctx.fillStyle = isCustom ? "#f9d5c5" : isGateOrHinge ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
       ctx.globalAlpha = 1;
       
       if (isLeftRaked || isRightRaked) {
@@ -534,9 +540,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
       
-      // Draw the width number
+      // Draw the width number (or width x height for custom)
+      let widthLabel = `${currentPanelWidth}${isRaked ? 'H' : ''}`;
+      if (isCustom && span.customPanel?.enabled) {
+        widthLabel = `${currentPanelWidth}x${span.customPanel.height}`;
+      }
       ctx.fillText(
-        `${currentPanelWidth}${isRaked ? 'H' : ''}`,
+        widthLabel,
         currentX + scaledPanelWidth / 2,
         groundLevel - scaledPanelHeight / 2 - 4
       );
@@ -546,6 +556,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       if (isGate) panelTypeLabel = "Gate";
       else if (isHinge) panelTypeLabel = "Hinge";
       else if (isRaked) panelTypeLabel = "Rake";
+      else if (isCustom) panelTypeLabel = "Custom";
       
       ctx.font = "500 11px Inter";
       ctx.fillText(

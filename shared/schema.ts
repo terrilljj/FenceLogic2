@@ -55,7 +55,7 @@ export const PANEL_SIZE_INCREMENT = 50; // mm
 export const MAX_GAP_SIZE = 99; // mm
 
 // Panel type enumeration
-export type PanelType = "standard" | "raked" | "gate" | "hinge";
+export type PanelType = "standard" | "raked" | "gate" | "hinge" | "custom";
 
 // Panel layout calculation result
 export type PanelLayout = {
@@ -82,7 +82,7 @@ export const spanConfigSchema = z.object({
     totalPanelWidth: z.number(),
     totalGapWidth: z.number(),
     averageGap: z.number(),
-    panelTypes: z.array(z.enum(["standard", "raked", "gate", "hinge"])).optional(),
+    panelTypes: z.array(z.enum(["standard", "raked", "gate", "hinge", "custom"])).optional(),
   }).optional(), // Calculated panel layout
   topGap: z.object({
     enabled: z.boolean(),
@@ -131,6 +131,12 @@ export const spanConfigSchema = z.object({
     height: z.number().refine((val) => [1400, 1500, 1600, 1700, 1800].includes(val), {
       message: "Height must be one of: 1400, 1500, 1600, 1700, 1800",
     }),
+  }).optional(),
+  customPanel: z.object({
+    enabled: z.boolean(),
+    width: z.number().min(200).max(2000), // Custom panel width in mm
+    height: z.number().min(1200).max(1800), // Custom panel height in mm
+    position: z.number().min(0), // Panel position index (like glass-to-glass gate)
   }).optional(),
 });
 

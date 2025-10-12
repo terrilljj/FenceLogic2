@@ -10,6 +10,8 @@ import { calculatePanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
+import { CustomPanelControls } from "./custom-panel-controls";
+import { InfoTooltip } from "./info-tooltip";
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
@@ -83,6 +85,12 @@ export function SpanConfigPanel({
           hingeFrom: span.gateConfig.hingeFrom,
           hingeGap: span.gateConfig.hingeGap,
           latchGap: span.gateConfig.latchGap,
+        } : undefined,
+        span.customPanel?.enabled ? {
+          enabled: span.customPanel.enabled,
+          width: span.customPanel.width,
+          height: span.customPanel.height,
+          position: span.customPanel.position,
         } : undefined
       );
       
@@ -126,6 +134,12 @@ export function SpanConfigPanel({
         hingeFrom: span.gateConfig.hingeFrom,
         hingeGap: span.gateConfig.hingeGap,
         latchGap: span.gateConfig.latchGap,
+      } : undefined,
+      span.customPanel?.enabled ? {
+        enabled: span.customPanel.enabled,
+        width: span.customPanel.width,
+        height: span.customPanel.height,
+        position: span.customPanel.position,
       } : undefined
     );
 
@@ -144,6 +158,7 @@ export function SpanConfigPanel({
       span.gateConfig?.position, span.gateConfig?.flipped, span.gateConfig?.hingeFrom, span.gateConfig?.latchTo,
       span.gateConfig?.hingeGap, span.gateConfig?.latchGap,
       span.gateConfig?.savedGlassPosition,
+      span.customPanel?.enabled, span.customPanel?.width, span.customPanel?.height, span.customPanel?.position,
       onUpdate]);
 
   // Validate panel layout
@@ -457,7 +472,10 @@ export function SpanConfigPanel({
 
           {/* Panel Configuration */}
           <div className="space-y-4 pt-4 border-t border-card-border">
-            <h4 className="text-sm font-semibold">Panel Configuration</h4>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-semibold">Panel Configuration</h4>
+              <InfoTooltip content="Configure the maximum panel width and target gap spacing. The system will calculate the optimal panel layout to achieve your desired gap size." />
+            </div>
             
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -591,7 +609,10 @@ export function SpanConfigPanel({
           {/* Gate Configuration */}
           <div className="space-y-4 pt-4 border-t border-card-border">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Gate Required</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-semibold">Gate Required</Label>
+                <InfoTooltip content="Add a gate panel to this section. Choose hardware type (Master Range or Polaris Soft Close), mounting style (glass-to-glass or wall-mounted), and position the gate within the section." />
+              </div>
               <Switch
                 checked={span.gateConfig?.required || false}
                 onCheckedChange={(required) => {
@@ -634,7 +655,10 @@ export function SpanConfigPanel({
 
           {/* Raked Panels Configuration */}
           <div className="space-y-4 pt-4 border-t border-card-border">
-            <h4 className="text-sm font-semibold">Raked Panels (for slopes/stairs)</h4>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-semibold">Raked Panels (for slopes/stairs)</h4>
+              <InfoTooltip content="Raked panels are designed for slopes or stairs. They have a fixed width of 1200mm with a sloped top edge to follow the ground level. Configure the height of the highest point." />
+            </div>
             
             {span.maxPanelWidth < 1200 && (
               <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
@@ -721,6 +745,33 @@ export function SpanConfigPanel({
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+            </div>
+
+            {/* Custom Panel */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Custom Panel</Label>
+                  <InfoTooltip content="Add a custom-sized glass panel with specific width and height dimensions. The panel can be positioned anywhere in the section using the position controls." />
+                </div>
+                <Switch
+                  checked={span.customPanel?.enabled || false}
+                  onCheckedChange={(enabled) =>
+                    updateSpan({
+                      customPanel: { enabled, width: 1200, height: 1200, position: 0 },
+                    })
+                  }
+                  data-testid={`span-${span.spanId}-custom-panel-toggle`}
+                />
+              </div>
+              {span.customPanel?.enabled && (
+                <CustomPanelControls
+                  config={span.customPanel}
+                  spanId={span.spanId}
+                  onUpdate={(customPanel) => updateSpan({ customPanel })}
+                  numPanels={span.panelLayout?.panels.length || 1}
+                />
               )}
             </div>
           </div>
