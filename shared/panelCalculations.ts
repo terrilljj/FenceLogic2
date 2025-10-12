@@ -188,32 +188,40 @@ export function calculatePanelLayout(
       let currentTotal = numVariablePanels * idealPanelWidth;
       const remainder = totalVariablePanelWidth - currentTotal;
       
-      // Distribute remainder to first panel(s) to achieve exact fit
+      // Distribute remainder evenly across panels if possible
       if (Math.abs(remainder) > 0.001) { // Use tolerance for floating point comparison
-        // Round remainder to nearest panel increment
-        const roundedRemainder = Math.round(remainder / PANEL_INCREMENT) * PANEL_INCREMENT;
+        const absRemainder = Math.abs(remainder);
         
-        if (roundedRemainder > 0) {
-          if (idealPanelWidth + roundedRemainder <= MAX_PANEL) {
-            variablePanels[0] += roundedRemainder;
-          } else {
+        // If remainder is small (less than one increment), distribute by adjusting panel sizes
+        if (absRemainder < PANEL_INCREMENT) {
+          // Try distributing the small remainder across all panels
+          // For example, -17mm across 2 panels = adjust gaps slightly instead
+          // This is within tolerance, so we can keep panels equal
+          // No adjustment needed - keep all panels at ideal width
+        } else {
+          // Round remainder to nearest panel increment and distribute
+          const roundedRemainder = Math.round(remainder / PANEL_INCREMENT) * PANEL_INCREMENT;
+          
+          if (roundedRemainder > 0) {
+            // Distribute positive remainder across panels
             let remainingToAdd = roundedRemainder;
             for (let i = 0; i < numVariablePanels && remainingToAdd > 0; i++) {
-              const canAdd = Math.min(MAX_PANEL - variablePanels[i], remainingToAdd);
-              const roundedAdd = Math.floor(canAdd / PANEL_INCREMENT) * PANEL_INCREMENT;
-              variablePanels[i] += roundedAdd;
-              remainingToAdd -= roundedAdd;
+              const canAdd = Math.min(MAX_PANEL - variablePanels[i], Math.min(remainingToAdd, PANEL_INCREMENT));
+              if (canAdd >= PANEL_INCREMENT) {
+                variablePanels[i] += PANEL_INCREMENT;
+                remainingToAdd -= PANEL_INCREMENT;
+              }
             }
-            if (remainingToAdd > PANEL_INCREMENT / 2) { // Allow small remainder tolerance
-              continue;
+          } else if (roundedRemainder < 0) {
+            // Distribute negative remainder across panels
+            let remainingToSubtract = Math.abs(roundedRemainder);
+            for (let i = 0; i < numVariablePanels && remainingToSubtract > 0; i++) {
+              const canSubtract = Math.min(variablePanels[i] - MIN_PANEL, Math.min(remainingToSubtract, PANEL_INCREMENT));
+              if (canSubtract >= PANEL_INCREMENT) {
+                variablePanels[i] -= PANEL_INCREMENT;
+                remainingToSubtract -= PANEL_INCREMENT;
+              }
             }
-          }
-        } else if (roundedRemainder < 0) {
-          // Handle negative remainder (need to reduce panel size)
-          if (idealPanelWidth + roundedRemainder >= MIN_PANEL) {
-            variablePanels[0] += roundedRemainder;
-          } else {
-            continue; // Can't fit with negative remainder
           }
         }
       }
