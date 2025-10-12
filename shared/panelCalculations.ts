@@ -412,14 +412,14 @@ export function calculatePanelLayout(
                   const hingeIndex = panelTypes.findIndex(t => t === "hinge");
                   
                   if (!gateConfig.flipped) {
-                    // Gate first, then hinge: [Gate | hinge gap | Hinge | latch gap | ...]
+                    // Gate first, then hinge: [... | latch gap | Gate | hinge gap | Hinge | ...]
                     // Gap at gateIndex is BETWEEN gate and hinge (hinge gap)
-                    // Gap at hingeIndex is AFTER hinge (latch gap)
+                    // Gap before gate is latch gap (only if gate is not at start)
                     if (i === gateIndex) {
                       // Gap after gate = hinge gap
                       gapsArray.push(gateConfig.hingeGap);
-                    } else if (i === hingeIndex) {
-                      // Gap after hinge = latch gap
+                    } else if (i === gateIndex - 1 && gateIndex > 0) {
+                      // Gap before gate = latch gap (only if not at start)
                       gapsArray.push(gateConfig.latchGap);
                     } else {
                       gapsArray.push(regularGapSize);
@@ -447,6 +447,14 @@ export function calculatePanelLayout(
             gapsArray = Array(numGaps).fill(actualGap);
           }
           
+          // Validate total layout doesn't exceed section length
+          const totalGapsWidth = gapsArray.reduce((sum, gap) => sum + gap, 0);
+          const totalLayoutWidth = actualTotalPanelWidth + totalGapsWidth + endGaps;
+          
+          if (totalLayoutWidth > spanLength) {
+            continue; // Skip configurations that exceed section length
+          }
+          
           // Validate that middle gaps (excluding left and right end gaps) don't exceed 99mm
           // End gaps can be up to 150mm, but gaps between panels must be <= 99mm
           let gapsValid = true;
@@ -462,11 +470,6 @@ export function calculatePanelLayout(
           
           if (!gapsValid) {
             continue; // Skip configurations with gaps exceeding limits
-          }
-          
-          // Debug: log final configuration
-          if (hasGate) {
-            console.log('FINAL LAYOUT - panels:', finalPanels, 'types:', panelTypes, 'gaps:', gapsArray, 'flipped:', gateConfig?.flipped);
           }
           
           bestLayout = {
