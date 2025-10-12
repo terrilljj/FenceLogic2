@@ -565,15 +565,15 @@ export function calculateBarrPanelLayout(
 
   // BARR structure: [POST]-[ELEMENT]-[POST]-[ELEMENT]-[POST]...
   // For N elements, need N+1 posts
-  // Total = sum(elements) + (N+1) × post
+  // All gaps use post allowance (25mm or 50mm) - gate and panels treated equally
+  // (The 12.5mm gate clearance is internal physical clearance, not a gap in our layout)
   
   if (layoutMode === "full-panels-cut-end") {
     // Mode 1: Full standard panels + cut end piece
     
     if (hasGate) {
-      // With gate: [post]-[gate]-[post]-[panels...]-[post]
-      // Try fitting: gate + maxFullPanels: (1 + maxFullPanels) × post + gate + maxFullPanels × stdWidth + post
-      // Simplify: maxFullPanels × (stdWidth + post) + gate + 2×post ≤ span
+      // With gate: all elements use same post allowance for gaps
+      // Structure: [post]-elements...-[post] where elements = panels + gate
       const maxFullPanels = Math.floor((spanLength - gateSize - 2 * post) / (standardPanelWidth + post));
       
       if (maxFullPanels < 0) {
@@ -587,14 +587,17 @@ export function calculateBarrPanelLayout(
       }
       
       // Check if we can fit gate + full panels + cut panel
-      // With cut: (1 + numFullPanels + 1) elements needs (numFullPanels + 3) posts
+      // All elements (gate + panels) use same post allowance
+      // Structure: [post]-[elements...]-[post], where N elements = N+1 posts
       let numFullPanels = maxFullPanels;
       let cutWidth = 0;
       
       // Find the right number of full panels so cut panel is valid (≥ MIN_PANEL)
       while (numFullPanels >= 0) {
-        const postsWithCut = numFullPanels + 3;
-        const spaceUsed = gateSize + numFullPanels * standardPanelWidth + postsWithCut * post;
+        // Total elements = gate + numFullPanels + cutPanel = numFullPanels + 2
+        // Total posts = elements + 1 = numFullPanels + 3
+        const totalPosts = numFullPanels + 3;
+        const spaceUsed = gateSize + numFullPanels * standardPanelWidth + totalPosts * post;
         cutWidth = spanLength - spaceUsed;
         
         if (cutWidth >= MIN_PANEL) break;
@@ -626,13 +629,19 @@ export function calculateBarrPanelLayout(
       const clampedPosition = Math.min(gatePosition, allPanels.length);
       allPanels.splice(clampedPosition, 0, { width: gateSize, type: "gate" });
       
-      // Build final layout with posts
-      gaps.push(post); // Start post
-      for (const panel of allPanels) {
+      // Build final layout with posts and gaps
+      // All gaps use post allowance (gate and panels treated equally)
+      for (let i = 0; i < allPanels.length; i++) {
+        const panel = allPanels[i];
+        
+        // All gaps use post allowance
+        gaps.push(post);
         panels.push(panel.width);
         panelTypes.push(panel.type);
-        gaps.push(post);
       }
+      
+      // End gap
+      gaps.push(post);
       
       return {
         panels,
@@ -785,14 +794,20 @@ export function calculateBarrPanelLayout(
         allPanels.splice(clampedPosition, 0, { width: gateSize, type: "gate" });
         
         const panels: number[] = [];
-        const gaps: number[] = [post];
+        const gaps: number[] = [];
         const panelTypes: PanelType[] = [];
         
-        for (const panel of allPanels) {
+        // Build final layout - all gaps use post allowance
+        for (let i = 0; i < allPanels.length; i++) {
+          const panel = allPanels[i];
+          
+          gaps.push(post);
           panels.push(panel.width);
           panelTypes.push(panel.type);
-          gaps.push(post);
         }
+        
+        // End gap
+        gaps.push(post);
         
         return {
           panels,
@@ -815,14 +830,20 @@ export function calculateBarrPanelLayout(
       allPanels.splice(clampedPosition, 0, { width: gateSize, type: "gate" });
       
       const panels: number[] = [];
-      const gaps: number[] = [post];
+      const gaps: number[] = [];
       const panelTypes: PanelType[] = [];
       
-      for (const panel of allPanels) {
+      // Build final layout - all gaps use post allowance
+      for (let i = 0; i < allPanels.length; i++) {
+        const panel = allPanels[i];
+        
+        gaps.push(post);
         panels.push(panel.width);
         panelTypes.push(panel.type);
-        gaps.push(post);
       }
+      
+      // End gap
+      gaps.push(post);
       
       return {
         panels,

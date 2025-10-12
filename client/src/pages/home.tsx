@@ -128,16 +128,19 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
   if (type === "aluminium-vertical") {
     return (
       <div className="relative w-32 h-40 mx-auto">
-        {/* Aluminium vertical pickets/bars */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-between items-end transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
-          {/* Top rail */}
-          <div className="absolute top-0 left-0 right-0 h-2 bg-zinc-700 dark:bg-zinc-600 rounded-sm shadow-sm" />
-          {/* Bottom rail */}
-          <div className="absolute bottom-0 left-0 right-0 h-2 bg-zinc-700 dark:bg-zinc-600 rounded-sm shadow-sm" />
-          {/* Vertical pickets */}
-          {[...Array(11)].map((_, i) => (
-            <div key={i} className="w-1 h-28 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 shadow-sm" />
-          ))}
+        {/* BARR: Aluminium vertical pickets with inset rails */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+          {/* Container for pickets with gap from edges */}
+          <div className="relative w-20 h-32 flex justify-between">
+            {/* Vertical pickets - FULL HEIGHT with gaps */}
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="w-1 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600" />
+            ))}
+            {/* Top rail - INSET from top, thinner */}
+            <div className="absolute top-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+            {/* Bottom rail - INSET from bottom, thinner */}
+            <div className="absolute bottom-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+          </div>
         </div>
       </div>
     );

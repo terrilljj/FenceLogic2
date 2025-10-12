@@ -52,7 +52,7 @@ export function SpanConfigPanel({
       const barrHeight = span.barrHeight || "1200mm";
       const layoutMode = span.barrLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 900) : undefined;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
       const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateBarrPanelLayout(
@@ -434,12 +434,12 @@ export function SpanConfigPanel({
                           updateSpan({
                             gateConfig: {
                               required: true,
-                              hardware: "d-and-d",
+                              hardware: "master",
                               hingeFrom: "glass",
                               latchTo: "glass",
                               hingeType: "glass-to-glass",
                               latchType: "glass-to-glass",
-                              gateSize: 900,
+                              gateSize: 975,
                               hingePanelSize: 1200,
                               autoHingePanel: false,
                               position: 0,
@@ -459,50 +459,6 @@ export function SpanConfigPanel({
 
                   {span.gateConfig?.required && (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Hinge Type</Label>
-                          <Select
-                            value={span.gateConfig.hingeType || "glass-to-glass"}
-                            onValueChange={(value) => updateSpan({ 
-                              gateConfig: {
-                                ...span.gateConfig!,
-                                hingeType: value as "glass-to-glass" | "wall-mounted"
-                              }
-                            })}
-                          >
-                            <SelectTrigger data-testid={`span-${span.spanId}-gate-hinge-type`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="glass-to-glass">Glass-to-Glass</SelectItem>
-                              <SelectItem value="wall-mounted">Wall Mounted</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Latch Type</Label>
-                          <Select
-                            value={span.gateConfig.latchType || "glass-to-glass"}
-                            onValueChange={(value) => updateSpan({ 
-                              gateConfig: {
-                                ...span.gateConfig!,
-                                latchType: value as "glass-to-glass" | "wall-mounted"
-                              }
-                            })}
-                          >
-                            <SelectTrigger data-testid={`span-${span.spanId}-gate-latch-type`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="glass-to-glass">Glass-to-Glass</SelectItem>
-                              <SelectItem value="wall-mounted">Wall Mounted</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Gate Position</Label>
                         <Select

@@ -363,8 +363,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // Override end gaps based on gate configuration
-    if (span.gateConfig?.required) {
+    // For BARR, use gaps from panelLayout array (N+1 gaps for N panels)
+    if (isBarrFencing && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+      const gaps = span.panelLayout.gaps;
+      leftGapSize = gaps[0]; // First gap
+      rightGapSize = gaps[gaps.length - 1]; // Last gap
+    } else if (span.gateConfig?.required) {
+      // Override end gaps based on gate configuration (glass fencing only)
       const latchGap = span.gateConfig.latchGap || 9;
       const hingeGap = span.gateConfig.hingeGap || 9;
       
@@ -484,38 +489,42 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       if (isBarrFencing) {
         // BARR panel configuration
         const barrBottomClearance = 100 * scale; // Panels float above ground
-        const railHeight = 50 * scale; // Top and bottom rails
+        const railHeight = 25 * scale; // Top and bottom rails (thinner)
+        const railInset = 80 * scale; // Rails are inset from panel edges
         const picketSpacing = 100 * scale; // Space between pickets (50mm pickets + 50mm gaps)
+        const postWidth = 50 * scale; // 50mm posts
+        const picketGap = 15 * scale; // Gap between pickets and posts
         
         // Draw BARR panel with vertical pickets
         const panelBottom = groundLevel - barrBottomClearance;
         const panelTop = panelBottom - scaledPanelHeight;
         
-        // Top rail
-        ctx.fillStyle = isGate ? "#a0a0a0" : "#888888";
-        ctx.fillRect(currentX, panelTop, scaledPanelWidth, railHeight);
-        
-        // Bottom rail
-        ctx.fillRect(currentX, panelBottom - railHeight, scaledPanelWidth, railHeight);
-        
-        // Draw vertical pickets (slats)
+        // Draw vertical pickets (slats) - FULL HEIGHT with gaps at posts
         ctx.fillStyle = isGate ? "#b0b0b0" : "#9a9a9a";
         const picketWidth = 25 * scale; // 25mm wide pickets
-        let picketX = currentX + (picketSpacing / 2);
+        const picketStart = currentX + postWidth / 2 + picketGap;
+        const picketEnd = currentX + scaledPanelWidth - postWidth / 2 - picketGap;
+        let picketX = picketStart + (picketSpacing / 2);
         
-        while (picketX < currentX + scaledPanelWidth - picketWidth) {
+        while (picketX < picketEnd - picketWidth) {
           ctx.fillRect(
             picketX - picketWidth / 2,
-            panelTop + railHeight,
+            panelTop,
             picketWidth,
-            scaledPanelHeight - (2 * railHeight)
+            scaledPanelHeight
           );
           picketX += picketSpacing;
         }
         
+        // Draw rails OVER pickets (inset from edges, proportional)
+        ctx.fillStyle = isGate ? "#a0a0a0" : "#888888";
+        // Top rail (inset from top edge)
+        ctx.fillRect(currentX, panelTop + railInset, scaledPanelWidth, railHeight);
+        // Bottom rail (inset from bottom edge)
+        ctx.fillRect(currentX, panelBottom - railInset - railHeight, scaledPanelWidth, railHeight);
+        
         // Draw posts at panel edges (posts extend to ground)
         // For BARR: N panels need N+1 posts (one before first panel, one after each panel)
-        const postWidth = 50 * scale; // 50mm posts
         ctx.fillStyle = "#707070";
         
         // Draw start post only for first panel
@@ -535,11 +544,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           postWidth,
           groundLevel - panelTop
         );
-        
-        // Panel outline
-        ctx.strokeStyle = isActive ? "#666" : "#888";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(currentX, panelTop, scaledPanelWidth, scaledPanelHeight);
         
       } else if (isLeftRaked || isRightRaked) {
         // Glass panels - raked
@@ -771,10 +775,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       currentX += scaledPanelWidth;
 
-      // Gap between panels (no post - using spigots)
+      // Gap between panels
       if (i < numPanels - 1) {
-        // Use individual gap from gaps array (hardware-specific for gates), fallback to average
-        const actualGapSize = span.panelLayout?.gaps?.[i] ?? gapSize;
+        // For BARR: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
+        // For glass: gaps array uses gap[i] for gap between panel i and i+1
+        const gapIndex = isBarrFencing ? i + 1 : i;
+        const actualGapSize = span.panelLayout?.gaps?.[gapIndex] ?? gapSize;
         const scaledGapSize = actualGapSize * scale;
         const gapStart = currentX;
         
