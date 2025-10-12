@@ -23,6 +23,30 @@ Preferred communication style: Simple, everyday language.
 - End caps for channel termination
 - Replaces spigot hardware in component calculations
 
+**BARR Fencing Specifications (October 2025):**
+- **Three Heights Available**: 1000mm, 1200mm, 1800mm
+- **Panel Dimensions**:
+  - 1000mm H × 1733mm W (50×25mm pickets)
+  - 1200mm H × 2205mm W (50×25mm pickets)
+  - 1800mm H × 1969mm W (50×25mm pickets)
+- **Construction**: 50×25mm aluminum pickets with horizontal rails passing through punched holes, welded construction
+- **Finishes**: Satin Black (CN150A), Pearl White (GA078A)
+- **Gates**: 1200mm × 975mm, 1800mm × 975mm
+- **Posts**: Welded base plate (1280mm), standard lengths (1800mm, 2500mm)
+- **Features**: Pre-inserted caps on pickets, vertical slat design
+
+**Glass Specifications:**
+- **12mm Glass**: 300-1500mm width, 970mm height
+- **15mm Glass**: 300-1400mm width, 1000mm height
+- **15mm Standoff Glass**: 400-1200mm width, 1000mm height
+  - 50mm diameter standoffs
+  - Finishes: polished, satin, black, white
+
+**Handrail Configuration System:**
+- **Nonorail 25×21**: Stainless steel with polished/satin finishes
+- **Nanorail 30×21**: Stainless steel with polished/satin finishes
+- **Series Rail 35×35**: Anodised aluminium with black/white finishes
+
 **Product Selection:**
 - ProductSelector component allows switching between product variants
 - Each product type has specific configuration options in SpanConfigPanel
