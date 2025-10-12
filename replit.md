@@ -50,6 +50,11 @@ Preferred communication style: Simple, everyday language.
 - Progressive disclosure pattern for complex configuration options
 - Custom color palette with semantic HSL values for light/dark themes
 - Consistent spacing scale using Tailwind units (2, 4, 6, 8, 12, 16, 24)
+- **Info Tooltips**: Contextual help system using info icons (ⓘ) with hover tooltips:
+  - Panel Configuration: Explains max panel width and gap spacing calculation
+  - Gate Required: Explains gate hardware types, mounting styles, and positioning
+  - Raked Panels: Explains slope/stair panels with 1200mm fixed width
+  - Custom Panel: Explains custom-sized panels with positioning controls
 
 **Visualization System (V1 - Elevation Only):**
 - Elevation view only (3D and plan views disabled for initial version)
@@ -100,7 +105,13 @@ Preferred communication style: Simple, everyday language.
 - Gate integration with two mounting modes:
   - **Glass-to-glass**: Gate positioned by panel index (0, 1, 2, ...) with hinge panel included
   - **Wall/post-mounted**: Gate at start (position=0) or end (position=1) with no hinge panel
-- Panel types: standard, raked, gate, hinge (tracked for visualization)
+- Panel types: standard, raked, gate, hinge, custom (tracked for visualization)
+- **Custom Glass Panels**: Support for custom-sized glass panels with specific width (200-2000mm) and height (1200-1800mm) dimensions:
+  - Custom panels are treated as fixed panels in layout calculations
+  - Position controls allow moving custom panel left/right within the panel array
+  - Visualization renders custom panels with distinct orange color and WIDTHxHEIGHT labels
+  - Component list includes custom panels with format "Custom Glass Panel {width}mm x {height}mm (12mm thick)"
+  - Panel calculation allows 0-1 variable panels when custom panel is enabled
 - **Gate Position Preservation**: savedGlassPosition field preserves panel index when switching between glass-to-glass and wall-mounted modes
 - **Hardware-Specific Gate Gaps**: Automatic calculation of correct gaps based on hardware type and mounting:
   - Master Range wall-mounted: latch gap = 9mm (hinge side attached to wall)
