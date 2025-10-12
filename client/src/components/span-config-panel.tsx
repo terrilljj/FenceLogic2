@@ -43,10 +43,40 @@ export function SpanConfigPanel({
 
   // Calculate panel layout whenever relevant parameters change
   useEffect(() => {
-    // Calculate total end gaps
-    let endGaps = 0;
-    if (span.leftGap?.enabled) endGaps += span.leftGap.size;
-    if (span.rightGap?.enabled) endGaps += span.rightGap.size;
+    // Calculate total end gaps with gate latch override
+    let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
+    let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
+    
+    // Override end gaps when gate latch is at the boundary (must be 9mm)
+    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
+      const latchGap = span.gateConfig.latchGap || 9;
+      
+      if (span.gateConfig.hingeFrom === "wall") {
+        // Wall-mounted gate: position determines which end
+        if (span.gateConfig.position === 0) {
+          // Gate at left end, latch faces left wall
+          leftEndGap = latchGap;
+        } else if (span.gateConfig.position >= 1) {
+          // Gate at right end, latch faces right wall
+          rightEndGap = latchGap;
+        }
+      } else {
+        // Glass-to-glass: check if gate is at the ends
+        const isAtLeftEnd = span.gateConfig.position === 0;
+        const numPanels = span.panelLayout?.panels.length || 0;
+        const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
+        
+        if (isAtLeftEnd && !span.gateConfig.flipped) {
+          // Gate at left, not flipped [gate, hinge]: latch faces left wall
+          leftEndGap = latchGap;
+        } else if (isAtRightEnd && span.gateConfig.flipped) {
+          // Gate at right, flipped [hinge, gate]: latch faces right wall
+          rightEndGap = latchGap;
+        }
+      }
+    }
+    
+    let endGaps = leftEndGap + rightEndGap;
     if (span.topGap?.enabled) endGaps += span.topGap.size;
     if (span.bottomGap?.enabled) endGaps += span.bottomGap.size;
 
@@ -82,7 +112,7 @@ export function SpanConfigPanel({
       span.leftGap, span.rightGap, span.topGap, span.bottomGap, 
       span.leftRakedPanel, span.rightRakedPanel, 
       span.gateConfig?.required, span.gateConfig?.gateSize, span.gateConfig?.hingePanelSize,
-      span.gateConfig?.position, span.gateConfig?.flipped, span.gateConfig?.hingeFrom,
+      span.gateConfig?.position, span.gateConfig?.flipped, span.gateConfig?.hingeFrom, span.gateConfig?.latchTo,
       span.gateConfig?.hingeGap, span.gateConfig?.latchGap,
       span.gateConfig?.savedGlassPosition,
       onUpdate, span]);
@@ -106,10 +136,33 @@ export function SpanConfigPanel({
     const numPanels = span.panelLayout.panels.length;
     const totalUsed = span.panelLayout.totalPanelWidth + span.panelLayout.totalGapWidth;
     
-    // Calculate end gaps
-    let endGaps = 0;
-    if (span.leftGap?.enabled) endGaps += span.leftGap.size;
-    if (span.rightGap?.enabled) endGaps += span.rightGap.size;
+    // Calculate end gaps with gate latch override
+    let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
+    let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
+    
+    // Override end gaps when gate latch is at the boundary (must be 9mm)
+    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
+      const latchGap = span.gateConfig.latchGap || 9;
+      
+      if (span.gateConfig.hingeFrom === "wall") {
+        if (span.gateConfig.position === 0) {
+          leftEndGap = latchGap;
+        } else if (span.gateConfig.position >= 1) {
+          rightEndGap = latchGap;
+        }
+      } else {
+        const isAtLeftEnd = span.gateConfig.position === 0;
+        const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
+        
+        if (isAtLeftEnd && !span.gateConfig.flipped) {
+          leftEndGap = latchGap;
+        } else if (isAtRightEnd && span.gateConfig.flipped) {
+          rightEndGap = latchGap;
+        }
+      }
+    }
+    
+    let endGaps = leftEndGap + rightEndGap;
     if (span.topGap?.enabled) endGaps += span.topGap.size;
     if (span.bottomGap?.enabled) endGaps += span.bottomGap.size;
     
@@ -142,6 +195,62 @@ export function SpanConfigPanel({
   };
 
   const layoutValidation = validatePanelLayout();
+  
+  // Check if end gaps are being overridden due to gate latch at wall
+  const getGapOverride = (side: 'left' | 'right'): number | null => {
+    if (!span.gateConfig?.required || span.gateConfig.latchTo !== "wall") {
+      return null;
+    }
+    
+    const latchGap = span.gateConfig.latchGap || 9;
+    const numPanels = span.panelLayout?.panels.length || 0;
+    
+    if (span.gateConfig.hingeFrom === "wall") {
+      if (side === 'left' && span.gateConfig.position === 0) {
+        return latchGap;
+      } else if (side === 'right' && span.gateConfig.position >= 1) {
+        return latchGap;
+      }
+    } else {
+      const isAtLeftEnd = span.gateConfig.position === 0;
+      const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
+      
+      if (side === 'left' && isAtLeftEnd && !span.gateConfig.flipped) {
+        return latchGap;
+      } else if (side === 'right' && isAtRightEnd && span.gateConfig.flipped) {
+        return latchGap;
+      }
+    }
+    
+    return null;
+  };
+  
+  const leftGapOverride = getGapOverride('left');
+  const rightGapOverride = getGapOverride('right');
+
+  // Calculate total measurements and variance for elevation view
+  const calculateTotalAndVariance = () => {
+    if (!span.panelLayout || span.panelLayout.panels.length === 0) {
+      return { total: 0, variance: 0 };
+    }
+
+    // Sum individual panels (as shown on elevation)
+    const panelsTotal = span.panelLayout.panels.reduce((sum, panel) => sum + panel, 0);
+    
+    // Sum individual gaps (as shown on elevation - these are the actual gap values displayed)
+    const internalGapsTotal = span.panelLayout.gaps.reduce((sum, gap) => sum + gap, 0);
+    
+    // Add end gaps (with overrides if applicable)
+    const leftEndGap = leftGapOverride ?? (span.leftGap?.enabled ? span.leftGap.size : 0);
+    const rightEndGap = rightGapOverride ?? (span.rightGap?.enabled ? span.rightGap.size : 0);
+    
+    const total = panelsTotal + internalGapsTotal + leftEndGap + rightEndGap;
+    const variance = span.length - total;
+    
+    return { total, variance };
+  };
+
+  const { total: calculatedTotal, variance } = calculateTotalAndVariance();
 
   return (
     <Card className="overflow-hidden" data-testid={`span-${span.spanId}`}>
@@ -283,33 +392,47 @@ export function SpanConfigPanel({
           {(showLeftGap || showRightGap) && (
             <div className="grid grid-cols-2 gap-4">
               {showLeftGap && (
-                <GapSlider
-                  label="Left Gap"
-                  value={span.leftGap?.enabled ? span.leftGap.size : 0}
-                  onChange={(size) =>
-                    updateSpan({
-                      leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
-                    })
-                  }
-                  min={0}
-                  max={150}
-                  testId={`span-${span.spanId}-left-gap`}
-                />
+                <div className="space-y-1">
+                  <GapSlider
+                    label="Left Gap"
+                    value={span.leftGap?.enabled ? span.leftGap.size : 0}
+                    onChange={(size) =>
+                      updateSpan({
+                        leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                      })
+                    }
+                    min={0}
+                    max={150}
+                    testId={`span-${span.spanId}-left-gap`}
+                  />
+                  {leftGapOverride !== null && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium" data-testid={`span-${span.spanId}-left-gap-override`}>
+                      Overridden to {leftGapOverride}mm (latch at wall)
+                    </p>
+                  )}
+                </div>
               )}
 
               {showRightGap && (
-                <GapSlider
-                  label="Right Gap"
-                  value={span.rightGap?.enabled ? span.rightGap.size : 0}
-                  onChange={(size) =>
-                    updateSpan({
-                      rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
-                    })
-                  }
-                  min={0}
-                  max={150}
-                  testId={`span-${span.spanId}-right-gap`}
-                />
+                <div className="space-y-1">
+                  <GapSlider
+                    label="Right Gap"
+                    value={span.rightGap?.enabled ? span.rightGap.size : 0}
+                    onChange={(size) =>
+                      updateSpan({
+                        rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                      })
+                    }
+                    min={0}
+                    max={150}
+                    testId={`span-${span.spanId}-right-gap`}
+                  />
+                  {rightGapOverride !== null && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium" data-testid={`span-${span.spanId}-right-gap-override`}>
+                      Overridden to {rightGapOverride}mm (latch at wall)
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -318,7 +441,7 @@ export function SpanConfigPanel({
           <div className="space-y-4 pt-4 border-t border-card-border">
             <h4 className="text-sm font-semibold">Panel Configuration</h4>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Max Panel Width</Label>
                 <Select
@@ -336,6 +459,27 @@ export function SpanConfigPanel({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Calculated Total</Label>
+                <div className="h-9 flex items-center px-3 rounded-md bg-muted text-sm font-medium" data-testid={`span-${span.spanId}-calc-total`}>
+                  {calculatedTotal.toFixed(1)}mm
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Variance</Label>
+                <div 
+                  className={`h-9 flex items-center px-3 rounded-md text-sm font-medium ${
+                    Math.abs(variance) < 0.1 ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400' : 
+                    Math.abs(variance) <= 50 ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400' :
+                    'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
+                  }`}
+                  data-testid={`span-${span.spanId}-variance`}
+                >
+                  {variance >= 0 ? '+' : ''}{variance.toFixed(1)}mm
+                </div>
               </div>
             </div>
 

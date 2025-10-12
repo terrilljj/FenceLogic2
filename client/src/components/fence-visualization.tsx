@@ -353,9 +353,37 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       groundLevel - 80
     );
 
-    // Calculate left and right gaps
-    const leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
-    const rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
+    // Calculate left and right gaps with gate latch override
+    let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
+    let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
+    
+    // Override end gaps when gate latch is at the boundary (must be 9mm)
+    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
+      const latchGap = span.gateConfig.latchGap || 9;
+      
+      if (span.gateConfig.hingeFrom === "wall") {
+        // Wall-mounted gate: position determines which end
+        if (span.gateConfig.position === 0) {
+          leftGapSize = latchGap;
+        } else if (span.gateConfig.position >= 1) {
+          rightGapSize = latchGap;
+        }
+      } else {
+        // Glass-to-glass: check if gate is at the ends
+        const isAtLeftEnd = span.gateConfig.position === 0;
+        const numPanels = span.panelLayout?.panels.length || 0;
+        const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
+        
+        if (isAtLeftEnd && !span.gateConfig.flipped) {
+          // Gate at left, not flipped [gate, hinge]: latch faces left wall
+          leftGapSize = latchGap;
+        } else if (isAtRightEnd && span.gateConfig.flipped) {
+          // Gate at right, flipped [hinge, gate]: latch faces right wall
+          rightGapSize = latchGap;
+        }
+      }
+    }
+    
     const scaledLeftGap = leftGapSize * scale;
     const scaledRightGap = rightGapSize * scale;
 
@@ -653,7 +681,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Gap between panels (no post - using spigots)
       if (i < numPanels - 1) {
-        const scaledGapSize = gapSize * scale;
+        // Use individual gap from gaps array (hardware-specific for gates), fallback to average
+        const actualGapSize = span.panelLayout?.gaps?.[i] ?? gapSize;
+        const scaledGapSize = actualGapSize * scale;
         const gapStart = currentX;
         
         // Gap dimension line with arrows
@@ -689,7 +719,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.font = "600 13px Inter";
         ctx.textAlign = "center";
         ctx.fillText(
-          `${gapSize.toFixed(1)}`,
+          `${actualGapSize.toFixed(1)}`,
           gapStart + scaledGapSize / 2,
           gapDimLineY + 18
         );

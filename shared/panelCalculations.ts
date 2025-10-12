@@ -322,17 +322,21 @@ export function calculatePanelLayout(
                   const hingeIndex = panelTypes.findIndex(t => t === "hinge");
                   
                   if (!gateConfig.flipped) {
-                    // Gate first, then hinge: [... gate(latch) gap hinge(hinge) ...]
+                    // Gate first, then hinge: [... | latch gap | gate | hinge gap | hinge | ...]
+                    // Gap at gateIndex is BETWEEN gate and hinge (hinge gap)
+                    // Gap at gateIndex-1 is BEFORE gate (latch gap, if gate not at start)
                     if (i === gateIndex - 1 && gateIndex > 0) {
                       gapsArray.push(gateConfig.latchGap);
-                    } else if (i === hingeIndex && hingeIndex < finalPanels.length - 1) {
+                    } else if (i === gateIndex) {
                       gapsArray.push(gateConfig.hingeGap);
                     } else {
                       gapsArray.push(actualGap);
                     }
                   } else {
-                    // Hinge first, then gate: [... hinge(hinge) gap gate(latch) ...]
-                    if (i === hingeIndex - 1 && hingeIndex > 0) {
+                    // Hinge first, then gate: [... | hinge gap | hinge | latch gap | gate | ...]
+                    // Gap at hingeIndex is BETWEEN hinge and gate (hinge gap)
+                    // Gap at gateIndex is AFTER gate (latch gap, if gate not at end)
+                    if (i === hingeIndex) {
                       gapsArray.push(gateConfig.hingeGap);
                     } else if (i === gateIndex && gateIndex < finalPanels.length - 1) {
                       gapsArray.push(gateConfig.latchGap);
