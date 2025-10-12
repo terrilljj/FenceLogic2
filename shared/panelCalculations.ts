@@ -192,37 +192,30 @@ export function calculatePanelLayout(
       if (Math.abs(remainder) > 0.001) { // Use tolerance for floating point comparison
         const absRemainder = Math.abs(remainder);
         
-        // If remainder is small (less than one increment), distribute by adjusting panel sizes
-        if (absRemainder < PANEL_INCREMENT) {
-          // Try distributing the small remainder across all panels
-          // For example, -17mm across 2 panels = adjust gaps slightly instead
-          // This is within tolerance, so we can keep panels equal
-          // No adjustment needed - keep all panels at ideal width
-        } else {
-          // Round remainder to nearest panel increment and distribute
-          const roundedRemainder = Math.round(remainder / PANEL_INCREMENT) * PANEL_INCREMENT;
-          
-          if (roundedRemainder > 0) {
-            // Distribute positive remainder across panels
-            let remainingToAdd = roundedRemainder;
+        // For negative remainder (panels too large), reduce panel size to avoid variance
+        if (remainder < 0) {
+          // Always try to reduce at least one panel to eliminate negative variance
+          let remainingToSubtract = Math.ceil(absRemainder / PANEL_INCREMENT) * PANEL_INCREMENT;
+          for (let i = 0; i < numVariablePanels && remainingToSubtract > 0; i++) {
+            const canSubtract = Math.min(variablePanels[i] - MIN_PANEL, remainingToSubtract);
+            if (canSubtract >= PANEL_INCREMENT) {
+              variablePanels[i] -= PANEL_INCREMENT;
+              remainingToSubtract -= PANEL_INCREMENT;
+            }
+          }
+        } else if (remainder > 0) {
+          // For positive remainder, only add if it's a full increment
+          if (absRemainder >= PANEL_INCREMENT) {
+            let remainingToAdd = Math.floor(absRemainder / PANEL_INCREMENT) * PANEL_INCREMENT;
             for (let i = 0; i < numVariablePanels && remainingToAdd > 0; i++) {
-              const canAdd = Math.min(MAX_PANEL - variablePanels[i], Math.min(remainingToAdd, PANEL_INCREMENT));
+              const canAdd = Math.min(MAX_PANEL - variablePanels[i], remainingToAdd);
               if (canAdd >= PANEL_INCREMENT) {
                 variablePanels[i] += PANEL_INCREMENT;
                 remainingToAdd -= PANEL_INCREMENT;
               }
             }
-          } else if (roundedRemainder < 0) {
-            // Distribute negative remainder across panels
-            let remainingToSubtract = Math.abs(roundedRemainder);
-            for (let i = 0; i < numVariablePanels && remainingToSubtract > 0; i++) {
-              const canSubtract = Math.min(variablePanels[i] - MIN_PANEL, Math.min(remainingToSubtract, PANEL_INCREMENT));
-              if (canSubtract >= PANEL_INCREMENT) {
-                variablePanels[i] -= PANEL_INCREMENT;
-                remainingToSubtract -= PANEL_INCREMENT;
-              }
-            }
           }
+          // Small positive remainders (< PANEL_INCREMENT) will be absorbed by gaps
         }
       }
       
