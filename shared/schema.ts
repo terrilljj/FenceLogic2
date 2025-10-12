@@ -69,6 +69,35 @@ export const GLASS_CONSTRAINTS = {
   },
 };
 
+// Standoff-specific glass constraints (15mm glass with standoff mounting)
+export const STANDOFF_GLASS_CONSTRAINTS = {
+  minWidth: 400,
+  maxWidth: 1200,
+  height: 1000,
+};
+
+// Helper function to get glass constraints based on variant and thickness
+export function getGlassConstraints(variant: ProductVariant, thickness?: GlassThickness) {
+  // For standoff balustrades, always use standoff constraints (standoff glass is always 15mm, 400-1200mm)
+  if (variant === "glass-bal-standoffs") {
+    return STANDOFF_GLASS_CONSTRAINTS;
+  }
+  
+  // For other variants, use standard constraints based on thickness
+  if (thickness && GLASS_CONSTRAINTS[thickness]) {
+    return GLASS_CONSTRAINTS[thickness];
+  }
+  
+  // Default to 12mm constraints
+  return GLASS_CONSTRAINTS["12mm"];
+}
+
+// Standoff diameter options
+export type StandoffDiameter = "50mm";
+
+// Standoff finish types
+export type StandoffFinish = "polished" | "satin" | "black" | "white";
+
 // Hinge types (mounting configurations)
 export type HingeType = "glass-to-glass" | "glass-to-wall" | "wall-to-glass";
 
@@ -100,13 +129,15 @@ export const spanConfigSchema = z.object({
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
   desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate
-  glassThickness: z.enum(["12mm", "15mm"]).default("12mm").optional(), // Glass thickness selection
+  glassThickness: z.enum(["12mm", "15mm"]).optional(), // Glass thickness selection (defaults handled in UI)
   handrail: z.object({
     enabled: z.boolean(),
     type: z.enum(["nonorail-25x21", "nanorail-30x21", "series-35x35"]),
     material: z.enum(["stainless-steel", "anodised-aluminium"]),
     finish: z.enum(["polished", "satin", "black", "white"]),
   }).optional(), // Top-mounted handrail options
+  standoffDiameter: z.enum(["50mm"]).optional(), // Standoff diameter for standoff systems (50mm)
+  standoffFinish: z.enum(["polished", "satin", "black", "white"]).optional(), // Standoff finish
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems
