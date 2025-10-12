@@ -8,7 +8,7 @@ interface ProductOption {
   type: ProductType;
   name: string;
   description: string;
-  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets";
+  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail";
 }
 
 const productOptions: ProductOption[] = [
@@ -76,15 +76,43 @@ const productOptions: ProductOption[] = [
     visual: "aluminium-slats"
   },
   {
-    id: "pvc-privacy",
+    id: "pvc-hamptons-full-privacy",
     type: "pvc",
-    name: "PVC Fencing",
-    description: "Low-maintenance PVC fencing",
-    visual: "pvc-pickets"
+    name: "Hamptons Full Privacy",
+    description: "1800mm solid privacy panels",
+    visual: "pvc-hamptons-full"
+  },
+  {
+    id: "pvc-hamptons-combo",
+    type: "pvc",
+    name: "Hamptons Combo",
+    description: "1800mm with slat topper",
+    visual: "pvc-hamptons-combo"
+  },
+  {
+    id: "pvc-hamptons-vertical-paling",
+    type: "pvc",
+    name: "Hamptons Vertical Paling",
+    description: "1800mm vertical paling style",
+    visual: "pvc-hamptons-vertical"
+  },
+  {
+    id: "pvc-hamptons-semi-privacy",
+    type: "pvc",
+    name: "Hamptons Semi Privacy",
+    description: "1000mm with horizontal gaps",
+    visual: "pvc-hamptons-semi"
+  },
+  {
+    id: "pvc-hamptons-3rail",
+    type: "pvc",
+    name: "Hamptons 3 Rail",
+    description: "1525mm adjustable height rails",
+    visual: "pvc-hamptons-3rail"
   }
 ];
 
-function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" }) {
+function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail" }) {
   if (type === "frameless-glass") {
     return (
       <div className="relative w-32 h-40 mx-auto">
@@ -232,6 +260,97 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
               <div key={i} className="w-0.5 h-full bg-slate-200 dark:bg-slate-100 shadow-sm" />
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "pvc-hamptons-full") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* Full Privacy: solid panel */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+          {/* Square posts */}
+          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Solid panel */}
+          <div className="absolute left-2 right-2 top-0 bottom-0 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "pvc-hamptons-combo") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* Combo: solid lower + slat topper */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+          {/* Square posts */}
+          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Solid lower panel (60% height) */}
+          <div className="absolute left-2 right-2 bottom-0 h-3/5 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          {/* Horizontal slats (40% height at top) */}
+          <div className="absolute left-2 right-2 top-0 h-2/5 flex flex-col gap-1">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-1 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "pvc-hamptons-vertical") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* Vertical Paling: vertical slats with gaps */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+          {/* Square posts */}
+          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Vertical slats */}
+          <div className="absolute left-2 right-2 top-0 bottom-0 flex justify-between">
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="w-1 h-full bg-slate-200 dark:bg-slate-100 shadow-sm" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "pvc-hamptons-semi") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* Semi Privacy: horizontal slats with gaps */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+          {/* Square posts */}
+          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Horizontal slats with gaps */}
+          <div className="absolute left-2 right-2 top-2 bottom-2 flex flex-col justify-between">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-1.5 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "pvc-hamptons-3rail") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* 3 Rail: three horizontal rails */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+          {/* Square posts */}
+          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Three horizontal rails */}
+          <div className="absolute left-2 right-2 top-3 h-2 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          <div className="absolute left-2 right-2 top-1/2 -translate-y-1/2 h-2 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          <div className="absolute left-2 right-2 bottom-3 h-2 bg-slate-200 dark:bg-slate-100 shadow-sm" />
         </div>
       </div>
     );
