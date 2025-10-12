@@ -278,6 +278,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
   const isTubularFencing = design.productVariant === "alu-pool-tubular";
+  const isHamptonsPVC = design.productVariant.startsWith("pvc-hamptons-");
 
   // Set canvas size to match container
   const rect = canvas.getBoundingClientRect();
@@ -365,8 +366,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // For Blade, BARR, and Tubular, use gaps from panelLayout array (N+1 gaps for N panels)
-    if ((isBladeFencing || isBarrFencing || isTubularFencing) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+    // For Blade, BARR, Tubular, and Hamptons PVC, use gaps from panelLayout array (N+1 gaps for N panels)
+    if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
@@ -708,6 +709,98 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.textAlign = "center";
         ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
         
+      } 
+      // Hamptons PVC panels have different rendering
+      else if (isHamptonsPVC) {
+        // Hamptons PVC panel configuration
+        const postWidth = 127 * scale; // 127mm square posts
+        const slatWidth = 8 * scale; // Approximate slat width for visual representation
+        const slatSpacing = 12 * scale; // Space between vertical slats
+        
+        // Hamptons panels sit on ground (no bottom clearance)
+        const panelBottom = groundLevel;
+        const panelTop = panelBottom - scaledPanelHeight;
+        
+        // Draw panel background
+        ctx.fillStyle = isGate ? "#f5f5f5" : "#ffffff";
+        ctx.fillRect(currentX, panelTop, scaledPanelWidth, scaledPanelHeight);
+        
+        // Draw vertical slats based on style
+        const style = design.productVariant.replace("pvc-hamptons-", "");
+        ctx.fillStyle = "#e0e0e0";
+        
+        if (style === "full-privacy") {
+          // Full privacy: solid vertical slats with no gaps
+          let slatX = currentX + slatWidth;
+          while (slatX < currentX + scaledPanelWidth - slatWidth) {
+            ctx.fillRect(slatX - slatWidth / 2, panelTop, slatWidth, scaledPanelHeight);
+            slatX += slatWidth + 2;
+          }
+        } else if (style === "semi-privacy" || style === "vertical-paling") {
+          // Semi-privacy/vertical paling: vertical slats with gaps
+          let slatX = currentX + slatWidth;
+          while (slatX < currentX + scaledPanelWidth - slatWidth) {
+            ctx.fillRect(slatX - slatWidth / 2, panelTop, slatWidth, scaledPanelHeight);
+            slatX += slatWidth + slatSpacing;
+          }
+        } else if (style === "combo") {
+          // Combo: solid bottom + decorative top
+          const solidHeight = scaledPanelHeight * 0.6;
+          // Solid bottom
+          ctx.fillStyle = "#e0e0e0";
+          ctx.fillRect(currentX, panelTop + (scaledPanelHeight - solidHeight), scaledPanelWidth, solidHeight);
+          // Decorative top slats
+          let slatX = currentX + slatWidth;
+          while (slatX < currentX + scaledPanelWidth - slatWidth) {
+            ctx.fillRect(slatX - slatWidth / 2, panelTop, slatWidth, scaledPanelHeight - solidHeight);
+            slatX += slatWidth + slatSpacing;
+          }
+        } else if (style === "3rail") {
+          // 3 rail: three horizontal rails
+          const railHeight = 8 * scale;
+          const railSpacing = scaledPanelHeight / 4;
+          // Top rail
+          ctx.fillRect(currentX, panelTop + railSpacing - railHeight / 2, scaledPanelWidth, railHeight);
+          // Middle rail
+          ctx.fillRect(currentX, panelTop + railSpacing * 2 - railHeight / 2, scaledPanelWidth, railHeight);
+          // Bottom rail
+          ctx.fillRect(currentX, panelTop + railSpacing * 3 - railHeight / 2, scaledPanelWidth, railHeight);
+        }
+        
+        // Draw posts at panel edges (posts extend to ground)
+        ctx.fillStyle = "#d0d0d0";
+        
+        // Draw start post only for first panel
+        if (i === 0) {
+          ctx.fillRect(
+            currentX - postWidth / 2,
+            panelTop,
+            postWidth,
+            groundLevel - panelTop
+          );
+          
+          // Post measurement label - 127mm
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "600 10px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText("127mm", currentX, groundLevel + 20);
+        }
+        
+        // Always draw post after this panel
+        ctx.fillStyle = "#d0d0d0";
+        ctx.fillRect(
+          currentX + scaledPanelWidth - postWidth / 2,
+          panelTop,
+          postWidth,
+          groundLevel - panelTop
+        );
+        
+        // Post measurement label - 127mm
+        ctx.fillStyle = "#4b5563";
+        ctx.font = "600 10px Inter";
+        ctx.textAlign = "center";
+        ctx.fillText("127mm", currentX + scaledPanelWidth, groundLevel + 20);
+        
       } else if (isLeftRaked || isRightRaked) {
         // Glass panels - raked
         ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
@@ -830,8 +923,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular use posts)
-      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing) {
+      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular/Hamptons use posts)
+      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing && !isHamptonsPVC) {
         const spigotWidth = 50 * scale;   // 50mm wide
         const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass
@@ -940,9 +1033,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Gap between panels
       if (i < numPanels - 1) {
-        // For BARR, Blade, and Tubular: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
+        // For BARR, Blade, Tubular, and Hamptons PVC: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
         // For glass: gaps array uses gap[i] for gap between panel i and i+1
-        const gapIndex = (isBarrFencing || isBladeFencing || isTubularFencing) ? i + 1 : i;
+        const gapIndex = (isBarrFencing || isBladeFencing || isTubularFencing || isHamptonsPVC) ? i + 1 : i;
         const actualGapSize = span.panelLayout?.gaps?.[gapIndex] ?? gapSize;
         const scaledGapSize = actualGapSize * scale;
         const gapStart = currentX;
