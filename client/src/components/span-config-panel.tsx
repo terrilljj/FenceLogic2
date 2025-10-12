@@ -65,37 +65,47 @@ export function SpanConfigPanel({
       // Valid hinge panel sizes
       const validHingeSizes = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
       
-      // Use existing panelLayout if available, otherwise use maxPanelWidth
-      if (span.panelLayout?.panels && span.panelLayout.panelTypes) {
-        // Find most common standard panel size from current layout
-        const regularPanels = span.panelLayout.panels.filter((_, i) => {
-          const type = span.panelLayout?.panelTypes?.[i];
-          return type === "standard";
+      // Calculate panel layout WITHOUT gate to determine base panel sizes
+      // This avoids feedback loop where hinge panel affects layout which affects hinge panel
+      const layoutWithoutGate = calculatePanelLayout(
+        span.length,
+        endGaps,
+        span.desiredGap,
+        span.maxPanelWidth,
+        span.leftRakedPanel?.enabled || false,
+        span.rightRakedPanel?.enabled || false,
+        undefined, // No gate
+        span.customPanel?.enabled ? {
+          enabled: span.customPanel.enabled,
+          width: span.customPanel.width,
+          height: span.customPanel.height,
+          position: span.customPanel.position,
+        } : undefined
+      );
+      
+      // Find most common standard panel size from layout without gate
+      const regularPanels = layoutWithoutGate.panels.filter((_, i) => {
+        const type = layoutWithoutGate.panelTypes?.[i];
+        return type === "standard";
+      });
+      
+      if (regularPanels.length > 0) {
+        const panelCounts = new Map<number, number>();
+        regularPanels.forEach(panel => {
+          panelCounts.set(panel, (panelCounts.get(panel) || 0) + 1);
         });
         
-        if (regularPanels.length > 0) {
-          const panelCounts = new Map<number, number>();
-          regularPanels.forEach(panel => {
-            panelCounts.set(panel, (panelCounts.get(panel) || 0) + 1);
-          });
-          
-          const mostCommon = Array.from(panelCounts.entries())
-            .sort((a, b) => b[1] - a[1])[0];
-          
-          const calculatedSize = mostCommon[0];
-          
-          // Round to nearest valid hinge panel size
-          effectiveHingePanelSize = validHingeSizes.reduce((prev, curr) => {
-            return Math.abs(curr - calculatedSize) < Math.abs(prev - calculatedSize) ? curr : prev;
-          });
-        } else {
-          // No standard panels, use max panel width
-          effectiveHingePanelSize = validHingeSizes.reduce((prev, curr) => {
-            return Math.abs(curr - span.maxPanelWidth) < Math.abs(prev - span.maxPanelWidth) ? curr : prev;
-          });
-        }
+        const mostCommon = Array.from(panelCounts.entries())
+          .sort((a, b) => b[1] - a[1])[0];
+        
+        const calculatedSize = mostCommon[0];
+        
+        // Round to nearest valid hinge panel size
+        effectiveHingePanelSize = validHingeSizes.reduce((prev, curr) => {
+          return Math.abs(curr - calculatedSize) < Math.abs(prev - calculatedSize) ? curr : prev;
+        });
       } else {
-        // No existing layout, use max panel width
+        // No standard panels, use max panel width
         effectiveHingePanelSize = validHingeSizes.reduce((prev, curr) => {
           return Math.abs(curr - span.maxPanelWidth) < Math.abs(prev - span.maxPanelWidth) ? curr : prev;
         });
