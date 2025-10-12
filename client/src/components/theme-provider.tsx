@@ -21,14 +21,14 @@ export function ThemeProvider({
   defaultTheme = "light",
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem("fence-builder-theme") as Theme) || defaultTheme
+    () => (localStorage.getItem("fence-logic-theme") as Theme) || defaultTheme
   );
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
-    localStorage.setItem("fence-builder-theme", theme);
+    localStorage.setItem("fence-logic-theme", theme);
   }, [theme]);
 
   const value = {

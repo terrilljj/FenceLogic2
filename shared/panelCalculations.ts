@@ -714,19 +714,40 @@ export function calculateBarrPanelLayout(
     }
   } else {
     // Mode 2: Equally spaced (all panels cut to same width)
+    // Maximum panel width constraint (cannot exceed standard panel width)
+    const MAX_PANEL_WIDTH = standardPanelWidth;
     
-    // Estimate number of panels based on standard width
-    const estimatedPanels = Math.round((spanLength - post) / (standardPanelWidth + post));
-    const numPanels = Math.max(1, estimatedPanels);
+    // Calculate minimum number of panels needed to keep panel width <= MAX_PANEL_WIDTH
+    // For N panels: total = N*panelWidth + (N+1)*post
+    // panelWidth = (spanLength - (N+1)*post) / N
+    // We want: panelWidth <= MAX_PANEL_WIDTH
+    // So: (spanLength - (N+1)*post) / N <= MAX_PANEL_WIDTH
+    // spanLength - (N+1)*post <= N*MAX_PANEL_WIDTH
+    // spanLength - N*post - post <= N*MAX_PANEL_WIDTH
+    // spanLength - post <= N*MAX_PANEL_WIDTH + N*post
+    // spanLength - post <= N*(MAX_PANEL_WIDTH + post)
+    // N >= (spanLength - post) / (MAX_PANEL_WIDTH + post)
+    const minPanels = Math.ceil((spanLength - post) / (MAX_PANEL_WIDTH + post));
+    let numPanels = Math.max(1, minPanels);
     
     if (hasGate) {
       // With gate: [post]-[gate]-[post]-[panel]-[post]-[panel]-[post]...
       // Elements = gate + numPanels, Posts = elements + 1
-      const numElements = 1 + numPanels;
-      const numPosts = numElements + 1;
-      const totalPostSpace = numPosts * post;
-      const availableForPanels = spanLength - totalPostSpace - gateSize;
-      const equalWidth = Math.floor(availableForPanels / numPanels);
+      let numElements = 1 + numPanels;
+      let numPosts = numElements + 1;
+      let totalPostSpace = numPosts * post;
+      let availableForPanels = spanLength - totalPostSpace - gateSize;
+      let equalWidth = Math.floor(availableForPanels / numPanels);
+      
+      // If panels would exceed max width, increase number of panels
+      while (equalWidth > MAX_PANEL_WIDTH && numPanels < 20) {
+        numPanels++;
+        numElements = 1 + numPanels;
+        numPosts = numElements + 1;
+        totalPostSpace = numPosts * post;
+        availableForPanels = spanLength - totalPostSpace - gateSize;
+        equalWidth = Math.floor(availableForPanels / numPanels);
+      }
       
       if (equalWidth < MIN_PANEL) {
         // Try with fewer panels
@@ -788,10 +809,19 @@ export function calculateBarrPanelLayout(
     } else {
       // Without gate: [post]-[panel]-[post]-[panel]-[post]...
       // Elements = numPanels, Posts = numPanels + 1
-      const numPosts = numPanels + 1;
-      const totalPostSpace = numPosts * post;
-      const availableForPanels = spanLength - totalPostSpace;
-      const equalWidth = Math.floor(availableForPanels / numPanels);
+      let numPosts = numPanels + 1;
+      let totalPostSpace = numPosts * post;
+      let availableForPanels = spanLength - totalPostSpace;
+      let equalWidth = Math.floor(availableForPanels / numPanels);
+      
+      // If panels would exceed max width, increase number of panels
+      while (equalWidth > MAX_PANEL_WIDTH && numPanels < 20) {
+        numPanels++;
+        numPosts = numPanels + 1;
+        totalPostSpace = numPosts * post;
+        availableForPanels = spanLength - totalPostSpace;
+        equalWidth = Math.floor(availableForPanels / numPanels);
+      }
       
       if (equalWidth < MIN_PANEL) {
         return {

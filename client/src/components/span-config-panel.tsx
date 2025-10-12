@@ -336,188 +336,16 @@ export function SpanConfigPanel({
             tooltip="Enter the total length of this fence section. The default end gap is 25mm for corner junctions. Maximum end gap is 150mm to allow for adding a post or other non-fence item into the section."
           />
 
-          {/* Gap Configurations */}
-          {(showLeftGap || showRightGap) && (
-            <div className="grid grid-cols-2 gap-4">
-              {showLeftGap && (
-                <div className="space-y-1">
-                  <GapSlider
-                    label="Left Gap"
-                    value={span.leftGap?.enabled ? span.leftGap.size : 0}
-                    onChange={(size) =>
-                      updateSpan({
-                        leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
-                      })
-                    }
-                    min={0}
-                    max={150}
-                    testId={`span-${span.spanId}-left-gap`}
-                  />
-                </div>
-              )}
-
-              {showRightGap && (
-                <div className="space-y-1">
-                  <GapSlider
-                    label="Right Gap"
-                    value={span.rightGap?.enabled ? span.rightGap.size : 0}
-                    onChange={(size) =>
-                      updateSpan({
-                        rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
-                      })
-                    }
-                    min={0}
-                    max={150}
-                    testId={`span-${span.spanId}-right-gap`}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Panel Configuration */}
-          <div className="space-y-4 pt-4 border-t border-card-border">
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-semibold">Panel Configuration</h4>
-              <InfoTooltip content="Configure the maximum panel width and target gap spacing. The system will calculate the optimal panel layout to achieve your desired gap size." />
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Max Panel Width</Label>
-                <Select
-                  value={span.maxPanelWidth.toString()}
-                  onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-max-panel-width`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((width) => (
-                      <SelectItem key={width} value={width.toString()}>
-                        {width}mm
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Calculated Total</Label>
-                <div className="h-9 flex items-center px-3 rounded-md bg-muted text-sm font-medium" data-testid={`span-${span.spanId}-calc-total`}>
-                  {calculatedTotal.toFixed(1)}mm
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Variance Amount</Label>
-                <div 
-                  className={`h-9 flex items-center px-3 rounded-md text-sm font-medium ${
-                    Math.abs(variance) < 0.1 ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400' : 
-                    Math.abs(variance) <= 50 ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400' :
-                    'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
-                  }`}
-                  data-testid={`span-${span.spanId}-variance-amount`}
-                >
-                  {variance >= 0 ? '+' : ''}{variance.toFixed(1)}mm
-                </div>
-              </div>
-            </div>
-
-            {/* Gap Slider - Adjusts panel widths */}
-            <GapSlider
-              label="Desired Gap Between Panels"
-              value={span.desiredGap}
-              onChange={(desiredGap) => updateSpan({ desiredGap })}
-              min={0}
-              max={99}
-              testId={`span-${span.spanId}-gap-slider`}
-            />
-          </div>
-
-          {/* Hardware Configuration - Show spigot OR channel based on product type */}
-          {productVariant === "glass-pool-channel" ? (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">Channel Hardware</h4>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Channel Mounting</Label>
-                  <Select
-                    value={span.channelMounting || "ground"}
-                    onValueChange={(channelMounting: "wall" | "ground") => 
-                      updateSpan({ channelMounting })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-channel-mounting`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="wall">Wall Mounted</SelectItem>
-                      <SelectItem value="ground">Ground Mounted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-1">
-                  <p><strong>Channel System:</strong> Versatilt 4200mm aluminum channel</p>
-                  <p><strong>Friction Clamps:</strong> Positioned at 300mm centers</p>
-                  <p><strong>Mounting:</strong> {span.channelMounting === "wall" ? "Base mounted" : "Side mounted"}</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">Spigot Hardware</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Mounting Type</Label>
-                  <Select
-                    value={span.spigotMounting || "base-plate"}
-                    onValueChange={(spigotMounting: "base-plate" | "core-drilled" | "side-mounted") => 
-                      updateSpan({ spigotMounting })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-spigot-mounting`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="base-plate">Base Plate</SelectItem>
-                      <SelectItem value="core-drilled">Core Drilled</SelectItem>
-                      <SelectItem value="side-mounted">Side Mounted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Color/Finish</Label>
-                  <Select
-                    value={span.spigotColor || "polished"}
-                    onValueChange={(spigotColor: "polished" | "satin" | "black" | "white") => 
-                      updateSpan({ spigotColor })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-spigot-color`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="polished">Polished</SelectItem>
-                      <SelectItem value="satin">Satin</SelectItem>
-                      <SelectItem value="black">Black</SelectItem>
-                      <SelectItem value="white">White</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* BARR Fencing Configuration */}
+          {/* BARR Fencing Configuration - appears right after section length */}
           {productVariant === "alu-pool-barr" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">BARR Fencing Configuration</h4>
+              <h4 className="text-sm font-semibold">BARR Panel Configuration</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Panel Height</Label>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Panel Height</Label>
+                    <InfoTooltip content="Panel height determines the panel width. 1000mm height = 1733mm wide panels, 1200mm height = 2205mm wide panels, 1800mm height = 1969mm wide panels." />
+                  </div>
                   <Select
                     value={span.barrHeight || "1200mm"}
                     onValueChange={(value) => updateSpan({ barrHeight: value as "1000mm" | "1200mm" | "1800mm" })}
@@ -591,11 +419,273 @@ export function SpanConfigPanel({
                     : "Inground, wall, or core drilled mounting"}
                 </p>
               </div>
+
+              {/* BARR Gate Configuration */}
+              {gatesAllowed && (
+                <div className="space-y-3 pt-4 border-t border-card-border">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Gate Required</Label>
+                    <Switch
+                      checked={span.gateConfig?.required || false}
+                      onCheckedChange={(required) => {
+                        if (required) {
+                          updateSpan({
+                            gateConfig: {
+                              required: true,
+                              hardware: "d-and-d",
+                              hingeFrom: "glass",
+                              latchTo: "glass",
+                              hingeType: "glass-to-glass",
+                              latchType: "glass-to-glass",
+                              gateSize: 900,
+                              hingePanelSize: 1200,
+                              autoHingePanel: false,
+                              position: 0,
+                              flipped: false,
+                              postAdapterPlate: false,
+                              hingeGap: 0,
+                              latchGap: 0,
+                            },
+                          });
+                        } else {
+                          updateSpan({ gateConfig: undefined });
+                        }
+                      }}
+                      data-testid={`span-${span.spanId}-gate-toggle`}
+                    />
+                  </div>
+
+                  {span.gateConfig?.required && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Hinge Type</Label>
+                          <Select
+                            value={span.gateConfig.hingeType || "glass-to-glass"}
+                            onValueChange={(value) => updateSpan({ 
+                              gateConfig: {
+                                ...span.gateConfig!,
+                                hingeType: value as "glass-to-glass" | "wall-mounted"
+                              }
+                            })}
+                          >
+                            <SelectTrigger data-testid={`span-${span.spanId}-gate-hinge-type`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="glass-to-glass">Glass-to-Glass</SelectItem>
+                              <SelectItem value="wall-mounted">Wall Mounted</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Latch Type</Label>
+                          <Select
+                            value={span.gateConfig.latchType || "glass-to-glass"}
+                            onValueChange={(value) => updateSpan({ 
+                              gateConfig: {
+                                ...span.gateConfig!,
+                                latchType: value as "glass-to-glass" | "wall-mounted"
+                              }
+                            })}
+                          >
+                            <SelectTrigger data-testid={`span-${span.spanId}-gate-latch-type`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="glass-to-glass">Glass-to-Glass</SelectItem>
+                              <SelectItem value="wall-mounted">Wall Mounted</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Gate Configuration - only for pool fencing and general fencing (not balustrades) */}
-          {gatesAllowed && (
+          {/* Gap Configurations - Hide for BARR */}
+          {productVariant !== "alu-pool-barr" && (showLeftGap || showRightGap) && (
+            <div className="grid grid-cols-2 gap-4">
+              {showLeftGap && (
+                <div className="space-y-1">
+                  <GapSlider
+                    label="Left Gap"
+                    value={span.leftGap?.enabled ? span.leftGap.size : 0}
+                    onChange={(size) =>
+                      updateSpan({
+                        leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                      })
+                    }
+                    min={0}
+                    max={150}
+                    testId={`span-${span.spanId}-left-gap`}
+                  />
+                </div>
+              )}
+
+              {showRightGap && (
+                <div className="space-y-1">
+                  <GapSlider
+                    label="Right Gap"
+                    value={span.rightGap?.enabled ? span.rightGap.size : 0}
+                    onChange={(size) =>
+                      updateSpan({
+                        rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined,
+                      })
+                    }
+                    min={0}
+                    max={150}
+                    testId={`span-${span.spanId}-right-gap`}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Panel Configuration - Hide for BARR */}
+          {productVariant !== "alu-pool-barr" && (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Panel Configuration</h4>
+                <InfoTooltip content="Configure the maximum panel width and target gap spacing. The system will calculate the optimal panel layout to achieve your desired gap size." />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Max Panel Width</Label>
+                  <Select
+                    value={span.maxPanelWidth.toString()}
+                    onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-max-panel-width`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((width) => (
+                        <SelectItem key={width} value={width.toString()}>
+                          {width}mm
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Calculated Total</Label>
+                  <div className="h-9 flex items-center px-3 rounded-md bg-muted text-sm font-medium" data-testid={`span-${span.spanId}-calc-total`}>
+                    {calculatedTotal.toFixed(1)}mm
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Variance Amount</Label>
+                  <div 
+                    className={`h-9 flex items-center px-3 rounded-md text-sm font-medium ${
+                      Math.abs(variance) < 0.1 ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400' : 
+                      Math.abs(variance) <= 50 ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400' :
+                      'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
+                    }`}
+                    data-testid={`span-${span.spanId}-variance-amount`}
+                  >
+                    {variance >= 0 ? '+' : ''}{variance.toFixed(1)}mm
+                  </div>
+                </div>
+              </div>
+
+              {/* Gap Slider - Adjusts panel widths */}
+              <GapSlider
+                label="Desired Gap Between Panels"
+                value={span.desiredGap}
+                onChange={(desiredGap) => updateSpan({ desiredGap })}
+                min={0}
+                max={99}
+                testId={`span-${span.spanId}-gap-slider`}
+              />
+            </div>
+          )}
+
+          {/* Hardware Configuration - Show spigot OR channel based on product type, hide for BARR */}
+          {productVariant !== "alu-pool-barr" && productVariant === "glass-pool-channel" ? (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <h4 className="text-sm font-semibold">Channel Hardware</h4>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Channel Mounting</Label>
+                  <Select
+                    value={span.channelMounting || "ground"}
+                    onValueChange={(channelMounting: "wall" | "ground") => 
+                      updateSpan({ channelMounting })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-channel-mounting`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="wall">Wall Mounted</SelectItem>
+                      <SelectItem value="ground">Ground Mounted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-1">
+                  <p><strong>Channel System:</strong> Versatilt 4200mm aluminum channel</p>
+                  <p><strong>Friction Clamps:</strong> Positioned at 300mm centers</p>
+                  <p><strong>Mounting:</strong> {span.channelMounting === "wall" ? "Base mounted" : "Side mounted"}</p>
+                </div>
+              </div>
+            </div>
+          ) : productVariant !== "alu-pool-barr" ? (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <h4 className="text-sm font-semibold">Spigot Hardware</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Mounting Type</Label>
+                  <Select
+                    value={span.spigotMounting || "base-plate"}
+                    onValueChange={(spigotMounting: "base-plate" | "core-drilled" | "side-mounted") => 
+                      updateSpan({ spigotMounting })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-spigot-mounting`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="base-plate">Base Plate</SelectItem>
+                      <SelectItem value="core-drilled">Core Drilled</SelectItem>
+                      <SelectItem value="side-mounted">Side Mounted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Color/Finish</Label>
+                  <Select
+                    value={span.spigotColor || "polished"}
+                    onValueChange={(spigotColor: "polished" | "satin" | "black" | "white") => 
+                      updateSpan({ spigotColor })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-spigot-color`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="polished">Polished</SelectItem>
+                      <SelectItem value="satin">Satin</SelectItem>
+                      <SelectItem value="black">Black</SelectItem>
+                      <SelectItem value="white">White</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Gate Configuration - only for non-BARR pool fencing and general fencing (not balustrades) */}
+          {gatesAllowed && productVariant !== "alu-pool-barr" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -649,8 +739,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Raked Panels Configuration - only for pool fencing and general fencing (not balustrades) */}
-          {gatesAllowed && (
+          {/* Raked Panels Configuration - only for non-BARR pool fencing and general fencing (not balustrades) */}
+          {gatesAllowed && productVariant !== "alu-pool-barr" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
@@ -747,38 +837,40 @@ export function SpanConfigPanel({
           </div>
           )}
 
-          {/* Custom Panel */}
-          <div className="space-y-3 pt-4 border-t border-card-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Custom Panel</Label>
-                  <InfoTooltip content="Add a custom-sized glass panel with specific width and height dimensions. Panel width is limited by the Max Panel Width setting. The panel can be positioned anywhere in the section using the position controls." />
+          {/* Custom Panel - Hide for BARR */}
+          {productVariant !== "alu-pool-barr" && (
+            <div className="space-y-3 pt-4 border-t border-card-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Custom Panel</Label>
+                    <InfoTooltip content="Add a custom-sized glass panel with specific width and height dimensions. Panel width is limited by the Max Panel Width setting. The panel can be positioned anywhere in the section using the position controls." />
+                  </div>
+                  <Switch
+                    checked={span.customPanel?.enabled || false}
+                    onCheckedChange={(enabled) =>
+                      updateSpan({
+                        customPanel: { 
+                          enabled, 
+                          width: Math.min(1200, span.maxPanelWidth), 
+                          height: 1200, 
+                          position: 0 
+                        },
+                      })
+                    }
+                    data-testid={`span-${span.spanId}-custom-panel-toggle`}
+                  />
                 </div>
-                <Switch
-                  checked={span.customPanel?.enabled || false}
-                  onCheckedChange={(enabled) =>
-                    updateSpan({
-                      customPanel: { 
-                        enabled, 
-                        width: Math.min(1200, span.maxPanelWidth), 
-                        height: 1200, 
-                        position: 0 
-                      },
-                    })
-                  }
-                  data-testid={`span-${span.spanId}-custom-panel-toggle`}
-                />
+                {span.customPanel?.enabled && (
+                  <CustomPanelControls
+                    config={span.customPanel}
+                    spanId={span.spanId}
+                    onUpdate={(customPanel) => updateSpan({ customPanel })}
+                    numPanels={span.panelLayout?.panels.length || 1}
+                    maxPanelWidth={span.maxPanelWidth}
+                  />
+                )}
               </div>
-              {span.customPanel?.enabled && (
-                <CustomPanelControls
-                  config={span.customPanel}
-                  spanId={span.spanId}
-                  onUpdate={(customPanel) => updateSpan({ customPanel })}
-                  numPanels={span.panelLayout?.panels.length || 1}
-                  maxPanelWidth={span.maxPanelWidth}
-                />
-              )}
-            </div>
+          )}
         </div>
       )}
     </Card>

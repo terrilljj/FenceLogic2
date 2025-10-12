@@ -50,9 +50,23 @@ const productOptions: ProductOption[] = [
   {
     id: "alu-pool-tubular",
     type: "aluminium-pool",
-    name: "Aluminium Pool Fence",
-    description: "Powder-coated aluminium",
+    name: "Flat Top Pool Fence",
+    description: "Tubular flat top aluminium",
     visual: "aluminium-vertical"
+  },
+  {
+    id: "alu-pool-barr",
+    type: "aluminium-pool",
+    name: "BARR Pool Fence",
+    description: "Vertical slat aluminium panels",
+    visual: "aluminium-vertical"
+  },
+  {
+    id: "alu-pool-blade",
+    type: "aluminium-pool",
+    name: "Blade Pool Fence",
+    description: "Modern blade aluminium design",
+    visual: "aluminium-slats"
   },
   {
     id: "alu-bal-barr",

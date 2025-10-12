@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Package } from "lucide-react";
 
-export default function FenceBuilder() {
+export default function FenceLogic() {
   const { toast } = useToast();
   const [activeSpanId, setActiveSpanId] = useState<string | undefined>();
   const [showLoadDialog, setShowLoadDialog] = useState(false);

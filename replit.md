@@ -87,8 +87,10 @@ Preferred communication style: Simple, everyday language.
 - Elevation view only (3D and plan views disabled for initial version)
 - Canvas-based 2D side elevation rendering
 - Panel labels show width and type (e.g., "1650 Panel", "1200 Hinge", "900 Gate", "1400H Rake")
-- Proportionate spigot rendering: 50mm wide, 200mm height, 50mm gap below glass, positioned 10% from panel edge
-- Gates do not display spigots
+- **Glass Panels**: Proportionate spigot rendering (50mm wide, 200mm height, 50mm gap below glass, positioned 10% from panel edge)
+- **BARR Panels**: Vertical slat rendering with top/bottom rails, panels float 100mm above ground, posts extend to ground line
+- BARR posts: N panels = N+1 posts (one before first panel, one after each panel)
+- Gates do not display spigots (glass) or are rendered with BARR slat pattern
 - Gate hardware (hinges and latches) positioned at panel edges
 - Latch positioned at top ¼ of gate panel (75% height from ground)
 - Inverted flip logic ensures hinges appear on correct side when gate is flipped

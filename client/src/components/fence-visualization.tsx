@@ -273,8 +273,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  // Check if this is a channel system
+  // Check product type
   const isChannelSystem = design.productVariant === "glass-pool-channel";
+  const isBarrFencing = design.productVariant === "alu-pool-barr";
 
   // Set canvas size to match container
   const rect = canvas.getBoundingClientRect();
@@ -479,11 +480,71 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         scaledPanelHeight = span.customPanel.height * scale;
       }
       
-      // Draw panel (raked, custom, or standard) - cleaner colors
-      ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
-      ctx.globalAlpha = 1;
-      
-      if (isLeftRaked || isRightRaked) {
+      // BARR panels have different rendering
+      if (isBarrFencing) {
+        // BARR panel configuration
+        const barrBottomClearance = 100 * scale; // Panels float above ground
+        const railHeight = 50 * scale; // Top and bottom rails
+        const picketSpacing = 100 * scale; // Space between pickets (50mm pickets + 50mm gaps)
+        
+        // Draw BARR panel with vertical pickets
+        const panelBottom = groundLevel - barrBottomClearance;
+        const panelTop = panelBottom - scaledPanelHeight;
+        
+        // Top rail
+        ctx.fillStyle = isGate ? "#a0a0a0" : "#888888";
+        ctx.fillRect(currentX, panelTop, scaledPanelWidth, railHeight);
+        
+        // Bottom rail
+        ctx.fillRect(currentX, panelBottom - railHeight, scaledPanelWidth, railHeight);
+        
+        // Draw vertical pickets (slats)
+        ctx.fillStyle = isGate ? "#b0b0b0" : "#9a9a9a";
+        const picketWidth = 25 * scale; // 25mm wide pickets
+        let picketX = currentX + (picketSpacing / 2);
+        
+        while (picketX < currentX + scaledPanelWidth - picketWidth) {
+          ctx.fillRect(
+            picketX - picketWidth / 2,
+            panelTop + railHeight,
+            picketWidth,
+            scaledPanelHeight - (2 * railHeight)
+          );
+          picketX += picketSpacing;
+        }
+        
+        // Draw posts at panel edges (posts extend to ground)
+        // For BARR: N panels need N+1 posts (one before first panel, one after each panel)
+        const postWidth = 50 * scale; // 50mm posts
+        ctx.fillStyle = "#707070";
+        
+        // Draw start post only for first panel
+        if (i === 0) {
+          ctx.fillRect(
+            currentX - postWidth / 2,
+            panelTop,
+            postWidth,
+            groundLevel - panelTop
+          );
+        }
+        
+        // Always draw post after this panel
+        ctx.fillRect(
+          currentX + scaledPanelWidth - postWidth / 2,
+          panelTop,
+          postWidth,
+          groundLevel - panelTop
+        );
+        
+        // Panel outline
+        ctx.strokeStyle = isActive ? "#666" : "#888";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(currentX, panelTop, scaledPanelWidth, scaledPanelHeight);
+        
+      } else if (isLeftRaked || isRightRaked) {
+        // Glass panels - raked
+        ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
+        ctx.globalAlpha = 1;
         // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
         // For left raked: high on left (400mm), slopes down on right
         // For right raked: slopes down on left, high on right (400mm)
@@ -513,7 +574,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.lineWidth = 1.5;
         ctx.stroke();
       } else {
-        // Standard rectangular panel
+        // Glass panels - standard rectangular
+        ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
+        ctx.globalAlpha = 1;
         ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
 
         // Panel border - cleaner, more subtle
@@ -600,8 +663,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots)
-      if (!isGate && !isChannelSystem) {
+      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, BARR uses posts)
+      if (!isGate && !isChannelSystem && !isBarrFencing) {
         const spigotWidth = 50 * scale;   // 50mm wide
         const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass
