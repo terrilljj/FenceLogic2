@@ -258,30 +258,7 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
 
       <div className="space-y-3 pt-3 border-t border-border">
         <Label className="text-sm font-medium">Gate Position Controls</Label>
-        {config.hingeFrom === "wall" ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => updateConfig({ position: 0 })}
-              data-testid={`gate-${spanId}-start`}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Start of Section
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => updateConfig({ position: 1 })}
-              data-testid={`gate-${spanId}-end`}
-            >
-              <ArrowRight className="w-4 h-4 mr-2" />
-              End of Section
-            </Button>
-          </div>
-        ) : (
+        {config.hingeFrom === "glass" && (
           <>
             <div className="flex flex-wrap gap-2">
               <Button
