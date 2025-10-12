@@ -123,7 +123,7 @@ Preferred communication style: Simple, everyday language.
   - Master Range wall-mounted: latch gap = 9mm (hinge side attached to wall)
   - Master Range glass-to-glass: hinge gap = 9mm, latch gap = 9mm
   - Polaris Soft Close wall-mounted: latch gap = 9mm (hinge side attached to wall)
-  - Polaris Soft Close glass-to-glass: hinge gap = 20mm, latch gap = 9mm
+  - Polaris Soft Close glass-to-glass: hinge gap = 8mm, latch gap = 9mm
   - Wall-mounted gates use single latch gap; glass-to-glass use both hinge and latch gaps
 - **Flexible Gap Tolerance**: Algorithm allows up to 50mm total gap deviation to accommodate manufacturing constraints, panel increment rounding, and decimal gap measurements (e.g., 50.5mm gaps)
 - **Intelligent Remainder Distribution**: Rounds panel remainders to nearest 50mm increment instead of rejecting non-divisible configurations

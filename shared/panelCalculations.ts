@@ -267,15 +267,17 @@ export function calculatePanelLayout(
         
         // Gate assembly (order depends on flipped)
         if (gateConfig.flipped) {
-          finalPanels.push(gateConfig.hingePanelSize);
-          panelTypes.push("hinge");
+          // Flipped: Gate first, then Hinge
           finalPanels.push(gateConfig.gateSize);
           panelTypes.push("gate");
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
         } else {
-          finalPanels.push(gateConfig.gateSize);
-          panelTypes.push("gate");
+          // Normal: Hinge first, then Gate
           finalPanels.push(gateConfig.hingePanelSize);
           panelTypes.push("hinge");
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
         }
         
         // Panels after gate
@@ -307,17 +309,9 @@ export function calculatePanelLayout(
     const actualTotalPanelWidth = finalPanels.reduce((sum, p) => sum + p, 0);
     const actualTotalGapWidth = effectiveLength - actualTotalPanelWidth;
     
-    // Debug gate configurations
-    if (hasGate && numVariablePanels === 2) {
-      console.log('Config check - panels:', finalPanels, 'total:', actualTotalPanelWidth, 'effectiveLength:', effectiveLength, 'gaps:', actualTotalGapWidth);
-    }
-    
     // STRICT CONSTRAINT: Total must never exceed section length
     // Also ensure we have enough space for minimum required gaps
     if (actualTotalPanelWidth > effectiveLength || actualTotalGapWidth < 0) {
-      if (hasGate) {
-        console.log('REJECTED - panels too large:', actualTotalPanelWidth, '> effectiveLength:', effectiveLength);
-      }
       continue; // Skip configurations that are too large
     }
     
@@ -418,13 +412,15 @@ export function calculatePanelLayout(
                   const hingeIndex = panelTypes.findIndex(t => t === "hinge");
                   
                   if (!gateConfig.flipped) {
-                    // Gate first, then hinge: [... | latch gap | gate | hinge gap | hinge | ...]
+                    // Gate first, then hinge: [Gate | hinge gap | Hinge | latch gap | ...]
                     // Gap at gateIndex is BETWEEN gate and hinge (hinge gap)
-                    // Gap at gateIndex-1 is BEFORE gate (latch gap, if gate not at start)
-                    if (i === gateIndex - 1 && gateIndex > 0) {
-                      gapsArray.push(gateConfig.latchGap);
-                    } else if (i === gateIndex) {
+                    // Gap at hingeIndex is AFTER hinge (latch gap)
+                    if (i === gateIndex) {
+                      // Gap after gate = hinge gap
                       gapsArray.push(gateConfig.hingeGap);
+                    } else if (i === hingeIndex) {
+                      // Gap after hinge = latch gap
+                      gapsArray.push(gateConfig.latchGap);
                     } else {
                       gapsArray.push(regularGapSize);
                     }

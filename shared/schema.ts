@@ -214,7 +214,7 @@ export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall")
     if (hingeFrom === "wall") {
       return { hingeGap: 0, latchGap: 9 }; // Wall-mounted: hinge at wall (no gap), latch gap 9mm
     } else {
-      return { hingeGap: 20, latchGap: 9 }; // Glass-to-glass: hinge gap 20mm, latch gap 9mm
+      return { hingeGap: 8, latchGap: 9 }; // Glass-to-glass: hinge gap 8mm, latch gap 9mm
     }
   }
 }
