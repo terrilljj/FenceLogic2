@@ -298,6 +298,21 @@ export function calculatePanelLayout(
             const gateIndex = panelTypes.findIndex(t => t === "gate");
             
             if (gateIndex !== -1) {
+              // Calculate regular gap size that absorbs the difference from hardware gaps
+              let regularGapSize: number;
+              
+              if (isWallMounted) {
+                // Wall-mounted: 1 hardware gap (latch), rest are regular
+                const numRegularGaps = numGaps - 1;
+                const remainingGapSpace = actualTotalGapWidth - gateConfig.latchGap;
+                regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
+              } else {
+                // Glass-to-glass: 2 hardware gaps (hinge + latch), rest are regular
+                const numRegularGaps = numGaps - 2;
+                const remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap - gateConfig.latchGap;
+                regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
+              }
+              
               // Build gaps with specific values at gate positions
               for (let i = 0; i < numGaps; i++) {
                 if (isWallMounted) {
@@ -307,14 +322,14 @@ export function calculatePanelLayout(
                     if (i === 0) {
                       gapsArray.push(gateConfig.latchGap);
                     } else {
-                      gapsArray.push(actualGap);
+                      gapsArray.push(regularGapSize);
                     }
                   } else {
                     // Gate at end: latch gap is before gate (last gap)
                     if (i === numGaps - 1) {
                       gapsArray.push(gateConfig.latchGap);
                     } else {
-                      gapsArray.push(actualGap);
+                      gapsArray.push(regularGapSize);
                     }
                   }
                 } else {
@@ -330,7 +345,7 @@ export function calculatePanelLayout(
                     } else if (i === gateIndex) {
                       gapsArray.push(gateConfig.hingeGap);
                     } else {
-                      gapsArray.push(actualGap);
+                      gapsArray.push(regularGapSize);
                     }
                   } else {
                     // Hinge first, then gate: [... | hinge gap | hinge | latch gap | gate | ...]
@@ -341,7 +356,7 @@ export function calculatePanelLayout(
                     } else if (i === gateIndex && gateIndex < finalPanels.length - 1) {
                       gapsArray.push(gateConfig.latchGap);
                     } else {
-                      gapsArray.push(actualGap);
+                      gapsArray.push(regularGapSize);
                     }
                   }
                 }
