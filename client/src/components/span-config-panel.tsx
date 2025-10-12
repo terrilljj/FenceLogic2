@@ -184,27 +184,44 @@ export function SpanConfigPanel({
     const numPanels = span.panelLayout.panels.length;
     const totalUsed = span.panelLayout.totalPanelWidth + span.panelLayout.totalGapWidth;
     
-    // Calculate end gaps with gate latch override
+    // Calculate end gaps with gate override
     let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // Override end gaps when gate latch is at the boundary (must be 9mm)
-    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
+    // Override end gaps based on gate configuration
+    if (span.gateConfig?.required) {
       const latchGap = span.gateConfig.latchGap || 9;
+      const hingeGap = span.gateConfig.hingeGap || 9;
       
       if (span.gateConfig.hingeFrom === "wall") {
+        // Wall-mounted gate
         if (span.gateConfig.position === 0) {
-          leftEndGap = latchGap;
+          leftEndGap = 0; // Hinge at left wall (no gap)
+          if (span.gateConfig.latchTo === "wall") {
+            rightEndGap = latchGap; // Latch at right wall
+          }
         } else if (span.gateConfig.position >= 1) {
-          rightEndGap = latchGap;
+          rightEndGap = 0; // Hinge at right wall (no gap)
+          if (span.gateConfig.latchTo === "wall") {
+            leftEndGap = latchGap; // Latch at left wall
+          }
         }
       } else {
+        // Glass-to-glass gate: check which end the latch/hinge is at based on position and flip
         const isAtLeftEnd = span.gateConfig.position === 0;
         const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
         
         if (isAtLeftEnd && !span.gateConfig.flipped) {
+          // Gate at left, latch on left side
           leftEndGap = latchGap;
+        } else if (isAtLeftEnd && span.gateConfig.flipped) {
+          // Hinge panel at left, hinge on left side
+          leftEndGap = hingeGap;
+        } else if (isAtRightEnd && !span.gateConfig.flipped) {
+          // Gate at right, hinge on right side
+          rightEndGap = hingeGap;
         } else if (isAtRightEnd && span.gateConfig.flipped) {
+          // Gate at right, latch on right side
           rightEndGap = latchGap;
         }
       }

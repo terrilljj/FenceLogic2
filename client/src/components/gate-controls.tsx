@@ -231,6 +231,12 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                   Auto: {calculatedHingePanelSize}mm (matches panel sizes)
                 </p>
               )}
+              {((config.autoHingePanel && calculatedHingePanelSize && calculatedHingePanelSize < 1000) || 
+                (!config.autoHingePanel && config.hingePanelSize < 1000)) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md mt-2" data-testid={`gate-${spanId}-hinge-warning`}>
+                  ⚠️ Caution: Hinge panels less than 1000mm wide may be too small to support the weight of the gate and must be supported by a glass clip.
+                </p>
+              )}
             </div>
           )}
         </div>
