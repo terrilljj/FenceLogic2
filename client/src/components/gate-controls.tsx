@@ -1,7 +1,9 @@
-import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getGateGaps, HingeType, LatchType } from "@shared/schema";
 
 interface GateConfig {
@@ -30,6 +32,8 @@ interface GateControlsProps {
 }
 
 export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSize, numPanels = 1 }: GateControlsProps) {
+  const [hingeWarningAcknowledged, setHingeWarningAcknowledged] = useState(false);
+
   const updateConfig = (updates: Partial<GateConfig>) => {
     // Automatically update gaps when hardware or hingeFrom changes
     const newHardware = updates.hardware ?? config.hardware;
@@ -233,9 +237,19 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
               )}
               {((config.autoHingePanel && calculatedHingePanelSize && calculatedHingePanelSize < 1000) || 
                 (!config.autoHingePanel && config.hingePanelSize < 1000)) && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md mt-2" data-testid={`gate-${spanId}-hinge-warning`}>
-                  ⚠️ Caution: Hinge panels less than 1000mm wide may be too small to support the weight of the gate and must be supported by a glass clip.
-                </p>
+                <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md mt-2" data-testid={`gate-${spanId}-hinge-warning`}>
+                  <Checkbox
+                    id={`hinge-warning-${spanId}`}
+                    checked={hingeWarningAcknowledged}
+                    onCheckedChange={(checked) => setHingeWarningAcknowledged(checked === true)}
+                    className="mt-0.5"
+                    data-testid={`gate-${spanId}-hinge-warning-checkbox`}
+                  />
+                  <label htmlFor={`hinge-warning-${spanId}`} className="flex-1 cursor-pointer">
+                    Caution: Hinge panels less than 1000mm wide may be too small to support the weight of the gate and must be supported by a glass clip.
+                  </label>
+                  <TriangleAlert className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                </div>
               )}
             </div>
           )}
