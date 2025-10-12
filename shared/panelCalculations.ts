@@ -267,17 +267,17 @@ export function calculatePanelLayout(
         
         // Gate assembly (order depends on flipped)
         if (gateConfig.flipped) {
-          // Flipped: Gate first, then Hinge
-          finalPanels.push(gateConfig.gateSize);
-          panelTypes.push("gate");
+          // Flipped: Hinge first, then Gate (hinges on LEFT)
           finalPanels.push(gateConfig.hingePanelSize);
           panelTypes.push("hinge");
+          finalPanels.push(gateConfig.gateSize);
+          panelTypes.push("gate");
         } else {
-          // Normal: Hinge first, then Gate
-          finalPanels.push(gateConfig.hingePanelSize);
-          panelTypes.push("hinge");
+          // Normal: Gate first, then Hinge (hinges on RIGHT)
           finalPanels.push(gateConfig.gateSize);
           panelTypes.push("gate");
+          finalPanels.push(gateConfig.hingePanelSize);
+          panelTypes.push("hinge");
         }
         
         // Panels after gate
@@ -462,6 +462,11 @@ export function calculatePanelLayout(
           
           if (!gapsValid) {
             continue; // Skip configurations with gaps exceeding limits
+          }
+          
+          // Debug: log final configuration
+          if (hasGate) {
+            console.log('FINAL LAYOUT - panels:', finalPanels, 'types:', panelTypes, 'gaps:', gapsArray, 'flipped:', gateConfig?.flipped);
           }
           
           bestLayout = {
