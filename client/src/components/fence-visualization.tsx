@@ -277,6 +277,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const isChannelSystem = design.productVariant === "glass-pool-channel";
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
+  const isTubularFencing = design.productVariant === "alu-pool-tubular";
 
   // Set canvas size to match container
   const rect = canvas.getBoundingClientRect();
@@ -586,6 +587,68 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         
         // Draw posts at panel edges (posts extend to ground)
         // For BARR: N panels need N+1 posts (one before first panel, one after each panel)
+        ctx.fillStyle = "#707070";
+        
+        // Draw start post only for first panel
+        if (i === 0) {
+          ctx.fillRect(
+            currentX - postWidth / 2,
+            panelTop,
+            postWidth,
+            groundLevel - panelTop
+          );
+        }
+        
+        // Always draw post after this panel
+        ctx.fillRect(
+          currentX + scaledPanelWidth - postWidth / 2,
+          panelTop,
+          postWidth,
+          groundLevel - panelTop
+        );
+        
+      } 
+      // Tubular Flat Top panels have different rendering
+      else if (isTubularFencing) {
+        // Tubular panel configuration
+        const railHeight = 25 * scale; // Top and bottom rails (38x25mm)
+        const picketDiameter = 16 * scale; // 16mm round pickets
+        const picketSpacing = 88 * scale; // 88mm center-to-center (72mm gap + 16mm picket)
+        const postWidth = 50 * scale; // 50mm square posts
+        
+        // Tubular panels sit on ground (no bottom clearance)
+        const panelBottom = groundLevel;
+        const panelTop = panelBottom - scaledPanelHeight;
+        
+        // Draw vertical round pickets (tubes) - FULL HEIGHT
+        ctx.fillStyle = isGate ? "#b0b0b0" : "#9a9a9a";
+        let picketX = currentX + picketSpacing;
+        
+        while (picketX < currentX + scaledPanelWidth - picketSpacing) {
+          // Draw round picket as circle (elevation view)
+          ctx.beginPath();
+          ctx.arc(picketX, panelTop + scaledPanelHeight / 2, picketDiameter / 2, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Draw vertical line to show full height
+          ctx.fillRect(
+            picketX - picketDiameter / 2,
+            panelTop,
+            picketDiameter,
+            scaledPanelHeight
+          );
+          picketX += picketSpacing;
+        }
+        
+        // Draw rails at top and bottom edges (not inset)
+        ctx.fillStyle = isGate ? "#a0a0a0" : "#888888";
+        // Top rail (at top edge)
+        ctx.fillRect(currentX, panelTop, scaledPanelWidth, railHeight);
+        // Bottom rail (at bottom edge)
+        ctx.fillRect(currentX, panelBottom - railHeight, scaledPanelWidth, railHeight);
+        
+        // Draw posts at panel edges (posts extend to ground)
+        // For Tubular: N panels need N+1 posts (one before first panel, one after each panel)
         ctx.fillStyle = "#707070";
         
         // Draw start post only for first panel
