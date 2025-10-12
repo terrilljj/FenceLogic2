@@ -104,22 +104,40 @@ export type BarrHeight = "1000mm" | "1200mm" | "1800mm";
 // BARR fencing finish types
 export type BarrFinish = "satin-black" | "pearl-white";
 
+// BARR panel layout modes
+export type BarrLayoutMode = "full-panels-cut-end" | "equally-spaced";
+
+// BARR post types
+export type BarrPostType = "welded-base-plate" | "standard";
+
+// BARR post mounting for standard posts
+export type BarrPostMounting = "inground" | "wall" | "core-drilled";
+
 // BARR panel specifications by height
 export const BARR_PANEL_SPECS = {
   "1000mm": {
     height: 1000,
     panelWidth: 1733,
     picketSize: "50x25mm",
+    postSize: "50mm", // 50mm posts for balustrade
+    postAllowance: 50, // 50mm gap for 50mm posts
+    type: "balustrade" as const,
   },
   "1200mm": {
     height: 1200,
     panelWidth: 2205,
     picketSize: "50x25mm",
+    postSize: "50x25mm", // 50x25mm posts for pool
+    postAllowance: 25, // 25mm gap for 50x25mm posts
+    type: "pool" as const,
   },
   "1800mm": {
     height: 1800,
     panelWidth: 1969,
     picketSize: "50x25mm",
+    postSize: "50mm", // 50mm posts for 1800 high
+    postAllowance: 50, // 50mm gap for 50mm posts
+    type: "balustrade" as const,
   },
 };
 
@@ -165,6 +183,9 @@ export const spanConfigSchema = z.object({
   standoffFinish: z.enum(["polished", "satin", "black", "white"]).optional(), // Standoff finish
   barrHeight: z.enum(["1000mm", "1200mm", "1800mm"]).optional(), // BARR fencing height selection
   barrFinish: z.enum(["satin-black", "pearl-white"]).optional(), // BARR fencing finish
+  barrLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // BARR panel layout mode
+  barrPostType: z.enum(["welded-base-plate", "standard"]).optional(), // BARR post type
+  barrPostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // BARR post mounting (for standard posts)
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems

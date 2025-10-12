@@ -526,3 +526,301 @@ export function calculatePanelLayout(
     averageGap: 0,
   };
 }
+
+/**
+ * Calculate BARR panel layout based on layout mode
+ * BARR panels have fixed widths based on height and use posts with specific allowances
+ * 
+ * Structure: [POST]-[PANEL]-[POST]-[PANEL]-[POST]...
+ * - Posts represent the physical post space (25mm or 50mm)
+ * - For N elements (panels+gates), there are N+1 posts
+ * - Total length = sum(panels) + sum(posts)
+ * 
+ * @param spanLength Total span length in mm
+ * @param barrHeight BARR panel height (determines panel width and post allowance)
+ * @param layoutMode Layout mode: full-panels-cut-end or equally-spaced
+ * @param hasGate Whether gate is required
+ * @param gateSize Gate panel width (975mm for BARR gates)
+ * @returns Panel layout with BARR-specific configurations
+ */
+export function calculateBarrPanelLayout(
+  spanLength: number,
+  barrHeight: "1000mm" | "1200mm" | "1800mm",
+  layoutMode: "full-panels-cut-end" | "equally-spaced",
+  hasGate: boolean = false,
+  gateSize: number = 975
+): PanelLayout {
+  const BARR_SPECS = {
+    "1000mm": { panelWidth: 1733, postAllowance: 50 },
+    "1200mm": { panelWidth: 2205, postAllowance: 25 },
+    "1800mm": { panelWidth: 1969, postAllowance: 50 },
+  };
+
+  const specs = BARR_SPECS[barrHeight];
+  const standardPanelWidth = specs.panelWidth;
+  const post = specs.postAllowance;
+  const MIN_PANEL = 200;
+
+  // BARR structure: [POST]-[ELEMENT]-[POST]-[ELEMENT]-[POST]...
+  // For N elements, need N+1 posts
+  // Total = sum(elements) + (N+1) × post
+  
+  if (layoutMode === "full-panels-cut-end") {
+    // Mode 1: Full standard panels + cut end piece
+    
+    if (hasGate) {
+      // With gate: [post]-[gate]-[post]-[panels...]-[post]
+      // Try fitting: gate + maxFullPanels: (1 + maxFullPanels) × post + gate + maxFullPanels × stdWidth + post
+      // Simplify: maxFullPanels × (stdWidth + post) + gate + 2×post ≤ span
+      const maxFullPanels = Math.floor((spanLength - gateSize - 2 * post) / (standardPanelWidth + post));
+      
+      if (maxFullPanels < 0) {
+        return {
+          panels: [],
+          gaps: [],
+          totalPanelWidth: 0,
+          totalGapWidth: 0,
+          averageGap: 0,
+        };
+      }
+      
+      // Check if we can fit gate + full panels + cut panel
+      // With cut: (1 + numFullPanels + 1) elements needs (numFullPanels + 3) posts
+      let numFullPanels = maxFullPanels;
+      let cutWidth = 0;
+      
+      // Find the right number of full panels so cut panel is valid (≥ MIN_PANEL)
+      while (numFullPanels >= 0) {
+        const postsWithCut = numFullPanels + 3;
+        const spaceUsed = gateSize + numFullPanels * standardPanelWidth + postsWithCut * post;
+        cutWidth = spanLength - spaceUsed;
+        
+        if (cutWidth >= MIN_PANEL) break;
+        numFullPanels--;
+      }
+      
+      if (numFullPanels < 0 || cutWidth < MIN_PANEL) {
+        return {
+          panels: [],
+          gaps: [],
+          totalPanelWidth: 0,
+          totalGapWidth: 0,
+          averageGap: 0,
+        };
+      }
+      
+      const panels: number[] = [];
+      const gaps: number[] = [];
+      const panelTypes: PanelType[] = [];
+      
+      // Build layout: gate + numFullPanels + cut panel
+      gaps.push(post); // Start post
+      panels.push(gateSize);
+      panelTypes.push("gate");
+      gaps.push(post); // Post after gate
+      for (let i = 0; i < numFullPanels; i++) {
+        panels.push(standardPanelWidth);
+        panelTypes.push("standard");
+        gaps.push(post);
+      }
+      panels.push(cutWidth);
+      panelTypes.push("standard");
+      gaps.push(post); // End post
+      
+      return {
+        panels,
+        gaps,
+        totalPanelWidth: panels.reduce((sum, p) => sum + p, 0),
+        totalGapWidth: gaps.reduce((sum, g) => sum + g, 0),
+        averageGap: gaps.length > 0 ? gaps.reduce((sum, g) => sum + g, 0) / gaps.length : 0,
+        panelTypes,
+      };
+    } else {
+      // Without gate: [post]-[panels...]-[post]
+      // Try fitting full panels: maxFullPanels × (stdWidth + post) + post ≤ span
+      const maxFullPanels = Math.floor((spanLength - post) / (standardPanelWidth + post));
+      
+      if (maxFullPanels === 0) {
+        // Only one panel fits: [post]-[panel]-[post]
+        const singlePanelWidth = spanLength - 2 * post;
+        if (singlePanelWidth < MIN_PANEL) {
+          return {
+            panels: [],
+            gaps: [],
+            totalPanelWidth: 0,
+            totalGapWidth: 0,
+            averageGap: 0,
+          };
+        }
+        
+        return {
+          panels: [singlePanelWidth],
+          gaps: [post, post], // Start and end posts
+          totalPanelWidth: singlePanelWidth,
+          totalGapWidth: 2 * post,
+          averageGap: post,
+          panelTypes: ["standard"],
+        };
+      }
+      
+      // Check if we can fit full panels + cut panel
+      // With cut: (maxFullPanels + 1) elements needs (maxFullPanels + 2) posts
+      let numFullPanels = maxFullPanels;
+      let cutWidth = 0;
+      
+      // Find the right number of full panels so cut panel is valid (≥ MIN_PANEL)
+      while (numFullPanels >= 0) {
+        const postsWithCut = numFullPanels + 2;
+        const spaceUsed = numFullPanels * standardPanelWidth + postsWithCut * post;
+        cutWidth = spanLength - spaceUsed;
+        
+        if (cutWidth >= MIN_PANEL) break;
+        numFullPanels--;
+      }
+      
+      if (numFullPanels < 0 || cutWidth < MIN_PANEL) {
+        return {
+          panels: [],
+          gaps: [],
+          totalPanelWidth: 0,
+          totalGapWidth: 0,
+          averageGap: 0,
+        };
+      }
+      
+      const panels: number[] = [];
+      const gaps: number[] = [];
+      const panelTypes: PanelType[] = [];
+      
+      // Build layout: numFullPanels + cut panel
+      gaps.push(post); // Start post
+      for (let i = 0; i < numFullPanels; i++) {
+        panels.push(standardPanelWidth);
+        panelTypes.push("standard");
+        gaps.push(post);
+      }
+      panels.push(cutWidth);
+      panelTypes.push("standard");
+      gaps.push(post); // End post
+      
+      return {
+        panels,
+        gaps,
+        totalPanelWidth: panels.reduce((sum, p) => sum + p, 0),
+        totalGapWidth: gaps.reduce((sum, g) => sum + g, 0),
+        averageGap: gaps.length > 0 ? gaps.reduce((sum, g) => sum + g, 0) / gaps.length : 0,
+        panelTypes,
+      };
+    }
+  } else {
+    // Mode 2: Equally spaced (all panels cut to same width)
+    
+    // Estimate number of panels based on standard width
+    const estimatedPanels = Math.round((spanLength - post) / (standardPanelWidth + post));
+    const numPanels = Math.max(1, estimatedPanels);
+    
+    if (hasGate) {
+      // With gate: [post]-[gate]-[post]-[panel]-[post]-[panel]-[post]...
+      // Elements = gate + numPanels, Posts = elements + 1
+      const numElements = 1 + numPanels;
+      const numPosts = numElements + 1;
+      const totalPostSpace = numPosts * post;
+      const availableForPanels = spanLength - totalPostSpace - gateSize;
+      const equalWidth = Math.floor(availableForPanels / numPanels);
+      
+      if (equalWidth < MIN_PANEL) {
+        // Try with fewer panels
+        const reducedPanels = Math.max(1, numPanels - 1);
+        const reducedElements = 1 + reducedPanels;
+        const reducedPosts = reducedElements + 1;
+        const reducedPostSpace = reducedPosts * post;
+        const reducedAvailable = spanLength - reducedPostSpace - gateSize;
+        const reducedWidth = Math.floor(reducedAvailable / reducedPanels);
+        
+        if (reducedWidth < MIN_PANEL) {
+          return {
+            panels: [],
+            gaps: [],
+            totalPanelWidth: 0,
+            totalGapWidth: 0,
+            averageGap: 0,
+          };
+        }
+        
+        const panels: number[] = [gateSize];
+        const gaps: number[] = [post];
+        const panelTypes: PanelType[] = ["gate"];
+        
+        for (let i = 0; i < reducedPanels; i++) {
+          panels.push(reducedWidth);
+          panelTypes.push("standard");
+          gaps.push(post);
+        }
+        
+        return {
+          panels,
+          gaps,
+          totalPanelWidth: panels.reduce((sum, p) => sum + p, 0),
+          totalGapWidth: gaps.reduce((sum, g) => sum + g, 0),
+          averageGap: gaps.length > 0 ? gaps.reduce((sum, g) => sum + g, 0) / gaps.length : 0,
+          panelTypes,
+        };
+      }
+      
+      const panels: number[] = [gateSize];
+      const gaps: number[] = [post];
+      const panelTypes: PanelType[] = ["gate"];
+      
+      for (let i = 0; i < numPanels; i++) {
+        panels.push(equalWidth);
+        panelTypes.push("standard");
+        gaps.push(post);
+      }
+      
+      return {
+        panels,
+        gaps,
+        totalPanelWidth: panels.reduce((sum, p) => sum + p, 0),
+        totalGapWidth: gaps.reduce((sum, g) => sum + g, 0),
+        averageGap: gaps.length > 0 ? gaps.reduce((sum, g) => sum + g, 0) / gaps.length : 0,
+        panelTypes,
+      };
+    } else {
+      // Without gate: [post]-[panel]-[post]-[panel]-[post]...
+      // Elements = numPanels, Posts = numPanels + 1
+      const numPosts = numPanels + 1;
+      const totalPostSpace = numPosts * post;
+      const availableForPanels = spanLength - totalPostSpace;
+      const equalWidth = Math.floor(availableForPanels / numPanels);
+      
+      if (equalWidth < MIN_PANEL) {
+        return {
+          panels: [],
+          gaps: [],
+          totalPanelWidth: 0,
+          totalGapWidth: 0,
+          averageGap: 0,
+        };
+      }
+      
+      const panels: number[] = [];
+      const gaps: number[] = [post]; // Start post
+      const panelTypes: PanelType[] = [];
+      
+      for (let i = 0; i < numPanels; i++) {
+        panels.push(equalWidth);
+        panelTypes.push("standard");
+        gaps.push(post);
+      }
+      
+      return {
+        panels,
+        gaps,
+        totalPanelWidth: panels.reduce((sum, p) => sum + p, 0),
+        totalGapWidth: gaps.reduce((sum, g) => sum + g, 0),
+        averageGap: gaps.length > 0 ? gaps.reduce((sum, g) => sum + g, 0) / gaps.length : 0,
+        panelTypes,
+      };
+    }
+  }
+}
