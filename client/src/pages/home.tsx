@@ -52,7 +52,7 @@ const productOptions: ProductOption[] = [
     type: "aluminium-pool",
     name: "Flat Top Pool Fence",
     description: "Tubular flat top aluminium",
-    visual: "aluminium-vertical"
+    visual: "aluminium-tubular"
   },
   {
     id: "alu-pool-barr",
@@ -84,7 +84,7 @@ const productOptions: ProductOption[] = [
   }
 ];
 
-function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "pvc-pickets" }) {
+function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-tubular" | "pvc-pickets" }) {
   if (type === "frameless-glass") {
     return (
       <div className="relative w-32 h-40 mx-auto">
@@ -140,6 +140,27 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
             <div className="absolute top-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
             {/* Bottom rail - INSET from bottom, thinner */}
             <div className="absolute bottom-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "aluminium-tubular") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* Tubular Flat Top: Round vertical tubes with only top and bottom rails */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+          {/* Container for tubes with gap from edges */}
+          <div className="relative w-20 h-32 flex justify-between items-end">
+            {/* Vertical round tubes - FULL HEIGHT with wider spacing */}
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="w-1.5 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-full" />
+            ))}
+            {/* Top rail - at top edge */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
+            {/* Bottom rail - at bottom edge */}
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
           </div>
         </div>
       </div>
