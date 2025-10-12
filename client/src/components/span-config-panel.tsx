@@ -47,17 +47,13 @@ export function SpanConfigPanel({
     let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // When latchTo="wall", use latch gap at the boundary instead of configured end gap
-    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
-      const latchGap = span.gateConfig.latchGap || 9;
-      
-      if (span.gateConfig.hingeFrom === "wall") {
-        // Wall-mounted: position determines which end has the latch
-        if (span.gateConfig.position === 0) {
-          leftEndGap = latchGap;
-        } else if (span.gateConfig.position >= 1) {
-          rightEndGap = latchGap;
-        }
+    // When gate is wall-mounted, the hinge end has 0 gap (attached to wall)
+    if (span.gateConfig?.required && span.gateConfig.hingeFrom === "wall") {
+      // Wall-mounted: hinge is at boundary, so that end gap is 0
+      if (span.gateConfig.position === 0) {
+        leftEndGap = 0; // Hinge at left wall
+      } else if (span.gateConfig.position >= 1) {
+        rightEndGap = 0; // Hinge at right wall
       }
     }
     

@@ -353,34 +353,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       groundLevel - 80
     );
 
-    // Calculate left and right gaps with gate latch override
+    // Calculate left and right gaps
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // Override end gaps when gate latch is at the boundary (must be 9mm)
-    if (span.gateConfig?.required && span.gateConfig.latchTo === "wall") {
-      const latchGap = span.gateConfig.latchGap || 9;
-      
-      if (span.gateConfig.hingeFrom === "wall") {
-        // Wall-mounted gate: position determines which end
-        if (span.gateConfig.position === 0) {
-          leftGapSize = latchGap;
-        } else if (span.gateConfig.position >= 1) {
-          rightGapSize = latchGap;
-        }
-      } else {
-        // Glass-to-glass: check if gate is at the ends
-        const isAtLeftEnd = span.gateConfig.position === 0;
-        const numPanels = span.panelLayout?.panels.length || 0;
-        const isAtRightEnd = numPanels > 0 && span.gateConfig.position >= numPanels - 2;
-        
-        if (isAtLeftEnd && !span.gateConfig.flipped) {
-          // Gate at left, not flipped [gate, hinge]: latch faces left wall
-          leftGapSize = latchGap;
-        } else if (isAtRightEnd && span.gateConfig.flipped) {
-          // Gate at right, flipped [hinge, gate]: latch faces right wall
-          rightGapSize = latchGap;
-        }
+    // When gate is wall-mounted, the hinge end has 0 gap (attached to wall)
+    if (span.gateConfig?.required && span.gateConfig.hingeFrom === "wall") {
+      // Wall-mounted: hinge is at boundary, so that end gap is 0
+      if (span.gateConfig.position === 0) {
+        leftGapSize = 0; // Hinge at left wall
+      } else if (span.gateConfig.position >= 1) {
+        rightGapSize = 0; // Hinge at right wall
       }
     }
     
