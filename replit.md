@@ -31,7 +31,7 @@ Preferred communication style: Simple, everyday language.
   - 1800mm H × 1969mm W (50×25mm pickets)
 - **Construction**: 50×25mm aluminum pickets with horizontal rails passing through punched holes, welded construction
 - **Finishes**: Satin Black (CN150A), Pearl White (GA078A)
-- **Gates**: 975mm post-mounted gates with D&D hardware
+- **Gates**: 1000mm opening post-mounted gates with D&D hardware (vertical pickets matching panel design)
 - **Posts**: 50x25mm (1200mm height), 50mm (1000mm/1800mm heights)
 - **Post Types**: Welded base plate (1280mm), standard (1800mm/2500mm)
 - **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
@@ -44,7 +44,7 @@ Preferred communication style: Simple, everyday language.
   - 1200mm H × 2200mm W (50×16mm vertical blades)
 - **Construction**: 50×16mm aluminum vertical blades with 40×40mm horizontal rails (inset 80mm from top/bottom)
 - **Finishes**: Satin Black (CN150A), Pearl White (GA078A)
-- **Gates**: 975mm post-mounted gates with D&D hardware
+- **Gates**: 1000mm opening post-mounted gates with D&D hardware (vertical pickets matching panel design)
 - **Posts**: 50×50mm square posts (all heights)
 - **Post Types**: Welded base plate (1280mm), standard (1800mm/2500mm)
 - **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
@@ -57,7 +57,7 @@ Preferred communication style: Simple, everyday language.
 - **Rails**: 38×25mm top and bottom rails only (no mid-rail)
 - **Construction**: 6-point welded round pickets with flat top design
 - **Finishes**: Black, White, Monument Grey
-- **Gates**: 975mm post-mounted gates with D&D hardware
+- **Gates**: 1000mm opening post-mounted gates with D&D hardware (vertical pickets matching panel design)
 - **Posts**: 50mm square posts (all heights)
 - **Post Types**: Welded base plate (1280mm), standard (1800mm)
 - **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
