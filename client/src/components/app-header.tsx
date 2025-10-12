@@ -1,7 +1,8 @@
-import { Sun, Moon, Save, FolderOpen, RotateCcw, Loader2 } from "lucide-react";
+import { Sun, Moon, Save, FolderOpen, RotateCcw, Loader2, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "./theme-provider";
 import { Progress } from "@/components/ui/progress";
+import { useLocation } from "wouter";
 
 interface AppHeaderProps {
   progress: number;
@@ -13,13 +14,18 @@ interface AppHeaderProps {
 
 export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
+  const [, setLocation] = useLocation();
 
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
       <div className="flex items-center justify-between p-4 gap-6">
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
+            <div 
+              className="w-10 h-10 rounded-md bg-primary flex items-center justify-center cursor-pointer hover-elevate active-elevate-2 transition-all"
+              onClick={() => setLocation("/")}
+              data-testid="button-logo-home"
+            >
               <span className="text-primary-foreground font-bold text-lg">FL</span>
             </div>
             <div>
@@ -37,6 +43,15 @@ export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false 
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setLocation("/")}
+            data-testid="button-home"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Home</span>
+          </Button>
           <Button
             size="sm"
             variant="outline"

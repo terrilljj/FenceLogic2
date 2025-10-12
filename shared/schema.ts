@@ -43,6 +43,32 @@ export type SpigotMounting = "base-plate" | "core-drilled" | "side-mounted";
 // Spigot color/finish types
 export type SpigotColor = "polished" | "satin" | "black" | "white";
 
+// Glass thickness types
+export type GlassThickness = "12mm" | "15mm";
+
+// Handrail types
+export type HandrailType = "nonorail-25x21" | "nanorail-30x21" | "series-35x35";
+
+// Handrail material types
+export type HandrailMaterial = "stainless-steel" | "anodised-aluminium";
+
+// Handrail finish types
+export type HandrailFinish = "polished" | "satin" | "black" | "white";
+
+// Glass size constraints by thickness
+export const GLASS_CONSTRAINTS = {
+  "12mm": {
+    minWidth: 300,
+    maxWidth: 1500,
+    height: 970,
+  },
+  "15mm": {
+    minWidth: 300,
+    maxWidth: 1400,
+    height: 1000,
+  },
+};
+
 // Hinge types (mounting configurations)
 export type HingeType = "glass-to-glass" | "glass-to-wall" | "wall-to-glass";
 
@@ -74,6 +100,13 @@ export const spanConfigSchema = z.object({
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
   desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate
+  glassThickness: z.enum(["12mm", "15mm"]).default("12mm").optional(), // Glass thickness selection
+  handrail: z.object({
+    enabled: z.boolean(),
+    type: z.enum(["nonorail-25x21", "nanorail-30x21", "series-35x35"]),
+    material: z.enum(["stainless-steel", "anodised-aluminium"]),
+    finish: z.enum(["polished", "satin", "black", "white"]),
+  }).optional(), // Top-mounted handrail options
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems

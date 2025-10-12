@@ -8,7 +8,7 @@ interface ProductOption {
   type: ProductType;
   name: string;
   description: string;
-  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical";
+  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "pvc-pickets";
 }
 
 const productOptions: ProductOption[] = [
@@ -66,11 +66,11 @@ const productOptions: ProductOption[] = [
     type: "pvc",
     name: "PVC Fencing",
     description: "Low-maintenance PVC fencing",
-    visual: "aluminium-slats"
+    visual: "pvc-pickets"
   }
 ];
 
-function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" }) {
+function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "pvc-pickets" }) {
   if (type === "frameless-glass") {
     return (
       <div className="relative w-32 h-40 mx-auto">
@@ -142,6 +142,30 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     );
   }
 
+  if (type === "pvc-pickets") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* Hampton-style PVC picket fence */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+          {/* Left post */}
+          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Right post */}
+          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Top rail */}
+          <div className="absolute top-2 left-0 right-0 h-2 bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Bottom rail */}
+          <div className="absolute bottom-6 left-0 right-0 h-2 bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          {/* Vertical pickets */}
+          <div className="absolute top-4 left-2 right-2 bottom-8 flex justify-between">
+            {[...Array(13)].map((_, i) => (
+              <div key={i} className="w-0.5 h-full bg-slate-200 dark:bg-slate-100 shadow-sm" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -169,47 +193,84 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-12 text-center">
-          <h2 className="text-3xl font-semibold mb-3" data-testid="text-choose-style">
-            Choose Your Fencing Style
-          </h2>
-          <p className="text-muted-foreground">
-            Select the type of fencing or balustrade you want to configure
-          </p>
+        {/* Pool Fencing Section */}
+        <div className="mb-16">
+          <div className="mb-8">
+            <h2 className="text-3xl font-semibold mb-3" data-testid="text-pool-fencing-title">
+              Pool Fencing
+            </h2>
+            <p className="text-muted-foreground">
+              Select the style of pool fencing for your project
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {productOptions
+              .filter((p) => p.type === "glass-pool" || p.type === "aluminium-pool" || p.type === "pvc" || p.type === "general")
+              .map((product) => (
+                <Card
+                  key={product.id}
+                  className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  onClick={() => handleSelectProduct(product.type, product.id)}
+                  data-testid={`card-home-product-${product.id}`}
+                >
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <ProductVisual type={product.visual} />
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {product.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </Card>
+              ))}
+          </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {productOptions.map((product) => (
-            <Card
-              key={product.id}
-              className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all group"
-              onClick={() => handleSelectProduct(product.type, product.id)}
-              data-testid={`card-home-product-${product.id}`}
-            >
-              <div className="flex flex-col items-center text-center space-y-4">
-                {/* Visual */}
-                <ProductVisual type={product.visual} />
-                
-                {/* Label */}
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-sm">
-                    {product.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {product.description}
-                  </p>
-                </div>
+        {/* Balustrade Section */}
+        <div className="mb-16">
+          <div className="mb-8">
+            <h2 className="text-3xl font-semibold mb-3" data-testid="text-balustrade-title">
+              Balustrade
+            </h2>
+            <p className="text-muted-foreground">
+              Select the style of balustrade for your deck, balcony or stairs
+            </p>
+          </div>
 
-                {/* Arrow indicator on hover */}
-                <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </Card>
-          ))}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {productOptions
+              .filter((p) => p.type === "glass-balustrade" || p.type === "aluminium-balustrade")
+              .map((product) => (
+                <Card
+                  key={product.id}
+                  className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  onClick={() => handleSelectProduct(product.type, product.id)}
+                  data-testid={`card-home-product-${product.id}`}
+                >
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <ProductVisual type={product.visual} />
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {product.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </Card>
+              ))}
+          </div>
         </div>
 
         {/* Info Footer */}
-        <div className="mt-16 text-center">
+        <div className="mt-8 text-center">
           <div className="inline-block bg-primary/10 border border-primary/20 rounded-lg p-6 max-w-2xl">
             <p className="text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">Tip:</span> Divide your fence plan into sections and enter them one at a time. 
