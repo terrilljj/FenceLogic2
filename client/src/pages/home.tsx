@@ -90,18 +90,12 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
       <div className="relative w-32 h-40 mx-auto">
         {/* Frameless glass panel with base-mounted spigots */}
         <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32">
-          {/* Glass panel - semi-transparent */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-blue-200/30 dark:from-blue-900/15 dark:to-blue-800/25 border border-blue-200/60 dark:border-blue-700/60 rounded-sm" />
+          {/* Glass panel - semi-transparent with subtle gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/60 to-blue-100/40 dark:from-cyan-950/20 dark:to-blue-900/30 border border-cyan-200/50 dark:border-cyan-700/50 rounded-sm" />
           
-          {/* Base spigots - cylindrical mounts at bottom */}
-          <div className="absolute -bottom-3 left-2">
-            <div className="w-2.5 h-6 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 rounded-sm shadow-md" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
-          </div>
-          <div className="absolute -bottom-3 right-2">
-            <div className="w-2.5 h-6 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 rounded-sm shadow-md" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
-          </div>
+          {/* Base spigots - rectangular mounting plates */}
+          <div className="absolute -bottom-2 left-3 w-3 h-4 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 shadow-md" />
+          <div className="absolute -bottom-2 right-3 w-3 h-4 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 shadow-md" />
         </div>
       </div>
     );

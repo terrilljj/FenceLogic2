@@ -536,6 +536,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             postWidth,
             groundLevel - panelTop
           );
+          
+          // Post measurement label - 50mm
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "600 10px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText("50mm", currentX, groundLevel + 20);
         }
         
         // Always draw post after this panel
@@ -546,6 +552,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           groundLevel - panelTop
         );
         
+        // Post measurement label - 50mm
+        ctx.fillStyle = "#4b5563";
+        ctx.font = "600 10px Inter";
+        ctx.textAlign = "center";
+        ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
+        
       } 
       // BARR panels have different rendering
       else if (isBarrFencing) {
@@ -554,7 +566,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         const railHeight = 25 * scale; // Top and bottom rails (thinner)
         const railInset = 80 * scale; // Rails are inset from panel edges
         const picketSpacing = 100 * scale; // Space between pickets (50mm pickets + 50mm gaps)
-        const postWidth = 50 * scale; // 50mm posts
+        const postWidth = 25 * scale; // 25mm posts
         const picketGap = 15 * scale; // Gap between pickets and posts
         
         // Draw BARR panel with vertical pickets
@@ -597,6 +609,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             postWidth,
             groundLevel - panelTop
           );
+          
+          // Post measurement label - 25mm
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "600 10px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText("25mm", currentX, groundLevel + 20);
         }
         
         // Always draw post after this panel
@@ -606,6 +624,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           postWidth,
           groundLevel - panelTop
         );
+        
+        // Post measurement label - 25mm
+        ctx.fillStyle = "#4b5563";
+        ctx.font = "600 10px Inter";
+        ctx.textAlign = "center";
+        ctx.fillText("25mm", currentX + scaledPanelWidth, groundLevel + 20);
         
       } 
       // Tubular Flat Top panels have different rendering
@@ -659,6 +683,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             postWidth,
             groundLevel - panelTop
           );
+          
+          // Post measurement label - 50mm
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "600 10px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText("50mm", currentX, groundLevel + 20);
         }
         
         // Always draw post after this panel
@@ -668,6 +698,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           postWidth,
           groundLevel - panelTop
         );
+        
+        // Post measurement label - 50mm
+        ctx.fillStyle = "#4b5563";
+        ctx.font = "600 10px Inter";
+        ctx.textAlign = "center";
+        ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
         
       } else if (isLeftRaked || isRightRaked) {
         // Glass panels - raked
@@ -1417,7 +1453,9 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
       const panelWidthMm = Math.round((span.panelLayout?.panels[i] || panelWidth * 1000));
       let labelText = `${panelWidthMm}mm`;
       if (panelType === "gate") {
-        labelText = `${panelWidthMm}mm Gate`;
+        // Show gate panel size with clear opening
+        const openingSize = 1000;
+        labelText = `${panelWidthMm}mm Gate (${openingSize}mm Opening)`;
       } else if (panelType === "hinge") {
         labelText = `${panelWidthMm}mm Hinge`;
       } else if (panelType === "raked") {

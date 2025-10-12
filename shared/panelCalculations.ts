@@ -553,9 +553,9 @@ export function calculateBarrPanelLayout(
   gatePosition: number = 0
 ): PanelLayout {
   const BARR_SPECS = {
-    "1000mm": { panelWidth: 1733, postAllowance: 0 },
-    "1200mm": { panelWidth: 2205, postAllowance: 0 },
-    "1800mm": { panelWidth: 1969, postAllowance: 0 },
+    "1000mm": { panelWidth: 1733, postAllowance: 25 },
+    "1200mm": { panelWidth: 2205, postAllowance: 25 },
+    "1800mm": { panelWidth: 1969, postAllowance: 25 },
   };
 
   const specs = BARR_SPECS[barrHeight];
@@ -936,8 +936,8 @@ export function calculateBladePanelLayout(
   gatePosition: number = 0
 ): PanelLayout {
   const BLADE_SPECS = {
-    "1000mm": { panelWidth: 1700, postAllowance: 0 },
-    "1200mm": { panelWidth: 2200, postAllowance: 0 },
+    "1000mm": { panelWidth: 1700, postAllowance: 50 },
+    "1200mm": { panelWidth: 2200, postAllowance: 50 },
   };
 
   const specs = BLADE_SPECS[bladeHeight];
@@ -1334,7 +1334,7 @@ export function calculateTubularPanelLayout(
   };
   
   const standardPanelWidth = TUBULAR_WIDTHS[tubularPanelWidth];
-  const post = 0; // No gap - panels butt directly together
+  const post = 50; // 50mm square posts reduce span
   const MIN_PANEL = 200;
   
   if (layoutMode === "full-panels-cut-end") {
