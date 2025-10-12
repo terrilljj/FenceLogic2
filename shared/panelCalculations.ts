@@ -152,6 +152,10 @@ export function calculatePanelLayout(
     
     const totalVariablePanelWidth = effectiveLength - totalFixedPanelSpace - totalGapWidth;
     
+    if (hasGate && numVariablePanels === 2) {
+      console.log('Gate case - effectiveLength:', effectiveLength, 'fixedSpace:', totalFixedPanelSpace, 'gapWidth:', totalGapWidth, 'variableWidth:', totalVariablePanelWidth);
+    }
+    
     // Skip if we can't fit variable panels
     if (numVariablePanels > 0 && (totalVariablePanelWidth < numVariablePanels * MIN_PANEL || 
         totalVariablePanelWidth > numVariablePanels * MAX_PANEL)) {
@@ -169,6 +173,10 @@ export function calculatePanelLayout(
     if (numVariablePanels > 0) {
       // Use largest panels possible, then adjust one to make exact fit
       const idealPanelWidth = Math.floor(totalVariablePanelWidth / numVariablePanels / PANEL_INCREMENT) * PANEL_INCREMENT;
+      
+      if (hasGate && numVariablePanels === 2) {
+        console.log('Ideal panel width:', idealPanelWidth, 'for', numVariablePanels, 'panels');
+      }
       
       if (idealPanelWidth < MIN_PANEL || idealPanelWidth > MAX_PANEL) {
         continue;

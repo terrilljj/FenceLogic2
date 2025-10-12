@@ -204,25 +204,43 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
 
           {config.hingeFrom === "glass" && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Hinge Panel</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Hinge Panel</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    console.log('Auto button clicked, calculatedHingePanelSize:', calculatedHingePanelSize);
+                    if (calculatedHingePanelSize) {
+                      console.log('Updating hinge panel to:', calculatedHingePanelSize);
+                      updateConfig({ 
+                        autoHingePanel: false,
+                        hingePanelSize: calculatedHingePanelSize 
+                      });
+                    } else {
+                      console.log('No calculatedHingePanelSize available!');
+                    }
+                  }}
+                  data-testid={`gate-${spanId}-auto-hinge-button`}
+                  className="h-7 text-xs"
+                >
+                  Auto
+                </Button>
+              </div>
               <Select
-                value={config.autoHingePanel ? "auto" : config.hingePanelSize.toString()}
+                value={config.hingePanelSize.toString()}
                 onValueChange={(value) => {
-                  if (value === "auto") {
-                    updateConfig({ autoHingePanel: true });
-                  } else {
-                    updateConfig({ 
-                      autoHingePanel: false, 
-                      hingePanelSize: parseInt(value) 
-                    });
-                  }
+                  updateConfig({ 
+                    autoHingePanel: false, 
+                    hingePanelSize: parseInt(value) 
+                  });
                 }}
               >
                 <SelectTrigger data-testid={`gate-${spanId}-hinge-panel`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="auto">Auto</SelectItem>
                   {[600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800].map((size) => (
                     <SelectItem key={size} value={size.toString()}>
                       {size}mm
@@ -230,13 +248,7 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                   ))}
                 </SelectContent>
               </Select>
-              {config.autoHingePanel && calculatedHingePanelSize && (
-                <p className="text-xs text-muted-foreground" data-testid={`gate-${spanId}-auto-hinge-size`}>
-                  Auto: {calculatedHingePanelSize}mm (matches panel sizes)
-                </p>
-              )}
-              {((config.autoHingePanel && calculatedHingePanelSize && calculatedHingePanelSize < 1000) || 
-                (!config.autoHingePanel && config.hingePanelSize < 1000)) && (
+              {config.hingePanelSize < 1000 && (
                 <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md mt-2" data-testid={`gate-${spanId}-hinge-warning`}>
                   <Checkbox
                     id={`hinge-warning-${spanId}`}
