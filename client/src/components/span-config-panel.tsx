@@ -403,14 +403,14 @@ export function SpanConfigPanel({
               </div>
               
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Variance</Label>
+                <Label className="text-sm font-medium">Variance Amount</Label>
                 <div 
                   className={`h-9 flex items-center px-3 rounded-md text-sm font-medium ${
                     Math.abs(variance) < 0.1 ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400' : 
                     Math.abs(variance) <= 50 ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400' :
                     'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
                   }`}
-                  data-testid={`span-${span.spanId}-variance`}
+                  data-testid={`span-${span.spanId}-variance-amount`}
                 >
                   {variance >= 0 ? '+' : ''}{variance.toFixed(1)}mm
                 </div>
