@@ -154,7 +154,6 @@ export function calculatePanelLayout(
     const totalVariablePanelWidth = effectiveLength - totalFixedPanelSpace - totalGapWidth;
     
     if (hasGate && numVariablePanels === 2) {
-      console.log('Gate case - effectiveLength:', effectiveLength, 'fixedSpace:', totalFixedPanelSpace, 'gapWidth:', totalGapWidth, 'variableWidth:', totalVariablePanelWidth);
     }
     
     // Skip if we can't fit variable panels
@@ -344,9 +343,25 @@ export function calculatePanelLayout(
             const remainingGapSpace = actualTotalGapWidth - gateConfig.latchGap;
             regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
           } else {
-            // Glass-to-glass: 2 hardware gaps (hinge + latch), rest are regular
-            const numRegularGaps = numGaps - 2;
-            const remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap - gateConfig.latchGap;
+            // Glass-to-glass: hardware gaps depend on gate position
+            let numHardwareGaps: number;
+            let remainingGapSpace: number;
+            
+            if (gateConfig.position === 0 && !gateConfig.flipped) {
+              // Gate at start, not flipped: only hinge gap exists
+              numHardwareGaps = 1;
+              remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
+            } else if (gateConfig.position === 1 && gateConfig.flipped) {
+              // Gate at end, flipped: only hinge gap exists
+              numHardwareGaps = 1;
+              remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
+            } else {
+              // Gate in middle or edge with latch gap: both hinge and latch gaps
+              numHardwareGaps = 2;
+              remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap - gateConfig.latchGap;
+            }
+            
+            const numRegularGaps = numGaps - numHardwareGaps;
             regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
           }
           
@@ -382,9 +397,27 @@ export function calculatePanelLayout(
                 const remainingGapSpace = actualTotalGapWidth - gateConfig.latchGap;
                 regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
               } else {
-                // Glass-to-glass: 2 hardware gaps (hinge + latch), rest are regular
-                const numRegularGaps = numGaps - 2;
-                const remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap - gateConfig.latchGap;
+                // Glass-to-glass: hardware gaps depend on gate position
+                // Gate at position 0: only hinge gap (latch to wall, not counted)
+                // Gate at position 1+: both hinge gap and latch gap
+                let numHardwareGaps: number;
+                let remainingGapSpace: number;
+                
+                if (gateConfig.position === 0 && !gateConfig.flipped) {
+                  // Gate at start, not flipped: only hinge gap exists
+                  numHardwareGaps = 1;
+                  remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
+                } else if (gateConfig.position === 1 && gateConfig.flipped) {
+                  // Gate at end, flipped: only hinge gap exists  
+                  numHardwareGaps = 1;
+                  remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
+                } else {
+                  // Gate in middle or edge with latch gap: both hinge and latch gaps
+                  numHardwareGaps = 2;
+                  remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap - gateConfig.latchGap;
+                }
+                
+                const numRegularGaps = numGaps - numHardwareGaps;
                 regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
               }
               
