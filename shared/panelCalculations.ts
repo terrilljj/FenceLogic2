@@ -314,10 +314,11 @@ export function calculatePanelLayout(
       const actualGap = actualTotalGapWidth / numGaps;
       
       if (actualGap >= MIN_GAP && actualGap <= MAX_GAP) {
-        // Good match! Prefer fewer panels, then larger panels
+        // Good match! Prefer configurations with gate/custom panels, then fewer panels, then larger panels
+        const hasRequiredComponents = (hasGate || hasCustomPanel) ? (numGatePanels + numCustomPanels > 0 ? 0 : 1000) : 0;
         const panelSizeScore = -Math.max(...finalPanels);
         const gapDiffPenalty = Math.abs(actualGap - targetGap) * 10;
-        const score = totalPanels * 100 + panelSizeScore + gapDiffPenalty;
+        const score = hasRequiredComponents + totalPanels * 100 + panelSizeScore + gapDiffPenalty;
         
         if (score < bestScore) {
           bestScore = score;
