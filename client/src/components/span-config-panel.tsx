@@ -86,7 +86,7 @@ export function SpanConfigPanel({
     else if (productVariant === "alu-pool-tubular") {
       // Get Tubular specifications
       const tubularHeight = span.tubularHeight || "1200mm";
-      const tubularPanelWidth = span.tubularPanelWidth || "2400mm";
+      const tubularPanelWidth = span.tubularPanelWidth || "2450mm";
       const layoutMode = span.tubularLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
       const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
@@ -582,15 +582,14 @@ export function SpanConfigPanel({
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Panel Width</Label>
                 <Select
-                  value={span.tubularPanelWidth || "2400mm"}
-                  onValueChange={(value) => updateSpan({ tubularPanelWidth: value as "2400mm" | "2450mm" | "3000mm" })}
+                  value={span.tubularPanelWidth || "2450mm"}
+                  onValueChange={(value) => updateSpan({ tubularPanelWidth: value as "2450mm" | "3000mm" })}
                 >
                   <SelectTrigger data-testid={`span-${span.spanId}-tubular-panel-width`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2400mm">2400mm (Standard)</SelectItem>
-                    <SelectItem value="2450mm">2450mm</SelectItem>
+                    <SelectItem value="2450mm">2450mm (Standard)</SelectItem>
                     <SelectItem value="3000mm">3000mm (Large)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -883,8 +882,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Gap Configurations - Hide for BARR and Blade */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && (showLeftGap || showRightGap) && (
+          {/* Gap Configurations - Hide for BARR, Blade, and Tubular */}
+          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (showLeftGap || showRightGap) && (
             <div className="grid grid-cols-2 gap-4">
               {showLeftGap && (
                 <div className="space-y-1">
@@ -922,8 +921,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Panel Configuration - Hide for BARR and Blade */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && (
+          {/* Panel Configuration - Hide for BARR, Blade, and Tubular */}
+          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Panel Configuration</h4>
@@ -984,8 +983,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Hardware Configuration - Show spigot OR channel based on product type, hide for BARR and Blade */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant === "glass-pool-channel" ? (
+          {/* Hardware Configuration - Show spigot OR channel based on product type, hide for BARR, Blade, and Tubular */}
+          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant === "glass-pool-channel" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Channel Hardware</h4>
               <div className="space-y-3">
@@ -1014,7 +1013,7 @@ export function SpanConfigPanel({
                 </div>
               </div>
             </div>
-          ) : productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" ? (
+          ) : productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -1060,8 +1059,8 @@ export function SpanConfigPanel({
             </div>
           ) : null}
 
-          {/* Gate Configuration - only for non-BARR/Blade pool fencing and general fencing (not balustrades) */}
-          {gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && (
+          {/* Gate Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
+          {gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1115,8 +1114,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Raked Panels Configuration - only for non-BARR/Blade pool fencing and general fencing (not balustrades) */}
-          {gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && (
+          {/* Raked Panels Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
+          {gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
@@ -1213,8 +1212,8 @@ export function SpanConfigPanel({
           </div>
           )}
 
-          {/* Custom Panel - Hide for BARR and Blade */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && (
+          {/* Custom Panel - Hide for BARR, Blade, and Tubular */}
+          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-3 pt-4 border-t border-card-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

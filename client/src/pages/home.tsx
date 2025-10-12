@@ -89,7 +89,7 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     return (
       <div className="relative w-32 h-40 mx-auto">
         {/* Glass panel with spigots */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm transform perspective-500 rotate-y-[-8deg]" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm">
           {/* Top spigot */}
           <div className="absolute -bottom-2 left-2 w-3 h-3 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
           <div className="absolute -bottom-2 right-2 w-3 h-3 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
@@ -102,7 +102,7 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     return (
       <div className="relative w-32 h-40 mx-auto">
         {/* Glass panel in channel */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm">
           {/* Bottom channel */}
           <div className="absolute -bottom-1 left-0 right-0 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-sm shadow-sm" />
         </div>
@@ -114,7 +114,7 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     return (
       <div className="relative w-32 h-40 mx-auto">
         {/* Glass panel with standoffs */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm">
           {/* Standoff pins */}
           <div className="absolute top-3 left-2 w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
           <div className="absolute top-3 right-2 w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
@@ -129,7 +129,7 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     return (
       <div className="relative w-32 h-40 mx-auto">
         {/* BARR: Aluminium vertical pickets with inset rails */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center">
           {/* Container for pickets with gap from edges */}
           <div className="relative w-20 h-32 flex justify-between">
             {/* Vertical pickets - FULL HEIGHT with gaps */}
@@ -150,7 +150,7 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     return (
       <div className="relative w-32 h-40 mx-auto">
         {/* Tubular Flat Top: Round vertical tubes with only top and bottom rails */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center">
           {/* Container for tubes with gap from edges */}
           <div className="relative w-20 h-32 flex justify-between items-end">
             {/* Vertical round tubes - FULL HEIGHT with wider spacing */}
@@ -171,7 +171,7 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     return (
       <div className="relative w-32 h-40 mx-auto">
         {/* Aluminium slats */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 flex flex-col gap-1 transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 flex flex-col gap-1">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="h-3 bg-gradient-to-r from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-sm shadow-sm" />
           ))}
@@ -184,7 +184,7 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     return (
       <div className="relative w-32 h-40 mx-auto">
         {/* Hampton-style PVC picket fence */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 transform perspective-500" style={{ transform: 'perspective(500px) rotateY(-8deg)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
           {/* Left post */}
           <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Right post */}

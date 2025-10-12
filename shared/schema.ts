@@ -163,7 +163,7 @@ export type TubularHeight = "1200mm" | "900mm";
 export type TubularFinish = "black" | "white" | "monument";
 
 // Tubular panel width options
-export type TubularPanelWidth = "2400mm" | "2450mm" | "3000mm";
+export type TubularPanelWidth = "2450mm" | "3000mm";
 
 // Tubular panel layout modes
 export type TubularLayoutMode = "full-panels-cut-end" | "equally-spaced";
@@ -179,7 +179,6 @@ export const TUBULAR_PANEL_SPECS = {
   "1200mm": {
     height: 1200,
     widths: {
-      "2400mm": 2400,
       "2450mm": 2450,
       "3000mm": 3000,
     },
@@ -192,7 +191,6 @@ export const TUBULAR_PANEL_SPECS = {
   "900mm": {
     height: 900,
     widths: {
-      "2400mm": 2400,
       "2450mm": 2450,
       "3000mm": 3000,
     },

@@ -52,7 +52,7 @@ Preferred communication style: Simple, everyday language.
 
 **Tubular Flat Top Specifications (October 2025):**
 - **Two Heights Available**: 1200mm (pool fencing), 900mm (non-pool)
-- **Panel Widths**: 2400mm (standard), 2450mm, 3000mm (large)
+- **Panel Widths**: 2450mm (standard), 3000mm (large)
 - **Pickets**: 16mm diameter round tubes, 72mm gap spacing (88mm center-to-center)
 - **Rails**: 38×25mm top and bottom rails only (no mid-rail)
 - **Construction**: 6-point welded round pickets with flat top design
@@ -61,7 +61,7 @@ Preferred communication style: Simple, everyday language.
 - **Posts**: 50mm square posts (all heights)
 - **Post Types**: Welded base plate (1280mm), standard (1800mm)
 - **Layout Modes**: Full panels + cut end, Equally spaced (all cut)
-- **Features**: Clean minimalist design, N+1 post structure, panels sit on ground (no bottom clearance)
+- **Features**: Clean minimalist design, N+1 post structure, panels sit on ground (no bottom clearance), no glass-specific options (spigots, raked panels, custom panels, gaps)
 
 **Glass Specifications:**
 - **12mm Glass**: 300-1500mm width, 970mm height
