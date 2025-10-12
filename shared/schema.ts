@@ -113,6 +113,7 @@ export const spanConfigSchema = z.object({
     latchType: z.enum(["key-lock", "magnetic", "self-latch", "double-action"]).default("key-lock"),
     gateSize: z.number(),
     hingePanelSize: z.number(),
+    autoHingePanel: z.boolean().default(true), // Auto-match hinge panel to other panel sizes
     position: z.number(),
     flipped: z.boolean(),
     savedGlassPosition: z.number().optional(), // Preserves panel index when switching to wall mode

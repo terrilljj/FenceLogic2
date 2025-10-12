@@ -13,6 +13,7 @@ interface GateConfig {
   latchType: LatchType;
   gateSize: number;
   hingePanelSize: number;
+  autoHingePanel?: boolean;
   position: number;
   flipped: boolean;
   savedGlassPosition?: number;
@@ -24,9 +25,10 @@ interface GateControlsProps {
   config: GateConfig;
   spanId: string | number;
   onUpdate: (config: GateConfig) => void;
+  calculatedHingePanelSize?: number; // Auto-calculated hinge panel size when auto is enabled
 }
 
-export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
+export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSize }: GateControlsProps) {
   const updateConfig = (updates: Partial<GateConfig>) => {
     // Automatically update gaps when hardware or hingeFrom changes
     const newHardware = updates.hardware ?? config.hardware;
@@ -186,13 +188,23 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
             <div className="space-y-2">
               <Label className="text-sm font-medium">Hinge Panel</Label>
               <Select
-                value={config.hingePanelSize.toString()}
-                onValueChange={(hingePanelSize) => updateConfig({ hingePanelSize: parseInt(hingePanelSize) })}
+                value={config.autoHingePanel ? "auto" : config.hingePanelSize.toString()}
+                onValueChange={(value) => {
+                  if (value === "auto") {
+                    updateConfig({ autoHingePanel: true });
+                  } else {
+                    updateConfig({ 
+                      autoHingePanel: false, 
+                      hingePanelSize: parseInt(value) 
+                    });
+                  }
+                }}
               >
                 <SelectTrigger data-testid={`gate-${spanId}-hinge-panel`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="auto">Auto</SelectItem>
                   {[600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800].map((size) => (
                     <SelectItem key={size} value={size.toString()}>
                       {size}mm
@@ -200,6 +212,11 @@ export function GateControls({ config, spanId, onUpdate }: GateControlsProps) {
                   ))}
                 </SelectContent>
               </Select>
+              {config.autoHingePanel && calculatedHingePanelSize && (
+                <p className="text-xs text-muted-foreground" data-testid={`gate-${spanId}-auto-hinge-size`}>
+                  Auto: {calculatedHingePanelSize}mm (matches panel sizes)
+                </p>
+              )}
             </div>
           )}
         </div>
