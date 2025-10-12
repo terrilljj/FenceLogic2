@@ -658,7 +658,7 @@ function calculateComponents(design: FenceDesign): Component[] {
       // Gate hardware components (hinge set and latch)
       if (span.gateConfig?.required) {
         const hingeType = span.gateConfig.hingeType || "glass-to-glass";
-        const latchType = span.gateConfig.latchType || "key-lock";
+        const latchType = span.gateConfig.latchType || "glass-to-glass";
         const hardware = span.gateConfig.hardware || "polaris";
         const hingeDetails = getHingeDetails(hingeType, hardware);
         const latchDetails = getLatchDetails(latchType);
@@ -743,7 +743,7 @@ function calculateComponents(design: FenceDesign): Component[] {
         // Gate hardware if configured
         if (span.gateConfig?.required) {
           const hingeType = span.gateConfig.hingeType || "glass-to-glass";
-          const latchType = span.gateConfig.latchType || "key-lock";
+          const latchType = span.gateConfig.latchType || "glass-to-glass";
           const hardware = span.gateConfig.hardware || "polaris";
           const hingeDetails = getHingeDetails(hingeType, hardware);
           const latchDetails = getLatchDetails(latchType);

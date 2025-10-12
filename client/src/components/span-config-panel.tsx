@@ -500,7 +500,7 @@ export function SpanConfigPanel({
                         hingeFrom: "glass",
                         latchTo: "glass",
                         hingeType: "glass-to-glass",
-                        latchType: "key-lock",
+                        latchType: "glass-to-glass",
                         gateSize: 900,
                         hingePanelSize: 1200,
                         autoHingePanel: false,

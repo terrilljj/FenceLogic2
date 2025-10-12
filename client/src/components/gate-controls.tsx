@@ -118,17 +118,17 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
           <div className="space-y-2">
             <Label className="text-sm font-medium">Latch Type</Label>
             <Select
-              value={config.latchType || "key-lock"}
+              value={config.latchType || "glass-to-glass"}
               onValueChange={(latchType: LatchType) => updateConfig({ latchType })}
             >
               <SelectTrigger data-testid={`gate-${spanId}-latch-type`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="key-lock">Key Lock</SelectItem>
-                <SelectItem value="magnetic">Magnetic</SelectItem>
-                <SelectItem value="self-latch">Self-Latching</SelectItem>
-                <SelectItem value="double-action">Double-Action</SelectItem>
+                <SelectItem value="glass-to-glass">Glass to Glass</SelectItem>
+                <SelectItem value="glass-to-wall">Glass to Wall/Post</SelectItem>
+                <SelectItem value="corner-out">Corner Out</SelectItem>
+                <SelectItem value="corner-in">Corner In</SelectItem>
               </SelectContent>
             </Select>
           </div>

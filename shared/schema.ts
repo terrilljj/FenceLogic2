@@ -45,8 +45,8 @@ export type SpigotColor = "polished" | "satin" | "black" | "white";
 // Hinge types (mounting configurations)
 export type HingeType = "glass-to-glass" | "glass-to-wall" | "wall-to-glass";
 
-// Latch types
-export type LatchType = "key-lock" | "magnetic" | "self-latch" | "double-action";
+// Latch types (universal mounting configurations)
+export type LatchType = "glass-to-glass" | "glass-to-wall" | "corner-out" | "corner-in";
 
 // Panel size constraints (custom cut in 50mm increments)
 export const PANEL_SIZE_MIN = 200; // mm
@@ -110,7 +110,7 @@ export const spanConfigSchema = z.object({
     hingeFrom: z.enum(["glass", "wall"]),
     latchTo: z.enum(["glass", "wall"]),
     hingeType: z.enum(["glass-to-glass", "glass-to-wall", "wall-to-glass"]).default("glass-to-glass"),
-    latchType: z.enum(["key-lock", "magnetic", "self-latch", "double-action"]).default("key-lock"),
+    latchType: z.enum(["glass-to-glass", "glass-to-wall", "corner-out", "corner-in"]).default("glass-to-glass"),
     gateSize: z.number(),
     hingePanelSize: z.number(),
     autoHingePanel: z.boolean().default(true), // Auto-match hinge panel to other panel sizes
@@ -265,10 +265,10 @@ export function getHingeDetails(type: HingeType, hardware: GateHardware): { desc
 // Helper function to get latch details
 export function getLatchDetails(type: LatchType): { description: string; sku: string } {
   const latchMap = {
-    "key-lock": { description: "Key Lock Latch", sku: "LATCH-KEY" },
-    "magnetic": { description: "Magnetic Latch", sku: "LATCH-MAGNETIC" },
-    "self-latch": { description: "Self-Latching Mechanism", sku: "LATCH-SELF" },
-    "double-action": { description: "Double-Action Latch", sku: "LATCH-DOUBLE" },
+    "glass-to-glass": { description: "Glass-to-Glass Latch", sku: "LATCH-G2G" },
+    "glass-to-wall": { description: "Glass-to-Wall/Post Latch", sku: "LATCH-G2W" },
+    "corner-out": { description: "Corner Out Latch", sku: "LATCH-CORNER-OUT" },
+    "corner-in": { description: "Corner In Latch", sku: "LATCH-CORNER-IN" },
   };
   return latchMap[type];
 }
