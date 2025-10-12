@@ -65,10 +65,12 @@ export function SpanConfigPanel({
       // Valid hinge panel sizes
       const validHingeSizes = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
       
-      // Calculate panel layout WITHOUT gate to determine base panel sizes
-      // This avoids feedback loop where hinge panel affects layout which affects hinge panel
+      // Calculate available space: section length - gate width
+      const availableSpace = span.length - span.gateConfig.gateSize;
+      
+      // Calculate layout WITHOUT gate to determine panel sizes in remaining space
       const layoutWithoutGate = calculatePanelLayout(
-        span.length,
+        availableSpace,
         endGaps,
         span.desiredGap,
         span.maxPanelWidth,
@@ -83,7 +85,7 @@ export function SpanConfigPanel({
         } : undefined
       );
       
-      // Find most common standard panel size from layout without gate
+      // Find most common standard panel size
       const regularPanels = layoutWithoutGate.panels.filter((_, i) => {
         const type = layoutWithoutGate.panelTypes?.[i];
         return type === "standard";
@@ -113,6 +115,7 @@ export function SpanConfigPanel({
     }
 
     // Calculate final panel layout with the effective hinge panel size
+    console.log('Final layout - using effective hinge panel size:', effectiveHingePanelSize);
     const layout = calculatePanelLayout(
       span.length,
       endGaps,
@@ -137,6 +140,8 @@ export function SpanConfigPanel({
         position: span.customPanel.position,
       } : undefined
     );
+    console.log('Final layout - result panels:', layout.panels);
+    console.log('Final layout - result types:', layout.panelTypes);
 
     // Update span with calculated layout if it changed
     const layoutChanged = 
