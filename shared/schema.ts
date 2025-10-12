@@ -98,6 +98,31 @@ export type StandoffDiameter = "50mm";
 // Standoff finish types
 export type StandoffFinish = "polished" | "satin" | "black" | "white";
 
+// BARR fencing height options
+export type BarrHeight = "1000mm" | "1200mm" | "1800mm";
+
+// BARR fencing finish types
+export type BarrFinish = "satin-black" | "pearl-white";
+
+// BARR panel specifications by height
+export const BARR_PANEL_SPECS = {
+  "1000mm": {
+    height: 1000,
+    panelWidth: 1733,
+    picketSize: "50x25mm",
+  },
+  "1200mm": {
+    height: 1200,
+    panelWidth: 2205,
+    picketSize: "50x25mm",
+  },
+  "1800mm": {
+    height: 1800,
+    panelWidth: 1969,
+    picketSize: "50x25mm",
+  },
+};
+
 // Hinge types (mounting configurations)
 export type HingeType = "glass-to-glass" | "glass-to-wall" | "wall-to-glass";
 
@@ -138,6 +163,8 @@ export const spanConfigSchema = z.object({
   }).optional(), // Top-mounted handrail options
   standoffDiameter: z.enum(["50mm"]).optional(), // Standoff diameter for standoff systems (50mm)
   standoffFinish: z.enum(["polished", "satin", "black", "white"]).optional(), // Standoff finish
+  barrHeight: z.enum(["1000mm", "1200mm", "1800mm"]).optional(), // BARR fencing height selection
+  barrFinish: z.enum(["satin-black", "pearl-white"]).optional(), // BARR fencing finish
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems
