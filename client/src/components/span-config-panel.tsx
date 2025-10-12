@@ -53,13 +53,15 @@ export function SpanConfigPanel({
       const layoutMode = span.barrLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
       const gateSize = hasGate ? (span.gateConfig?.gateSize || 900) : undefined;
+      const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateBarrPanelLayout(
         span.length,
         barrHeight,
         layoutMode,
         hasGate,
-        gateSize
+        gateSize,
+        gatePosition
       );
     } else {
       // Glass/standoff/general fencing calculation
@@ -499,6 +501,42 @@ export function SpanConfigPanel({
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Gate Position</Label>
+                        <Select
+                          value={(span.gateConfig.position || 0).toString()}
+                          onValueChange={(value) => updateSpan({ 
+                            gateConfig: {
+                              ...span.gateConfig!,
+                              position: parseInt(value)
+                            }
+                          })}
+                        >
+                          <SelectTrigger data-testid={`span-${span.spanId}-gate-position`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(() => {
+                              const numPanels = span.panelLayout?.panels.filter(p => span.panelLayout?.panelTypes?.[span.panelLayout.panels.indexOf(p)] !== "gate").length || 3;
+                              const positions = [];
+                              for (let i = 0; i <= numPanels; i++) {
+                                if (i === 0) {
+                                  positions.push(<SelectItem key={i} value={i.toString()}>Start (before panel 1)</SelectItem>);
+                                } else if (i === numPanels) {
+                                  positions.push(<SelectItem key={i} value={i.toString()}>End (after panel {numPanels})</SelectItem>);
+                                } else {
+                                  positions.push(<SelectItem key={i} value={i.toString()}>Between panel {i} and {i + 1}</SelectItem>);
+                                }
+                              }
+                              return positions;
+                            })()}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Choose where to position the gate within this section
+                        </p>
                       </div>
                     </div>
                   )}

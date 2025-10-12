@@ -541,6 +541,7 @@ export function calculatePanelLayout(
  * @param layoutMode Layout mode: full-panels-cut-end or equally-spaced
  * @param hasGate Whether gate is required
  * @param gateSize Gate panel width (975mm for BARR gates)
+ * @param gatePosition Gate position (0 = start, 1 = end)
  * @returns Panel layout with BARR-specific configurations
  */
 export function calculateBarrPanelLayout(
@@ -548,7 +549,8 @@ export function calculateBarrPanelLayout(
   barrHeight: "1000mm" | "1200mm" | "1800mm",
   layoutMode: "full-panels-cut-end" | "equally-spaced",
   hasGate: boolean = false,
-  gateSize: number = 975
+  gateSize: number = 975,
+  gatePosition: number = 0
 ): PanelLayout {
   const BARR_SPECS = {
     "1000mm": { panelWidth: 1733, postAllowance: 50 },
@@ -613,19 +615,24 @@ export function calculateBarrPanelLayout(
       const gaps: number[] = [];
       const panelTypes: PanelType[] = [];
       
-      // Build layout: gate + numFullPanels + cut panel
-      gaps.push(post); // Start post
-      panels.push(gateSize);
-      panelTypes.push("gate");
-      gaps.push(post); // Post after gate
+      // Build all panels first (full + cut)
+      const allPanels: { width: number; type: PanelType }[] = [];
       for (let i = 0; i < numFullPanels; i++) {
-        panels.push(standardPanelWidth);
-        panelTypes.push("standard");
+        allPanels.push({ width: standardPanelWidth, type: "standard" });
+      }
+      allPanels.push({ width: cutWidth, type: "standard" });
+      
+      // Insert gate at specified position
+      const clampedPosition = Math.min(gatePosition, allPanels.length);
+      allPanels.splice(clampedPosition, 0, { width: gateSize, type: "gate" });
+      
+      // Build final layout with posts
+      gaps.push(post); // Start post
+      for (const panel of allPanels) {
+        panels.push(panel.width);
+        panelTypes.push(panel.type);
         gaps.push(post);
       }
-      panels.push(cutWidth);
-      panelTypes.push("standard");
-      gaps.push(post); // End post
       
       return {
         panels,
@@ -717,20 +724,19 @@ export function calculateBarrPanelLayout(
     // Maximum panel width constraint (cannot exceed standard panel width)
     const MAX_PANEL_WIDTH = standardPanelWidth;
     
-    // Calculate minimum number of panels needed to keep panel width <= MAX_PANEL_WIDTH
-    // For N panels: total = N*panelWidth + (N+1)*post
-    // panelWidth = (spanLength - (N+1)*post) / N
-    // We want: panelWidth <= MAX_PANEL_WIDTH
-    // So: (spanLength - (N+1)*post) / N <= MAX_PANEL_WIDTH
-    // spanLength - (N+1)*post <= N*MAX_PANEL_WIDTH
-    // spanLength - N*post - post <= N*MAX_PANEL_WIDTH
-    // spanLength - post <= N*MAX_PANEL_WIDTH + N*post
-    // spanLength - post <= N*(MAX_PANEL_WIDTH + post)
-    // N >= (spanLength - post) / (MAX_PANEL_WIDTH + post)
-    const minPanels = Math.ceil((spanLength - post) / (MAX_PANEL_WIDTH + post));
-    let numPanels = Math.max(1, minPanels);
+    let numPanels: number;
     
     if (hasGate) {
+      // With gate: Calculate minimum panels accounting for gate space
+      // Total = gate + N*panelWidth + (N+2)*post
+      // panelWidth = (spanLength - gate - (N+2)*post) / N
+      // We want: panelWidth <= MAX_PANEL_WIDTH
+      // So: (spanLength - gate - (N+2)*post) / N <= MAX_PANEL_WIDTH
+      // spanLength - gate - (N+2)*post <= N*MAX_PANEL_WIDTH
+      // spanLength - gate - 2*post <= N*(MAX_PANEL_WIDTH + post)
+      // N >= (spanLength - gate - 2*post) / (MAX_PANEL_WIDTH + post)
+      const minPanels = Math.ceil((spanLength - gateSize - 2 * post) / (MAX_PANEL_WIDTH + post));
+      numPanels = Math.max(1, minPanels);
       // With gate: [post]-[gate]-[post]-[panel]-[post]-[panel]-[post]...
       // Elements = gate + numPanels, Posts = elements + 1
       let numElements = 1 + numPanels;
@@ -768,13 +774,23 @@ export function calculateBarrPanelLayout(
           };
         }
         
-        const panels: number[] = [gateSize];
-        const gaps: number[] = [post];
-        const panelTypes: PanelType[] = ["gate"];
-        
+        // Build all equal panels first
+        const allPanels: { width: number; type: PanelType }[] = [];
         for (let i = 0; i < reducedPanels; i++) {
-          panels.push(reducedWidth);
-          panelTypes.push("standard");
+          allPanels.push({ width: reducedWidth, type: "standard" });
+        }
+        
+        // Insert gate at specified position
+        const clampedPosition = Math.min(gatePosition, allPanels.length);
+        allPanels.splice(clampedPosition, 0, { width: gateSize, type: "gate" });
+        
+        const panels: number[] = [];
+        const gaps: number[] = [post];
+        const panelTypes: PanelType[] = [];
+        
+        for (const panel of allPanels) {
+          panels.push(panel.width);
+          panelTypes.push(panel.type);
           gaps.push(post);
         }
         
@@ -788,13 +804,23 @@ export function calculateBarrPanelLayout(
         };
       }
       
-      const panels: number[] = [gateSize];
-      const gaps: number[] = [post];
-      const panelTypes: PanelType[] = ["gate"];
-      
+      // Build all equal panels first
+      const allPanels: { width: number; type: PanelType }[] = [];
       for (let i = 0; i < numPanels; i++) {
-        panels.push(equalWidth);
-        panelTypes.push("standard");
+        allPanels.push({ width: equalWidth, type: "standard" });
+      }
+      
+      // Insert gate at specified position
+      const clampedPosition = Math.min(gatePosition, allPanels.length);
+      allPanels.splice(clampedPosition, 0, { width: gateSize, type: "gate" });
+      
+      const panels: number[] = [];
+      const gaps: number[] = [post];
+      const panelTypes: PanelType[] = [];
+      
+      for (const panel of allPanels) {
+        panels.push(panel.width);
+        panelTypes.push(panel.type);
         gaps.push(post);
       }
       
@@ -807,6 +833,14 @@ export function calculateBarrPanelLayout(
         panelTypes,
       };
     } else {
+      // Without gate: Calculate minimum panels for no-gate scenario
+      // For N panels: total = N*panelWidth + (N+1)*post
+      // panelWidth = (spanLength - (N+1)*post) / N
+      // We want: panelWidth <= MAX_PANEL_WIDTH
+      // N >= (spanLength - post) / (MAX_PANEL_WIDTH + post)
+      const minPanels = Math.ceil((spanLength - post) / (MAX_PANEL_WIDTH + post));
+      numPanels = Math.max(1, minPanels);
+      
       // Without gate: [post]-[panel]-[post]-[panel]-[post]...
       // Elements = numPanels, Posts = numPanels + 1
       let numPosts = numPanels + 1;
