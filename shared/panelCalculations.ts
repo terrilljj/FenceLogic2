@@ -306,11 +306,27 @@ export function calculatePanelLayout(
     const actualTotalPanelWidth = finalPanels.reduce((sum, p) => sum + p, 0);
     const actualTotalGapWidth = effectiveLength - actualTotalPanelWidth;
     
+    // STRICT CONSTRAINT: Total must never exceed section length
+    // Also ensure we have enough space for minimum required gaps
+    if (actualTotalPanelWidth > effectiveLength || actualTotalGapWidth < 0) {
+      continue; // Skip configurations that are too large
+    }
+    
+    // Additional check: ensure we meet the planned gap requirements
+    // If actualTotalGapWidth < totalGapWidth, panels are too big and will create negative variance
+    const gapDeficit = totalGapWidth - actualTotalGapWidth;
+    
+    // STRICT: Only accept configurations where we have AT LEAST the required gap space
+    // Allow max 2mm deficit for floating point rounding errors only
+    if (gapDeficit > 2) {
+      continue; // Panels are too large, skip this configuration
+    }
+    
     // Check if we achieved exact or near-exact gap spacing
-    // Allow larger tolerance to accommodate rounding from panel increments
+    // Allow tolerance for positive variance (extra gap space to distribute)
     const tolerance = PANEL_INCREMENT;
     
-    if (Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance) {
+    if (actualTotalGapWidth >= totalGapWidth - 2 && Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance) {
       const actualGap = actualTotalGapWidth / numGaps;
       
       if (actualGap >= MIN_GAP && actualGap <= MAX_GAP) {
