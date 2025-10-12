@@ -171,11 +171,12 @@ export function calculatePanelLayout(
     let variablePanels: number[] = [];
     
     if (numVariablePanels > 0) {
-      // Use largest panels possible, then adjust one to make exact fit
-      const idealPanelWidth = Math.floor(totalVariablePanelWidth / numVariablePanels / PANEL_INCREMENT) * PANEL_INCREMENT;
+      // Calculate average panel width and round to nearest increment
+      const averagePanelWidth = totalVariablePanelWidth / numVariablePanels;
+      const idealPanelWidth = Math.round(averagePanelWidth / PANEL_INCREMENT) * PANEL_INCREMENT;
       
       if (hasGate && numVariablePanels === 2) {
-        console.log('Ideal panel width:', idealPanelWidth, 'for', numVariablePanels, 'panels');
+        console.log('Average panel width:', averagePanelWidth, '→ rounded ideal:', idealPanelWidth, 'for', numVariablePanels, 'panels');
       }
       
       if (idealPanelWidth < MIN_PANEL || idealPanelWidth > MAX_PANEL) {
