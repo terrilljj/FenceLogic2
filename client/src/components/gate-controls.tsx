@@ -313,29 +313,12 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
           </>
         )}
         {config.hingeFrom === "wall" && (
-          <>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  // Toggle between start (0) and end (1)
-                  updateConfig({ position: config.position <= 0 ? 1 : 0 });
-                }}
-                data-testid={`gate-${spanId}-switch-end`}
-              >
-                <ArrowLeftRight className="w-4 h-4 mr-2" />
-                Switch to {config.position <= 0 ? "End" : "Start"}
-              </Button>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Position:</span>
-              <span className="font-mono font-medium">
-                {config.position <= 0 ? "Start of Section" : "End of Section"}
-              </span>
-            </div>
-          </>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Position:</span>
+            <span className="font-mono font-medium">
+              {config.position <= 0 ? "Start of Section" : "End of Section"}
+            </span>
+          </div>
         )}
       </div>
     </div>
