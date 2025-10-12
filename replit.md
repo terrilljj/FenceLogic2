@@ -106,12 +106,15 @@ Preferred communication style: Simple, everyday language.
   - **Glass-to-glass**: Gate positioned by panel index (0, 1, 2, ...) with hinge panel included
   - **Wall/post-mounted**: Gate at start (position=0) or end (position=1) with no hinge panel
 - Panel types: standard, raked, gate, hinge, custom (tracked for visualization)
-- **Custom Glass Panels**: Support for custom-sized glass panels with specific width (200-2000mm) and height (1200-1800mm) dimensions:
+- **Custom Glass Panels**: Support for custom-sized glass panels with specific width and height dimensions:
+  - Width: 200mm to maxPanelWidth (constrained by Max Panel Width setting, up to 2000mm max)
+  - Height: 1200-1800mm
   - Custom panels are treated as fixed panels in layout calculations
   - Position controls allow moving custom panel left/right within the panel array
   - Visualization renders custom panels with distinct orange color and WIDTHxHEIGHT labels
   - Component list includes custom panels with format "Custom Glass Panel {width}mm x {height}mm (12mm thick)"
   - Panel calculation allows 0-1 variable panels when custom panel is enabled
+  - Helper text displays current maximum width constraint from panel configuration
 - **Gate Position Preservation**: savedGlassPosition field preserves panel index when switching between glass-to-glass and wall-mounted modes
 - **Hardware-Specific Gate Gaps**: Automatic calculation of correct gaps based on hardware type and mounting:
   - Master Range wall-mounted: latch gap = 9mm (hinge side attached to wall)

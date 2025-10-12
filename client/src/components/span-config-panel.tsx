@@ -753,13 +753,18 @@ export function SpanConfigPanel({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Label className="text-sm font-medium">Custom Panel</Label>
-                  <InfoTooltip content="Add a custom-sized glass panel with specific width and height dimensions. The panel can be positioned anywhere in the section using the position controls." />
+                  <InfoTooltip content="Add a custom-sized glass panel with specific width and height dimensions. Panel width is limited by the Max Panel Width setting. The panel can be positioned anywhere in the section using the position controls." />
                 </div>
                 <Switch
                   checked={span.customPanel?.enabled || false}
                   onCheckedChange={(enabled) =>
                     updateSpan({
-                      customPanel: { enabled, width: 1200, height: 1200, position: 0 },
+                      customPanel: { 
+                        enabled, 
+                        width: Math.min(1200, span.maxPanelWidth), 
+                        height: 1200, 
+                        position: 0 
+                      },
                     })
                   }
                   data-testid={`span-${span.spanId}-custom-panel-toggle`}
@@ -771,6 +776,7 @@ export function SpanConfigPanel({
                   spanId={span.spanId}
                   onUpdate={(customPanel) => updateSpan({ customPanel })}
                   numPanels={span.panelLayout?.panels.length || 1}
+                  maxPanelWidth={span.maxPanelWidth}
                 />
               )}
             </div>

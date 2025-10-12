@@ -15,9 +15,10 @@ interface CustomPanelControlsProps {
   spanId: string | number;
   onUpdate: (config: CustomPanelConfig) => void;
   numPanels?: number; // Number of panels in the span for position limits
+  maxPanelWidth?: number; // Maximum panel width from span configuration
 }
 
-export function CustomPanelControls({ config, spanId, onUpdate, numPanels = 1 }: CustomPanelControlsProps) {
+export function CustomPanelControls({ config, spanId, onUpdate, numPanels = 1, maxPanelWidth = 2000 }: CustomPanelControlsProps) {
   const updateConfig = (updates: Partial<CustomPanelConfig>) => {
     onUpdate({ ...config, ...updates });
   };
@@ -34,6 +35,8 @@ export function CustomPanelControls({ config, spanId, onUpdate, numPanels = 1 }:
     }
   };
 
+  const effectiveMaxWidth = Math.min(maxPanelWidth, 2000);
+
   return (
     <div className="space-y-4 bg-muted/30 rounded-md p-4" data-testid={`custom-panel-controls-${spanId}`}>
       <div className="space-y-3">
@@ -43,12 +46,18 @@ export function CustomPanelControls({ config, spanId, onUpdate, numPanels = 1 }:
             <Input
               type="number"
               min={200}
-              max={2000}
+              max={effectiveMaxWidth}
               step={50}
               value={config.width}
-              onChange={(e) => updateConfig({ width: parseInt(e.target.value) || 200 })}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 200;
+                updateConfig({ width: Math.min(value, effectiveMaxWidth) });
+              }}
               data-testid={`custom-panel-${spanId}-width`}
             />
+            <p className="text-xs text-muted-foreground">
+              Max: {effectiveMaxWidth}mm (from panel config)
+            </p>
           </div>
 
           <div className="space-y-2">
