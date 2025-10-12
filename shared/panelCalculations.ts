@@ -562,6 +562,8 @@ export function calculateBarrPanelLayout(
   const standardPanelWidth = specs.panelWidth;
   const post = specs.postAllowance;
   const MIN_PANEL = 200;
+  const GATE_ALLOWANCE = 25; // Aluminium gate allowance
+  // gateSize = clear opening (1000mm), actual gate panel = gateSize - GATE_ALLOWANCE
 
   // BARR structure: [POST]-[ELEMENT]-[POST]-[ELEMENT]-[POST]...
   // For N elements, need N+1 posts
@@ -944,11 +946,8 @@ export function calculateBladePanelLayout(
   const standardPanelWidth = specs.panelWidth;
   const post = specs.postAllowance;
   const MIN_PANEL = 200;
-
-  // Blade structure: [POST]-[ELEMENT]-[POST]-[ELEMENT]-[POST]...
-  // For N elements, need N+1 posts
-  // Panels butt directly together with no gaps (post allowance = 0)
-  // Gates have side stiles and butt directly against panels/posts
+  const GATE_ALLOWANCE = 25; // Aluminium gate allowance
+  // gateSize = clear opening (1000mm), actual gate panel = gateSize - GATE_ALLOWANCE
   
   if (layoutMode === "full-panels-cut-end") {
     // Mode 1: Full standard panels + cut end piece
@@ -1336,6 +1335,8 @@ export function calculateTubularPanelLayout(
   const standardPanelWidth = TUBULAR_WIDTHS[tubularPanelWidth];
   const post = 50; // 50mm square posts reduce span
   const MIN_PANEL = 200;
+  const GATE_ALLOWANCE = 25; // Aluminium gate allowance
+  // gateSize = clear opening (1000mm), actual gate panel = gateSize - GATE_ALLOWANCE
   
   if (layoutMode === "full-panels-cut-end") {
     // Mode 1: Full panels + cut end

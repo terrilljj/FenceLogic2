@@ -52,7 +52,7 @@ export function SpanConfigPanel({
       const bladeHeight = span.bladeHeight || "1200mm";
       const layoutMode = span.bladeLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
       const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateBladePanelLayout(
@@ -70,7 +70,7 @@ export function SpanConfigPanel({
       const barrHeight = span.barrHeight || "1200mm";
       const layoutMode = span.barrLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
       const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateBarrPanelLayout(
@@ -89,7 +89,7 @@ export function SpanConfigPanel({
       const tubularPanelWidth = span.tubularPanelWidth || "2450mm";
       const layoutMode = span.tubularLayoutMode || "full-panels-cut-end";
       const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
+      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
       const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
 
       layout = calculateTubularPanelLayout(
@@ -423,7 +423,10 @@ export function SpanConfigPanel({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Layout Mode</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm font-medium">Layout Mode</Label>
+                  <InfoTooltip content="Full Panels + Cut End: Uses full standard panels (1700mm or 2200mm based on height) with a cut panel at the end. Equally Spaced: Cuts all panels to equal widths for uniform appearance. Both modes accommodate 50mm posts between panels." />
+                </div>
                 <Select
                   value={span.bladeLayoutMode || "full-panels-cut-end"}
                   onValueChange={(value) => updateSpan({ bladeLayoutMode: value as "full-panels-cut-end" | "equally-spaced" })}
@@ -605,7 +608,10 @@ export function SpanConfigPanel({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Layout Mode</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm font-medium">Layout Mode</Label>
+                  <InfoTooltip content="Full Panels + Cut End: Uses full standard panels (2450mm or 3000mm based on selection) with a cut panel at the end. Equally Spaced: Cuts all panels to equal widths for uniform appearance. Both modes accommodate 50mm posts between panels." />
+                </div>
                 <Select
                   value={span.tubularLayoutMode || "full-panels-cut-end"}
                   onValueChange={(value) => updateSpan({ tubularLayoutMode: value as "full-panels-cut-end" | "equally-spaced" })}
@@ -771,7 +777,10 @@ export function SpanConfigPanel({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Layout Mode</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm font-medium">Layout Mode</Label>
+                  <InfoTooltip content="Full Panels + Cut End: Uses full standard panels (1733mm/2205mm/1969mm based on height) with a cut panel at the end. Equally Spaced: Cuts all panels to equal widths for uniform appearance. Both modes accommodate 25mm posts between panels." />
+                </div>
                 <Select
                   value={span.barrLayoutMode || "full-panels-cut-end"}
                   onValueChange={(value) => updateSpan({ barrLayoutMode: value as "full-panels-cut-end" | "equally-spaced" })}

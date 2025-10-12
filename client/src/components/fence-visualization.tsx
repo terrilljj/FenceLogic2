@@ -526,7 +526,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         
         // Draw posts at panel edges (posts extend to ground)
         // For Blade: N panels need N+1 posts (one before first panel, one after each panel)
-        ctx.fillStyle = "#707070";
+        ctx.fillStyle = "#000000";
         
         // Draw start post only for first panel
         if (i === 0) {
@@ -545,6 +545,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         }
         
         // Always draw post after this panel
+        ctx.fillStyle = "#000000";
         ctx.fillRect(
           currentX + scaledPanelWidth - postWidth / 2,
           panelTop,
@@ -599,7 +600,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         
         // Draw posts at panel edges (posts extend to ground)
         // For BARR: N panels need N+1 posts (one before first panel, one after each panel)
-        ctx.fillStyle = "#707070";
+        ctx.fillStyle = "#000000";
         
         // Draw start post only for first panel
         if (i === 0) {
@@ -618,6 +619,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         }
         
         // Always draw post after this panel
+        ctx.fillStyle = "#000000";
         ctx.fillRect(
           currentX + scaledPanelWidth - postWidth / 2,
           panelTop,
@@ -673,9 +675,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         
         // Draw posts at panel edges (posts extend to ground)
         // For Tubular: N panels need N+1 posts (one before first panel, one after each panel)
-        ctx.fillStyle = "#707070";
+        ctx.fillStyle = "#000000";
         
-        // Draw start post only for first panel
+        // Draw start post only for first panel - extends from top to ground
         if (i === 0) {
           ctx.fillRect(
             currentX - postWidth / 2,
@@ -691,7 +693,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           ctx.fillText("50mm", currentX, groundLevel + 20);
         }
         
-        // Always draw post after this panel
+        // Always draw post after this panel - extends from top to ground
+        ctx.fillStyle = "#000000";
         ctx.fillRect(
           currentX + scaledPanelWidth - postWidth / 2,
           panelTop,
@@ -1453,9 +1456,9 @@ function renderFence(scene: THREE.Scene, design: FenceDesign, activeSpanId?: str
       const panelWidthMm = Math.round((span.panelLayout?.panels[i] || panelWidth * 1000));
       let labelText = `${panelWidthMm}mm`;
       if (panelType === "gate") {
-        // Show gate panel size with clear opening
-        const openingSize = 1000;
-        labelText = `${panelWidthMm}mm Gate (${openingSize}mm Opening)`;
+        // For aluminium gates: panel width + 25mm allowance = clear opening
+        const clearOpening = panelWidthMm + 25;
+        labelText = `${panelWidthMm}mm Gate (${clearOpening}mm Opening)`;
       } else if (panelType === "hinge") {
         labelText = `${panelWidthMm}mm Hinge`;
       } else if (panelType === "raked") {
