@@ -381,7 +381,10 @@ export function SpanConfigPanel({
           {/* Blade Fencing Configuration - appears right after section length */}
           {productVariant === "alu-pool-blade" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">Blade Panel Configuration</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Blade Panel Configuration</h4>
+                <InfoTooltip content="Blade fencing features 50×16mm vertical aluminium blades with 40×40mm horizontal rails inset from top and bottom. Panels are 1700mm (1000mm height) or 2200mm (1200mm height). Choose layout mode and post type for your installation." />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -543,7 +546,10 @@ export function SpanConfigPanel({
           {/* Tubular Flat Top Configuration - appears right after section length */}
           {productVariant === "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">Tubular Flat Top Configuration</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">Tubular Flat Top Configuration</h4>
+                <InfoTooltip content="Tubular Flat Top fencing features 16mm diameter round vertical tubes with 38×25mm top and bottom rails. Panel widths are 2450mm (standard) or 3000mm (large). Choose panel height, width, layout mode, and post type for your installation." />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Panel Height</Label>
@@ -722,7 +728,10 @@ export function SpanConfigPanel({
           {/* BARR Fencing Configuration - appears right after section length */}
           {productVariant === "alu-pool-barr" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">BARR Panel Configuration</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold">BARR Panel Configuration</h4>
+                <InfoTooltip content="BARR fencing features 50×25mm vertical aluminium pickets with horizontal rails passing through punched holes. Panel widths vary by height: 1000mm = 1733mm wide, 1200mm = 2205mm wide, 1800mm = 1969mm wide. Choose layout mode and post type for your installation." />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">

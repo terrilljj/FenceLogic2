@@ -365,8 +365,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // For Blade and BARR, use gaps from panelLayout array (N+1 gaps for N panels)
-    if ((isBladeFencing || isBarrFencing) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+    // For Blade, BARR, and Tubular, use gaps from panelLayout array (N+1 gaps for N panels)
+    if ((isBladeFencing || isBarrFencing || isTubularFencing) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
@@ -791,8 +791,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR use posts)
-      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing) {
+      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular use posts)
+      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing) {
         const spigotWidth = 50 * scale;   // 50mm wide
         const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass
@@ -901,9 +901,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Gap between panels
       if (i < numPanels - 1) {
-        // For BARR: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
+        // For BARR, Blade, and Tubular: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
         // For glass: gaps array uses gap[i] for gap between panel i and i+1
-        const gapIndex = isBarrFencing ? i + 1 : i;
+        const gapIndex = (isBarrFencing || isBladeFencing || isTubularFencing) ? i + 1 : i;
         const actualGapSize = span.panelLayout?.gaps?.[gapIndex] ?? gapSize;
         const scaledGapSize = actualGapSize * scale;
         const gapStart = currentX;

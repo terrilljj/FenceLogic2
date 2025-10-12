@@ -8,7 +8,7 @@ interface ProductOption {
   type: ProductType;
   name: string;
   description: string;
-  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "pvc-pickets";
+  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets";
 }
 
 const productOptions: ProductOption[] = [
@@ -66,7 +66,7 @@ const productOptions: ProductOption[] = [
     type: "aluminium-pool",
     name: "Blade Pool Fence",
     description: "Modern blade aluminium design",
-    visual: "aluminium-vertical"
+    visual: "aluminium-blade"
   },
   {
     id: "alu-bal-barr",
@@ -84,15 +84,24 @@ const productOptions: ProductOption[] = [
   }
 ];
 
-function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-tubular" | "pvc-pickets" }) {
+function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" }) {
   if (type === "frameless-glass") {
     return (
       <div className="relative w-32 h-40 mx-auto">
-        {/* Glass panel with spigots */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm">
-          {/* Top spigot */}
-          <div className="absolute -bottom-2 left-2 w-3 h-3 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
-          <div className="absolute -bottom-2 right-2 w-3 h-3 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
+        {/* Frameless glass panel with base-mounted spigots */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32">
+          {/* Glass panel - semi-transparent */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-blue-200/30 dark:from-blue-900/15 dark:to-blue-800/25 border border-blue-200/60 dark:border-blue-700/60 rounded-sm" />
+          
+          {/* Base spigots - cylindrical mounts at bottom */}
+          <div className="absolute -bottom-3 left-2">
+            <div className="w-2.5 h-6 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 rounded-sm shadow-md" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+          </div>
+          <div className="absolute -bottom-3 right-2">
+            <div className="w-2.5 h-6 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 rounded-sm shadow-md" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+          </div>
         </div>
       </div>
     );
@@ -101,10 +110,19 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
   if (type === "channel-glass") {
     return (
       <div className="relative w-32 h-40 mx-auto">
-        {/* Glass panel in channel */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm">
-          {/* Bottom channel */}
-          <div className="absolute -bottom-1 left-0 right-0 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-sm shadow-sm" />
+        {/* Glass panel in aluminium channel system */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32">
+          {/* Glass panel - semi-transparent */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-blue-200/30 dark:from-blue-900/15 dark:to-blue-800/25 border border-blue-200/60 dark:border-blue-700/60 rounded-sm" />
+          
+          {/* Bottom aluminium channel - U-shaped profile */}
+          <div className="absolute -bottom-2 left-0 right-0">
+            {/* Channel base */}
+            <div className="h-3 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 rounded-b-sm shadow-md" />
+            {/* Channel sides */}
+            <div className="absolute top-0 left-0 w-1 h-2 bg-zinc-500 dark:bg-zinc-600" />
+            <div className="absolute top-0 right-0 w-1 h-2 bg-zinc-500 dark:bg-zinc-600" />
+          </div>
         </div>
       </div>
     );
@@ -146,21 +164,42 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
     );
   }
 
+  if (type === "aluminium-blade") {
+    return (
+      <div className="relative w-32 h-40 mx-auto">
+        {/* Blade: Thinner aluminium vertical blades (16mm) with inset rails */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center">
+          {/* Container for blades with gap from edges */}
+          <div className="relative w-20 h-32 flex justify-between">
+            {/* Vertical blades - FULL HEIGHT, thinner than BARR */}
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="w-0.5 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600" />
+            ))}
+            {/* Top rail - INSET from top, thinner */}
+            <div className="absolute top-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+            {/* Bottom rail - INSET from bottom, thinner */}
+            <div className="absolute bottom-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (type === "aluminium-tubular") {
     return (
       <div className="relative w-32 h-40 mx-auto">
-        {/* Tubular Flat Top: Round vertical tubes with only top and bottom rails */}
+        {/* Tubular Flat Top: 16mm round vertical tubes with 25mm top and bottom rails */}
         <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center">
           {/* Container for tubes with gap from edges */}
           <div className="relative w-20 h-32 flex justify-between items-end">
-            {/* Vertical round tubes - FULL HEIGHT with wider spacing */}
-            {[...Array(7)].map((_, i) => (
-              <div key={i} className="w-1.5 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-full" />
+            {/* Vertical round tubes - 16mm diameter, FULL HEIGHT with wider spacing */}
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="w-1 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-full" />
             ))}
-            {/* Top rail - at top edge */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
-            {/* Bottom rail - at bottom edge */}
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
+            {/* Top rail - 25mm at top edge */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
+            {/* Bottom rail - 25mm at bottom edge */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
           </div>
         </div>
       </div>
