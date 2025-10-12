@@ -565,6 +565,7 @@ function calculateComponents(design: FenceDesign): Component[] {
   const isChannelSystem = design.productVariant === "glass-pool-channel";
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
+  const isTubularFencing = design.productVariant === "alu-pool-tubular";
   const gatesAllowed = !design.productVariant.includes("bal-");
 
   design.spans.forEach((span) => {
@@ -738,6 +739,98 @@ function calculateComponents(design: FenceDesign): Component[] {
       }
       
       return; // Skip glass/channel logic for BARR
+    }
+    // Tubular Flat Top has its own component generation logic
+    else if (isTubularFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
+      const tubularHeight = span.tubularHeight || "1200mm";
+      const tubularFinish = span.tubularFinish || "black";
+      const tubularPanelWidth = span.tubularPanelWidth || "2400mm";
+      const tubularPostType = span.tubularPostType || "welded-base-plate";
+      
+      // Tubular Panel specifications
+      const panelWidths = {
+        "2400mm": 2400,
+        "2450mm": 2450,
+        "3000mm": 3000,
+      };
+      const standardWidth = panelWidths[tubularPanelWidth];
+      
+      // Finish details
+      const finishNames = {
+        "black": "Black",
+        "white": "White",
+        "monument": "Monument Grey",
+      };
+      const finishName = finishNames[tubularFinish];
+      const finishSku = tubularFinish.toUpperCase();
+      
+      // Add panels from layout
+      const panelTypes = span.panelLayout.panelTypes || [];
+      span.panelLayout.panels.forEach((panelWidth, index) => {
+        const panelType = panelTypes[index] || "standard";
+        
+        if (panelType === "gate") {
+          // Tubular gate panel
+          components.push({
+            qty: 1,
+            description: `Tubular Flat Top Gate Panel ${tubularHeight} x ${panelWidth}mm (${finishName})`,
+            sku: `TUBULAR-GATE-${tubularHeight}-${panelWidth}-${finishSku}`,
+          });
+        } else if (panelWidth === standardWidth) {
+          // Full standard Tubular panel
+          components.push({
+            qty: 1,
+            description: `Tubular Flat Top Panel ${tubularHeight} x ${standardWidth}mm (${finishName})`,
+            sku: `TUBULAR-${tubularHeight}-${standardWidth}-${finishSku}`,
+          });
+        } else {
+          // Cut Tubular panel
+          components.push({
+            qty: 1,
+            description: `Tubular Flat Top Panel ${tubularHeight} x ${panelWidth}mm (Cut from ${standardWidth}mm, ${finishName})`,
+            sku: `TUBULAR-CUT-${tubularHeight}-${panelWidth}-${finishSku}`,
+          });
+        }
+      });
+      
+      // Add posts from gaps array (each gap represents a post)
+      const numPosts = span.panelLayout.gaps.length;
+      if (tubularPostType === "welded-base-plate") {
+        components.push({
+          qty: numPosts,
+          description: `Tubular Welded Base Plate Post 1280mm (${finishName})`,
+          sku: `TUBULAR-POST-WBP-1280-${finishSku}`,
+        });
+      } else {
+        // Standard posts - assume 1800mm for 900mm height, 1800mm for 1200mm height
+        const postLength = tubularHeight === "900mm" ? 1800 : 1800;
+        components.push({
+          qty: numPosts,
+          description: `Tubular Standard Post ${postLength}mm (${finishName})`,
+          sku: `TUBULAR-POST-STD-${postLength}-${finishSku}`,
+        });
+      }
+      
+      // Gate hardware for Tubular
+      if (gatesAllowed && span.gateConfig?.required) {
+        // Tubular gates use D&D hardware
+        const gateHeight = tubularHeight === "1200mm" ? 1200 : 900;
+        const gateWidth = span.gateConfig.gateSize || 975;
+        
+        components.push({
+          qty: 1,
+          description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
+          sku: `DD-HINGE-TUBULAR-${gateHeight}-${gateWidth}`,
+        });
+        
+        components.push({
+          qty: 1,
+          description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
+          sku: `DD-LATCH-TUBULAR-${gateHeight}-${gateWidth}`,
+        });
+      }
+      
+      return; // Skip glass/channel logic for Tubular
     }
     
     // Glass and other fencing types
