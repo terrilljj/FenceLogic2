@@ -577,13 +577,13 @@ function calculateComponents(design: FenceDesign): Component[] {
           if (isLeftRaked) {
             components.push({
               qty: 1,
-              description: `Raked Glass Panel 1200mm wide (400mm horizontal at ${height}mm, slopes to 1200mm) 12mm thick`,
+              description: `Raked Glass Panel 1200mm wide (400mm horizontal at ${height}mm, steps down to 1200mm) 12mm thick`,
               sku: `RP-L-1200-${height}-12`,
             });
           } else {
             components.push({
               qty: 1,
-              description: `Raked Glass Panel 1200mm wide (slopes from 1200mm to ${height}mm over 800mm, horizontal 400mm) 12mm thick`,
+              description: `Raked Glass Panel 1200mm wide (steps down from 1200mm to ${height}mm over 800mm, horizontal 400mm) 12mm thick`,
               sku: `RP-R-1200-${height}-12`,
             });
           }

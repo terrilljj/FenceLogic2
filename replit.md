@@ -56,7 +56,7 @@ Preferred communication style: Simple, everyday language.
   - Section Length: Explains default 25mm gap for junctions, max 150mm for posts
   - Panel Configuration: Explains max panel width and gap spacing calculation
   - Gate Required: Explains gate hardware types, mounting styles, and positioning
-  - Raked Panels: Explains slope/stair panels with 1200mm fixed width
+  - Raked Panels: Explains step up panels for retaining walls and height changes with 1200mm fixed width
   - Custom Panel: Explains custom-sized panels with positioning controls
 
 **Visualization System (V1 - Elevation Only):**
@@ -104,11 +104,11 @@ Preferred communication style: Simple, everyday language.
 
 **Panel Calculation System:**
 - Mixed panel width algorithm distributes variable panels to achieve exact gap spacing
-- Supports raked panels (fixed 1200mm width for slopes/stairs)
+- Supports raked panels (fixed 1200mm width for step ups at retaining walls/height changes)
 - Gate integration with two mounting modes:
   - **Glass-to-glass**: Gate positioned by panel index (0, 1, 2, ...) with hinge panel included
   - **Wall/post-mounted**: Gate at start (position=0) or end (position=1) with no hinge panel
-- Panel types: standard, raked, gate, hinge, custom (tracked for visualization)
+- Panel types: standard, raked (for step ups at retaining walls/height changes), gate, hinge, custom (tracked for visualization)
 - **Custom Glass Panels**: Support for custom-sized glass panels with specific width and height dimensions:
   - Width: 200mm to maxPanelWidth (constrained by Max Panel Width setting, up to 2000mm max)
   - Height: 1200-1800mm

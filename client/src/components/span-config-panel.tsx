@@ -554,8 +554,8 @@ export function SpanConfigPanel({
           {/* Raked Panels Configuration */}
           <div className="space-y-4 pt-4 border-t border-card-border">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-semibold">Raked Panels (for slopes/stairs)</h4>
-              <InfoTooltip content="Raked panels are designed for slopes or stairs. They have a fixed width of 1200mm with a sloped top edge to follow the ground level. Configure the height of the highest point." />
+              <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
+              <InfoTooltip content="Raked panels are designed for step ups at retaining walls and changes in heights. They have a fixed width of 1200mm with a sloped top edge to follow the ground level. Configure the height of the highest point." />
             </div>
             
             {span.maxPanelWidth < 1200 && (
