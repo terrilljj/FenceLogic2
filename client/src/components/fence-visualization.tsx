@@ -480,7 +480,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       }
       
       // Draw panel (raked, custom, or standard) - cleaner colors
-      ctx.fillStyle = isCustom ? "#f9d5c5" : isGateOrHinge ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
+      ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
       ctx.globalAlpha = 1;
       
       if (isLeftRaked || isRightRaked) {
@@ -509,7 +509,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.closePath();
         ctx.fill();
         
-        ctx.strokeStyle = isGateOrHinge ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
+        ctx.strokeStyle = isHinge ? "#a4e8b8" : isGate ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
         ctx.lineWidth = 1.5;
         ctx.stroke();
       } else {
@@ -517,7 +517,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
 
         // Panel border - cleaner, more subtle
-        ctx.strokeStyle = isGateOrHinge ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
+        ctx.strokeStyle = isHinge ? "#a4e8b8" : isGate ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
       }
