@@ -7,7 +7,7 @@ import { ComponentList } from "@/components/component-list";
 import { AppHeader } from "@/components/app-header";
 import { ProductSelector } from "@/components/product-selector";
 import { useToast } from "@/hooks/use-toast";
-import { FenceDesign, FenceShape, SpanConfig, Component, SavedFenceDesign, SpigotMounting, SpigotColor, ProductType, ProductVariant, getSpigotDetails, getHingeDetails, getLatchDetails } from "@shared/schema";
+import { FenceDesign, FenceShape, SpanConfig, Component, SavedFenceDesign, SpigotMounting, SpigotColor, ProductType, ProductVariant, getSpigotDetails, getHingeDetails, getLatchDetails, optimizeRailLengths, HandrailType, HandrailMaterial, HandrailFinish, RailTerminationType } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Dialog,
@@ -1052,6 +1052,134 @@ function calculateComponents(design: FenceDesign): Component[] {
       }
     }
   });
+
+  // Top-mounted rail optimization for glass balustrade variants
+  const isGlassBalustrade = design.productVariant === "glass-bal-spigots" || 
+                           design.productVariant === "glass-bal-channel" || 
+                           design.productVariant === "glass-bal-standoffs";
+  
+  if (isGlassBalustrade) {
+    // Group spans by rail configuration (type, material, finish)
+    const railGroups = new Map<string, {
+      config: { type: HandrailType; material: HandrailMaterial; finish: HandrailFinish };
+      spans: { length: number; startTermination: RailTerminationType; endTermination: RailTerminationType }[];
+    }>();
+    
+    design.spans.forEach((span) => {
+      if (span.handrail?.enabled) {
+        const configKey = `${span.handrail.type}-${span.handrail.material}-${span.handrail.finish}`;
+        
+        if (!railGroups.has(configKey)) {
+          railGroups.set(configKey, {
+            config: {
+              type: span.handrail.type,
+              material: span.handrail.material,
+              finish: span.handrail.finish,
+            },
+            spans: [],
+          });
+        }
+        
+        // Calculate actual rail length from panel layout (most accurate)
+        let actualRailLength: number;
+        
+        if (span.panelLayout && span.panelLayout.panels.length > 0) {
+          // Use sum of panel widths from layout (includes internal gaps in total span)
+          actualRailLength = span.panelLayout.totalPanelWidth;
+        } else {
+          // Fallback: span length minus end gaps
+          const leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
+          const rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
+          actualRailLength = span.length - leftGapSize - rightGapSize;
+        }
+        
+        // Guard against invalid lengths
+        if (actualRailLength <= 0) {
+          console.warn(`Invalid rail length calculated for span ${span.spanId}: ${actualRailLength}mm`);
+          return; // Skip this span
+        }
+        
+        railGroups.get(configKey)!.spans.push({
+          length: actualRailLength,
+          startTermination: span.handrail.startTermination || "end-cap",
+          endTermination: span.handrail.endTermination || "end-cap",
+        });
+      }
+    });
+    
+    // For each rail configuration, optimize and add components
+    railGroups.forEach((group) => {
+      const spanLengths = group.spans.map(s => s.length);
+      const optimization = optimizeRailLengths(spanLengths);
+      
+      // Rail type names
+      const railTypeNames = {
+        "nonorail-25x21": "25×21mm NonoRail",
+        "nanorail-30x21": "30×21mm NanoRail",
+        "series-35x35": "35×35mm Series 35",
+      };
+      
+      const materialNames = {
+        "stainless-steel": "Stainless Steel",
+        "anodised-aluminium": "Anodised Aluminium",
+      };
+      
+      const finishNames = {
+        "polished": "Polished",
+        "satin": "Satin",
+        "black": "Black",
+        "white": "White",
+      };
+      
+      const railTypeName = railTypeNames[group.config.type];
+      const materialName = materialNames[group.config.material];
+      const finishName = finishNames[group.config.finish];
+      
+      // Add optimized rail lengths
+      if (optimization.standardLengths > 0) {
+        components.push({
+          qty: optimization.standardLengths,
+          description: `Top Rail ${railTypeName} 5800mm (${materialName}, ${finishName})`,
+          sku: `RAIL-${group.config.type.toUpperCase()}-5800-${group.config.material.toUpperCase()}-${group.config.finish.toUpperCase()}`,
+        });
+        
+        // Add optimization details as a note
+        if (optimization.wastage > 0) {
+          components.push({
+            qty: 1,
+            description: `Rail Optimization: ${optimization.totalLength}mm total required, ${optimization.wastage}mm wastage from ${optimization.standardLengths} × 5800mm lengths`,
+            sku: `RAIL-OPT-NOTE`,
+          });
+        }
+      }
+      
+      // Add terminations (count all start and end terminations)
+      const terminationCounts = new Map<string, number>();
+      
+      group.spans.forEach((span) => {
+        terminationCounts.set(span.startTermination, (terminationCounts.get(span.startTermination) || 0) + 1);
+        terminationCounts.set(span.endTermination, (terminationCounts.get(span.endTermination) || 0) + 1);
+      });
+      
+      const terminationNames = {
+        "end-cap": "End Cap",
+        "wall-tie": "Wall Tie",
+        "90-degree": "90° Corner",
+        "adjustable-corner": "Adjustable Corner",
+      };
+      
+      terminationCounts.forEach((count, termination) => {
+        if (count > 0) {
+          const terminationName = terminationNames[termination as RailTerminationType];
+          components.push({
+            qty: count,
+            description: `${railTypeName} ${terminationName} (${materialName}, ${finishName})`,
+            sku: `RAIL-${group.config.type.toUpperCase()}-${termination.toUpperCase()}-${group.config.material.toUpperCase()}-${group.config.finish.toUpperCase()}`,
+          });
+        }
+      });
+    });
+  }
 
   // Consolidate duplicate components
   const consolidated: Component[] = [];

@@ -1123,6 +1123,46 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
     }
 
+    // Draw top-mounted rail for glass balustrade if enabled
+    const isGlassBalustrade = design.productVariant === "glass-bal-spigots" || 
+                              design.productVariant === "glass-bal-channel" || 
+                              design.productVariant === "glass-bal-standoffs";
+    
+    if (isGlassBalustrade && span.handrail?.enabled) {
+      // Rail runs across the entire span length at the top of panels
+      const railY = groundLevel - (maxPanelHeight * scale) - 5; // 5px above panels for visibility
+      const railHeight = 3; // Thin rail
+      const railStartX = startX + (leftGapSize * scale);
+      const railEndX = currentX - (rightGapSize * scale);
+      
+      // Draw rail with a distinct color based on material
+      const railColor = span.handrail.material === "stainless-steel" ? "#9ca3af" : "#94a3b8";
+      ctx.fillStyle = railColor;
+      ctx.fillRect(railStartX, railY, railEndX - railStartX, railHeight);
+      
+      // Rail outline for definition
+      ctx.strokeStyle = "#6b7280";
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(railStartX, railY, railEndX - railStartX, railHeight);
+      
+      // Rail type label at the end of the rail
+      const railTypeNames = {
+        "nonorail-25x21": "25×21mm",
+        "nanorail-30x21": "30×21mm",
+        "series-35x35": "35×35mm",
+      };
+      const railTypeName = railTypeNames[span.handrail.type as keyof typeof railTypeNames] || "";
+      
+      ctx.fillStyle = "#4b5563";
+      ctx.font = "500 10px Inter";
+      ctx.textAlign = "right";
+      ctx.fillText(
+        `Top Rail ${railTypeName}`,
+        railEndX + 80,
+        railY
+      );
+    }
+
     // Draw channel system (continuous across entire span) - for channel systems only
     if (isChannelSystem) {
       const channelHeight = 50 * scale;  // Channel height
