@@ -46,18 +46,18 @@ export default function AdminLogin() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Login successful, redirecting to /products");
+        console.log("Login successful:", result);
+        
+        // Store auth state
+        localStorage.setItem("isAdminAuthenticated", "true");
+        
         toast({
           title: "Login successful",
           description: "Redirecting to admin panel...",
         });
-        // Store auth state
-        localStorage.setItem("isAdminAuthenticated", "true");
         
-        // Small delay to ensure localStorage is set
-        setTimeout(() => {
-          setLocation("/products");
-        }, 100);
+        // Redirect to products page
+        window.location.href = "/products";
       } else {
         const error = await response.json();
         console.error("Login failed:", error);
@@ -66,6 +66,7 @@ export default function AdminLogin() {
           title: "Login failed",
           description: error.message || "Invalid credentials",
         });
+        setIsLoading(false);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -74,7 +75,6 @@ export default function AdminLogin() {
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to connect to server",
       });
-    } finally {
       setIsLoading(false);
     }
   };
