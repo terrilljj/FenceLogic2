@@ -1,10 +1,23 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupShopifyRoutes } from "./shopify-routes";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// CSP headers for Shopify iframe embedding
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    `frame-ancestors https://*.myshopify.com https://admin.shopify.com https://${req.headers['x-forwarded-host'] || req.headers.host};`
+  );
+  next();
+});
+
+// Set up Shopify OAuth routes
+setupShopifyRoutes(app);
 
 app.use((req, res, next) => {
   const start = Date.now();
