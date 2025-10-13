@@ -170,19 +170,19 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "aluminium-vertical") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* BARR: Aluminium vertical pickets with inset rails */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20 flex justify-center items-center">
           {/* Container for pickets with gap from edges */}
-          <div className="relative w-20 h-32 flex justify-between">
+          <div className="relative w-14 h-20 flex justify-between">
             {/* Vertical pickets - FULL HEIGHT with gaps */}
             {[...Array(9)].map((_, i) => (
-              <div key={i} className="w-1 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600" />
+              <div key={i} className="w-0.5 h-20 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600" />
             ))}
             {/* Top rail - INSET from top, thinner */}
-            <div className="absolute top-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+            <div className="absolute top-2 left-0 right-0 h-0.5 bg-zinc-700 dark:bg-zinc-600" />
             {/* Bottom rail - INSET from bottom, thinner */}
-            <div className="absolute bottom-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+            <div className="absolute bottom-2 left-0 right-0 h-0.5 bg-zinc-700 dark:bg-zinc-600" />
           </div>
         </div>
       </div>
@@ -191,19 +191,19 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "aluminium-blade") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Blade: Thinner aluminium vertical blades (16mm) with inset rails */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20 flex justify-center items-center">
           {/* Container for blades with gap from edges */}
-          <div className="relative w-20 h-32 flex justify-between">
+          <div className="relative w-14 h-20 flex justify-between">
             {/* Vertical blades - FULL HEIGHT, thinner than BARR */}
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="w-0.5 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600" />
+              <div key={i} className="w-px h-20 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600" />
             ))}
             {/* Top rail - INSET from top, thinner */}
-            <div className="absolute top-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+            <div className="absolute top-2 left-0 right-0 h-0.5 bg-zinc-700 dark:bg-zinc-600" />
             {/* Bottom rail - INSET from bottom, thinner */}
-            <div className="absolute bottom-3 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600" />
+            <div className="absolute bottom-2 left-0 right-0 h-0.5 bg-zinc-700 dark:bg-zinc-600" />
           </div>
         </div>
       </div>
@@ -212,19 +212,19 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "aluminium-tubular") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Tubular Flat Top: 16mm round vertical tubes with 25mm top and bottom rails */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32 flex justify-center items-center">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20 flex justify-center items-center">
           {/* Container for tubes with gap from edges */}
-          <div className="relative w-20 h-32 flex justify-between items-end">
+          <div className="relative w-14 h-20 flex justify-between items-end">
             {/* Vertical round tubes - 16mm diameter, FULL HEIGHT with wider spacing */}
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="w-1 h-32 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-full" />
+              <div key={i} className="w-0.5 h-20 bg-gradient-to-b from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-full" />
             ))}
             {/* Top rail - 25mm at top edge */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
             {/* Bottom rail - 25mm at bottom edge */}
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-700 dark:bg-zinc-600 rounded-sm" />
           </div>
         </div>
       </div>
@@ -233,11 +233,11 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "aluminium-slats") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Aluminium slats */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 flex flex-col gap-1">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-14 h-20 flex flex-col gap-0.5">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-3 bg-gradient-to-r from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-sm shadow-sm" />
+            <div key={i} className="h-2 bg-gradient-to-r from-zinc-600 to-zinc-700 dark:from-zinc-500 dark:to-zinc-600 rounded-sm shadow-sm" />
           ))}
         </div>
       </div>
@@ -246,21 +246,21 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "pvc-pickets") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Hampton-style PVC picket fence */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20">
           {/* Left post */}
-          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute left-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Right post */}
-          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Top rail */}
-          <div className="absolute top-2 left-0 right-0 h-2 bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute top-1 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Bottom rail */}
-          <div className="absolute bottom-6 left-0 right-0 h-2 bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute bottom-4 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Vertical pickets */}
-          <div className="absolute top-4 left-2 right-2 bottom-8 flex justify-between">
+          <div className="absolute top-2 left-1 right-1 bottom-5 flex justify-between">
             {[...Array(13)].map((_, i) => (
-              <div key={i} className="w-0.5 h-full bg-slate-200 dark:bg-slate-100 shadow-sm" />
+              <div key={i} className="w-px h-full bg-slate-200 dark:bg-slate-100 shadow-sm" />
             ))}
           </div>
         </div>
@@ -270,14 +270,14 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "pvc-hamptons-full") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Full Privacy: solid panel */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20">
           {/* Square posts */}
-          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
-          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute left-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Solid panel */}
-          <div className="absolute left-2 right-2 top-0 bottom-0 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          <div className="absolute left-1 right-1 top-0 bottom-0 bg-slate-200 dark:bg-slate-100 shadow-sm" />
         </div>
       </div>
     );
@@ -285,18 +285,18 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "pvc-hamptons-combo") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Combo: solid lower + slat topper */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20">
           {/* Square posts */}
-          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
-          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute left-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Solid lower panel (60% height) */}
-          <div className="absolute left-2 right-2 bottom-0 h-3/5 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          <div className="absolute left-1 right-1 bottom-0 h-3/5 bg-slate-200 dark:bg-slate-100 shadow-sm" />
           {/* Horizontal slats (40% height at top) */}
-          <div className="absolute left-2 right-2 top-0 h-2/5 flex flex-col gap-1">
+          <div className="absolute left-1 right-1 top-0 h-2/5 flex flex-col gap-0.5">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-1 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+              <div key={i} className="h-0.5 bg-slate-200 dark:bg-slate-100 shadow-sm" />
             ))}
           </div>
         </div>
@@ -306,16 +306,16 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "pvc-hamptons-vertical") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Vertical Paling: vertical slats with gaps */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20">
           {/* Square posts */}
-          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
-          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute left-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Vertical slats */}
-          <div className="absolute left-2 right-2 top-0 bottom-0 flex justify-between">
+          <div className="absolute left-1 right-1 top-0 bottom-0 flex justify-between">
             {[...Array(9)].map((_, i) => (
-              <div key={i} className="w-1 h-full bg-slate-200 dark:bg-slate-100 shadow-sm" />
+              <div key={i} className="w-0.5 h-full bg-slate-200 dark:bg-slate-100 shadow-sm" />
             ))}
           </div>
         </div>
@@ -325,16 +325,16 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "pvc-hamptons-semi") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Semi Privacy: horizontal slats with gaps */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20">
           {/* Square posts */}
-          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
-          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute left-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Horizontal slats with gaps */}
-          <div className="absolute left-2 right-2 top-2 bottom-2 flex flex-col justify-between">
+          <div className="absolute left-1 right-1 top-1 bottom-1 flex flex-col justify-between">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-1.5 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+              <div key={i} className="h-1 bg-slate-200 dark:bg-slate-100 shadow-sm" />
             ))}
           </div>
         </div>
@@ -344,16 +344,16 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "pvc-hamptons-3rail") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* 3 Rail: three horizontal rails */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-24 h-32">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20">
           {/* Square posts */}
-          <div className="absolute left-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
-          <div className="absolute right-0 top-0 w-2 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute left-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
+          <div className="absolute right-0 top-0 w-1 h-full bg-slate-100 dark:bg-slate-200 shadow-sm" />
           {/* Three horizontal rails */}
-          <div className="absolute left-2 right-2 top-3 h-2 bg-slate-200 dark:bg-slate-100 shadow-sm" />
-          <div className="absolute left-2 right-2 top-1/2 -translate-y-1/2 h-2 bg-slate-200 dark:bg-slate-100 shadow-sm" />
-          <div className="absolute left-2 right-2 bottom-3 h-2 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          <div className="absolute left-1 right-1 top-2 h-1 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          <div className="absolute left-1 right-1 top-1/2 -translate-y-1/2 h-1 bg-slate-200 dark:bg-slate-100 shadow-sm" />
+          <div className="absolute left-1 right-1 bottom-2 h-1 bg-slate-200 dark:bg-slate-100 shadow-sm" />
         </div>
       </div>
     );
@@ -403,11 +403,11 @@ export default function Home() {
               .map((product) => (
                 <Card
                   key={product.id}
-                  className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
                   onClick={() => handleSelectProduct(product.type, product.id)}
                   data-testid={`card-home-product-${product.id}`}
                 >
-                  <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="flex flex-col items-center text-center space-y-2">
                     <ProductVisual type={product.visual} />
                     <div className="space-y-1">
                       <h3 className="font-semibold text-sm">
@@ -441,11 +441,11 @@ export default function Home() {
               .map((product) => (
                 <Card
                   key={product.id}
-                  className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
                   onClick={() => handleSelectProduct(product.type, product.id)}
                   data-testid={`card-home-product-${product.id}`}
                 >
-                  <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="flex flex-col items-center text-center space-y-2">
                     <ProductVisual type={product.visual} />
                     <div className="space-y-1">
                       <h3 className="font-semibold text-sm">
@@ -479,11 +479,11 @@ export default function Home() {
               .map((product) => (
                 <Card
                   key={product.id}
-                  className="p-6 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
                   onClick={() => handleSelectProduct(product.type, product.id)}
                   data-testid={`card-home-product-${product.id}`}
                 >
-                  <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="flex flex-col items-center text-center space-y-2">
                     <ProductVisual type={product.visual} />
                     <div className="space-y-1">
                       <h3 className="font-semibold text-sm">
