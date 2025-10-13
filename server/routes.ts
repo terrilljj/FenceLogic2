@@ -568,7 +568,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminUsername = process.env.ADMIN_USERNAME || "admin";
       const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
       
-      if (username === adminUsername && password === adminPassword) {
+      // Debug logging
+      console.log("=== LOGIN ATTEMPT ===");
+      console.log("Username length:", username?.length || 0);
+      console.log("Password length:", password?.length || 0);
+      console.log("Expected username length:", adminUsername?.length || 0);
+      console.log("Expected password length:", adminPassword?.length || 0);
+      console.log("Has ADMIN_USERNAME env:", !!process.env.ADMIN_USERNAME);
+      console.log("Has ADMIN_PASSWORD env:", !!process.env.ADMIN_PASSWORD);
+      console.log("====================");
+      
+      // Trim whitespace from inputs
+      const trimmedUsername = username?.trim();
+      const trimmedPassword = password?.trim();
+      
+      if (trimmedUsername === adminUsername && trimmedPassword === adminPassword) {
         // Set session
         if (req.session) {
           req.session.isAdmin = true;
