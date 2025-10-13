@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Save, ArrowLeft } from "lucide-react";
+import { Save, ArrowLeft, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import type { ProductVariant, UIFieldConfig, UIInputField } from "@shared/schema";
 
@@ -104,6 +106,10 @@ export default function UIConfigPage() {
 
   const { data: configs, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/ui-configs"],
+  });
+
+  const { data: products } = useQuery<any[]>({
+    queryKey: ["/api/admin/products"],
   });
 
   const saveMutation = useMutation({
@@ -220,6 +226,18 @@ export default function UIConfigPage() {
   const handleOptionsChange = (field: UIInputField, options: string[]) => {
     setFieldConfigs(prev => 
       prev.map(fc => fc.field === field ? { ...fc, options } : fc)
+    );
+  };
+
+  const handleOptionProductsChange = (field: UIInputField, option: string, productCodes: string[]) => {
+    setFieldConfigs(prev => 
+      prev.map(fc => {
+        if (fc.field === field) {
+          const optionProducts = { ...(fc.optionProducts || {}), [option]: productCodes };
+          return { ...fc, optionProducts };
+        }
+        return fc;
+      })
     );
   };
 
@@ -476,7 +494,7 @@ export default function UIConfigPage() {
                                   <Input
                                     className="h-8"
                                     value={fc.options?.join(", ") ?? ""}
-                                    onChange={(e) => handleOptionsChange(fc.field, e.target.value.split(",").map(o => o.trim()))}
+                                    onChange={(e) => handleOptionsChange(fc.field, e.target.value.split(",").map(o => o.trim()).filter(o => o))}
                                     disabled={!fc.enabled}
                                     placeholder="Options (comma-separated)"
                                     data-testid={`input-options-${fc.field}`}
@@ -492,6 +510,59 @@ export default function UIConfigPage() {
                                     data-testid={`input-tooltip-${fc.field}`}
                                   />
                                 </div>
+                                
+                                {/* Product mapping table for dropdown options */}
+                                {fc.enabled && fc.options && fc.options.length > 0 && (
+                                  <div className="col-span-12 mt-2 pt-2 border-t">
+                                    <Label className="text-xs font-medium mb-2 block">Product Mappings</Label>
+                                    <div className="space-y-1">
+                                      {fc.options.map((option) => {
+                                        const selectedProducts = fc.optionProducts?.[option] || [];
+                                        return (
+                                          <div key={option} className="flex items-center gap-2">
+                                            <div className="w-32 text-sm font-medium">{option}</div>
+                                            <Popover>
+                                              <PopoverTrigger asChild>
+                                                <Button
+                                                  variant="outline"
+                                                  className="h-8 flex-1 justify-between text-sm"
+                                                  disabled={!fc.enabled}
+                                                  data-testid={`button-products-${fc.field}-${option}`}
+                                                >
+                                                  {selectedProducts.length > 0
+                                                    ? `${selectedProducts.length} product(s) selected`
+                                                    : "Select products..."}
+                                                  <ChevronDown className="h-4 w-4 ml-2" />
+                                                </Button>
+                                              </PopoverTrigger>
+                                              <PopoverContent className="w-96 p-3" align="start">
+                                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                  {products?.filter((p: any) => p.active).map((product: any) => (
+                                                    <div key={product.code} className="flex items-center space-x-2">
+                                                      <Checkbox
+                                                        checked={selectedProducts.includes(product.code)}
+                                                        onCheckedChange={(checked) => {
+                                                          const newProducts = checked
+                                                            ? [...selectedProducts, product.code]
+                                                            : selectedProducts.filter((p: string) => p !== product.code);
+                                                          handleOptionProductsChange(fc.field, option, newProducts);
+                                                        }}
+                                                        data-testid={`checkbox-product-${fc.field}-${option}-${product.code}`}
+                                                      />
+                                                      <label className="text-sm cursor-pointer flex-1">
+                                                        {product.code} - {product.description}
+                                                      </label>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </PopoverContent>
+                                            </Popover>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </>
                             )}
 

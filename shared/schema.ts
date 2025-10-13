@@ -684,6 +684,7 @@ export interface UIFieldConfig {
   max?: number;
   step?: number;
   options?: string[]; // For dropdown fields
+  optionProducts?: Record<string, string[]>; // Maps dropdown option to product codes
 }
 
 // Product UI Configuration table
