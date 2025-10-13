@@ -32,7 +32,6 @@ export default function AdminLogin() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    console.log("Login form submitted:", { username: data.username.length, password: data.password.length });
     
     try {
       const response = await fetch("/api/admin/login", {
@@ -42,17 +41,11 @@ export default function AdminLogin() {
         body: JSON.stringify(data),
       });
 
-      console.log("Login response status:", response.status);
-      console.log("Set-Cookie header:", response.headers.get("set-cookie"));
-      console.log("All response headers:", [...response.headers.entries()]);
-
       if (response.ok) {
         const result = await response.json();
-        console.log("Login successful:", result);
         
         // Store auth state
         localStorage.setItem("isAdminAuthenticated", "true");
-        console.log("LocalStorage set, now redirecting...");
         
         toast({
           title: "Login successful",
@@ -60,16 +53,7 @@ export default function AdminLogin() {
         });
         
         // Redirect to products page
-        console.log("About to redirect to /products");
-        
-        // Try multiple redirect methods
-        try {
-          window.location.replace("/products");
-        } catch (err) {
-          console.error("Redirect failed:", err);
-          // Fallback to setLocation
-          setLocation("/products");
-        }
+        window.location.href = "/products";
       } else {
         const error = await response.json();
         console.error("Login failed:", error);
@@ -107,14 +91,7 @@ export default function AdminLogin() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                console.log("Form onSubmit triggered");
-                form.handleSubmit(onSubmit)(e);
-              }} 
-              className="space-y-4"
-            >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="username"

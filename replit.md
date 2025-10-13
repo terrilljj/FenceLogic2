@@ -74,11 +74,16 @@ Preferred communication style: Simple, everyday language.
 **Admin Authentication:**
 - Session-based authentication for admin panel access.
 - Protected routes verify server session (not just localStorage).
-- Login endpoint: POST /api/admin/login (credentials: admin/admin123 by default).
+- Login endpoint: POST /api/admin/login (custom credentials via ADMIN_USERNAME/ADMIN_PASSWORD env vars).
 - Session verification: GET /api/admin/verify.
 - Logout endpoint: POST /api/admin/logout.
 - All product CRUD and CSV endpoints protected by `requireAdmin` middleware.
-- Session cookies: httpOnly, secure (production), sameSite: lax, 24-hour expiry.
+- Session configuration for iframe support:
+  - `trust proxy: 1` enabled for Replit iframe context
+  - `sameSite: "none"` and `secure: true` for third-party cookie support
+  - `httpOnly: true` for security
+  - 24-hour expiry
+- Credentials include "include" on all fetch requests for proper cookie handling.
 - Admin panel accessible at `/admin-login` (direct URL, not in navigation).
 - Product catalog management at `/products` (requires authentication).
 
