@@ -313,7 +313,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "CSV must contain header and at least one data row" });
       }
 
-      const header = lines[0].toLowerCase().split(",").map(h => h.trim());
+      // Parse CSV line with proper quote handling (RFC 4180)
+      const parseCsvLine = (line: string): string[] => {
+        const values: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          const nextChar = line[i + 1];
+          
+          if (char === '"' && inQuotes && nextChar === '"') {
+            // Handle escaped quote ("")
+            current += '"';
+            i++; // Skip next quote
+          } else if (char === '"') {
+            // Toggle quote state
+            inQuotes = !inQuotes;
+          } else if (char === "," && !inQuotes) {
+            // Field separator outside quotes
+            values.push(current);
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        values.push(current);
+        return values;
+      };
+
+      const header = parseCsvLine(lines[0].toLowerCase()).map(h => h.trim());
       const requiredFields = ["code", "description"];
       
       for (const field of requiredFields) {
@@ -333,23 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!line) continue;
 
         try {
-          // Simple CSV parsing (handles quoted fields)
-          const values: string[] = [];
-          let current = "";
-          let inQuotes = false;
-          
-          for (let j = 0; j < line.length; j++) {
-            const char = line[j];
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === "," && !inQuotes) {
-              values.push(current.trim().replace(/^"|"$/g, ""));
-              current = "";
-            } else {
-              current += char;
-            }
-          }
-          values.push(current.trim().replace(/^"|"$/g, ""));
+          const values = parseCsvLine(line);
 
           const rowData: Record<string, string> = {};
           header.forEach((field, index) => {
