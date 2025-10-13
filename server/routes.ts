@@ -261,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/csv/template", async (req, res) => {
     try {
       const csvHeader = "code,description,category,price,active\n";
-      const csvExample = "GP-1200-1000-12,\"Glass Panel 1200mm x 1000mm (12mm thick)\",Glass Panels,$450.00,1\n";
+      const csvExample = "GP-1200-1000-12,\"Glass Panel 1200mm x 1000mm (12mm thick)\",Pool Fencing,$450.00,1\n";
       const csvTemplate = csvHeader + csvExample;
       
       res.setHeader("Content-Type", "text/csv");
