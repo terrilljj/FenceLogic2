@@ -29,23 +29,37 @@ const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string 
   { variant: "pvc-hamptons-3rail", label: "Hamptons PVC - 3 Rail", group: "Hamptons PVC" },
 ];
 
-const AVAILABLE_FIELDS: { field: UIInputField; label: string; defaultTooltip: string }[] = [
-  { field: "section-length", label: "Section Length", defaultTooltip: "Enter the total length of this fence section" },
-  { field: "left-gap", label: "Left Gap", defaultTooltip: "Configure the gap on the left side of the section" },
-  { field: "right-gap", label: "Right Gap", defaultTooltip: "Configure the gap on the right side of the section" },
-  { field: "max-panel-width", label: "Max Panel Width", defaultTooltip: "Set the maximum width for panels" },
-  { field: "desired-gap", label: "Desired Gap Between Panels", defaultTooltip: "Set the target gap spacing between panels" },
-  { field: "gate-config", label: "Gate Configuration", defaultTooltip: "Add and configure gate panels" },
-  { field: "raked-panels", label: "Raked Panels", defaultTooltip: "Configure raked panels for step ups and height changes" },
-  { field: "custom-panel", label: "Custom Panel", defaultTooltip: "Add a custom-sized panel with specific dimensions" },
-  { field: "glass-thickness", label: "Glass Thickness", defaultTooltip: "Select glass thickness (12mm or 15mm)" },
-  { field: "top-rail", label: "Top Mounted Rail", defaultTooltip: "Add a top-mounted handrail to balustrade" },
-  { field: "spigot-hardware", label: "Spigot Hardware", defaultTooltip: "Configure spigot mounting and finish" },
-  { field: "channel-hardware", label: "Channel Hardware", defaultTooltip: "Configure channel mounting system" },
-  { field: "panel-height", label: "Panel Height", defaultTooltip: "Select panel height option" },
-  { field: "finish", label: "Finish", defaultTooltip: "Select color/finish option" },
-  { field: "layout-mode", label: "Layout Mode", defaultTooltip: "Choose panel layout mode (Full Panels + Cut End or Equally Spaced)" },
-  { field: "post-type", label: "Post Type", defaultTooltip: "Select post type (Welded Base Plate or Standard)" },
+type FieldType = "numeric" | "slider" | "dropdown" | "toggle";
+
+const AVAILABLE_FIELDS: { 
+  field: UIInputField; 
+  label: string; 
+  defaultTooltip: string;
+  type: FieldType;
+  defaultConfig?: {
+    defaultValue?: any;
+    min?: number;
+    max?: number;
+    step?: number;
+    options?: string[];
+  };
+}[] = [
+  { field: "section-length", label: "Section Length", defaultTooltip: "Enter the total length of this fence section", type: "numeric", defaultConfig: { defaultValue: 3000, min: 0, max: 50000, step: 100 } },
+  { field: "left-gap", label: "Left Gap", defaultTooltip: "Configure the gap on the left side of the section", type: "slider", defaultConfig: { defaultValue: 25, min: 0, max: 150 } },
+  { field: "right-gap", label: "Right Gap", defaultTooltip: "Configure the gap on the right side of the section", type: "slider", defaultConfig: { defaultValue: 25, min: 0, max: 150 } },
+  { field: "max-panel-width", label: "Max Panel Width", defaultTooltip: "Set the maximum width for panels", type: "dropdown", defaultConfig: { defaultValue: "1200", options: Array.from({ length: 37 }, (_, i) => (200 + i * 50).toString()) } },
+  { field: "desired-gap", label: "Desired Gap Between Panels", defaultTooltip: "Set the target gap spacing between panels", type: "slider", defaultConfig: { defaultValue: 10, min: 6, max: 30 } },
+  { field: "gate-config", label: "Gate Configuration", defaultTooltip: "Add and configure gate panels", type: "toggle" },
+  { field: "raked-panels", label: "Raked Panels", defaultTooltip: "Configure raked panels for step ups and height changes", type: "toggle" },
+  { field: "custom-panel", label: "Custom Panel", defaultTooltip: "Add a custom-sized panel with specific dimensions", type: "toggle" },
+  { field: "glass-thickness", label: "Glass Thickness", defaultTooltip: "Select glass thickness (12mm or 15mm)", type: "dropdown", defaultConfig: { defaultValue: "12mm", options: ["12mm", "15mm"] } },
+  { field: "top-rail", label: "Top Mounted Rail", defaultTooltip: "Add a top-mounted handrail to balustrade", type: "toggle" },
+  { field: "spigot-hardware", label: "Spigot Hardware", defaultTooltip: "Configure spigot mounting and finish", type: "toggle" },
+  { field: "channel-hardware", label: "Channel Hardware", defaultTooltip: "Configure channel mounting system", type: "toggle" },
+  { field: "panel-height", label: "Panel Height", defaultTooltip: "Select panel height option", type: "dropdown", defaultConfig: { defaultValue: "1200mm", options: ["900mm", "1000mm", "1200mm", "1800mm"] } },
+  { field: "finish", label: "Finish", defaultTooltip: "Select color/finish option", type: "dropdown", defaultConfig: { defaultValue: "satin-black", options: ["satin-black", "pearl-white", "black", "white", "monument-grey"] } },
+  { field: "layout-mode", label: "Layout Mode", defaultTooltip: "Choose panel layout mode (Full Panels + Cut End or Equally Spaced)", type: "dropdown", defaultConfig: { defaultValue: "full-panels-cut-end", options: ["full-panels-cut-end", "equally-spaced"] } },
+  { field: "post-type", label: "Post Type", defaultTooltip: "Select post type (Welded Base Plate or Standard)", type: "dropdown", defaultConfig: { defaultValue: "welded-base-plate", options: ["welded-base-plate", "standard"] } },
 ];
 
 export default function UIConfigPage() {
@@ -84,13 +98,14 @@ export default function UIConfigPage() {
       if (config) {
         setFieldConfigs(config.fieldConfigs);
       } else {
-        // Initialize with default fields
+        // Initialize with default fields and their configurations
         setFieldConfigs(AVAILABLE_FIELDS.map((field, index) => ({
           field: field.field,
           enabled: field.field === "section-length", // Section length enabled by default
           position: index,
           label: field.label,
           tooltip: field.defaultTooltip,
+          ...field.defaultConfig, // Include default value, min, max, step, options
         })));
       }
     }
@@ -117,6 +132,36 @@ export default function UIConfigPage() {
   const handleTooltipChange = (field: UIInputField, tooltip: string) => {
     setFieldConfigs(prev => 
       prev.map(fc => fc.field === field ? { ...fc, tooltip } : fc)
+    );
+  };
+
+  const handleDefaultValueChange = (field: UIInputField, defaultValue: any) => {
+    setFieldConfigs(prev => 
+      prev.map(fc => fc.field === field ? { ...fc, defaultValue } : fc)
+    );
+  };
+
+  const handleMinChange = (field: UIInputField, min: number) => {
+    setFieldConfigs(prev => 
+      prev.map(fc => fc.field === field ? { ...fc, min } : fc)
+    );
+  };
+
+  const handleMaxChange = (field: UIInputField, max: number) => {
+    setFieldConfigs(prev => 
+      prev.map(fc => fc.field === field ? { ...fc, max } : fc)
+    );
+  };
+
+  const handleStepChange = (field: UIInputField, step: number) => {
+    setFieldConfigs(prev => 
+      prev.map(fc => fc.field === field ? { ...fc, step } : fc)
+    );
+  };
+
+  const handleOptionsChange = (field: UIInputField, options: string[]) => {
+    setFieldConfigs(prev => 
+      prev.map(fc => fc.field === field ? { ...fc, options } : fc)
     );
   };
 
@@ -193,60 +238,169 @@ export default function UIConfigPage() {
 
                       return (
                         <Card key={fc.field} className="p-4">
-                          <div className="grid grid-cols-12 gap-4 items-start">
-                            <div className="col-span-3 space-y-1">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium">{fieldMeta.label}</Label>
-                                <Switch
-                                  checked={fc.enabled}
-                                  onCheckedChange={(enabled) => handleToggleField(fc.field, enabled)}
-                                  data-testid={`switch-${fc.field}`}
+                          <div className="space-y-3">
+                            {/* First row: Basic config */}
+                            <div className="grid grid-cols-12 gap-4 items-start">
+                              <div className="col-span-3 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-sm font-medium">{fieldMeta.label}</Label>
+                                  <Switch
+                                    checked={fc.enabled}
+                                    onCheckedChange={(enabled) => handleToggleField(fc.field, enabled)}
+                                    data-testid={`switch-${fc.field}`}
+                                  />
+                                </div>
+                                <p className="text-xs text-muted-foreground">Type: {fieldMeta.type}</p>
+                              </div>
+
+                              <div className="col-span-2 space-y-1">
+                                <Label className="text-xs">Position</Label>
+                                <Select
+                                  value={fc.position.toString()}
+                                  onValueChange={(v) => handlePositionChange(fc.field, parseInt(v))}
+                                  disabled={!fc.enabled}
+                                >
+                                  <SelectTrigger data-testid={`select-position-${fc.field}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Array.from({ length: sortedFields.length }, (_, i) => (
+                                      <SelectItem key={i} value={i.toString()}>
+                                        {i + 1}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="col-span-3 space-y-1">
+                                <Label className="text-xs">Custom Label</Label>
+                                <Input
+                                  value={fc.label || fieldMeta.label}
+                                  onChange={(e) => handleLabelChange(fc.field, e.target.value)}
+                                  disabled={!fc.enabled}
+                                  placeholder={fieldMeta.label}
+                                  data-testid={`input-label-${fc.field}`}
                                 />
                               </div>
-                              <p className="text-xs text-muted-foreground">Field: {fc.field}</p>
+
+                              <div className="col-span-4 space-y-1">
+                                <Label className="text-xs">Tooltip Text</Label>
+                                <Input
+                                  value={fc.tooltip || fieldMeta.defaultTooltip}
+                                  onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
+                                  disabled={!fc.enabled}
+                                  placeholder={fieldMeta.defaultTooltip}
+                                  data-testid={`input-tooltip-${fc.field}`}
+                                />
+                              </div>
                             </div>
 
-                            <div className="col-span-2 space-y-1">
-                              <Label className="text-xs">Position</Label>
-                              <Select
-                                value={fc.position.toString()}
-                                onValueChange={(v) => handlePositionChange(fc.field, parseInt(v))}
-                                disabled={!fc.enabled}
-                              >
-                                <SelectTrigger data-testid={`select-position-${fc.field}`}>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: sortedFields.length }, (_, i) => (
-                                    <SelectItem key={i} value={i.toString()}>
-                                      {i + 1}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                            {/* Second row: Value configuration based on type */}
+                            {fieldMeta.type === "numeric" && (
+                              <div className="grid grid-cols-12 gap-4 pt-2 border-t">
+                                <div className="col-span-3 space-y-1">
+                                  <Label className="text-xs">Default Value</Label>
+                                  <Input
+                                    type="number"
+                                    value={fc.defaultValue ?? ""}
+                                    onChange={(e) => handleDefaultValueChange(fc.field, parseFloat(e.target.value))}
+                                    disabled={!fc.enabled}
+                                    data-testid={`input-default-${fc.field}`}
+                                  />
+                                </div>
+                                <div className="col-span-3 space-y-1">
+                                  <Label className="text-xs">Min</Label>
+                                  <Input
+                                    type="number"
+                                    value={fc.min ?? ""}
+                                    onChange={(e) => handleMinChange(fc.field, parseFloat(e.target.value))}
+                                    disabled={!fc.enabled}
+                                    data-testid={`input-min-${fc.field}`}
+                                  />
+                                </div>
+                                <div className="col-span-3 space-y-1">
+                                  <Label className="text-xs">Max</Label>
+                                  <Input
+                                    type="number"
+                                    value={fc.max ?? ""}
+                                    onChange={(e) => handleMaxChange(fc.field, parseFloat(e.target.value))}
+                                    disabled={!fc.enabled}
+                                    data-testid={`input-max-${fc.field}`}
+                                  />
+                                </div>
+                                <div className="col-span-3 space-y-1">
+                                  <Label className="text-xs">Step</Label>
+                                  <Input
+                                    type="number"
+                                    value={fc.step ?? ""}
+                                    onChange={(e) => handleStepChange(fc.field, parseFloat(e.target.value))}
+                                    disabled={!fc.enabled}
+                                    data-testid={`input-step-${fc.field}`}
+                                  />
+                                </div>
+                              </div>
+                            )}
 
-                            <div className="col-span-3 space-y-1">
-                              <Label className="text-xs">Custom Label</Label>
-                              <Input
-                                value={fc.label || fieldMeta.label}
-                                onChange={(e) => handleLabelChange(fc.field, e.target.value)}
-                                disabled={!fc.enabled}
-                                placeholder={fieldMeta.label}
-                                data-testid={`input-label-${fc.field}`}
-                              />
-                            </div>
+                            {fieldMeta.type === "slider" && (
+                              <div className="grid grid-cols-12 gap-4 pt-2 border-t">
+                                <div className="col-span-4 space-y-1">
+                                  <Label className="text-xs">Default Value</Label>
+                                  <Input
+                                    type="number"
+                                    value={fc.defaultValue ?? ""}
+                                    onChange={(e) => handleDefaultValueChange(fc.field, parseFloat(e.target.value))}
+                                    disabled={!fc.enabled}
+                                    data-testid={`input-default-${fc.field}`}
+                                  />
+                                </div>
+                                <div className="col-span-4 space-y-1">
+                                  <Label className="text-xs">Min</Label>
+                                  <Input
+                                    type="number"
+                                    value={fc.min ?? ""}
+                                    onChange={(e) => handleMinChange(fc.field, parseFloat(e.target.value))}
+                                    disabled={!fc.enabled}
+                                    data-testid={`input-min-${fc.field}`}
+                                  />
+                                </div>
+                                <div className="col-span-4 space-y-1">
+                                  <Label className="text-xs">Max</Label>
+                                  <Input
+                                    type="number"
+                                    value={fc.max ?? ""}
+                                    onChange={(e) => handleMaxChange(fc.field, parseFloat(e.target.value))}
+                                    disabled={!fc.enabled}
+                                    data-testid={`input-max-${fc.field}`}
+                                  />
+                                </div>
+                              </div>
+                            )}
 
-                            <div className="col-span-4 space-y-1">
-                              <Label className="text-xs">Tooltip Text</Label>
-                              <Input
-                                value={fc.tooltip || fieldMeta.defaultTooltip}
-                                onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
-                                disabled={!fc.enabled}
-                                placeholder={fieldMeta.defaultTooltip}
-                                data-testid={`input-tooltip-${fc.field}`}
-                              />
-                            </div>
+                            {fieldMeta.type === "dropdown" && (
+                              <div className="grid grid-cols-12 gap-4 pt-2 border-t">
+                                <div className="col-span-4 space-y-1">
+                                  <Label className="text-xs">Default Value</Label>
+                                  <Input
+                                    value={fc.defaultValue ?? ""}
+                                    onChange={(e) => handleDefaultValueChange(fc.field, e.target.value)}
+                                    disabled={!fc.enabled}
+                                    placeholder="Default selected value"
+                                    data-testid={`input-default-${fc.field}`}
+                                  />
+                                </div>
+                                <div className="col-span-8 space-y-1">
+                                  <Label className="text-xs">Options (comma-separated)</Label>
+                                  <Input
+                                    value={fc.options?.join(", ") ?? ""}
+                                    onChange={(e) => handleOptionsChange(fc.field, e.target.value.split(",").map(o => o.trim()))}
+                                    disabled={!fc.enabled}
+                                    placeholder="option1, option2, option3"
+                                    data-testid={`input-options-${fc.field}`}
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </Card>
                       );

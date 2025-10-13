@@ -676,9 +676,14 @@ export interface UIFieldConfig {
   field: UIInputField;
   enabled: boolean;
   position: number;
-  defaultValue?: any;
   label?: string;
   tooltip?: string;
+  // Value configuration
+  defaultValue?: any;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: string[]; // For dropdown fields
 }
 
 // Product UI Configuration table
