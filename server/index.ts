@@ -9,17 +9,20 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Session configuration
+// Trust proxy for cookies to work in Replit iframe
+app.set("trust proxy", 1);
+
+// Session configuration with sameSite: "none" for iframe support
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "fence-logic-admin-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: true, // Required for sameSite: "none"
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: "lax",
+      sameSite: "none", // Required for iframe/embedded contexts
     },
   })
 );
