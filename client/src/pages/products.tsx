@@ -141,8 +141,8 @@ export default function Products() {
       form.reset({
         code: product.code,
         description: product.description,
-        category: product.category || "",
-        price: product.price || "",
+        category: product.category ?? "",
+        price: product.price ?? "",
         active: product.active,
       });
     } else {
