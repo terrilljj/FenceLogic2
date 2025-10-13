@@ -584,8 +584,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (trimmedUsername === adminUsername && trimmedPassword === adminPassword) {
         // Set session
+        console.log("Credentials match! Session object:", !!req.session);
         if (req.session) {
           req.session.isAdmin = true;
+          console.log("Set isAdmin=true, about to save session...");
           
           // Explicitly save the session before responding
           req.session.save((err) => {
@@ -593,10 +595,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.error("Session save error:", err);
               return res.status(500).json({ error: "Session save failed" });
             }
-            console.log("Session saved successfully, isAdmin:", req.session?.isAdmin);
+            console.log("✓ Session saved successfully! isAdmin:", req.session?.isAdmin);
             res.json({ success: true, message: "Login successful" });
           });
         } else {
+          console.error("No session object available!");
           res.status(500).json({ error: "Session not available" });
         }
       } else {
@@ -627,6 +630,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/admin/verify", async (req, res) => {
+    console.log("=== VERIFY REQUEST ===");
+    console.log("Has session object:", !!req.session);
+    console.log("Session ID:", req.session?.id);
+    console.log("Session isAdmin:", req.session?.isAdmin);
+    console.log("Cookie header:", req.headers.cookie);
+    console.log("=====================");
+    
     const isAuthenticated = req.session?.isAdmin === true;
     res.json({ authenticated: isAuthenticated });
   });
