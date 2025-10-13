@@ -62,6 +62,41 @@ const AVAILABLE_FIELDS: {
   { field: "post-type", label: "Post Type", defaultTooltip: "Select post type (Welded Base Plate or Standard)", type: "dropdown", defaultConfig: { defaultValue: "welded-base-plate", options: ["welded-base-plate", "standard"] } },
 ];
 
+// Field mapping per product variant (using actual ProductVariant keys)
+const VARIANT_FIELDS: Record<ProductVariant, UIInputField[]> = {
+  // Glass Pool Fencing
+  "glass-pool-spigots": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "raked-panels", "custom-panel", "glass-thickness", "spigot-hardware"],
+  "glass-pool-channel": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "raked-panels", "custom-panel", "glass-thickness", "channel-hardware"],
+  
+  // Glass Balustrade
+  "glass-bal-spigots": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "custom-panel", "glass-thickness", "top-rail", "spigot-hardware"],
+  "glass-bal-channel": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "custom-panel", "glass-thickness", "top-rail", "channel-hardware"],
+  "glass-bal-standoffs": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "custom-panel", "glass-thickness"],
+  
+  // Aluminium Pool Fencing
+  "alu-pool-tubular": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  "alu-pool-barr": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  "alu-pool-blade": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  "alu-pool-pik": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  
+  // Aluminium Balustrade
+  "alu-bal-barr": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  "alu-bal-blade": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  "alu-bal-visor": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  
+  // Hamptons PVC Fencing
+  "pvc-hamptons-full-privacy": ["section-length", "left-gap", "right-gap", "finish", "gate-config"],
+  "pvc-hamptons-combo": ["section-length", "left-gap", "right-gap", "finish", "gate-config"],
+  "pvc-hamptons-vertical-paling": ["section-length", "left-gap", "right-gap", "finish", "gate-config"],
+  "pvc-hamptons-semi-privacy": ["section-length", "left-gap", "right-gap", "finish", "gate-config"],
+  "pvc-hamptons-3rail": ["section-length", "left-gap", "right-gap", "finish", "gate-config"],
+  
+  // General Fencing
+  "general-zeus": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  "general-blade": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  "general-barr": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+};
+
 export default function UIConfigPage() {
   const { toast } = useToast();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>("glass-pool-spigots");
@@ -95,18 +130,41 @@ export default function UIConfigPage() {
   useEffect(() => {
     if (configs) {
       const config = configs.find((c: any) => c.productVariant === selectedVariant);
-      if (config) {
-        setFieldConfigs(config.fieldConfigs);
-      } else {
-        // Initialize with default fields and their configurations
+      const relevantFields = VARIANT_FIELDS[selectedVariant];
+      
+      // Safety fallback: if no mapping exists, use all available fields
+      if (!relevantFields || relevantFields.length === 0) {
+        console.warn(`No field mapping found for variant: ${selectedVariant}`);
         setFieldConfigs(AVAILABLE_FIELDS.map((field, index) => ({
           field: field.field,
-          enabled: field.field === "section-length", // Section length enabled by default
+          enabled: field.field === "section-length",
           position: index,
           label: field.label,
           tooltip: field.defaultTooltip,
-          ...field.defaultConfig, // Include default value, min, max, step, options
+          ...field.defaultConfig,
         })));
+        return;
+      }
+      
+      if (config) {
+        // Filter to only show relevant fields for this variant
+        const filteredConfigs = config.fieldConfigs.filter(
+          (fc: UIFieldConfig) => relevantFields.includes(fc.field)
+        );
+        setFieldConfigs(filteredConfigs);
+      } else {
+        // Initialize with only relevant fields for this variant
+        const relevantFieldConfigs = AVAILABLE_FIELDS
+          .filter(field => relevantFields.includes(field.field))
+          .map((field, index) => ({
+            field: field.field,
+            enabled: field.field === "section-length", // Section length enabled by default
+            position: index,
+            label: field.label,
+            tooltip: field.defaultTooltip,
+            ...field.defaultConfig, // Include default value, min, max, step, options
+          }));
+        setFieldConfigs(relevantFieldConfigs);
       }
     }
   }, [selectedVariant, configs]);
@@ -231,178 +289,226 @@ export default function UIConfigPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid gap-4">
+                  {/* Column headers */}
+                  <div className="grid grid-cols-12 gap-3 px-3 pb-2 border-b text-xs font-medium text-muted-foreground">
+                    <div className="col-span-2">Field</div>
+                    <div className="col-span-1">Pos</div>
+                    <div className="col-span-2">Label</div>
+                    <div className="col-span-7">Value Configuration</div>
+                  </div>
+
+                  <div className="grid gap-2">
                     {sortedFields.map((fc) => {
                       const fieldMeta = AVAILABLE_FIELDS.find(f => f.field === fc.field);
                       if (!fieldMeta) return null;
 
                       return (
-                        <Card key={fc.field} className="p-4">
-                          <div className="space-y-3">
-                            {/* First row: Basic config */}
-                            <div className="grid grid-cols-12 gap-4 items-start">
-                              <div className="col-span-3 space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <Label className="text-sm font-medium">{fieldMeta.label}</Label>
-                                  <Switch
-                                    checked={fc.enabled}
-                                    onCheckedChange={(enabled) => handleToggleField(fc.field, enabled)}
-                                    data-testid={`switch-${fc.field}`}
-                                  />
+                        <div key={fc.field} className="border rounded-md p-3 bg-card">
+                          <div className="grid grid-cols-12 gap-3 items-center">
+                            {/* Field name and toggle */}
+                            <div className="col-span-2">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={fc.enabled}
+                                  onCheckedChange={(enabled) => handleToggleField(fc.field, enabled)}
+                                  data-testid={`switch-${fc.field}`}
+                                />
+                                <div>
+                                  <div className="text-sm font-medium">{fieldMeta.label}</div>
+                                  <div className="text-xs text-muted-foreground">{fieldMeta.type}</div>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Type: {fieldMeta.type}</p>
-                              </div>
-
-                              <div className="col-span-2 space-y-1">
-                                <Label className="text-xs">Position</Label>
-                                <Select
-                                  value={fc.position.toString()}
-                                  onValueChange={(v) => handlePositionChange(fc.field, parseInt(v))}
-                                  disabled={!fc.enabled}
-                                >
-                                  <SelectTrigger data-testid={`select-position-${fc.field}`}>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Array.from({ length: sortedFields.length }, (_, i) => (
-                                      <SelectItem key={i} value={i.toString()}>
-                                        {i + 1}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="col-span-3 space-y-1">
-                                <Label className="text-xs">Custom Label</Label>
-                                <Input
-                                  value={fc.label || fieldMeta.label}
-                                  onChange={(e) => handleLabelChange(fc.field, e.target.value)}
-                                  disabled={!fc.enabled}
-                                  placeholder={fieldMeta.label}
-                                  data-testid={`input-label-${fc.field}`}
-                                />
-                              </div>
-
-                              <div className="col-span-4 space-y-1">
-                                <Label className="text-xs">Tooltip Text</Label>
-                                <Input
-                                  value={fc.tooltip || fieldMeta.defaultTooltip}
-                                  onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
-                                  disabled={!fc.enabled}
-                                  placeholder={fieldMeta.defaultTooltip}
-                                  data-testid={`input-tooltip-${fc.field}`}
-                                />
                               </div>
                             </div>
 
-                            {/* Second row: Value configuration based on type */}
+                            {/* Position */}
+                            <div className="col-span-1">
+                              <Select
+                                value={fc.position.toString()}
+                                onValueChange={(v) => handlePositionChange(fc.field, parseInt(v))}
+                                disabled={!fc.enabled}
+                              >
+                                <SelectTrigger className="h-8" data-testid={`select-position-${fc.field}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: sortedFields.length }, (_, i) => (
+                                    <SelectItem key={i} value={i.toString()}>
+                                      {i + 1}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Label */}
+                            <div className="col-span-2">
+                              <Input
+                                className="h-8"
+                                value={fc.label || fieldMeta.label}
+                                onChange={(e) => handleLabelChange(fc.field, e.target.value)}
+                                disabled={!fc.enabled}
+                                placeholder={fieldMeta.label}
+                                data-testid={`input-label-${fc.field}`}
+                              />
+                            </div>
+
+                            {/* Value configuration based on type */}
                             {fieldMeta.type === "numeric" && (
-                              <div className="grid grid-cols-12 gap-4 pt-2 border-t">
-                                <div className="col-span-3 space-y-1">
-                                  <Label className="text-xs">Default Value</Label>
+                              <>
+                                <div className="col-span-2">
                                   <Input
+                                    className="h-8"
                                     type="number"
                                     value={fc.defaultValue ?? ""}
                                     onChange={(e) => handleDefaultValueChange(fc.field, parseFloat(e.target.value))}
                                     disabled={!fc.enabled}
+                                    placeholder="Default"
                                     data-testid={`input-default-${fc.field}`}
                                   />
                                 </div>
-                                <div className="col-span-3 space-y-1">
-                                  <Label className="text-xs">Min</Label>
+                                <div className="col-span-1">
                                   <Input
+                                    className="h-8"
                                     type="number"
                                     value={fc.min ?? ""}
                                     onChange={(e) => handleMinChange(fc.field, parseFloat(e.target.value))}
                                     disabled={!fc.enabled}
+                                    placeholder="Min"
                                     data-testid={`input-min-${fc.field}`}
                                   />
                                 </div>
-                                <div className="col-span-3 space-y-1">
-                                  <Label className="text-xs">Max</Label>
+                                <div className="col-span-1">
                                   <Input
+                                    className="h-8"
                                     type="number"
                                     value={fc.max ?? ""}
                                     onChange={(e) => handleMaxChange(fc.field, parseFloat(e.target.value))}
                                     disabled={!fc.enabled}
+                                    placeholder="Max"
                                     data-testid={`input-max-${fc.field}`}
                                   />
                                 </div>
-                                <div className="col-span-3 space-y-1">
-                                  <Label className="text-xs">Step</Label>
+                                <div className="col-span-1">
                                   <Input
+                                    className="h-8"
                                     type="number"
                                     value={fc.step ?? ""}
                                     onChange={(e) => handleStepChange(fc.field, parseFloat(e.target.value))}
                                     disabled={!fc.enabled}
+                                    placeholder="Step"
                                     data-testid={`input-step-${fc.field}`}
                                   />
                                 </div>
-                              </div>
+                                <div className="col-span-2">
+                                  <Input
+                                    className="h-8"
+                                    value={fc.tooltip || fieldMeta.defaultTooltip}
+                                    onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
+                                    disabled={!fc.enabled}
+                                    placeholder="Tooltip"
+                                    data-testid={`input-tooltip-${fc.field}`}
+                                  />
+                                </div>
+                              </>
                             )}
 
                             {fieldMeta.type === "slider" && (
-                              <div className="grid grid-cols-12 gap-4 pt-2 border-t">
-                                <div className="col-span-4 space-y-1">
-                                  <Label className="text-xs">Default Value</Label>
+                              <>
+                                <div className="col-span-2">
                                   <Input
+                                    className="h-8"
                                     type="number"
                                     value={fc.defaultValue ?? ""}
                                     onChange={(e) => handleDefaultValueChange(fc.field, parseFloat(e.target.value))}
                                     disabled={!fc.enabled}
+                                    placeholder="Default"
                                     data-testid={`input-default-${fc.field}`}
                                   />
                                 </div>
-                                <div className="col-span-4 space-y-1">
-                                  <Label className="text-xs">Min</Label>
+                                <div className="col-span-2">
                                   <Input
+                                    className="h-8"
                                     type="number"
                                     value={fc.min ?? ""}
                                     onChange={(e) => handleMinChange(fc.field, parseFloat(e.target.value))}
                                     disabled={!fc.enabled}
+                                    placeholder="Min"
                                     data-testid={`input-min-${fc.field}`}
                                   />
                                 </div>
-                                <div className="col-span-4 space-y-1">
-                                  <Label className="text-xs">Max</Label>
+                                <div className="col-span-2">
                                   <Input
+                                    className="h-8"
                                     type="number"
                                     value={fc.max ?? ""}
                                     onChange={(e) => handleMaxChange(fc.field, parseFloat(e.target.value))}
                                     disabled={!fc.enabled}
+                                    placeholder="Max"
                                     data-testid={`input-max-${fc.field}`}
                                   />
                                 </div>
-                              </div>
+                                <div className="col-span-3">
+                                  <Input
+                                    className="h-8"
+                                    value={fc.tooltip || fieldMeta.defaultTooltip}
+                                    onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
+                                    disabled={!fc.enabled}
+                                    placeholder="Tooltip"
+                                    data-testid={`input-tooltip-${fc.field}`}
+                                  />
+                                </div>
+                              </>
                             )}
 
                             {fieldMeta.type === "dropdown" && (
-                              <div className="grid grid-cols-12 gap-4 pt-2 border-t">
-                                <div className="col-span-4 space-y-1">
-                                  <Label className="text-xs">Default Value</Label>
+                              <>
+                                <div className="col-span-2">
                                   <Input
+                                    className="h-8"
                                     value={fc.defaultValue ?? ""}
                                     onChange={(e) => handleDefaultValueChange(fc.field, e.target.value)}
                                     disabled={!fc.enabled}
-                                    placeholder="Default selected value"
+                                    placeholder="Default"
                                     data-testid={`input-default-${fc.field}`}
                                   />
                                 </div>
-                                <div className="col-span-8 space-y-1">
-                                  <Label className="text-xs">Options (comma-separated)</Label>
+                                <div className="col-span-4">
                                   <Input
+                                    className="h-8"
                                     value={fc.options?.join(", ") ?? ""}
                                     onChange={(e) => handleOptionsChange(fc.field, e.target.value.split(",").map(o => o.trim()))}
                                     disabled={!fc.enabled}
-                                    placeholder="option1, option2, option3"
+                                    placeholder="Options (comma-separated)"
                                     data-testid={`input-options-${fc.field}`}
                                   />
                                 </div>
+                                <div className="col-span-3">
+                                  <Input
+                                    className="h-8"
+                                    value={fc.tooltip || fieldMeta.defaultTooltip}
+                                    onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
+                                    disabled={!fc.enabled}
+                                    placeholder="Tooltip"
+                                    data-testid={`input-tooltip-${fc.field}`}
+                                  />
+                                </div>
+                              </>
+                            )}
+
+                            {fieldMeta.type === "toggle" && (
+                              <div className="col-span-7">
+                                <Input
+                                  className="h-8"
+                                  value={fc.tooltip || fieldMeta.defaultTooltip}
+                                  onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
+                                  disabled={!fc.enabled}
+                                  placeholder="Tooltip"
+                                  data-testid={`input-tooltip-${fc.field}`}
+                                />
                               </div>
                             )}
                           </div>
-                        </Card>
+                        </div>
                       );
                     })}
                   </div>
