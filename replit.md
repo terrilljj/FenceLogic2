@@ -68,7 +68,19 @@ Preferred communication style: Simple, everyday language.
 
 **Data Models:**
 - `FenceDesign`, `SpanConfig`, `Component`, `PanelLayout`.
+- `Product` - Product catalog with code, description, category, price, active status.
 - Supports complex gate configurations (hardware types, hinge positions) and custom glass panels (width, height, positioning, distinct visualization).
+
+**Admin Authentication:**
+- Session-based authentication for admin panel access.
+- Protected routes verify server session (not just localStorage).
+- Login endpoint: POST /api/admin/login (credentials: admin/admin123 by default).
+- Session verification: GET /api/admin/verify.
+- Logout endpoint: POST /api/admin/logout.
+- All product CRUD and CSV endpoints protected by `requireAdmin` middleware.
+- Session cookies: httpOnly, secure (production), sameSite: lax, 24-hour expiry.
+- Admin panel accessible at `/admin-login` (direct URL, not in navigation).
+- Product catalog management at `/products` (requires authentication).
 
 **Panel Calculation System:**
 - Algorithm for mixed panel widths to achieve precise gap spacing.
