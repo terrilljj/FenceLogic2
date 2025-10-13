@@ -483,11 +483,11 @@ export const componentSchema = z.object({
 
 export type Component = z.infer<typeof componentSchema>;
 
-// Product categories matching home page sections
+// Product categories matching home page navigation sections (exact order)
 export const PRODUCT_CATEGORIES = [
   "Pool Fencing",
-  "Balustrade", 
   "Hamptons",
+  "Balustrade",
   "Hardware",
   "Glass Panels",
   "Posts & Rails",
