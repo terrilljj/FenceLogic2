@@ -59,6 +59,9 @@ export type HandrailMaterial = "stainless-steel" | "anodised-aluminium";
 // Handrail finish types
 export type HandrailFinish = "polished" | "satin" | "black" | "white";
 
+// Rail termination types (for top-mounted rails on balustrades)
+export type RailTerminationType = "end-cap" | "wall-tie" | "90-degree" | "adjustable-corner";
+
 // Glass size constraints by thickness
 export const GLASS_CONSTRAINTS = {
   "12mm": {
@@ -326,6 +329,8 @@ export const spanConfigSchema = z.object({
     type: z.enum(["nonorail-25x21", "nanorail-30x21", "series-35x35"]),
     material: z.enum(["stainless-steel", "anodised-aluminium"]),
     finish: z.enum(["polished", "satin", "black", "white"]),
+    startTermination: z.enum(["end-cap", "wall-tie", "90-degree", "adjustable-corner"]).optional(),
+    endTermination: z.enum(["end-cap", "wall-tie", "90-degree", "adjustable-corner"]).optional(),
   }).optional(), // Top-mounted handrail options
   standoffDiameter: z.enum(["50mm"]).optional(), // Standoff diameter for standoff systems (50mm)
   standoffFinish: z.enum(["polished", "satin", "black", "white"]).optional(), // Standoff finish
@@ -593,4 +598,57 @@ export function getLatchDetails(type: LatchType): { description: string; sku: st
     "corner-in": { description: "Corner In Latch", sku: "LATCH-CORNER-IN" },
   };
   return latchMap[type];
+}
+
+// Rail optimization for 5800mm standard lengths
+export type RailOptimization = {
+  totalLength: number; // Total length required in mm
+  standardLengths: number; // Number of 5800mm lengths needed
+  cuts: number[]; // Array of cut lengths from each standard length
+  wastage: number; // Total wastage in mm
+};
+
+// Helper function to optimize rail lengths (5800mm standard) to minimize wastage
+export function optimizeRailLengths(spanLengths: number[]): RailOptimization {
+  const STANDARD_LENGTH = 5800; // mm
+  const totalLength = spanLengths.reduce((sum, len) => sum + len, 0);
+  
+  // Simple optimization: try to fit as many spans as possible into each standard length
+  const standardLengths: number[] = [];
+  const cuts: number[] = [];
+  let remainingSpans = [...spanLengths].sort((a, b) => b - a); // Sort descending for better packing
+  
+  while (remainingSpans.length > 0) {
+    let currentLength = STANDARD_LENGTH;
+    const currentCuts: number[] = [];
+    
+    // Try to fit spans into current standard length
+    for (let i = remainingSpans.length - 1; i >= 0; i--) {
+      if (remainingSpans[i] <= currentLength) {
+        currentCuts.push(remainingSpans[i]);
+        currentLength -= remainingSpans[i];
+        remainingSpans.splice(i, 1);
+      }
+    }
+    
+    standardLengths.push(STANDARD_LENGTH);
+    cuts.push(...currentCuts);
+    
+    // If no spans were added in this iteration, take the first remaining span
+    if (currentCuts.length === 0 && remainingSpans.length > 0) {
+      cuts.push(remainingSpans[0]);
+      standardLengths.push(STANDARD_LENGTH);
+      remainingSpans.shift();
+    }
+  }
+  
+  const totalStandardLength = standardLengths.reduce((sum, len) => sum + len, 0);
+  const wastage = totalStandardLength - totalLength;
+  
+  return {
+    totalLength,
+    standardLengths: standardLengths.length,
+    cuts,
+    wastage,
+  };
 }
