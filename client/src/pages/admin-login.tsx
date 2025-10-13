@@ -43,6 +43,8 @@ export default function AdminLogin() {
       });
 
       console.log("Login response status:", response.status);
+      console.log("Set-Cookie header:", response.headers.get("set-cookie"));
+      console.log("All response headers:", [...response.headers.entries()]);
 
       if (response.ok) {
         const result = await response.json();
