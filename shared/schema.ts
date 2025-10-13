@@ -483,6 +483,25 @@ export const componentSchema = z.object({
 
 export type Component = z.infer<typeof componentSchema>;
 
+// Product catalog table for managing product codes and descriptions
+export const products = pgTable("products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 100 }).notNull().unique(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 100 }),
+  price: text("price"), // Stored as text to allow flexible formatting
+  active: integer("active").notNull().default(1), // 1 = active, 0 = inactive
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type Product = typeof products.$inferSelect;
+
 // Helper function to get gate gaps based on hardware and mounting type
 export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall"): { hingeGap: number; latchGap: number } {
   if (hardware === "master") {
