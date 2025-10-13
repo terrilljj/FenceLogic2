@@ -257,6 +257,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate CSV template for product imports
+  app.get("/api/products/csv/template", async (req, res) => {
+    try {
+      const csvHeader = "code,description,category,price,active\n";
+      const csvExample = "GP-1200-1000-12,\"Glass Panel 1200mm x 1000mm (12mm thick)\",Glass Panels,$450.00,1\n";
+      const csvTemplate = csvHeader + csvExample;
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=product_template.csv");
+      res.send(csvTemplate);
+    } catch (error) {
+      console.error("Error generating CSV template:", error);
+      res.status(500).json({ error: "Failed to generate CSV template" });
+    }
+  });
+
+  // Export products to CSV
+  app.get("/api/products/csv/export", async (req, res) => {
+    try {
+      const products = await storage.getAllProducts();
+      
+      const csvHeader = "code,description,category,price,active\n";
+      const csvRows = products.map((p) => {
+        const code = p.code.replace(/"/g, '""');
+        const description = p.description.replace(/"/g, '""');
+        const category = (p.category || "").replace(/"/g, '""');
+        const price = (p.price || "").replace(/"/g, '""');
+        const active = p.active;
+        return `"${code}","${description}","${category}","${price}",${active}`;
+      }).join("\n");
+      
+      const csv = csvHeader + csvRows;
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=products_export.csv");
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting products:", error);
+      res.status(500).json({ error: "Failed to export products" });
+    }
+  });
+
+  // Import products from CSV
+  app.post("/api/products/csv/import", async (req, res) => {
+    try {
+      const { csvData } = req.body;
+      
+      if (!csvData || typeof csvData !== "string") {
+        return res.status(400).json({ error: "Invalid CSV data" });
+      }
+
+      const lines = csvData.trim().split("\n");
+      if (lines.length < 2) {
+        return res.status(400).json({ error: "CSV must contain header and at least one data row" });
+      }
+
+      const header = lines[0].toLowerCase().split(",").map(h => h.trim());
+      const requiredFields = ["code", "description"];
+      
+      for (const field of requiredFields) {
+        if (!header.includes(field)) {
+          return res.status(400).json({ error: `Missing required field: ${field}` });
+        }
+      }
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        try {
+          // Simple CSV parsing (handles quoted fields)
+          const values: string[] = [];
+          let current = "";
+          let inQuotes = false;
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === "," && !inQuotes) {
+              values.push(current.trim().replace(/^"|"$/g, ""));
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/^"|"$/g, ""));
+
+          const rowData: Record<string, string> = {};
+          header.forEach((field, index) => {
+            rowData[field] = values[index] || "";
+          });
+
+          const productData = {
+            code: rowData.code,
+            description: rowData.description,
+            category: rowData.category || undefined,
+            price: rowData.price || undefined,
+            active: rowData.active ? parseInt(rowData.active) : 1,
+          };
+
+          const validatedData = insertProductSchema.parse(productData);
+          
+          // Check if product already exists
+          const existing = await storage.getProductByCode(validatedData.code);
+          if (existing) {
+            // Update existing product
+            await storage.updateProduct(existing.id, validatedData);
+          } else {
+            // Create new product
+            await storage.createProduct(validatedData);
+          }
+          
+          results.success++;
+        } catch (error) {
+          results.failed++;
+          const errorMsg = error instanceof Error ? error.message : "Unknown error";
+          results.errors.push(`Row ${i + 1}: ${errorMsg}`);
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error importing products:", error);
+      res.status(500).json({ error: "Failed to import products" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

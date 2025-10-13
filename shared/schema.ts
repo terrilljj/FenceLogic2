@@ -483,6 +483,19 @@ export const componentSchema = z.object({
 
 export type Component = z.infer<typeof componentSchema>;
 
+// Product categories matching home page sections
+export const PRODUCT_CATEGORIES = [
+  "Pool Fencing",
+  "Balustrade", 
+  "Hamptons",
+  "Hardware",
+  "Glass Panels",
+  "Posts & Rails",
+  "Other"
+] as const;
+
+export type ProductCategory = typeof PRODUCT_CATEGORIES[number];
+
 // Product catalog table for managing product codes and descriptions
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -497,6 +510,8 @@ export const products = pgTable("products", {
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
+}).extend({
+  category: z.enum(PRODUCT_CATEGORIES).optional().or(z.literal("")),
 });
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
