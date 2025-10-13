@@ -586,8 +586,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set session
         if (req.session) {
           req.session.isAdmin = true;
+          
+          // Explicitly save the session before responding
+          req.session.save((err) => {
+            if (err) {
+              console.error("Session save error:", err);
+              return res.status(500).json({ error: "Session save failed" });
+            }
+            console.log("Session saved successfully, isAdmin:", req.session?.isAdmin);
+            res.json({ success: true, message: "Login successful" });
+          });
+        } else {
+          res.status(500).json({ error: "Session not available" });
         }
-        res.json({ success: true, message: "Login successful" });
       } else {
         res.status(401).json({ success: false, message: "Invalid credentials" });
       }
