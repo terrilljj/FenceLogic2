@@ -308,23 +308,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid CSV data" });
       }
 
-      const lines = csvData.trim().split("\n");
-      if (lines.length < 2) {
-        return res.status(400).json({ error: "CSV must contain header and at least one data row" });
-      }
-
-      // Parse CSV line with proper quote handling (RFC 4180)
-      const parseCsvLine = (line: string): string[] => {
-        const values: string[] = [];
+      // RFC 4180 compliant CSV parser that handles embedded newlines in quoted fields
+      const parseCSV = (csv: string): string[][] => {
+        const rows: string[][] = [];
+        const row: string[] = [];
         let current = "";
         let inQuotes = false;
         
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          const nextChar = line[i + 1];
+        for (let i = 0; i < csv.length; i++) {
+          const char = csv[i];
+          const nextChar = csv[i + 1];
           
           if (char === '"' && inQuotes && nextChar === '"') {
-            // Handle escaped quote ("")
+            // Escaped quote ("") - add single quote to current field
             current += '"';
             i++; // Skip next quote
           } else if (char === '"') {
@@ -332,17 +328,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             inQuotes = !inQuotes;
           } else if (char === "," && !inQuotes) {
             // Field separator outside quotes
-            values.push(current);
+            row.push(current);
+            current = "";
+          } else if ((char === "\n" || (char === "\r" && nextChar === "\n")) && !inQuotes) {
+            // Row separator outside quotes
+            row.push(current);
+            rows.push([...row]);
+            row.length = 0;
+            current = "";
+            if (char === "\r" && nextChar === "\n") {
+              i++; // Skip \n in \r\n
+            }
+          } else if (char === "\r" && !inQuotes) {
+            // Handle standalone \r as row separator
+            row.push(current);
+            rows.push([...row]);
+            row.length = 0;
             current = "";
           } else {
+            // Regular character or newline inside quotes
             current += char;
           }
         }
-        values.push(current);
-        return values;
+        
+        // Handle last field and row
+        row.push(current);
+        if (row.length > 0 && row.some(field => field.trim() !== "")) {
+          rows.push(row);
+        }
+        
+        return rows;
       };
 
-      const header = parseCsvLine(lines[0].toLowerCase()).map(h => h.trim());
+      const rows = parseCSV(csvData.trim());
+      
+      if (rows.length < 2) {
+        return res.status(400).json({ error: "CSV must contain header and at least one data row" });
+      }
+
+      const header = rows[0].map(h => h.toLowerCase().trim());
       const requiredFields = ["code", "description"];
       
       for (const field of requiredFields) {
@@ -357,13 +381,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: [] as string[],
       };
 
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
+      for (let i = 1; i < rows.length; i++) {
+        const values = rows[i];
+        
         try {
-          const values = parseCsvLine(line);
-
           const rowData: Record<string, string> = {};
           header.forEach((field, index) => {
             rowData[field] = values[index] || "";
