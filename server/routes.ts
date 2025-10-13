@@ -261,8 +261,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/csv/template", async (req, res) => {
     try {
       const csvHeader = "code,description,category,price,active\n";
-      const csvExample = "GP-1200-1000-12,\"Glass Panel 1200mm x 1000mm (12mm thick)\",Pool Fencing,$450.00,1\n";
-      const csvTemplate = csvHeader + csvExample;
+      
+      // Glass Pool Fencing Products
+      const glassPoolProducts = [
+        'GP-1200-1200-12,"Glass Panel 1200mm x 1200mm (12mm thick)",Pool Fencing,$450.00,1',
+        'GP-1500-1200-12,"Glass Panel 1500mm x 1200mm (12mm thick)",Pool Fencing,$520.00,1',
+        'GP-1200-1200-15,"Glass Panel 1200mm x 1200mm (15mm thick)",Pool Fencing,$580.00,1',
+        'RP-LEFT-1200-1400,"Left Raked Panel 1200mm x 1400mm",Pool Fencing,$520.00,1',
+        'RP-RIGHT-1200-1400,"Right Raked Panel 1200mm x 1400mm",Pool Fencing,$520.00,1',
+        'GP-CUSTOM-1200-1500-12,"Custom Glass Panel 1200mm x 1500mm (12mm thick)",Pool Fencing,$550.00,1',
+        'SPIGOT-BASE_PLATE-POLISHED,"Spigot Base Plate Mount (Polished)",Hardware,$85.00,1',
+        'SPIGOT-CORE_DRILLED-SATIN,"Spigot Core Drilled (Satin)",Hardware,$85.00,1',
+        'SPIGOT-SIDE_MOUNTED-BLACK,"Spigot Side Mounted (Black)",Hardware,$90.00,1',
+        'HINGE-MASTER-G2G,"Master Range Glass-to-Glass Hinge Set",Hardware,$320.00,1',
+        'HINGE-MASTER-G2W,"Master Range Glass-to-Wall/Post Hinge Set",Hardware,$310.00,1',
+        'HINGE-POLARIS-G2G,"Polaris/Atlantic Glass-to-Glass Hinge Set",Hardware,$380.00,1',
+        'HINGE-POLARIS-W2G,"Polaris/Atlantic Wall-to-Glass Hinge Set",Hardware,$370.00,1',
+        'LATCH-G2G,"Glass-to-Glass Latch",Hardware,$180.00,1',
+        'LATCH-G2W,"Glass-to-Wall/Post Latch",Hardware,$175.00,1',
+        'SP-50-1200,"Spigot Post (50mm diameter, 1200mm height)",Posts & Rails,$95.00,1',
+      ];
+      
+      // Glass Balustrade Products
+      const glassBalustradeProducts = [
+        'GP-1200-1000-12,"Glass Panel 1200mm x 1000mm (12mm thick)",Balustrade,$420.00,1',
+        'GP-1200-1000-15,"Glass Panel 1200mm x 1000mm (15mm thick)",Balustrade,$550.00,1',
+        'GP-STANDOFF-800-1000-15,"Standoff Glass Panel 800mm x 1000mm (15mm thick)",Balustrade,$480.00,1',
+        'STANDOFF-50-POLISHED,"Standoff Pin 50mm (Polished)",Hardware,$45.00,1',
+        'STANDOFF-50-SATIN,"Standoff Pin 50mm (Satin)",Hardware,$45.00,1',
+        'HANDRAIL-NONORAIL-25X21-SS,"Handrail Nonorail 25x21mm Stainless Steel",Posts & Rails,$120.00,1',
+        'HANDRAIL-NANORAIL-30X21-AL,"Handrail Nanorail 30x21mm Anodised Aluminium",Posts & Rails,$110.00,1',
+      ];
+      
+      // Aluminium BARR Products
+      const barrProducts = [
+        'BARR-1000-1733-CN150A,"BARR Panel 1000mm x 1733mm (Satin Black)",Pool Fencing,$385.00,1',
+        'BARR-1200-2205-CN150A,"BARR Panel 1200mm x 2205mm (Satin Black)",Pool Fencing,$485.00,1',
+        'BARR-1800-1969-CN150A,"BARR Panel 1800mm x 1969mm (Satin Black)",Balustrade,$520.00,1',
+        'BARR-1000-1733-CNPW,"BARR Panel 1000mm x 1733mm (Pearl White)",Pool Fencing,$385.00,1',
+        'BARR-GATE-1200-975-CN150A,"BARR Gate 1200mm x 975mm (Satin Black)",Hardware,$420.00,1',
+        'BARR-POST-STD-1200-CN150A,"BARR Standard Post 1200mm (Satin Black)",Posts & Rails,$85.00,1',
+        'BARR-POST-WBP-1200-CN150A,"BARR Welded Base Plate Post 1200mm (Satin Black)",Posts & Rails,$125.00,1',
+      ];
+      
+      // Aluminium Blade Products
+      const bladeProducts = [
+        'BLADE-1000-1700-CN150A,"Blade Panel 1000mm x 1700mm (Satin Black)",Pool Fencing,$425.00,1',
+        'BLADE-1200-2200-CN150A,"Blade Panel 1200mm x 2200mm (Satin Black)",Pool Fencing,$545.00,1',
+        'BLADE-1000-1700-CNPW,"Blade Panel 1000mm x 1700mm (Pearl White)",Pool Fencing,$425.00,1',
+        'BLADE-GATE-1200-975-CN150A,"Blade Gate 1200mm x 975mm (Satin Black)",Hardware,$460.00,1',
+        'BLADE-POST-STD-1200-CN150A,"Blade Standard Post 1200mm (Satin Black)",Posts & Rails,$95.00,1',
+        'BLADE-POST-WBP-1200-CN150A,"Blade Welded Base Plate Post 1200mm (Satin Black)",Posts & Rails,$135.00,1',
+      ];
+      
+      // Aluminium Tubular Products
+      const tubularProducts = [
+        'TUBULAR-1200-2450-BLACK,"Tubular Panel 1200mm x 2450mm (Black)",Pool Fencing,$395.00,1',
+        'TUBULAR-1200-3000-BLACK,"Tubular Panel 1200mm x 3000mm (Black)",Pool Fencing,$465.00,1',
+        'TUBULAR-900-2450-WHITE,"Tubular Panel 900mm x 2450mm (White)",Balustrade,$365.00,1',
+        'TUBULAR-GATE-1200-975-BLACK,"Tubular Gate 1200mm x 975mm (Black)",Hardware,$385.00,1',
+        'TUBULAR-POST-STD-1200-BLACK,"Tubular Standard Post 1200mm (Black)",Posts & Rails,$75.00,1',
+      ];
+      
+      // Hamptons PVC Products
+      const hamptonsProducts = [
+        'HAMPTONS-FULL_PRIVACY-2388,"Hamptons Full Privacy Panel 2388mm (1800mm high)",Hamptons,$485.00,1',
+        'HAMPTONS-COMBO-2388,"Hamptons Combo Panel 2388mm (1800mm high)",Hamptons,$465.00,1',
+        'HAMPTONS-VERTICAL_PALING-2388,"Hamptons Vertical Paling Panel 2388mm (1800mm high)",Hamptons,$445.00,1',
+        'HAMPTONS-SEMI_PRIVACY-2388,"Hamptons Semi Privacy Panel 2388mm (1000mm high)",Hamptons,$325.00,1',
+        'HAMPTONS-3RAIL-2388,"Hamptons 3 Rail Panel 2388mm (1525mm high)",Hamptons,$385.00,1',
+        'HAMPTONS-GATE-FULL_PRIVACY-1000,"Hamptons Full Privacy Gate 1000mm",Hardware,$425.00,1',
+        'HAMPTONS-POST-1WAY,"Hamptons 1-Way Post 127mm",Posts & Rails,$95.00,1',
+        'HAMPTONS-POST-2WAY,"Hamptons 2-Way Post 127mm",Posts & Rails,$105.00,1',
+        'HAMPTONS-POST-90DEG,"Hamptons 90-Degree Post 127mm",Posts & Rails,$110.00,1',
+        'HAMPTONS-POST-GATE,"Hamptons Gate Post 127mm",Posts & Rails,$125.00,1',
+      ];
+      
+      const allProducts = [
+        ...glassPoolProducts,
+        ...glassBalustradeProducts,
+        ...barrProducts,
+        ...bladeProducts,
+        ...tubularProducts,
+        ...hamptonsProducts,
+      ];
+      
+      const csvTemplate = csvHeader + allProducts.join("\n") + "\n";
       
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=product_template.csv");
