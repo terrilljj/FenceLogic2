@@ -102,6 +102,7 @@ Preferred communication style: Simple, everyday language.
   - Control field visibility (toggle on/off)
   - Set field display order/position
   - Customize field labels and tooltip text
+  - Product mapping for dropdown options: Map each dropdown value to specific product codes
   - Tab-based interface for 13 product variants
   - Saves configurations to database with JSONB storage
 
