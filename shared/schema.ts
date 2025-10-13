@@ -483,15 +483,22 @@ export const componentSchema = z.object({
 
 export type Component = z.infer<typeof componentSchema>;
 
-// Product categories matching home page navigation sections (exact order)
+// Product categories - exactly matching the 14 calculators from home navigation
 export const PRODUCT_CATEGORIES = [
-  "Pool Fencing",
-  "Hamptons",
-  "Balustrade",
-  "Hardware",
-  "Glass Panels",
-  "Posts & Rails",
-  "Other"
+  "Frameless Pool Fence",
+  "Channel Pool Fence", 
+  "Flat Top Pool Fence",
+  "BARR Pool Fence",
+  "Blade Pool Fence",
+  "Hamptons Full Privacy",
+  "Hamptons Combo",
+  "Hamptons Vertical Paling",
+  "Hamptons Semi Privacy",
+  "Hamptons 3 Rail",
+  "Frameless Balustrade",
+  "Channel Balustrade",
+  "Standoff Balustrade",
+  "Aluminium Balustrade"
 ] as const;
 
 export type ProductCategory = typeof PRODUCT_CATEGORIES[number];
