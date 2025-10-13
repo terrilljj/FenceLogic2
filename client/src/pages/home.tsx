@@ -115,15 +115,16 @@ const productOptions: ProductOption[] = [
 function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail" }) {
   if (type === "frameless-glass") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Frameless glass panel with base-mounted spigots */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32">
-          {/* Glass panel - semi-transparent with subtle gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/60 to-blue-100/40 dark:from-cyan-950/20 dark:to-blue-900/30 border border-cyan-200/50 dark:border-cyan-700/50 rounded-sm" />
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-14 h-20">
+          {/* Glass panel - realistic glass appearance */}
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-100/80 via-sky-50/60 to-cyan-100/70 dark:from-sky-900/30 dark:via-sky-950/20 dark:to-cyan-900/25 border-2 border-sky-200/40 dark:border-sky-700/40 shadow-sm" 
+               style={{ backdropFilter: 'blur(2px)' }} />
           
-          {/* Base spigots - rectangular mounting plates */}
-          <div className="absolute -bottom-2 left-3 w-3 h-4 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 shadow-md" />
-          <div className="absolute -bottom-2 right-3 w-3 h-4 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 shadow-md" />
+          {/* Base spigots - circular mounting plates */}
+          <div className="absolute -bottom-1.5 left-2 w-2.5 h-3 bg-gradient-to-b from-zinc-300 to-zinc-400 dark:from-zinc-600 dark:to-zinc-700 rounded-sm shadow-md" />
+          <div className="absolute -bottom-1.5 right-2 w-2.5 h-3 bg-gradient-to-b from-zinc-300 to-zinc-400 dark:from-zinc-600 dark:to-zinc-700 rounded-sm shadow-md" />
         </div>
       </div>
     );
@@ -131,19 +132,20 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "channel-glass") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Glass panel in aluminium channel system */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32">
-          {/* Glass panel - semi-transparent */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-blue-200/30 dark:from-blue-900/15 dark:to-blue-800/25 border border-blue-200/60 dark:border-blue-700/60 rounded-sm" />
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-14 h-20">
+          {/* Glass panel - realistic glass appearance */}
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-100/80 via-sky-50/60 to-cyan-100/70 dark:from-sky-900/30 dark:via-sky-950/20 dark:to-cyan-900/25 border-2 border-sky-200/40 dark:border-sky-700/40 shadow-sm"
+               style={{ backdropFilter: 'blur(2px)' }} />
           
           {/* Bottom aluminium channel - U-shaped profile */}
-          <div className="absolute -bottom-2 left-0 right-0">
+          <div className="absolute -bottom-1.5 left-0 right-0">
             {/* Channel base */}
-            <div className="h-3 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600 rounded-b-sm shadow-md" />
+            <div className="h-2 bg-gradient-to-b from-zinc-300 to-zinc-400 dark:from-zinc-600 dark:to-zinc-700 rounded-b-sm shadow-md" />
             {/* Channel sides */}
-            <div className="absolute top-0 left-0 w-1 h-2 bg-zinc-500 dark:bg-zinc-600" />
-            <div className="absolute top-0 right-0 w-1 h-2 bg-zinc-500 dark:bg-zinc-600" />
+            <div className="absolute top-0 left-0 w-0.5 h-1.5 bg-zinc-400 dark:bg-zinc-700" />
+            <div className="absolute top-0 right-0 w-0.5 h-1.5 bg-zinc-400 dark:bg-zinc-700" />
           </div>
         </div>
       </div>
@@ -152,14 +154,15 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
 
   if (type === "standoff-glass") {
     return (
-      <div className="relative w-32 h-40 mx-auto">
+      <div className="relative w-20 h-24 mx-auto">
         {/* Glass panel with standoffs */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 w-20 h-32 bg-gradient-to-br from-blue-100/60 to-blue-200/40 dark:from-blue-900/20 dark:to-blue-800/30 border border-blue-200/50 dark:border-blue-700/50 rounded-sm">
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-14 h-20 bg-gradient-to-br from-sky-100/80 via-sky-50/60 to-cyan-100/70 dark:from-sky-900/30 dark:via-sky-950/20 dark:to-cyan-900/25 border-2 border-sky-200/40 dark:border-sky-700/40 shadow-sm"
+             style={{ backdropFilter: 'blur(2px)' }}>
           {/* Standoff pins */}
-          <div className="absolute top-3 left-2 w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
-          <div className="absolute top-3 right-2 w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
-          <div className="absolute bottom-3 left-2 w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
-          <div className="absolute bottom-3 right-2 w-2 h-2 bg-zinc-400 dark:bg-zinc-600 rounded-full shadow-sm" />
+          <div className="absolute top-2 left-1.5 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shadow-sm" />
+          <div className="absolute top-2 right-1.5 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shadow-sm" />
+          <div className="absolute bottom-2 left-1.5 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shadow-sm" />
+          <div className="absolute bottom-2 right-1.5 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shadow-sm" />
         </div>
       </div>
     );
