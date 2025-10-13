@@ -50,6 +50,7 @@ export default function AdminLogin() {
         
         // Store auth state
         localStorage.setItem("isAdminAuthenticated", "true");
+        console.log("LocalStorage set, now redirecting...");
         
         toast({
           title: "Login successful",
@@ -57,7 +58,9 @@ export default function AdminLogin() {
         });
         
         // Redirect to products page
+        console.log("About to redirect to /products");
         window.location.href = "/products";
+        console.log("Redirect called");
       } else {
         const error = await response.json();
         console.error("Login failed:", error);
