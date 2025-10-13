@@ -1,9 +1,9 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertProductSchema, type Product, type InsertProduct } from "@shared/schema";
+import { insertProductSchema, type Product, type InsertProduct, PRODUCT_CATEGORIES } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, Package } from "lucide-react";
+import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +57,7 @@ export default function Products() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
@@ -135,13 +136,64 @@ export default function Products() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: (csvData: string) =>
+      apiRequest("POST", "/api/products/csv/import", { csvData }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Import Complete",
+        description: `Successfully imported ${data.success} products. ${data.failed > 0 ? `${data.failed} failed.` : ""}`,
+      });
+      if (data.errors && data.errors.length > 0) {
+        console.error("Import errors:", data.errors);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Import Failed",
+        description: error.message || "Failed to import products",
+      });
+    },
+  });
+
+  const handleDownloadTemplate = () => {
+    window.open("/api/products/csv/template", "_blank");
+  };
+
+  const handleExport = () => {
+    window.open("/api/products/csv/export", "_blank");
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const csvData = e.target?.result as string;
+      importMutation.mutate(csvData);
+    };
+    reader.readAsText(file);
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleOpenDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
+      // Only set category if it's in the predefined list, otherwise empty string
+      const category = product.category && PRODUCT_CATEGORIES.includes(product.category as any) 
+        ? product.category 
+        : "";
       form.reset({
         code: product.code,
         description: product.description,
-        category: product.category ?? "",
+        category: category as any,
         price: product.price ?? "",
         active: product.active,
       });
@@ -150,7 +202,7 @@ export default function Products() {
       form.reset({
         code: "",
         description: "",
-        category: "",
+        category: "" as any,
         price: "",
         active: 1,
       });
@@ -187,16 +239,54 @@ export default function Products() {
                 Manage your product codes, descriptions, and pricing
               </p>
             </div>
-            <Button
-              onClick={() => handleOpenDialog()}
-              data-testid="button-add-product"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Product
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleDownloadTemplate}
+                data-testid="button-download-template"
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                CSV Template
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExport}
+                disabled={products.length === 0}
+                data-testid="button-export-csv"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importMutation.isPending}
+                data-testid="button-import-csv"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {importMutation.isPending ? "Importing..." : "Import CSV"}
+              </Button>
+              <Button
+                onClick={() => handleOpenDialog()}
+                data-testid="button-add-product"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        onChange={handleFileUpload}
+        className="hidden"
+        data-testid="input-file-upload"
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -344,13 +434,23 @@ export default function Products() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Glass Panels"
-                          {...field}
-                          data-testid="input-product-category"
-                        />
-                      </FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-product-category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PRODUCT_CATEGORIES.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -365,6 +465,7 @@ export default function Products() {
                         <Input
                           placeholder="e.g., $450.00"
                           {...field}
+                          value={field.value ?? ""}
                           data-testid="input-product-price"
                         />
                       </FormControl>
