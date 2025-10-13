@@ -586,17 +586,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set session
         console.log("Credentials match! Session object:", !!req.session);
         if (req.session) {
+          // Mark session as modified and set isAdmin
           req.session.isAdmin = true;
-          console.log("Set isAdmin=true, about to save session...");
           
-          // Explicitly save the session before responding
-          req.session.save((err) => {
+          // Force session to be saved by regenerating it
+          req.session.regenerate((err) => {
             if (err) {
-              console.error("Session save error:", err);
-              return res.status(500).json({ error: "Session save failed" });
+              console.error("Session regenerate error:", err);
+              return res.status(500).json({ error: "Session creation failed" });
             }
-            console.log("✓ Session saved successfully! isAdmin:", req.session?.isAdmin);
-            res.json({ success: true, message: "Login successful" });
+            
+            // Set isAdmin on the new session
+            if (req.session) {
+              req.session.isAdmin = true;
+              console.log("✓ Session regenerated with isAdmin=true, session ID:", req.session.id);
+              res.json({ success: true, message: "Login successful" });
+            } else {
+              res.status(500).json({ error: "Session not available after regeneration" });
+            }
           });
         } else {
           console.error("No session object available!");
