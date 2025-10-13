@@ -12,6 +12,14 @@ Preferred communication style: Simple, everyday language.
 
 **Supported Products:**
 - **Glass Pool Fencing & Balustrade**: Spigots, Channel mounting, Standoffs
+  - **Top-Mounted Rail (Balustrade only)**: Optional handrail system with 3 rail types
+    - 25×21mm NonoRail (12mm glass only)
+    - 30×21mm NanoRail (universal)
+    - 35×35mm Series 35 (universal)
+  - **Rail Materials**: Stainless Steel, Anodised Aluminium
+  - **Rail Finishes**: Polished, Satin, Black, White
+  - **Rail Terminations**: End Cap, Wall Tie, 90° Corner, Adjustable Corner
+  - **Rail Optimization**: 5800mm standard lengths with automatic wastage minimization across multiple sections
 - **Aluminium Fencing**: BARR (vertical slats), Blade (modern design), Tubular Flat Top
 - **Hamptons PVC Fencing**: 5 style variants with 2388mm standard panels and 127mm square posts
   - Full Privacy (1800mm): Solid privacy panels
@@ -39,6 +47,7 @@ Preferred communication style: Simple, everyday language.
 **Visualization System (V1 - Elevation Only):**
 - Canvas-based 2D side elevation rendering.
 - Displays proportionate representations of glass panels (with spigots), and various aluminium and PVC panel types (BARR, Blade, Tubular, Hamptons PVC) with appropriate posts, rails, and hardware.
+- Top-mounted rails shown on glass balustrades when enabled (thin horizontal line at top of panels).
 - N+1 post structure for aluminium products.
 - Gate hardware (hinges, latches) is visually represented, with inverted flip logic for correct hinge placement.
 
@@ -69,7 +78,9 @@ Preferred communication style: Simple, everyday language.
 **Data Models:**
 - `FenceDesign`, `SpanConfig`, `Component`, `PanelLayout`.
 - `Product` - Product catalog with code, description, category, price, active status.
+- `ProductUIConfig` - UI configuration for product variants (field visibility, position, labels, tooltips).
 - Supports complex gate configurations (hardware types, hinge positions) and custom glass panels (width, height, positioning, distinct visualization).
+- Top rail configurations with type, material, finish, and termination options.
 
 **Admin Authentication:**
 - Session-based authentication for admin panel access.
@@ -86,6 +97,13 @@ Preferred communication style: Simple, everyday language.
 - Credentials include "include" on all fetch requests for proper cookie handling.
 - Admin panel accessible at `/admin-login` (direct URL, not in navigation).
 - Product catalog management at `/products` (requires authentication).
+- UI Configuration portal at `/ui-config` (requires authentication):
+  - Configure which input fields appear for each product variant
+  - Control field visibility (toggle on/off)
+  - Set field display order/position
+  - Customize field labels and tooltip text
+  - Tab-based interface for 13 product variants
+  - Saves configurations to database with JSONB storage
 
 **Panel Calculation System:**
 - Algorithm for mixed panel widths to achieve precise gap spacing.
