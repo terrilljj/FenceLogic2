@@ -32,6 +32,8 @@ export default function AdminLogin() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    console.log("Login form submitted:", { username: data.username.length, password: data.password.length });
+    
     try {
       const response = await fetch("/api/admin/login", {
         method: "POST",
@@ -40,16 +42,25 @@ export default function AdminLogin() {
         body: JSON.stringify(data),
       });
 
+      console.log("Login response status:", response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log("Login successful, redirecting to /products");
         toast({
           title: "Login successful",
           description: "Redirecting to admin panel...",
         });
         // Store auth state
         localStorage.setItem("isAdminAuthenticated", "true");
-        setLocation("/products");
+        
+        // Small delay to ensure localStorage is set
+        setTimeout(() => {
+          setLocation("/products");
+        }, 100);
       } else {
         const error = await response.json();
+        console.error("Login failed:", error);
         toast({
           variant: "destructive",
           title: "Login failed",
@@ -57,10 +68,11 @@ export default function AdminLogin() {
         });
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to connect to server",
+        description: error instanceof Error ? error.message : "Failed to connect to server",
       });
     } finally {
       setIsLoading(false);
