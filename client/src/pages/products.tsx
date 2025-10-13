@@ -74,11 +74,7 @@ export default function Products() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertProduct) => apiRequest("/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }),
+    mutationFn: (data: InsertProduct) => apiRequest("POST", "/api/products", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
@@ -99,11 +95,7 @@ export default function Products() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: InsertProduct }) =>
-      apiRequest(`/api/products/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }),
+      apiRequest("PATCH", `/api/products/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
@@ -125,9 +117,7 @@ export default function Products() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest(`/api/products/${id}`, {
-        method: "DELETE",
-      }),
+      apiRequest("DELETE", `/api/products/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
