@@ -59,8 +59,15 @@ export default function AdminLogin() {
         
         // Redirect to products page
         console.log("About to redirect to /products");
-        window.location.href = "/products";
-        console.log("Redirect called");
+        
+        // Try multiple redirect methods
+        try {
+          window.location.replace("/products");
+        } catch (err) {
+          console.error("Redirect failed:", err);
+          // Fallback to setLocation
+          setLocation("/products");
+        }
       } else {
         const error = await response.json();
         console.error("Login failed:", error);
