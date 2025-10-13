@@ -3,6 +3,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocation } from "wouter";
 import { insertProductSchema, type Product, type InsertProduct, PRODUCT_CATEGORIES } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet, LogOut } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,10 +55,29 @@ import {
 
 export default function Products() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/admin/logout");
+      localStorage.removeItem("isAdminAuthenticated");
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully",
+      });
+      setLocation("/admin-login");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to logout",
+      });
+    }
+  };
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
@@ -272,6 +292,14 @@ export default function Products() {
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleLogout}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
               </Button>
             </div>
           </div>

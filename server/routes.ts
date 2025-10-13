@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertFenceDesignSchema, insertProductSchema } from "@shared/schema";
 import { z } from "zod";
+import { requireAdmin } from "./middleware/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -170,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Product routes
   // Get all products
-  app.get("/api/products", async (req, res) => {
+  app.get("/api/products", requireAdmin, async (req, res) => {
     try {
       const products = await storage.getAllProducts();
       res.json(products);
@@ -181,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get a specific product
-  app.get("/api/products/:id", async (req, res) => {
+  app.get("/api/products/:id", requireAdmin, async (req, res) => {
     try {
       const product = await storage.getProduct(req.params.id);
       if (!product) {
@@ -195,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new product
-  app.post("/api/products", async (req, res) => {
+  app.post("/api/products", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);
       
@@ -217,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update a product
-  app.patch("/api/products/:id", async (req, res) => {
+  app.patch("/api/products/:id", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertProductSchema.partial().parse(req.body);
       
@@ -244,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete a product
-  app.delete("/api/products/:id", async (req, res) => {
+  app.delete("/api/products/:id", requireAdmin, async (req, res) => {
     try {
       const deleted = await storage.deleteProduct(req.params.id);
       if (!deleted) {
@@ -258,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate CSV template for product imports
-  app.get("/api/products/csv/template", async (req, res) => {
+  app.get("/api/products/csv/template", requireAdmin, async (req, res) => {
     try {
       const csvHeader = "code,description,category,price,active\n";
       
@@ -408,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export products to CSV
-  app.get("/api/products/csv/export", async (req, res) => {
+  app.get("/api/products/csv/export", requireAdmin, async (req, res) => {
     try {
       const products = await storage.getAllProducts();
       
@@ -434,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import products from CSV
-  app.post("/api/products/csv/import", async (req, res) => {
+  app.post("/api/products/csv/import", requireAdmin, async (req, res) => {
     try {
       const { csvData } = req.body;
       
@@ -557,6 +558,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error importing products:", error);
       res.status(500).json({ error: "Failed to import products" });
     }
+  });
+
+  // Admin authentication endpoints
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      const adminUsername = process.env.ADMIN_USERNAME || "admin";
+      const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+      
+      if (username === adminUsername && password === adminPassword) {
+        // Set session
+        if (req.session) {
+          req.session.isAdmin = true;
+        }
+        res.json({ success: true, message: "Login successful" });
+      } else {
+        res.status(401).json({ success: false, message: "Invalid credentials" });
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/admin/logout", async (req, res) => {
+    try {
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            return res.status(500).json({ error: "Logout failed" });
+          }
+          res.json({ success: true, message: "Logged out successfully" });
+        });
+      } else {
+        res.json({ success: true, message: "No active session" });
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  app.get("/api/admin/verify", async (req, res) => {
+    const isAuthenticated = req.session?.isAdmin === true;
+    res.json({ authenticated: isAuthenticated });
   });
 
   const httpServer = createServer(app);
