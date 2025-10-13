@@ -3,7 +3,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { insertProductSchema, type Product, type InsertProduct, PRODUCT_CATEGORIES } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet, LogOut } from "lucide-react";
+import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet, LogOut, Settings } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -293,6 +293,15 @@ export default function Products() {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
               </Button>
+              <Link href="/ui-config">
+                <Button
+                  variant="outline"
+                  data-testid="button-ui-config"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  UI Config
+                </Button>
+              </Link>
               <Button
                 variant="ghost"
                 onClick={handleLogout}

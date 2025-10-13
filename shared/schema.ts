@@ -652,3 +652,47 @@ export function optimizeRailLengths(spanLengths: number[]): RailOptimization {
     wastage,
   };
 }
+
+// UI Input Field Configuration Types
+export type UIInputField = 
+  | "section-length"
+  | "left-gap"
+  | "right-gap"
+  | "max-panel-width"
+  | "desired-gap"
+  | "gate-config"
+  | "raked-panels"
+  | "custom-panel"
+  | "glass-thickness"
+  | "top-rail"
+  | "spigot-hardware"
+  | "channel-hardware"
+  | "panel-height"
+  | "finish"
+  | "layout-mode"
+  | "post-type";
+
+export interface UIFieldConfig {
+  field: UIInputField;
+  enabled: boolean;
+  position: number;
+  defaultValue?: any;
+  label?: string;
+  tooltip?: string;
+}
+
+// Product UI Configuration table
+export const productUIConfigs = pgTable("product_ui_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productVariant: varchar("product_variant").notNull().unique(),
+  fieldConfigs: jsonb("field_configs").$type<UIFieldConfig[]>().notNull().default([]),
+  updatedAt: varchar("updated_at").notNull().default(sql`now()::text`),
+});
+
+export const insertProductUIConfigSchema = createInsertSchema(productUIConfigs).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertProductUIConfig = z.infer<typeof insertProductUIConfigSchema>;
+export type ProductUIConfig = typeof productUIConfigs.$inferSelect;

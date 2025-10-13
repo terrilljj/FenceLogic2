@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFenceDesignSchema, insertProductSchema } from "@shared/schema";
+import { insertFenceDesignSchema, insertProductSchema, insertProductUIConfigSchema } from "@shared/schema";
 import { z } from "zod";
 import { requireAdmin } from "./middleware/auth";
 
@@ -609,6 +609,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/verify", async (req, res) => {
     const isAuthenticated = req.session?.isAdmin === true;
     res.json({ authenticated: isAuthenticated });
+  });
+
+  // UI Configuration routes (admin only)
+  app.get("/api/admin/ui-configs", requireAdmin, async (req, res) => {
+    try {
+      const configs = await storage.getAllUIConfigs();
+      res.json(configs);
+    } catch (error) {
+      console.error("Error fetching UI configs:", error);
+      res.status(500).json({ error: "Failed to fetch UI configurations" });
+    }
+  });
+
+  app.get("/api/admin/ui-configs/:variant", requireAdmin, async (req, res) => {
+    try {
+      const config = await storage.getUIConfig(req.params.variant);
+      if (!config) {
+        return res.status(404).json({ error: "Configuration not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching UI config:", error);
+      res.status(500).json({ error: "Failed to fetch UI configuration" });
+    }
+  });
+
+  app.post("/api/admin/ui-configs", requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertProductUIConfigSchema.parse(req.body);
+      const config = await storage.createOrUpdateUIConfig(validatedData);
+      res.json(config);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid configuration data", details: error.errors });
+      }
+      console.error("Error saving UI config:", error);
+      res.status(500).json({ error: "Failed to save UI configuration" });
+    }
+  });
+
+  app.delete("/api/admin/ui-configs/:variant", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteUIConfig(req.params.variant);
+      if (!deleted) {
+        return res.status(404).json({ error: "Configuration not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting UI config:", error);
+      res.status(500).json({ error: "Failed to delete UI configuration" });
+    }
   });
 
   const httpServer = createServer(app);

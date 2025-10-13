@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import FenceLogic from "@/pages/fence-builder";
 import Products from "@/pages/products";
 import AdminLogin from "@/pages/admin-login";
+import UIConfig from "@/pages/ui-config";
 import NotFound from "@/pages/not-found";
 
 // Protected route wrapper for admin pages
@@ -43,6 +44,9 @@ function Router() {
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/products">
         {() => <ProtectedRoute component={Products} />}
+      </Route>
+      <Route path="/ui-config">
+        {() => <ProtectedRoute component={UIConfig} />}
       </Route>
       <Route component={NotFound} />
     </Switch>
