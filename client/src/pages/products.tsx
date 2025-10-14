@@ -87,6 +87,12 @@ export default function Products() {
       category: "",
       subcategory: "",
       price: "",
+      weight: "",
+      dimensions: "",
+      units: "",
+      tags: [],
+      notes: "",
+      imageUrl: "",
       active: 1,
     },
   });
@@ -217,6 +223,12 @@ export default function Products() {
         category: category as any,
         subcategory: product.subcategory ?? "",
         price: product.price ?? "",
+        weight: product.weight ?? "",
+        dimensions: product.dimensions ?? "",
+        units: product.units ?? "",
+        tags: product.tags ?? [],
+        notes: product.notes ?? "",
+        imageUrl: product.imageUrl ?? "",
         active: product.active,
       });
     } else {
@@ -227,6 +239,12 @@ export default function Products() {
         category: "" as any,
         subcategory: "",
         price: "",
+        weight: "",
+        dimensions: "",
+        units: "",
+        tags: [],
+        notes: "",
+        imageUrl: "",
         active: 1,
       });
     }
@@ -571,6 +589,125 @@ export default function Products() {
                   )}
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weight (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 5kg, 12.5 lbs"
+                          {...field}
+                          value={field.value ?? ""}
+                          data-testid="input-product-weight"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dimensions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dimensions (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., 1200mm x 100mm x 50mm"
+                          {...field}
+                          value={field.value ?? ""}
+                          data-testid="input-product-dimensions"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="units"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Units (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., each, meter, set"
+                          {...field}
+                          value={field.value ?? ""}
+                          data-testid="input-product-units"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://example.com/image.jpg"
+                          {...field}
+                          value={field.value ?? ""}
+                          data-testid="input-product-imageurl"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., pool, glass, spigots (comma-separated)"
+                        value={field.value?.join(", ") ?? ""}
+                        onChange={(e) => {
+                          const tags = e.target.value
+                            .split(",")
+                            .map((tag) => tag.trim())
+                            .filter((tag) => tag !== "");
+                          field.onChange(tags);
+                        }}
+                        data-testid="input-product-tags"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Internal notes or comments..."
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={3}
+                        data-testid="input-product-notes"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <DialogFooter>
                 <Button
                   type="button"
