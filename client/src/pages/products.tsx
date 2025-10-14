@@ -314,6 +314,15 @@ export default function Products() {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
               </Button>
+              <Link href="/categories">
+                <Button
+                  variant="outline"
+                  data-testid="button-categories"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Categories
+                </Button>
+              </Link>
               <Link href="/ui-config">
                 <Button
                   variant="outline"
