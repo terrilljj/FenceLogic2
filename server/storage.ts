@@ -1,6 +1,6 @@
 import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, fenceDesigns, products, productUIConfigs, categories, subcategories } from "@shared/schema";
 import { db } from "./db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, sql as sqlOp } from "drizzle-orm";
 
 export interface IStorage {
   // Fence Design operations
@@ -171,8 +171,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCategory(id: string): Promise<boolean> {
-    const result = await db.delete(categories).where(eq(categories.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
+    const category = await this.getCategory(id);
+    if (!category) {
+      return false;
+    }
+    
+    // Use transaction to atomically remove category from all UI configs and delete it
+    const result = await db.transaction(async (tx) => {
+      // Update all UI configs to remove this category using SQL
+      await tx.execute(
+        sqlOp`UPDATE product_ui_configs 
+              SET allowed_categories = COALESCE((
+                SELECT jsonb_agg(elem)
+                FROM jsonb_array_elements_text(allowed_categories) AS elem
+                WHERE elem != ${category.name}
+              ), '[]'::jsonb),
+              updated_at = ${new Date().toISOString()}
+              WHERE allowed_categories ? ${category.name}`
+      );
+      
+      // Delete the category
+      const deleteResult = await tx.delete(categories).where(eq(categories.id, id));
+      return deleteResult.rowCount ? deleteResult.rowCount > 0 : false;
+    });
+    
+    return result;
   }
   
   // Subcategory operations
@@ -203,8 +226,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSubcategory(id: string): Promise<boolean> {
-    const result = await db.delete(subcategories).where(eq(subcategories.id, id));
-    return result.rowCount ? result.rowCount > 0 : false;
+    const subcategory = await this.getSubcategory(id);
+    if (!subcategory) {
+      return false;
+    }
+    
+    // Use transaction to atomically remove subcategory from all UI configs and delete it
+    const result = await db.transaction(async (tx) => {
+      // Update all UI configs to remove this subcategory using SQL
+      await tx.execute(
+        sqlOp`UPDATE product_ui_configs 
+              SET allowed_subcategories = COALESCE((
+                SELECT jsonb_agg(elem)
+                FROM jsonb_array_elements_text(allowed_subcategories) AS elem
+                WHERE elem != ${subcategory.name}
+              ), '[]'::jsonb),
+              updated_at = ${new Date().toISOString()}
+              WHERE allowed_subcategories ? ${subcategory.name}`
+      );
+      
+      // Delete the subcategory
+      const deleteResult = await tx.delete(subcategories).where(eq(subcategories.id, id));
+      return deleteResult.rowCount ? deleteResult.rowCount > 0 : false;
+    });
+    
+    return result;
   }
 }
 
