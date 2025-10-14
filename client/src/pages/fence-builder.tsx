@@ -68,6 +68,22 @@ export default function FenceLogic() {
     queryKey: ["/api/designs"],
   });
 
+  // Fetch UI config for current product variant
+  const { data: uiConfig } = useQuery({
+    queryKey: ["/api/admin/ui-configs", design.productVariant],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/ui-configs/${design.productVariant}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        // If config doesn't exist, return null (fallback to all fields enabled)
+        if (response.status === 404) return null;
+        throw new Error("Failed to fetch UI config");
+      }
+      return response.json();
+    },
+  });
+
   // Save design mutation
   const saveDesignMutation = useMutation({
     mutationFn: async (designToSave: FenceDesign) => {
@@ -363,6 +379,7 @@ export default function FenceLogic() {
                     span={span}
                     onUpdate={(updatedSpan) => handleSpanUpdate(span.spanId, updatedSpan)}
                     productVariant={design.productVariant}
+                    uiConfig={uiConfig}
                     showLeftGap={true}
                     showRightGap={true}
                   />

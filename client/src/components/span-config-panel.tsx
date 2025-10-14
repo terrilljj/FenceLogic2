@@ -17,6 +17,7 @@ interface SpanConfigPanelProps {
   span: SpanConfig;
   onUpdate: (span: SpanConfig) => void;
   productVariant?: ProductVariant;
+  uiConfig?: any;
   showLeftGap?: boolean;
   showRightGap?: boolean;
 }
@@ -25,6 +26,7 @@ export function SpanConfigPanel({
   span,
   onUpdate,
   productVariant = "glass-pool-spigots",
+  uiConfig,
   showLeftGap,
   showRightGap,
 }: SpanConfigPanelProps) {
@@ -32,6 +34,13 @@ export function SpanConfigPanel({
 
   // Determine if gates are allowed for this product variant
   const gatesAllowed = !productVariant.includes("bal-");
+
+  // Helper function to check if a field is enabled in UI config
+  const isFieldEnabled = (fieldName: string): boolean => {
+    if (!uiConfig || !uiConfig.fieldConfigs) return true; // Default to enabled if no config
+    const fieldConfig = uiConfig.fieldConfigs.find((fc: any) => fc.field === fieldName);
+    return fieldConfig?.enabled !== false; // Default to enabled if not found
+  };
 
   const updateSpan = (updates: Partial<SpanConfig>) => {
     // Disable raked panels if max panel width is changed to below 1200mm
@@ -1248,7 +1257,7 @@ export function SpanConfigPanel({
           {/* Gap Configurations - Hide for BARR, Blade, Tubular, and Hamptons PVC */}
           {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
             <div className="grid grid-cols-2 gap-4">
-              {showLeftGap && (
+              {showLeftGap && isFieldEnabled("left-gap") && (
                 <div className="space-y-1">
                   <GapSlider
                     label="Left Gap"
@@ -1265,7 +1274,7 @@ export function SpanConfigPanel({
                 </div>
               )}
 
-              {showRightGap && (
+              {showRightGap && isFieldEnabled("right-gap") && (
                 <div className="space-y-1">
                   <GapSlider
                     label="Right Gap"
@@ -1285,7 +1294,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Panel Configuration - Hide for BARR, Blade, Tubular, and Hamptons PVC */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (
+          {(isFieldEnabled("max-panel-width") || isFieldEnabled("desired-gap")) && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Panel Configuration</h4>
@@ -1293,24 +1302,26 @@ export function SpanConfigPanel({
               </div>
               
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Max Panel Width</Label>
-                  <Select
-                    value={span.maxPanelWidth.toString()}
-                    onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-max-panel-width`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((width) => (
-                        <SelectItem key={width} value={width.toString()}>
-                          {width}mm
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {isFieldEnabled("max-panel-width") ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Max Panel Width</Label>
+                    <Select
+                      value={span.maxPanelWidth.toString()}
+                      onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
+                    >
+                      <SelectTrigger data-testid={`span-${span.spanId}-max-panel-width`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((width) => (
+                          <SelectItem key={width} value={width.toString()}>
+                            {width}mm
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : <div></div>}
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Calculated Total</Label>
@@ -1335,14 +1346,16 @@ export function SpanConfigPanel({
               </div>
 
               {/* Gap Slider - Adjusts panel widths */}
-              <GapSlider
-                label="Desired Gap Between Panels"
-                value={span.desiredGap}
-                onChange={(desiredGap) => updateSpan({ desiredGap })}
-                min={0}
-                max={99}
-                testId={`span-${span.spanId}-gap-slider`}
-              />
+              {isFieldEnabled("desired-gap") && (
+                <GapSlider
+                  label="Desired Gap Between Panels"
+                  value={span.desiredGap}
+                  onChange={(desiredGap) => updateSpan({ desiredGap })}
+                  min={0}
+                  max={99}
+                  testId={`span-${span.spanId}-gap-slider`}
+                />
+              )}
             </div>
           )}
 
@@ -1423,7 +1436,7 @@ export function SpanConfigPanel({
           ) : null}
 
           {/* Gate Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
-          {gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {isFieldEnabled("gate-config") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1478,7 +1491,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Raked Panels Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
-          {gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {isFieldEnabled("raked-panels") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
@@ -1576,7 +1589,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Custom Panel - Hide for BARR, Blade, and Tubular */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {isFieldEnabled("custom-panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-3 pt-4 border-t border-card-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
