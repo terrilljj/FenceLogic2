@@ -105,12 +105,13 @@ Preferred communication style: Simple, everyday language.
   - Database-driven category and subcategory management system
   - Full CRUD operations (Create, Read, Update, Delete) for both categories and subcategories
   - Display order control for organizing taxonomy hierarchy
-  - Database tables: `product_categories` and `product_subcategories` with id, name, displayOrder fields
+  - Database tables: `categories` and `subcategories` with id, name, displayOrder fields
   - Transactional deletion with automatic cleanup:
     - When category/subcategory is deleted, atomically removed from all UI configs using SQL
     - JSONB `?` operator checks containment, COALESCE ensures empty arrays instead of NULL
     - Transaction wraps UPDATE (cleanup) and DELETE operations for atomicity
   - Storage by name (not ID) in UI config JSONB arrays
+  - Current subcategories include: Spigots, Channel, Standoffs, BARR, Blade, Tubular, PIK, Visor, Zeus, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, and Hamptons variants
   - Accessible from Products page navigation
 - UI Configuration portal at `/ui-config` (requires authentication):
   - **Product Groups Selection**: Define which product categories and subcategories apply to each variant
