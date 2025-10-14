@@ -103,6 +103,8 @@ export class DatabaseStorage implements IStorage {
         .update(productUIConfigs)
         .set({ 
           fieldConfigs: insertConfig.fieldConfigs as any,
+          allowedCategories: insertConfig.allowedCategories as any,
+          allowedSubcategories: insertConfig.allowedSubcategories as any,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(productUIConfigs.productVariant, insertConfig.productVariant))
@@ -114,6 +116,8 @@ export class DatabaseStorage implements IStorage {
         .values({
           productVariant: insertConfig.productVariant,
           fieldConfigs: insertConfig.fieldConfigs as any,
+          allowedCategories: insertConfig.allowedCategories as any,
+          allowedSubcategories: insertConfig.allowedSubcategories as any,
         })
         .returning();
       return config;

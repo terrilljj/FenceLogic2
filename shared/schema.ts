@@ -723,6 +723,8 @@ export const productUIConfigs = pgTable("product_ui_configs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productVariant: varchar("product_variant").notNull().unique(),
   fieldConfigs: jsonb("field_configs").$type<UIFieldConfig[]>().notNull().default([]),
+  allowedCategories: jsonb("allowed_categories").$type<string[]>().notNull().default([]),
+  allowedSubcategories: jsonb("allowed_subcategories").$type<string[]>().notNull().default([]),
   updatedAt: varchar("updated_at").notNull().default(sql`now()::text`),
 });
 

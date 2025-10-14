@@ -13,7 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { Save, ArrowLeft, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
-import type { ProductVariant, UIFieldConfig, UIInputField } from "@shared/schema";
+import type { ProductVariant, UIFieldConfig, UIInputField, ProductCategory, ProductSubcategory } from "@shared/schema";
+import { PRODUCT_CATEGORIES, PRODUCT_SUBCATEGORIES } from "@shared/schema";
 
 const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string }[] = [
   { variant: "glass-pool-spigots", label: "Glass Pool - Spigots", group: "Glass Pool Fencing" },
@@ -103,6 +104,8 @@ export default function UIConfigPage() {
   const { toast } = useToast();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>("glass-pool-spigots");
   const [fieldConfigs, setFieldConfigs] = useState<UIFieldConfig[]>([]);
+  const [allowedCategories, setAllowedCategories] = useState<string[]>([]);
+  const [allowedSubcategories, setAllowedSubcategories] = useState<string[]>([]);
 
   const { data: configs, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/ui-configs"],
@@ -113,7 +116,7 @@ export default function UIConfigPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { productVariant: string; fieldConfigs: UIFieldConfig[] }) => {
+    mutationFn: async (data: { productVariant: string; fieldConfigs: UIFieldConfig[]; allowedCategories: string[]; allowedSubcategories: string[] }) => {
       return await apiRequest("POST", "/api/admin/ui-configs", data);
     },
     onSuccess: () => {
@@ -137,6 +140,10 @@ export default function UIConfigPage() {
     if (configs) {
       const config = configs.find((c: any) => c.productVariant === selectedVariant);
       const relevantFields = VARIANT_FIELDS[selectedVariant];
+      
+      // Load allowed categories and subcategories
+      setAllowedCategories(config?.allowedCategories || []);
+      setAllowedSubcategories(config?.allowedSubcategories || []);
       
       // Safety fallback: if no mapping exists, use all available fields
       if (!relevantFields || relevantFields.length === 0) {
@@ -255,6 +262,8 @@ export default function UIConfigPage() {
     saveMutation.mutate({
       productVariant: selectedVariant,
       fieldConfigs,
+      allowedCategories,
+      allowedSubcategories,
     });
   };
 
@@ -316,13 +325,82 @@ export default function UIConfigPage() {
                     Configure which input fields are visible and their display order
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
+                  {/* Product Categories and Subcategories Selection */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-semibold">Product Groups</Label>
+                      <p className="text-sm text-muted-foreground">Select which product categories and subcategories apply to this variant</p>
+                    </div>
+                    
+                    {/* Categories Table */}
+                    <div className="border rounded-md">
+                      <div className="p-3 bg-muted border-b">
+                        <h3 className="font-medium text-sm">Categories</h3>
+                      </div>
+                      <div className="p-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          {PRODUCT_CATEGORIES.map((category) => (
+                            <div key={category} className="flex items-center space-x-2">
+                              <Checkbox
+                                checked={allowedCategories.includes(category)}
+                                onCheckedChange={(checked) => {
+                                  setAllowedCategories(prev => 
+                                    checked 
+                                      ? [...prev, category]
+                                      : prev.filter(c => c !== category)
+                                  );
+                                }}
+                                data-testid={`checkbox-category-${category}`}
+                              />
+                              <label className="text-sm cursor-pointer">
+                                {category}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Subcategories Table */}
+                    <div className="border rounded-md">
+                      <div className="p-3 bg-muted border-b">
+                        <h3 className="font-medium text-sm">Subcategories</h3>
+                      </div>
+                      <div className="p-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          {PRODUCT_SUBCATEGORIES.map((subcategory) => (
+                            <div key={subcategory} className="flex items-center space-x-2">
+                              <Checkbox
+                                checked={allowedSubcategories.includes(subcategory)}
+                                onCheckedChange={(checked) => {
+                                  setAllowedSubcategories(prev => 
+                                    checked 
+                                      ? [...prev, subcategory]
+                                      : prev.filter(s => s !== subcategory)
+                                  );
+                                }}
+                                data-testid={`checkbox-subcategory-${subcategory}`}
+                              />
+                              <label className="text-sm cursor-pointer">
+                                {subcategory}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Column headers */}
-                  <div className="grid grid-cols-12 gap-3 px-3 pb-2 border-b text-xs font-medium text-muted-foreground">
-                    <div className="col-span-2">Field</div>
-                    <div className="col-span-1">Pos</div>
-                    <div className="col-span-2">Label</div>
-                    <div className="col-span-7">Value Configuration</div>
+                  <div className="pt-4 border-t">
+                    <Label className="text-base font-semibold mb-4 block">Input Field Configuration</Label>
+                    <div className="grid grid-cols-12 gap-3 px-3 pb-2 border-b text-xs font-medium text-muted-foreground">
+                      <div className="col-span-2">Field</div>
+                      <div className="col-span-1">Pos</div>
+                      <div className="col-span-2">Label</div>
+                      <div className="col-span-7">Value Configuration</div>
+                    </div>
                   </div>
 
                   <div className="grid gap-2">
