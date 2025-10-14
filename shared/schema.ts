@@ -508,12 +508,36 @@ export const PRODUCT_CATEGORIES = [
 
 export type ProductCategory = typeof PRODUCT_CATEGORIES[number];
 
+// Product subcategories for classification
+export const PRODUCT_SUBCATEGORIES = [
+  "Spigots",
+  "Channel",
+  "Standoffs",
+  "BARR",
+  "Blade",
+  "Tubular",
+  "PIK",
+  "Visor",
+  "Zeus",
+  "Full Privacy",
+  "Combo",
+  "Vertical Paling",
+  "Semi Privacy",
+  "3 Rail",
+  "NanoRail",
+  "NonoRail",
+  "Series 35"
+] as const;
+
+export type ProductSubcategory = typeof PRODUCT_SUBCATEGORIES[number];
+
 // Product catalog table for managing product codes and descriptions
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: varchar("code", { length: 100 }).notNull().unique(),
   description: text("description").notNull(),
   category: varchar("category", { length: 100 }),
+  subcategory: varchar("subcategory", { length: 100 }),
   price: text("price"), // Stored as text to allow flexible formatting
   active: integer("active").notNull().default(1), // 1 = active, 0 = inactive
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),

@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation, Link } from "wouter";
-import { insertProductSchema, type Product, type InsertProduct, PRODUCT_CATEGORIES } from "@shared/schema";
+import { insertProductSchema, type Product, type InsertProduct, PRODUCT_CATEGORIES, PRODUCT_SUBCATEGORIES } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -85,6 +85,7 @@ export default function Products() {
       code: "",
       description: "",
       category: "",
+      subcategory: "",
       price: "",
       active: 1,
     },
@@ -214,6 +215,7 @@ export default function Products() {
         code: product.code,
         description: product.description,
         category: category as any,
+        subcategory: product.subcategory ?? "",
         price: product.price ?? "",
         active: product.active,
       });
@@ -223,6 +225,7 @@ export default function Products() {
         code: "",
         description: "",
         category: "" as any,
+        subcategory: "",
         price: "",
         active: 1,
       });
@@ -354,6 +357,7 @@ export default function Products() {
                       <TableHead>Code</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Category</TableHead>
+                      <TableHead>Subcategory</TableHead>
                       <TableHead>Price</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -370,6 +374,9 @@ export default function Products() {
                         </TableCell>
                         <TableCell data-testid={`text-category-${product.id}`}>
                           {product.category || "-"}
+                        </TableCell>
+                        <TableCell data-testid={`text-subcategory-${product.id}`}>
+                          {product.subcategory || "-"}
                         </TableCell>
                         <TableCell data-testid={`text-price-${product.id}`}>
                           {product.price || "-"}
@@ -494,6 +501,35 @@ export default function Products() {
                 />
                 <FormField
                   control={form.control}
+                  name="subcategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subcategory (Optional)</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-product-subcategory">
+                            <SelectValue placeholder="Select subcategory" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PRODUCT_SUBCATEGORIES.map((subcategory) => (
+                            <SelectItem key={subcategory} value={subcategory}>
+                              {subcategory}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="price"
                   render={({ field }) => (
                     <FormItem>
@@ -510,31 +546,31 @@ export default function Products() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="active"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-product-status">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">Active</SelectItem>
+                          <SelectItem value="0">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              <FormField
-                control={form.control}
-                name="active"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      value={field.value?.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger data-testid="select-product-status">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="1">Active</SelectItem>
-                        <SelectItem value="0">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <DialogFooter>
                 <Button
                   type="button"
