@@ -152,26 +152,30 @@ export default function UIConfigPage() {
         return;
       }
       
-      if (config) {
-        // Filter to only show relevant fields for this variant
-        const filteredConfigs = config.fieldConfigs.filter(
-          (fc: UIFieldConfig) => relevantFields.includes(fc.field)
-        );
-        setFieldConfigs(filteredConfigs);
-      } else {
-        // Initialize with only relevant fields for this variant
-        const relevantFieldConfigs = AVAILABLE_FIELDS
-          .filter(field => relevantFields.includes(field.field))
-          .map((field, index) => ({
-            field: field.field,
-            enabled: field.field === "section-length", // Section length enabled by default
-            position: index,
-            label: field.label,
-            tooltip: field.defaultTooltip,
-            ...field.defaultConfig, // Include default value, min, max, step, options
-          }));
-        setFieldConfigs(relevantFieldConfigs);
-      }
+      // Always initialize with ALL relevant fields for this variant
+      const relevantFieldConfigs = AVAILABLE_FIELDS
+        .filter(field => relevantFields.includes(field.field))
+        .map((field, index) => {
+          // Check if this field exists in saved config
+          const savedConfig = config?.fieldConfigs?.find((fc: UIFieldConfig) => fc.field === field.field);
+          
+          if (savedConfig) {
+            // Use saved configuration
+            return savedConfig;
+          } else {
+            // Use default configuration
+            return {
+              field: field.field,
+              enabled: field.field === "section-length", // Section length enabled by default
+              position: index,
+              label: field.label,
+              tooltip: field.defaultTooltip,
+              ...field.defaultConfig, // Include default value, min, max, step, options
+            };
+          }
+        });
+      
+      setFieldConfigs(relevantFieldConfigs);
     }
   }, [selectedVariant, configs]);
 
