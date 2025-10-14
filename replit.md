@@ -102,7 +102,10 @@ Preferred communication style: Simple, everyday language.
   - Control field visibility (toggle on/off)
   - Set field display order/position
   - Customize field labels and tooltip text
-  - Product mapping for dropdown options: Map each dropdown value to specific product codes
+  - Product mapping system:
+    - Dropdown fields: Map each option value to specific product codes (e.g., "12mm" → [PROD-1, PROD-2])
+    - Toggle fields: Associate products directly with the feature (e.g., Gate Config → [GATE-1, GATE-2])
+    - Supports both text and numeric dropdowns (max-panel-width, glass-thickness, etc.)
   - Tab-based interface for 13 product variants
   - Saves configurations to database with JSONB storage
 
