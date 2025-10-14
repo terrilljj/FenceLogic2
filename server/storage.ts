@@ -1,6 +1,6 @@
-import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, fenceDesigns, products, productUIConfigs } from "@shared/schema";
+import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, fenceDesigns, products, productUIConfigs, categories, subcategories } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Fence Design operations
@@ -22,6 +22,20 @@ export interface IStorage {
   getAllUIConfigs(): Promise<ProductUIConfig[]>;
   createOrUpdateUIConfig(config: InsertProductUIConfig): Promise<ProductUIConfig>;
   deleteUIConfig(productVariant: string): Promise<boolean>;
+  
+  // Category operations
+  getCategory(id: string): Promise<Category | undefined>;
+  getAllCategories(): Promise<Category[]>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(id: string): Promise<boolean>;
+  
+  // Subcategory operations
+  getSubcategory(id: string): Promise<Subcategory | undefined>;
+  getAllSubcategories(): Promise<Subcategory[]>;
+  createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
+  updateSubcategory(id: string, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
+  deleteSubcategory(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -126,6 +140,70 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUIConfig(productVariant: string): Promise<boolean> {
     const result = await db.delete(productUIConfigs).where(eq(productUIConfigs.productVariant, productVariant));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Category operations
+  async getCategory(id: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category || undefined;
+  }
+
+  async getAllCategories(): Promise<Category[]> {
+    return await db.select().from(categories).orderBy(asc(categories.displayOrder), asc(categories.name));
+  }
+
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const [category] = await db
+      .insert(categories)
+      .values(insertCategory)
+      .returning();
+    return category;
+  }
+
+  async updateCategory(id: string, updateData: Partial<InsertCategory>): Promise<Category | undefined> {
+    const [category] = await db
+      .update(categories)
+      .set(updateData)
+      .where(eq(categories.id, id))
+      .returning();
+    return category || undefined;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Subcategory operations
+  async getSubcategory(id: string): Promise<Subcategory | undefined> {
+    const [subcategory] = await db.select().from(subcategories).where(eq(subcategories.id, id));
+    return subcategory || undefined;
+  }
+
+  async getAllSubcategories(): Promise<Subcategory[]> {
+    return await db.select().from(subcategories).orderBy(asc(subcategories.displayOrder), asc(subcategories.name));
+  }
+
+  async createSubcategory(insertSubcategory: InsertSubcategory): Promise<Subcategory> {
+    const [subcategory] = await db
+      .insert(subcategories)
+      .values(insertSubcategory)
+      .returning();
+    return subcategory;
+  }
+
+  async updateSubcategory(id: string, updateData: Partial<InsertSubcategory>): Promise<Subcategory | undefined> {
+    const [subcategory] = await db
+      .update(subcategories)
+      .set(updateData)
+      .where(eq(subcategories.id, id))
+      .returning();
+    return subcategory || undefined;
+  }
+
+  async deleteSubcategory(id: string): Promise<boolean> {
+    const result = await db.delete(subcategories).where(eq(subcategories.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }

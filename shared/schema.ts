@@ -735,3 +735,35 @@ export const insertProductUIConfigSchema = createInsertSchema(productUIConfigs).
 
 export type InsertProductUIConfig = z.infer<typeof insertProductUIConfigSchema>;
 export type ProductUIConfig = typeof productUIConfigs.$inferSelect;
+
+// Categories table for dynamic category management
+export const categories = pgTable("categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 200 }).notNull().unique(),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: varchar("created_at").notNull().default(sql`now()::text`),
+});
+
+export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type Category = typeof categories.$inferSelect;
+
+// Subcategories table for dynamic subcategory management
+export const subcategories = pgTable("subcategories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 200 }).notNull().unique(),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: varchar("created_at").notNull().default(sql`now()::text`),
+});
+
+export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
+export type Subcategory = typeof subcategories.$inferSelect;
