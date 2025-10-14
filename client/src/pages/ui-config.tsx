@@ -13,8 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { Save, ArrowLeft, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
-import type { ProductVariant, UIFieldConfig, UIInputField, ProductCategory, ProductSubcategory } from "@shared/schema";
-import { PRODUCT_CATEGORIES, PRODUCT_SUBCATEGORIES } from "@shared/schema";
+import type { ProductVariant, UIFieldConfig, UIInputField, ProductCategory, ProductSubcategory, Category, Subcategory } from "@shared/schema";
 
 const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string }[] = [
   { variant: "glass-pool-spigots", label: "Glass Pool - Spigots", group: "Glass Pool Fencing" },
@@ -113,6 +112,14 @@ export default function UIConfigPage() {
 
   const { data: products } = useQuery<any[]>({
     queryKey: ["/api/admin/products"],
+  });
+
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/admin/categories"],
+  });
+
+  const { data: subcategories = [] } = useQuery<Subcategory[]>({
+    queryKey: ["/api/admin/subcategories"],
   });
 
   const saveMutation = useMutation({
@@ -340,21 +347,21 @@ export default function UIConfigPage() {
                       </div>
                       <div className="p-3">
                         <div className="grid grid-cols-2 gap-2">
-                          {PRODUCT_CATEGORIES.map((category) => (
-                            <div key={category} className="flex items-center space-x-2">
+                          {categories.map((category) => (
+                            <div key={category.id} className="flex items-center space-x-2">
                               <Checkbox
-                                checked={allowedCategories.includes(category)}
+                                checked={allowedCategories.includes(category.name)}
                                 onCheckedChange={(checked) => {
                                   setAllowedCategories(prev => 
                                     checked 
-                                      ? [...prev, category]
-                                      : prev.filter(c => c !== category)
+                                      ? [...prev, category.name]
+                                      : prev.filter(c => c !== category.name)
                                   );
                                 }}
-                                data-testid={`checkbox-category-${category}`}
+                                data-testid={`checkbox-category-${category.name}`}
                               />
                               <label className="text-sm cursor-pointer">
-                                {category}
+                                {category.name}
                               </label>
                             </div>
                           ))}
@@ -369,21 +376,21 @@ export default function UIConfigPage() {
                       </div>
                       <div className="p-3">
                         <div className="grid grid-cols-2 gap-2">
-                          {PRODUCT_SUBCATEGORIES.map((subcategory) => (
-                            <div key={subcategory} className="flex items-center space-x-2">
+                          {subcategories.map((subcategory) => (
+                            <div key={subcategory.id} className="flex items-center space-x-2">
                               <Checkbox
-                                checked={allowedSubcategories.includes(subcategory)}
+                                checked={allowedSubcategories.includes(subcategory.name)}
                                 onCheckedChange={(checked) => {
                                   setAllowedSubcategories(prev => 
                                     checked 
-                                      ? [...prev, subcategory]
-                                      : prev.filter(s => s !== subcategory)
+                                      ? [...prev, subcategory.name]
+                                      : prev.filter(s => s !== subcategory.name)
                                   );
                                 }}
-                                data-testid={`checkbox-subcategory-${subcategory}`}
+                                data-testid={`checkbox-subcategory-${subcategory.name}`}
                               />
                               <label className="text-sm cursor-pointer">
-                                {subcategory}
+                                {subcategory.name}
                               </label>
                             </div>
                           ))}
