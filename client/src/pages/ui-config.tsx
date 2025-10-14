@@ -245,6 +245,12 @@ export default function UIConfigPage() {
     );
   };
 
+  const handleProductsChange = (field: UIInputField, productCodes: string[]) => {
+    setFieldConfigs(prev => 
+      prev.map(fc => fc.field === field ? { ...fc, products: productCodes } : fc)
+    );
+  };
+
   const handleSave = () => {
     saveMutation.mutate({
       productVariant: selectedVariant,
@@ -571,16 +577,61 @@ export default function UIConfigPage() {
                             )}
 
                             {fieldMeta.type === "toggle" && (
-                              <div className="col-span-7">
-                                <Input
-                                  className="h-8"
-                                  value={fc.tooltip || fieldMeta.defaultTooltip}
-                                  onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
-                                  disabled={!fc.enabled}
-                                  placeholder="Tooltip"
-                                  data-testid={`input-tooltip-${fc.field}`}
-                                />
-                              </div>
+                              <>
+                                <div className="col-span-7">
+                                  <Input
+                                    className="h-8"
+                                    value={fc.tooltip || fieldMeta.defaultTooltip}
+                                    onChange={(e) => handleTooltipChange(fc.field, e.target.value)}
+                                    disabled={!fc.enabled}
+                                    placeholder="Tooltip"
+                                    data-testid={`input-tooltip-${fc.field}`}
+                                  />
+                                </div>
+                                
+                                {/* Product selection for toggle fields */}
+                                {fc.enabled && (
+                                  <div className="col-span-12 mt-2 pt-2 border-t">
+                                    <Label className="text-xs font-medium mb-2 block">Associated Products</Label>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          className="h-8 w-full justify-between text-sm"
+                                          data-testid={`button-products-${fc.field}`}
+                                        >
+                                          {(fc.products?.length || 0) > 0
+                                            ? `${fc.products?.length} product(s) selected`
+                                            : "Select products..."}
+                                          <ChevronDown className="h-4 w-4 ml-2" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-96 p-3" align="start">
+                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                          {products?.filter((p: any) => p.active).map((product: any) => (
+                                            <div key={product.code} className="flex items-center space-x-2">
+                                              <Checkbox
+                                                checked={fc.products?.includes(product.code) || false}
+                                                onCheckedChange={(checked) => {
+                                                  const currentProducts = fc.products || [];
+                                                  const newProducts = checked
+                                                    ? [...currentProducts, product.code]
+                                                    : currentProducts.filter((p: string) => p !== product.code);
+                                                  handleProductsChange(fc.field, newProducts);
+                                                }}
+                                                data-testid={`checkbox-product-${fc.field}-${product.code}`}
+                                              />
+                                              <label className="text-sm cursor-pointer flex-1">
+                                                {product.code} - {product.description}
+                                              </label>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>

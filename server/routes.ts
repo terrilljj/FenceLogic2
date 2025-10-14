@@ -611,6 +611,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authenticated: isAuthenticated });
   });
 
+  // Admin products endpoint (for UI Config page)
+  app.get("/api/admin/products", requireAdmin, async (req, res) => {
+    try {
+      const products = await storage.getAllProducts();
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
   // UI Configuration routes (admin only)
   app.get("/api/admin/ui-configs", requireAdmin, async (req, res) => {
     try {
