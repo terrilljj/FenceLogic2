@@ -101,10 +101,22 @@ Preferred communication style: Simple, everyday language.
 - Credentials include "include" on all fetch requests for proper cookie handling.
 - Admin panel accessible at `/admin-login` (direct URL, not in navigation).
 - Product catalog management at `/products` (requires authentication).
+- **Category Manager** at `/categories` (requires authentication):
+  - Database-driven category and subcategory management system
+  - Full CRUD operations (Create, Read, Update, Delete) for both categories and subcategories
+  - Display order control for organizing taxonomy hierarchy
+  - Database tables: `product_categories` and `product_subcategories` with id, name, displayOrder fields
+  - Transactional deletion with automatic cleanup:
+    - When category/subcategory is deleted, atomically removed from all UI configs using SQL
+    - JSONB `?` operator checks containment, COALESCE ensures empty arrays instead of NULL
+    - Transaction wraps UPDATE (cleanup) and DELETE operations for atomicity
+  - Storage by name (not ID) in UI config JSONB arrays
+  - Accessible from Products page navigation
 - UI Configuration portal at `/ui-config` (requires authentication):
   - **Product Groups Selection**: Define which product categories and subcategories apply to each variant
-    - Categories table with multi-select checkboxes (14 available categories)
-    - Subcategories table with multi-select checkboxes (17 available subcategories)
+    - Categories fetched dynamically from database (not hardcoded)
+    - Subcategories fetched dynamically from database (not hardcoded)
+    - Multi-select checkboxes for both categories and subcategories
     - Selections persist independently per variant in database
   - Configure which input fields appear for each product variant
   - Control field visibility (toggle on/off)
