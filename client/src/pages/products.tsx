@@ -377,6 +377,8 @@ export default function Products() {
                       <TableHead>Category</TableHead>
                       <TableHead>Subcategory</TableHead>
                       <TableHead>Price</TableHead>
+                      <TableHead>Weight</TableHead>
+                      <TableHead>Units</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -398,6 +400,12 @@ export default function Products() {
                         </TableCell>
                         <TableCell data-testid={`text-price-${product.id}`}>
                           {product.price || "-"}
+                        </TableCell>
+                        <TableCell data-testid={`text-weight-${product.id}`}>
+                          {product.weight || "-"}
+                        </TableCell>
+                        <TableCell data-testid={`text-units-${product.id}`}>
+                          {product.units || "-"}
                         </TableCell>
                         <TableCell data-testid={`text-status-${product.id}`}>
                           <span
