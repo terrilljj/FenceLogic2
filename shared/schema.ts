@@ -539,6 +539,12 @@ export const products = pgTable("products", {
   category: varchar("category", { length: 100 }),
   subcategory: varchar("subcategory", { length: 100 }),
   price: text("price"), // Stored as text to allow flexible formatting
+  weight: text("weight"), // Product weight (e.g., "5kg", "12.5 lbs")
+  dimensions: text("dimensions"), // Product dimensions (e.g., "1200mm x 100mm x 50mm")
+  units: text("units"), // Unit of measure (e.g., "each", "meter", "set")
+  tags: text("tags").array(), // Product tags/keywords for categorization
+  notes: text("notes"), // Internal notes/comments
+  imageUrl: text("image_url"), // Product image URL
   active: integer("active").notNull().default(1), // 1 = active, 0 = inactive
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
