@@ -102,6 +102,10 @@ Preferred communication style: Simple, everyday language.
 - Admin panel accessible at `/admin-login` (direct URL, not in navigation).
 - Product catalog management at `/products` (requires authentication).
 - UI Configuration portal at `/ui-config` (requires authentication):
+  - **Product Groups Selection**: Define which product categories and subcategories apply to each variant
+    - Categories table with multi-select checkboxes (14 available categories)
+    - Subcategories table with multi-select checkboxes (17 available subcategories)
+    - Selections persist independently per variant in database
   - Configure which input fields appear for each product variant
   - Control field visibility (toggle on/off)
   - Set field display order/position
@@ -111,7 +115,7 @@ Preferred communication style: Simple, everyday language.
     - Toggle fields: Associate products directly with the feature (e.g., Gate Config → [GATE-1, GATE-2])
     - Supports both text and numeric dropdowns (max-panel-width, glass-thickness, etc.)
   - Tab-based interface for 13 product variants
-  - Saves configurations to database with JSONB storage
+  - Saves configurations to database with JSONB storage (allowedCategories, allowedSubcategories, fieldConfigs)
 
 **Panel Calculation System:**
 - Algorithm for mixed panel widths to achieve precise gap spacing.
