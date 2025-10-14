@@ -77,7 +77,11 @@ Preferred communication style: Simple, everyday language.
 
 **Data Models:**
 - `FenceDesign`, `SpanConfig`, `Component`, `PanelLayout`.
-- `Product` - Product catalog with code, description, category, price, active status.
+- `Product` - Product catalog with comprehensive fields:
+  - **Core fields**: code, description, category, subcategory, price, active status
+  - **Physical specs**: weight, dimensions, units
+  - **Metadata**: tags (array), notes (internal), imageUrl
+  - All optional fields support CSV import/export
 - `ProductUIConfig` - UI configuration for product variants (field visibility, position, labels, tooltips).
 - Supports complex gate configurations (hardware types, hinge positions) and custom glass panels (width, height, positioning, distinct visualization).
 - Top rail configurations with type, material, finish, and termination options.
