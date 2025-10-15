@@ -535,6 +535,7 @@ export type ProductSubcategory = typeof PRODUCT_SUBCATEGORIES[number];
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: varchar("code", { length: 100 }).notNull().unique(),
+  selectionId: varchar("selection_id", { length: 150 }).unique(), // Unique identifier for UI selection mapping (e.g., "pool_fencing_frameless_raked_panels")
   description: text("description").notNull(),
   category: varchar("category", { length: 100 }),
   subcategory: varchar("subcategory", { length: 100 }),
