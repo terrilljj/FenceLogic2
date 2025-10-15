@@ -1,0 +1,161 @@
+code,description,category,subcategory,price,weight,dimensions,units,active,tags,notes,imageUrl
+GLASS-12MM-POOL,"12mm Toughened Glass Panel - Pool Fencing (970mm height)",Glass,Spigots,,,,"sqm",true,"glass,pool,12mm","12mm toughened glass for pool fencing, 970mm height, widths 300-1500mm",
+GLASS-15MM-POOL,"15mm Toughened Glass Panel - Pool Fencing (1000mm height)",Glass,Spigots,,,,"sqm",true,"glass,pool,15mm","15mm toughened glass for pool fencing, 1000mm height, widths 300-1400mm",
+GLASS-12MM-BAL,"12mm Toughened Glass Panel - Balustrade (970mm height)",Glass,Spigots,,,,"sqm",true,"glass,balustrade,12mm","12mm toughened glass for balustrades, 970mm height, widths 300-1500mm",
+GLASS-15MM-BAL,"15mm Toughened Glass Panel - Balustrade (1000mm height)",Glass,Spigots,,,,"sqm",true,"glass,balustrade,15mm","15mm toughened glass for balustrades, 1000mm height, widths 300-1400mm",
+GLASS-15MM-STANDOFF,"15mm Toughened Glass Panel - Standoff System (1000mm height)",Glass,Standoffs,,,,"sqm",true,"glass,standoff,15mm","15mm toughened glass for standoff balustrades, 1000mm height, widths 400-1200mm",
+
+SPIGOT-BP-POL,"Polished Stainless Steel Spigot - Base Plate Mount",Glass,Spigots,,,,"ea",true,"spigot,polished,base-plate","Base plate mounted spigot, polished finish",
+SPIGOT-BP-SAT,"Satin Stainless Steel Spigot - Base Plate Mount",Glass,Spigots,,,,"ea",true,"spigot,satin,base-plate","Base plate mounted spigot, satin finish",
+SPIGOT-BP-BLK,"Black Stainless Steel Spigot - Base Plate Mount",Glass,Spigots,,,,"ea",true,"spigot,black,base-plate","Base plate mounted spigot, black finish",
+SPIGOT-BP-WHT,"White Stainless Steel Spigot - Base Plate Mount",Glass,Spigots,,,,"ea",true,"spigot,white,base-plate","Base plate mounted spigot, white finish",
+
+SPIGOT-CD-POL,"Polished Stainless Steel Spigot - Core Drilled",Glass,Spigots,,,,"ea",true,"spigot,polished,core-drilled","Core drilled spigot, polished finish",
+SPIGOT-CD-SAT,"Satin Stainless Steel Spigot - Core Drilled",Glass,Spigots,,,,"ea",true,"spigot,satin,core-drilled","Core drilled spigot, satin finish",
+SPIGOT-CD-BLK,"Black Stainless Steel Spigot - Core Drilled",Glass,Spigots,,,,"ea",true,"spigot,black,core-drilled","Core drilled spigot, black finish",
+SPIGOT-CD-WHT,"White Stainless Steel Spigot - Core Drilled",Glass,Spigots,,,,"ea",true,"spigot,white,core-drilled","Core drilled spigot, white finish",
+
+SPIGOT-SM-POL,"Polished Stainless Steel Spigot - Side Mounted",Glass,Spigots,,,,"ea",true,"spigot,polished,side-mounted","Side mounted spigot, polished finish",
+SPIGOT-SM-SAT,"Satin Stainless Steel Spigot - Side Mounted",Glass,Spigots,,,,"ea",true,"spigot,satin,side-mounted","Side mounted spigot, satin finish",
+SPIGOT-SM-BLK,"Black Stainless Steel Spigot - Side Mounted",Glass,Spigots,,,,"ea",true,"spigot,black,side-mounted","Side mounted spigot, black finish",
+SPIGOT-SM-WHT,"White Stainless Steel Spigot - Side Mounted",Glass,Spigots,,,,"ea",true,"spigot,white,side-mounted","Side mounted spigot, white finish",
+
+CHANNEL-WALL-12MM,"12mm Glass Channel - Wall Mounted",Glass,Channel,,,,"lm",true,"channel,wall,12mm","Wall mounted channel for 12mm glass",
+CHANNEL-WALL-15MM,"15mm Glass Channel - Wall Mounted",Glass,Channel,,,,"lm",true,"channel,wall,15mm","Wall mounted channel for 15mm glass",
+CHANNEL-GROUND-12MM,"12mm Glass Channel - Ground Mounted",Glass,Channel,,,,"lm",true,"channel,ground,12mm","Ground mounted channel for 12mm glass",
+CHANNEL-GROUND-15MM,"15mm Glass Channel - Ground Mounted",Glass,Channel,,,,"lm",true,"channel,ground,15mm","Ground mounted channel for 15mm glass",
+
+STANDOFF-50MM-POL,"50mm Polished Stainless Steel Standoff",Glass,Standoffs,,,,"ea",true,"standoff,polished,50mm","50mm diameter polished standoff",
+STANDOFF-50MM-SAT,"50mm Satin Stainless Steel Standoff",Glass,Standoffs,,,,"ea",true,"standoff,satin,50mm","50mm diameter satin standoff",
+STANDOFF-50MM-BLK,"50mm Black Stainless Steel Standoff",Glass,Standoffs,,,,"ea",true,"standoff,black,50mm","50mm diameter black standoff",
+STANDOFF-50MM-WHT,"50mm White Stainless Steel Standoff",Glass,Standoffs,,,,"ea",true,"standoff,white,50mm","50mm diameter white standoff",
+
+RAIL-NONO-25X21-SS-POL,"25x21mm NonoRail - Stainless Steel Polished (12mm glass only)",Glass,Spigots,,,,"lm",true,"rail,nonorail,stainless,polished","25x21mm NonoRail for 12mm glass, stainless steel polished",
+RAIL-NONO-25X21-SS-SAT,"25x21mm NonoRail - Stainless Steel Satin (12mm glass only)",Glass,Spigots,,,,"lm",true,"rail,nonorail,stainless,satin","25x21mm NonoRail for 12mm glass, stainless steel satin",
+RAIL-NONO-25X21-AL-BLK,"25x21mm NonoRail - Anodised Aluminium Black (12mm glass only)",Glass,Spigots,,,,"lm",true,"rail,nonorail,aluminium,black","25x21mm NonoRail for 12mm glass, anodised aluminium black",
+RAIL-NONO-25X21-AL-WHT,"25x21mm NonoRail - Anodised Aluminium White (12mm glass only)",Glass,Spigots,,,,"lm",true,"rail,nonorail,aluminium,white","25x21mm NonoRail for 12mm glass, anodised aluminium white",
+
+RAIL-NANO-30X21-SS-POL,"30x21mm NanoRail - Stainless Steel Polished",Glass,Spigots,,,,"lm",true,"rail,nanorail,stainless,polished","30x21mm NanoRail universal, stainless steel polished",
+RAIL-NANO-30X21-SS-SAT,"30x21mm NanoRail - Stainless Steel Satin",Glass,Spigots,,,,"lm",true,"rail,nanorail,stainless,satin","30x21mm NanoRail universal, stainless steel satin",
+RAIL-NANO-30X21-AL-BLK,"30x21mm NanoRail - Anodised Aluminium Black",Glass,Spigots,,,,"lm",true,"rail,nanorail,aluminium,black","30x21mm NanoRail universal, anodised aluminium black",
+RAIL-NANO-30X21-AL-WHT,"30x21mm NanoRail - Anodised Aluminium White",Glass,Spigots,,,,"lm",true,"rail,nanorail,aluminium,white","30x21mm NanoRail universal, anodised aluminium white",
+
+RAIL-S35-35X35-SS-POL,"35x35mm Series 35 Rail - Stainless Steel Polished",Glass,Spigots,,,,"lm",true,"rail,series35,stainless,polished","35x35mm Series 35 universal, stainless steel polished",
+RAIL-S35-35X35-SS-SAT,"35x35mm Series 35 Rail - Stainless Steel Satin",Glass,Spigots,,,,"lm",true,"rail,series35,stainless,satin","35x35mm Series 35 universal, stainless steel satin",
+RAIL-S35-35X35-AL-BLK,"35x35mm Series 35 Rail - Anodised Aluminium Black",Glass,Spigots,,,,"lm",true,"rail,series35,aluminium,black","35x35mm Series 35 universal, anodised aluminium black",
+RAIL-S35-35X35-AL-WHT,"35x35mm Series 35 Rail - Anodised Aluminium White",Glass,Spigots,,,,"lm",true,"rail,series35,aluminium,white","35x35mm Series 35 universal, anodised aluminium white",
+
+RAIL-ENDCAP,"Handrail End Cap Termination",Glass,Spigots,,,,"ea",true,"rail,termination,endcap","End cap termination for handrails",
+RAIL-WALLTIE,"Handrail Wall Tie Termination",Glass,Spigots,,,,"ea",true,"rail,termination,walltie","Wall tie termination for handrails",
+RAIL-90DEG,"Handrail 90° Corner Termination",Glass,Spigots,,,,"ea",true,"rail,termination,corner","90 degree corner termination for handrails",
+RAIL-ADJCORNER,"Handrail Adjustable Corner Termination",Glass,Spigots,,,,"ea",true,"rail,termination,adjustable","Adjustable corner termination for handrails",
+
+GATE-MASTER-750,"Master Range Gate Hardware - 750mm",Gate Master,Gate Hardware,,,,"set",true,"gate,master,750mm","Master range gate hardware for 750mm opening",
+GATE-MASTER-834,"Master Range Gate Hardware - 834mm",Gate Master,Gate Hardware,,,,"set",true,"gate,master,834mm","Master range gate hardware for 834mm opening",
+GATE-MASTER-890,"Master Range Gate Hardware - 890mm",Gate Master,Gate Hardware,,,,"set",true,"gate,master,890mm","Master range gate hardware for 890mm opening",
+GATE-MASTER-1000,"Master Range Gate Hardware - 1000mm",Gate Master,Gate Hardware,,,,"set",true,"gate,master,1000mm","Master range gate hardware for 1000mm opening",
+
+GATE-POLARIS-800,"Polaris Soft Close Gate Hardware - 800mm",Gate Polaris/Atlantic,Gate Hardware,,,,"set",true,"gate,polaris,800mm","Polaris soft close gate hardware for 800mm opening",
+GATE-POLARIS-900,"Polaris Soft Close Gate Hardware - 900mm",Gate Polaris/Atlantic,Gate Hardware,,,,"set",true,"gate,polaris,900mm","Polaris soft close gate hardware for 900mm opening",
+GATE-POLARIS-ADAPTER,"Polaris Post Adapter Plate",Gate Polaris/Atlantic,Gate Hardware,,,,"ea",true,"gate,polaris,adapter","Post adapter plate for Polaris gate hardware",
+
+GLASS-RAKED-1400,"Raked Glass Panel - 1400mm height (1200mm width)",Raked,Spigots,,,,"ea",true,"glass,raked,1400mm","Raked panel 1400mm height, fixed 1200mm width",
+GLASS-RAKED-1500,"Raked Glass Panel - 1500mm height (1200mm width)",Raked,Spigots,,,,"ea",true,"glass,raked,1500mm","Raked panel 1500mm height, fixed 1200mm width",
+GLASS-RAKED-1600,"Raked Glass Panel - 1600mm height (1200mm width)",Raked,Spigots,,,,"ea",true,"glass,raked,1600mm","Raked panel 1600mm height, fixed 1200mm width",
+GLASS-RAKED-1700,"Raked Glass Panel - 1700mm height (1200mm width)",Raked,Spigots,,,,"ea",true,"glass,raked,1700mm","Raked panel 1700mm height, fixed 1200mm width",
+GLASS-RAKED-1800,"Raked Glass Panel - 1800mm height (1200mm width)",Raked,Spigots,,,,"ea",true,"glass,raked,1800mm","Raked panel 1800mm height, fixed 1200mm width",
+
+HINGE-PANEL-MASTER,"Hinge Panel for Master Range Gates",Hinge Panels Master,Gate Hardware,,,,"ea",true,"hinge,panel,master","Hinge panel sized for Master range gate hardware",
+HINGE-PANEL-POLARIS,"Hinge Panel for Polaris Gates",Hinge Panels Polaris/Atlantic,Gate Hardware,,,,"ea",true,"hinge,panel,polaris","Hinge panel sized for Polaris gate hardware",
+
+BARR-PANEL-1000-SB,"BARR Panel 1000mm - Satin Black (1733mm width)",Aluminium,BARR,,,,"ea",true,"barr,1000mm,satin-black,balustrade","BARR balustrade panel 1000mm height, satin black, 1733mm width",
+BARR-PANEL-1000-PW,"BARR Panel 1000mm - Pearl White (1733mm width)",Aluminium,BARR,,,,"ea",true,"barr,1000mm,pearl-white,balustrade","BARR balustrade panel 1000mm height, pearl white, 1733mm width",
+BARR-PANEL-1200-SB,"BARR Panel 1200mm - Satin Black (2205mm width)",Aluminium,BARR,,,,"ea",true,"barr,1200mm,satin-black,pool","BARR pool panel 1200mm height, satin black, 2205mm width",
+BARR-PANEL-1200-PW,"BARR Panel 1200mm - Pearl White (2205mm width)",Aluminium,BARR,,,,"ea",true,"barr,1200mm,pearl-white,pool","BARR pool panel 1200mm height, pearl white, 2205mm width",
+BARR-PANEL-1800-SB,"BARR Panel 1800mm - Satin Black (1969mm width)",Aluminium,BARR,,,,"ea",true,"barr,1800mm,satin-black,balustrade","BARR balustrade panel 1800mm height, satin black, 1969mm width",
+BARR-PANEL-1800-PW,"BARR Panel 1800mm - Pearl White (1969mm width)",Aluminium,BARR,,,,"ea",true,"barr,1800mm,pearl-white,balustrade","BARR balustrade panel 1800mm height, pearl white, 1969mm width",
+
+BARR-POST-50MM-WBP-SB,"BARR 50mm Post - Welded Base Plate - Satin Black",Aluminium,BARR,,,,"ea",true,"barr,post,50mm,welded,satin-black","BARR 50mm post with welded base plate, satin black",
+BARR-POST-50MM-WBP-PW,"BARR 50mm Post - Welded Base Plate - Pearl White",Aluminium,BARR,,,,"ea",true,"barr,post,50mm,welded,pearl-white","BARR 50mm post with welded base plate, pearl white",
+BARR-POST-50MM-STD-SB,"BARR 50mm Standard Post - Satin Black",Aluminium,BARR,,,,"ea",true,"barr,post,50mm,standard,satin-black","BARR 50mm standard post, satin black (requires mounting)",
+BARR-POST-50MM-STD-PW,"BARR 50mm Standard Post - Pearl White",Aluminium,BARR,,,,"ea",true,"barr,post,50mm,standard,pearl-white","BARR 50mm standard post, pearl white (requires mounting)",
+
+BARR-POST-50X25-WBP-SB,"BARR 50x25mm Post - Welded Base Plate - Satin Black",Aluminium,BARR,,,,"ea",true,"barr,post,50x25mm,welded,satin-black","BARR 50x25mm pool post with welded base plate, satin black",
+BARR-POST-50X25-WBP-PW,"BARR 50x25mm Post - Welded Base Plate - Pearl White",Aluminium,BARR,,,,"ea",true,"barr,post,50x25mm,welded,pearl-white","BARR 50x25mm pool post with welded base plate, pearl white",
+BARR-POST-50X25-STD-SB,"BARR 50x25mm Standard Post - Satin Black",Aluminium,BARR,,,,"ea",true,"barr,post,50x25mm,standard,satin-black","BARR 50x25mm pool standard post, satin black (requires mounting)",
+BARR-POST-50X25-STD-PW,"BARR 50x25mm Standard Post - Pearl White",Aluminium,BARR,,,,"ea",true,"barr,post,50x25mm,standard,pearl-white","BARR 50x25mm pool standard post, pearl white (requires mounting)",
+
+BLADE-PANEL-1000-SB,"Blade Panel 1000mm - Satin Black (1700mm width)",Aluminium,Blade,,,,"ea",true,"blade,1000mm,satin-black,pool","Blade pool panel 1000mm height, satin black, 1700mm width",
+BLADE-PANEL-1000-PW,"Blade Panel 1000mm - Pearl White (1700mm width)",Aluminium,Blade,,,,"ea",true,"blade,1000mm,pearl-white,pool","Blade pool panel 1000mm height, pearl white, 1700mm width",
+BLADE-PANEL-1200-SB,"Blade Panel 1200mm - Satin Black (2200mm width)",Aluminium,Blade,,,,"ea",true,"blade,1200mm,satin-black,pool","Blade pool panel 1200mm height, satin black, 2200mm width",
+BLADE-PANEL-1200-PW,"Blade Panel 1200mm - Pearl White (2200mm width)",Aluminium,Blade,,,,"ea",true,"blade,1200mm,pearl-white,pool","Blade pool panel 1200mm height, pearl white, 2200mm width",
+
+BLADE-POST-50X50-WBP-SB,"Blade 50x50mm Post - Welded Base Plate - Satin Black",Aluminium,Blade,,,,"ea",true,"blade,post,50x50mm,welded,satin-black","Blade 50x50mm post with welded base plate, satin black",
+BLADE-POST-50X50-WBP-PW,"Blade 50x50mm Post - Welded Base Plate - Pearl White",Aluminium,Blade,,,,"ea",true,"blade,post,50x50mm,welded,pearl-white","Blade 50x50mm post with welded base plate, pearl white",
+BLADE-POST-50X50-STD-SB,"Blade 50x50mm Standard Post - Satin Black",Aluminium,Blade,,,,"ea",true,"blade,post,50x50mm,standard,satin-black","Blade 50x50mm standard post, satin black (requires mounting)",
+BLADE-POST-50X50-STD-PW,"Blade 50x50mm Standard Post - Pearl White",Aluminium,Blade,,,,"ea",true,"blade,post,50x50mm,standard,pearl-white","Blade 50x50mm standard post, pearl white (requires mounting)",
+
+TUBULAR-PANEL-1200-2450-BLK,"Tubular Panel 1200mm x 2450mm - Black",Aluminium,Tubular,,,,"ea",true,"tubular,1200mm,2450mm,black,pool","Tubular Flat Top pool panel 1200mm x 2450mm, black",
+TUBULAR-PANEL-1200-2450-WHT,"Tubular Panel 1200mm x 2450mm - White",Aluminium,Tubular,,,,"ea",true,"tubular,1200mm,2450mm,white,pool","Tubular Flat Top pool panel 1200mm x 2450mm, white",
+TUBULAR-PANEL-1200-2450-MON,"Tubular Panel 1200mm x 2450mm - Monument",Aluminium,Tubular,,,,"ea",true,"tubular,1200mm,2450mm,monument,pool","Tubular Flat Top pool panel 1200mm x 2450mm, monument",
+TUBULAR-PANEL-1200-3000-BLK,"Tubular Panel 1200mm x 3000mm - Black",Aluminium,Tubular,,,,"ea",true,"tubular,1200mm,3000mm,black,pool","Tubular Flat Top pool panel 1200mm x 3000mm, black",
+TUBULAR-PANEL-1200-3000-WHT,"Tubular Panel 1200mm x 3000mm - White",Aluminium,Tubular,,,,"ea",true,"tubular,1200mm,3000mm,white,pool","Tubular Flat Top pool panel 1200mm x 3000mm, white",
+TUBULAR-PANEL-1200-3000-MON,"Tubular Panel 1200mm x 3000mm - Monument",Aluminium,Tubular,,,,"ea",true,"tubular,1200mm,3000mm,monument,pool","Tubular Flat Top pool panel 1200mm x 3000mm, monument",
+
+TUBULAR-PANEL-900-2450-BLK,"Tubular Panel 900mm x 2450mm - Black",Aluminium,Tubular,,,,"ea",true,"tubular,900mm,2450mm,black","Tubular Flat Top panel 900mm x 2450mm, black",
+TUBULAR-PANEL-900-2450-WHT,"Tubular Panel 900mm x 2450mm - White",Aluminium,Tubular,,,,"ea",true,"tubular,900mm,2450mm,white","Tubular Flat Top panel 900mm x 2450mm, white",
+TUBULAR-PANEL-900-2450-MON,"Tubular Panel 900mm x 2450mm - Monument",Aluminium,Tubular,,,,"ea",true,"tubular,900mm,2450mm,monument","Tubular Flat Top panel 900mm x 2450mm, monument",
+TUBULAR-PANEL-900-3000-BLK,"Tubular Panel 900mm x 3000mm - Black",Aluminium,Tubular,,,,"ea",true,"tubular,900mm,3000mm,black","Tubular Flat Top panel 900mm x 3000mm, black",
+TUBULAR-PANEL-900-3000-WHT,"Tubular Panel 900mm x 3000mm - White",Aluminium,Tubular,,,,"ea",true,"tubular,900mm,3000mm,white","Tubular Flat Top panel 900mm x 3000mm, white",
+TUBULAR-PANEL-900-3000-MON,"Tubular Panel 900mm x 3000mm - Monument",Aluminium,Tubular,,,,"ea",true,"tubular,900mm,3000mm,monument","Tubular Flat Top panel 900mm x 3000mm, monument",
+
+TUBULAR-POST-50MM-WBP-BLK,"Tubular 50mm Post - Welded Base Plate - Black",Aluminium,Tubular,,,,"ea",true,"tubular,post,50mm,welded,black","Tubular 50mm post with welded base plate, black",
+TUBULAR-POST-50MM-WBP-WHT,"Tubular 50mm Post - Welded Base Plate - White",Aluminium,Tubular,,,,"ea",true,"tubular,post,50mm,welded,white","Tubular 50mm post with welded base plate, white",
+TUBULAR-POST-50MM-WBP-MON,"Tubular 50mm Post - Welded Base Plate - Monument",Aluminium,Tubular,,,,"ea",true,"tubular,post,50mm,welded,monument","Tubular 50mm post with welded base plate, monument",
+TUBULAR-POST-50MM-STD-BLK,"Tubular 50mm Standard Post - Black",Aluminium,Tubular,,,,"ea",true,"tubular,post,50mm,standard,black","Tubular 50mm standard post, black (requires mounting)",
+TUBULAR-POST-50MM-STD-WHT,"Tubular 50mm Standard Post - White",Aluminium,Tubular,,,,"ea",true,"tubular,post,50mm,standard,white","Tubular 50mm standard post, white (requires mounting)",
+TUBULAR-POST-50MM-STD-MON,"Tubular 50mm Standard Post - Monument",Aluminium,Tubular,,,,"ea",true,"tubular,post,50mm,standard,monument","Tubular 50mm standard post, monument (requires mounting)",
+
+PVC-PANEL-FP-WHT,"Hamptons Full Privacy Panel - White (2388mm x 1800mm)",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,full-privacy,white","Hamptons full privacy panel, white, 2388mm x 1800mm",
+PVC-PANEL-FP-ALM,"Hamptons Full Privacy Panel - Almond (2388mm x 1800mm)",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,full-privacy,almond","Hamptons full privacy panel, almond, 2388mm x 1800mm",
+PVC-PANEL-FP-CLY,"Hamptons Full Privacy Panel - Clay (2388mm x 1800mm)",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,full-privacy,clay","Hamptons full privacy panel, clay, 2388mm x 1800mm",
+
+PVC-PANEL-CB-WHT,"Hamptons Combo Panel - White (2388mm x 1800mm)",PVC,Hamptons Combo,,,,"ea",true,"pvc,hamptons,combo,white","Hamptons combo panel, white, 2388mm x 1800mm",
+PVC-PANEL-CB-ALM,"Hamptons Combo Panel - Almond (2388mm x 1800mm)",PVC,Hamptons Combo,,,,"ea",true,"pvc,hamptons,combo,almond","Hamptons combo panel, almond, 2388mm x 1800mm",
+PVC-PANEL-CB-CLY,"Hamptons Combo Panel - Clay (2388mm x 1800mm)",PVC,Hamptons Combo,,,,"ea",true,"pvc,hamptons,combo,clay","Hamptons combo panel, clay, 2388mm x 1800mm",
+
+PVC-PANEL-VP-WHT,"Hamptons Vertical Paling Panel - White (2388mm x 1800mm)",PVC,Hamptons Vertical Paling,,,,"ea",true,"pvc,hamptons,vertical-paling,white","Hamptons vertical paling panel, white, 2388mm x 1800mm",
+PVC-PANEL-VP-ALM,"Hamptons Vertical Paling Panel - Almond (2388mm x 1800mm)",PVC,Hamptons Vertical Paling,,,,"ea",true,"pvc,hamptons,vertical-paling,almond","Hamptons vertical paling panel, almond, 2388mm x 1800mm",
+PVC-PANEL-VP-CLY,"Hamptons Vertical Paling Panel - Clay (2388mm x 1800mm)",PVC,Hamptons Vertical Paling,,,,"ea",true,"pvc,hamptons,vertical-paling,clay","Hamptons vertical paling panel, clay, 2388mm x 1800mm",
+
+PVC-PANEL-SP-WHT,"Hamptons Semi Privacy Panel - White (2388mm x 1000mm)",PVC,Hamptons Semi Privacy,,,,"ea",true,"pvc,hamptons,semi-privacy,white","Hamptons semi privacy panel, white, 2388mm x 1000mm",
+PVC-PANEL-SP-ALM,"Hamptons Semi Privacy Panel - Almond (2388mm x 1000mm)",PVC,Hamptons Semi Privacy,,,,"ea",true,"pvc,hamptons,semi-privacy,almond","Hamptons semi privacy panel, almond, 2388mm x 1000mm",
+PVC-PANEL-SP-CLY,"Hamptons Semi Privacy Panel - Clay (2388mm x 1000mm)",PVC,Hamptons Semi Privacy,,,,"ea",true,"pvc,hamptons,semi-privacy,clay","Hamptons semi privacy panel, clay, 2388mm x 1000mm",
+
+PVC-PANEL-3R-WHT,"Hamptons 3 Rail Panel - White (2388mm x 1525mm)",PVC,Hamptons 3 Rail,,,,"ea",true,"pvc,hamptons,3rail,white","Hamptons 3 rail panel, white, 2388mm x 1525mm",
+PVC-PANEL-3R-ALM,"Hamptons 3 Rail Panel - Almond (2388mm x 1525mm)",PVC,Hamptons 3 Rail,,,,"ea",true,"pvc,hamptons,3rail,almond","Hamptons 3 rail panel, almond, 2388mm x 1525mm",
+PVC-PANEL-3R-CLY,"Hamptons 3 Rail Panel - Clay (2388mm x 1525mm)",PVC,Hamptons 3 Rail,,,,"ea",true,"pvc,hamptons,3rail,clay","Hamptons 3 rail panel, clay, 2388mm x 1525mm",
+
+PVC-POST-1WAY-WHT,"Hamptons 127mm Square Post - 1-Way - White",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,1-way,white","Hamptons 127mm square post, 1-way, white",
+PVC-POST-1WAY-ALM,"Hamptons 127mm Square Post - 1-Way - Almond",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,1-way,almond","Hamptons 127mm square post, 1-way, almond",
+PVC-POST-1WAY-CLY,"Hamptons 127mm Square Post - 1-Way - Clay",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,1-way,clay","Hamptons 127mm square post, 1-way, clay",
+
+PVC-POST-2WAY-WHT,"Hamptons 127mm Square Post - 2-Way - White",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,2-way,white","Hamptons 127mm square post, 2-way, white",
+PVC-POST-2WAY-ALM,"Hamptons 127mm Square Post - 2-Way - Almond",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,2-way,almond","Hamptons 127mm square post, 2-way, almond",
+PVC-POST-2WAY-CLY,"Hamptons 127mm Square Post - 2-Way - Clay",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,2-way,clay","Hamptons 127mm square post, 2-way, clay",
+
+PVC-POST-90DEG-WHT,"Hamptons 127mm Square Post - 90° Corner - White",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,90-degree,white","Hamptons 127mm square post, 90° corner, white",
+PVC-POST-90DEG-ALM,"Hamptons 127mm Square Post - 90° Corner - Almond",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,90-degree,almond","Hamptons 127mm square post, 90° corner, almond",
+PVC-POST-90DEG-CLY,"Hamptons 127mm Square Post - 90° Corner - Clay",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,90-degree,clay","Hamptons 127mm square post, 90° corner, clay",
+
+PVC-POST-GATE-WHT,"Hamptons 127mm Square Post - Gate Post - White",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,gate,white","Hamptons 127mm square post, gate post, white",
+PVC-POST-GATE-ALM,"Hamptons 127mm Square Post - Gate Post - Almond",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,gate,almond","Hamptons 127mm square post, gate post, almond",
+PVC-POST-GATE-CLY,"Hamptons 127mm Square Post - Gate Post - Clay",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,post,gate,clay","Hamptons 127mm square post, gate post, clay",
+
+PVC-GATE-1000-WHT,"Hamptons Gate 1000mm - White",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,gate,1000mm,white","Hamptons PVC gate 1000mm, white",
+PVC-GATE-1000-ALM,"Hamptons Gate 1000mm - Almond",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,gate,1000mm,almond","Hamptons PVC gate 1000mm, almond",
+PVC-GATE-1000-CLY,"Hamptons Gate 1000mm - Clay",PVC,Hamptons Full Privacy,,,,"ea",true,"pvc,hamptons,gate,1000mm,clay","Hamptons PVC gate 1000mm, clay",
+
+POST-MOUNT-INGROUND,"In-Ground Post Mounting Kit",Aluminium,BARR,,,,"ea",true,"mount,inground","In-ground post mounting kit with concrete sleeve",
+POST-MOUNT-WALL,"Wall Mount Post Bracket",Aluminium,BARR,,,,"ea",true,"mount,wall","Wall mount bracket for standard posts",
+POST-MOUNT-COREDRILLED,"Core Drilled Post Mount Kit",Aluminium,BARR,,,,"ea",true,"mount,core-drilled","Core drilled post mounting kit with chemical anchor"
