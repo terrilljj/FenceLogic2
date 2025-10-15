@@ -1,0 +1,43 @@
+Goal:
+Add a CLI lint script to catch data hygiene issues without hitting the admin UI, and to use in CI.
+
+Task:
+1) Create a new script at server/scripts/lint-products.ts that:
+   - Connects to the DB using existing Drizzle setup.
+   - Loads all uiConfigs and aggregates every referenced categoryPath and subcategory
+     (from dropdown.mapping and toggle.mapping.on).
+   - Loads all active products.
+   - Computes:
+     a) deadPaths: paths referenced by uiConfigs that have zero matching products.
+     b) deadSubcategories: subcategories referenced by uiConfigs that don’t exist in DB or have zero active products.
+     c) orphans: active products where none of product.category_paths are in the referenced path set AND product.subcategory not in the referenced subcategory set.
+
+   - Prints a clear, colorized console report:
+       ─ Lint Summary
+       Needed categoryPaths: <n>
+       Needed subcategories: <n>
+       Dead categoryPaths: <count>  (list first 10)
+       Dead subcategories: <count>  (list)
+       Orphan SKUs: <count>         (list first 20: code → subcategory)
+
+   - Accepts flags:
+       --strict    Exit with code 1 if any deadPaths, deadSubcategories, or orphans are found.
+       --json      Output machine-readable JSON with keys: { neededPaths, neededSubcategories, deadPaths, deadSubcategories, orphanCount, orphans[] }
+
+   - Handles NULL/empty category_paths gracefully and treats them as [].
+
+2) Add npm scripts in package.json:
+   "lint:data": "tsx server/scripts/lint-products.ts",
+   "lint:data:strict": "tsx server/scripts/lint-products.ts --strict"
+
+3) Documentation:
+   - Append to replit.md (or README) a short section:
+     - How to run lint
+     - Example outputs
+     - Typical fixes (map missing paths, add subcategories, or deactivate orphan SKUs)
+
+Acceptance criteria:
+- `npm run lint:data` prints a summary and exits 0.
+- `npm run lint:data:strict` exits 1 when issues are present.
+- Works on empty DBs/configs without throwing.
+- TypeScript compiles; server is unaffected.
