@@ -70,11 +70,9 @@ export default function FenceLogic() {
 
   // Fetch UI config for current product variant
   const { data: uiConfig } = useQuery({
-    queryKey: ["/api/admin/ui-configs", design.productVariant],
+    queryKey: ["/api/ui-configs", design.productVariant],
     queryFn: async () => {
-      const response = await fetch(`/api/admin/ui-configs/${design.productVariant}`, {
-        credentials: "include",
-      });
+      const response = await fetch(`/api/ui-configs/${design.productVariant}`);
       if (!response.ok) {
         // If config doesn't exist, return null (fallback to all fields enabled)
         if (response.status === 404) return null;

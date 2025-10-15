@@ -636,7 +636,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // UI Configuration routes (admin only)
+  // UI Configuration routes - Public read, admin write
+  // Public endpoint for reading UI configs (used by fence-builder)
+  app.get("/api/ui-configs/:variant", async (req, res) => {
+    try {
+      const config = await storage.getUIConfig(req.params.variant);
+      if (!config) {
+        return res.status(404).json({ error: "Configuration not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching UI config:", error);
+      res.status(500).json({ error: "Failed to fetch UI configuration" });
+    }
+  });
+
+  // Admin-only endpoints for managing UI configs
   app.get("/api/admin/ui-configs", requireAdmin, async (req, res) => {
     try {
       const configs = await storage.getAllUIConfigs();
