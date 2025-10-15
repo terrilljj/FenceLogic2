@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Save, ArrowLeft, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import type { ProductVariant, UIFieldConfig, UIInputField, ProductCategory, ProductSubcategory, Category, Subcategory } from "@shared/schema";
+import { fetchCoverage, type CoverageResponse } from "@/lib/adminCoverage";
 
 const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string }[] = [
   { variant: "glass-pool-spigots", label: "Glass Pool - Spigots", group: "Glass Pool Fencing" },
@@ -105,6 +107,11 @@ export default function UIConfigPage() {
   const [fieldConfigs, setFieldConfigs] = useState<UIFieldConfig[]>([]);
   const [allowedCategories, setAllowedCategories] = useState<string[]>([]);
   const [allowedSubcategories, setAllowedSubcategories] = useState<string[]>([]);
+  
+  // Coverage state
+  const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
+  const [pathCountByPath, setPathCountByPath] = useState<Record<string, number>>({});
+  const [subCountByName, setSubCountByName] = useState<Record<string, number>>({});
 
   const { data: configs, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/ui-configs"],
@@ -192,6 +199,49 @@ export default function UIConfigPage() {
       setFieldConfigs(relevantFieldConfigs);
     }
   }, [selectedVariant, configs]);
+
+  // Fetch coverage when variant or fieldConfigs change (debounced ~300ms)
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      try {
+        const coverageData = await fetchCoverage(selectedVariant);
+        setCoverage(coverageData);
+      } catch (error) {
+        console.error("Failed to fetch coverage:", error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedVariant, fieldConfigs, allowedSubcategories]);
+
+  // Update lookup maps when coverage data arrives
+  useEffect(() => {
+    if (coverage) {
+      // Build path count lookup
+      const pathMap: Record<string, number> = {};
+      coverage.pathCounts.forEach(({ path, count }) => {
+        pathMap[path] = count;
+      });
+      setPathCountByPath(pathMap);
+
+      // Build subcategory count lookup
+      const subMap: Record<string, number> = {};
+      coverage.subcategoryCounts.forEach(({ subcategory, count }) => {
+        subMap[subcategory] = count;
+      });
+      setSubCountByName(subMap);
+
+      // Show toast if any zero-count exists
+      const hasZeroCounts = coverage.deadPaths.length > 0 || coverage.deadSubcategories.length > 0;
+      if (hasZeroCounts) {
+        toast({
+          title: "Warning",
+          description: "Some mappings have zero matching products. Consider fixing them.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [coverage, toast]);
 
   const handleToggleField = (field: UIInputField, enabled: boolean) => {
     setFieldConfigs(prev => 
@@ -376,24 +426,33 @@ export default function UIConfigPage() {
                       </div>
                       <div className="p-3">
                         <div className="grid grid-cols-2 gap-2">
-                          {subcategories.map((subcategory) => (
-                            <div key={subcategory.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                checked={allowedSubcategories.includes(subcategory.name)}
-                                onCheckedChange={(checked) => {
-                                  setAllowedSubcategories(prev => 
-                                    checked 
-                                      ? [...prev, subcategory.name]
-                                      : prev.filter(s => s !== subcategory.name)
-                                  );
-                                }}
-                                data-testid={`checkbox-subcategory-${subcategory.name}`}
-                              />
-                              <label className="text-sm cursor-pointer">
-                                {subcategory.name}
-                              </label>
-                            </div>
-                          ))}
+                          {subcategories.map((subcategory) => {
+                            const count = subCountByName[subcategory.name] ?? 0;
+                            return (
+                              <div key={subcategory.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  checked={allowedSubcategories.includes(subcategory.name)}
+                                  onCheckedChange={(checked) => {
+                                    setAllowedSubcategories(prev => 
+                                      checked 
+                                        ? [...prev, subcategory.name]
+                                        : prev.filter(s => s !== subcategory.name)
+                                    );
+                                  }}
+                                  data-testid={`checkbox-subcategory-${subcategory.name}`}
+                                />
+                                <label className="text-sm cursor-pointer flex-1">
+                                  {subcategory.name}
+                                </label>
+                                <Badge
+                                  variant={count > 0 ? "default" : "destructive"}
+                                  className="text-xs"
+                                >
+                                  {count}
+                                </Badge>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -630,6 +689,20 @@ export default function UIConfigPage() {
                                               placeholder="e.g., pool_fence/frameless/glass_panels; balustrade/frameless/glass_panels"
                                               data-testid={`input-paths-${fc.field}-${option}`}
                                             />
+                                            <div className="flex gap-1">
+                                              {paths.map(path => {
+                                                const count = pathCountByPath[path] ?? 0;
+                                                return (
+                                                  <Badge
+                                                    key={path}
+                                                    variant={count > 0 ? "default" : "destructive"}
+                                                    className="text-xs"
+                                                  >
+                                                    {count}
+                                                  </Badge>
+                                                );
+                                              })}
+                                            </div>
                                           </div>
                                         );
                                       })}
@@ -659,20 +732,36 @@ export default function UIConfigPage() {
                                     <div className="text-xs text-muted-foreground mb-2">
                                       Enter category paths (semicolon-separated), e.g., pool_fence/frameless/spigots; balustrade/frameless/spigots
                                     </div>
-                                    <Input
-                                      className="h-8 w-full font-mono text-xs"
-                                      value={(fc.categoryPaths || []).join("; ")}
-                                      onChange={(e) => {
-                                        const paths = e.target.value.split(";").map(p => p.trim()).filter(p => p !== "");
-                                        setFieldConfigs(prev => 
-                                          prev.map(field => 
-                                            field.field === fc.field ? { ...field, categoryPaths: paths } : field
-                                          )
-                                        );
-                                      }}
-                                      placeholder="e.g., pool_fence/frameless/spigots; balustrade/frameless/spigots"
-                                      data-testid={`input-category-paths-${fc.field}`}
-                                    />
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        className="h-8 flex-1 font-mono text-xs"
+                                        value={(fc.categoryPaths || []).join("; ")}
+                                        onChange={(e) => {
+                                          const paths = e.target.value.split(";").map(p => p.trim()).filter(p => p !== "");
+                                          setFieldConfigs(prev => 
+                                            prev.map(field => 
+                                              field.field === fc.field ? { ...field, categoryPaths: paths } : field
+                                            )
+                                          );
+                                        }}
+                                        placeholder="e.g., pool_fence/frameless/spigots; balustrade/frameless/spigots"
+                                        data-testid={`input-category-paths-${fc.field}`}
+                                      />
+                                      <div className="flex gap-1">
+                                        {(fc.categoryPaths || []).map(path => {
+                                          const count = pathCountByPath[path] ?? 0;
+                                          return (
+                                            <Badge
+                                              key={path}
+                                              variant={count > 0 ? "default" : "destructive"}
+                                              className="text-xs"
+                                            >
+                                              {count}
+                                            </Badge>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                               </>

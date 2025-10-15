@@ -1,0 +1,43 @@
+In the Admin UI for the UI Config editor (/ui-config), add live coverage indicators that show how many products match each referenced categoryPath and subcategory. Do not block saving; just surface visibility.
+
+Implementation details:
+1) Client fetch:
+   - After any fieldConfigs change (debounce ~300ms) and on initial load of a variant, call:
+     GET /api/debug/ui-config/:variant/coverage
+   - Variant key is whatever the page currently edits (e.g., pool_fence/frameless).
+
+2) UI rendering:
+   - Next to every referenced mapping item the admin can select/configure (both categoryPaths and subcategories), show a small badge using shadcn/ui.
+     * If count > 0 → green badge with the count (e.g., “12”).
+     * If count = 0 → red badge “0”.
+   - For dropdown mappings, show the badge per option row where that option maps to paths/subcategories.
+   - For toggle mappings, show the badge next to the toggle’s mapped “on” paths/subcategories.
+
+3) UX behavior:
+   - If at least one badge is red (=0) for the current config, show a non-blocking toast:
+     “Some mappings have zero matching products. Consider fixing them.”
+   - Do NOT prevent saving. Existing save button and flow remain unchanged.
+
+4) Data plumbing:
+   - Create a small client helper (e.g., client/src/lib/adminCoverage.ts) with:
+       fetchCoverage(variant): Promise<CoverageResponse>
+     where CoverageResponse matches the server route shape:
+       { variant, selectedPaths: string[], selectedSubcategories: string[],
+         pathCounts: Array<{path:string,count:number}>,
+         subcategoryCounts: Array<{subcategory:string,count:number}>,
+         deadPaths: string[], deadSubcategories: string[] }
+
+5) Code placement:
+   - Update the UI Config editor component (where fieldConfigs are edited) to:
+     * Maintain local coverage state.
+     * Recompute a fast lookup map for counts:
+         pathCountByPath: Record<string, number>
+         subCountByName: Record<string, number>
+     * Wire badges to these maps.
+
+6) Acceptance criteria:
+   - TypeScript compiles, dev server runs.
+   - On editing mappings, badges update within ~500ms.
+   - Red “0” badges appear for unmapped or dead references; green numeric badges for positive counts.
+   - A single non-blocking toast appears when any zero-count exists after refresh/edit.
+   - No change to save behavior; saving still works.
