@@ -48,7 +48,7 @@ const updates: ProductUpdate[] = [
   },
   {
     code: 'TEST-HAMPTONS-001',
-    subcategory: 'Hamptons Full Privacy',
+    subcategory: 'Raked',
     categoryPaths: ['pvc/hamptons/panels'],
   },
 ];
