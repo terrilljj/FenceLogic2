@@ -7,6 +7,7 @@ import { requireAdmin } from "./middleware/auth";
 import { createDebugUIConfigRouter } from "./routes/debug-ui-config";
 import { createDebugResolveTraceRouter } from "./routes/debug-resolve-trace";
 import { createDebugProductsLintRouter } from "./routes/debug-products-lint";
+import { UiConfigSchema } from "./schemas/ui-config";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -684,6 +685,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/ui-configs", requireAdmin, async (req, res) => {
     try {
+      // 1. Validate with new UiConfigSchema
+      const parseResult = UiConfigSchema.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({
+          error: "invalid_ui_config",
+          issues: parseResult.error.issues,
+        });
+      }
+
+      const payload = parseResult.data;
+
+      // 2. Canonical DB checks - collect all referenced subcategories and categoryPaths
+      const referencedSubcategories = new Set<string>();
+      const referencedCategoryPaths = new Set<string>();
+
+      // Add from allowedSubcategories
+      payload.allowedSubcategories.forEach(sub => referencedSubcategories.add(sub));
+
+      // Add from fieldConfigs (new format: Record<string, FieldConfig>)
+      for (const fieldConfig of Object.values(payload.fieldConfigs)) {
+        if (fieldConfig.type === "dropdown") {
+          // Extract from dropdown mappings
+          for (const mappingValue of Object.values(fieldConfig.mapping)) {
+            mappingValue.subcategories?.forEach(sub => referencedSubcategories.add(sub));
+            mappingValue.categoryPaths?.forEach(path => referencedCategoryPaths.add(path));
+          }
+        } else if (fieldConfig.type === "toggle") {
+          // Extract from toggle mapping
+          if (fieldConfig.mapping.on) {
+            fieldConfig.mapping.on.subcategories?.forEach(sub => referencedSubcategories.add(sub));
+            fieldConfig.mapping.on.categoryPaths?.forEach(path => referencedCategoryPaths.add(path));
+          }
+        }
+      }
+
+      // Check subcategories exist in DB
+      const allSubcategories = await storage.getAllSubcategories();
+      const existingSubcategoryNames = new Set(allSubcategories.map(s => s.name));
+      const missingSubcategories = Array.from(referencedSubcategories).filter(
+        sub => !existingSubcategoryNames.has(sub)
+      );
+
+      // Check categoryPaths exist in products table
+      const allProducts = await storage.getAllProducts();
+      const existingCategoryPaths = new Set<string>();
+      allProducts.forEach(p => {
+        p.categoryPaths?.forEach(path => existingCategoryPaths.add(path));
+      });
+      const missingCategoryPaths = Array.from(referencedCategoryPaths).filter(
+        path => !existingCategoryPaths.has(path)
+      );
+
+      // If any references are missing, return error
+      if (missingSubcategories.length > 0 || missingCategoryPaths.length > 0) {
+        return res.status(400).json({
+          error: "unknown_references",
+          missing: {
+            subcategories: missingSubcategories,
+            categoryPaths: missingCategoryPaths,
+          },
+        });
+      }
+
+      // 3. All validation passed - proceed with save using existing database schema
       const validatedData = insertProductUIConfigSchema.parse(req.body);
       const config = await storage.createOrUpdateUIConfig(validatedData);
       res.json(config);
