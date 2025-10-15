@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertFenceDesignSchema, insertProductSchema, insertProductUIConfigSchema, insertCategorySchema, insertSubcategorySchema } from "@shared/schema";
 import { z } from "zod";
 import { requireAdmin } from "./middleware/auth";
+import { createDebugUIConfigRouter } from "./routes/debug-ui-config";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -815,6 +816,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete subcategory" });
     }
   });
+
+  // Debug routes
+  app.use("/api/debug/ui-config", createDebugUIConfigRouter(storage));
 
   const httpServer = createServer(app);
 
