@@ -13,30 +13,27 @@ export interface ResolveResult {
 }
 
 /**
- * Resolves a selection object to product codes based on UI config mappings
+ * Pure core resolver function that operates on in-memory data
  * 
- * @param variant - The product variant (e.g., "glass-pool-spigots")
- * @param selection - The user's selection object (e.g., { "glass-thickness": "12mm", "gate-config": { required: true } })
- * @param storage - Storage instance for querying UI config and products
+ * @param uiConfig - UI configuration for the variant
+ * @param products - Array of products to match against
+ * @param selection - The user's selection object
  * @returns ResolveResult with trace and final product codes
  */
-export async function resolveSelectionToProducts(
-  variant: string,
-  selection: Record<string, any>,
-  storage: IStorage
-): Promise<ResolveResult> {
+export function resolveSelectionToProductsCore(
+  uiConfig: ProductUIConfig | null,
+  products: Product[],
+  selection: Record<string, any>
+): ResolveResult {
   const trace: ResolveTraceEntry[] = [];
   const productCodesSet = new Set<string>();
 
-  // Load UI config for this variant
-  const uiConfig = await storage.getUIConfig(variant);
   if (!uiConfig) {
     return { trace: [], finalCodes: [] };
   }
 
-  // Load all active products once
-  const allProducts = await storage.getAllProducts();
-  const activeProducts = allProducts.filter(p => p.active === 1);
+  // Filter to active products only
+  const activeProducts = products.filter(p => p.active === 1);
 
   // Process each field in the selection
   for (const fieldConfig of uiConfig.fieldConfigs) {
@@ -149,4 +146,27 @@ export async function resolveSelectionToProducts(
     trace,
     finalCodes: Array.from(productCodesSet),
   };
+}
+
+/**
+ * Async wrapper that loads data from storage and calls the pure core resolver
+ * 
+ * @param variant - The product variant (e.g., "glass-pool-spigots")
+ * @param selection - The user's selection object (e.g., { "glass-thickness": "12mm", "gate-config": { required: true } })
+ * @param storage - Storage instance for querying UI config and products
+ * @returns ResolveResult with trace and final product codes
+ */
+export async function resolveSelectionToProducts(
+  variant: string,
+  selection: Record<string, any>,
+  storage: IStorage
+): Promise<ResolveResult> {
+  // Load UI config for this variant
+  const uiConfig = await storage.getUIConfig(variant);
+  
+  // Load all products
+  const allProducts = await storage.getAllProducts();
+  
+  // Call pure core resolver (convert undefined to null)
+  return resolveSelectionToProductsCore(uiConfig || null, allProducts, selection);
 }

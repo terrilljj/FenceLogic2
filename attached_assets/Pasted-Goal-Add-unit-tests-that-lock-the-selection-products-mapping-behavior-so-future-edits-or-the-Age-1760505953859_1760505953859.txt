@@ -1,0 +1,59 @@
+Goal:
+Add unit tests that lock the selection → products mapping behavior so future edits (or the Agent) can’t silently break it.
+
+Tasks:
+
+1) Make resolver testable:
+- If the resolver isn’t already pure, extract a pure helper to server/services/resolve.ts:
+  export function resolveSelectionToProductsCore(
+    uiConfig: UiConfig,
+    products: Product[],
+    selection: Record<string, any>
+  ): { codes: string[], trace: Array<{ source:'categoryPath'|'subcategory'|'direct', key:string, codes:string[] }> }
+
+- The existing HTTP-facing resolver can continue to hit the DB; the core function should operate purely on in-memory inputs.
+
+2) Add test setup:
+- Install vitest if needed and wire a script in package.json:
+  "test": "vitest run"
+
+- Create server/tests/resolve.spec.ts with:
+  - Minimal fixtures:
+    * One uiConfig for variant "pool_fence/frameless" with:
+      - glass_thickness dropdown mapping "12mm" → categoryPaths ["pool_fence/frameless/glass_panels/12mm"]
+      - gate_system  dropdown mapping "Master Range" → subcategories ["Gate Master", "Hinge Panels Master"]
+      - top_rail toggle .on → categoryPaths ["balustrade/top_rail"]
+    * Products:
+      - A few SKUs that include those category_paths and subcategories
+      - At least one unrelated SKU to ensure it’s not included
+
+3) Write tests:
+- Case A: { glass_thickness:"12mm", gate_system:"Master Range" }
+  Expect:
+    - codes include the glass 12mm panel codes and master gate/hinge codes
+    - trace contains entries for the specific categoryPaths and subcategories used
+
+- Case B: add { top_rail:true }
+  Expect:
+    - previous codes plus rail SKUs
+    - an extra trace entry for categoryPath "balustrade/top_rail"
+
+- Case C: empty selection
+  Expect:
+    - codes: []
+    - trace: []
+
+- Case D: unknown option values
+  Expect:
+    - codes: []
+    - trace: []
+    - no throw
+
+4) Keep it fast and isolated:
+- Do not hit a real DB; only use the pure core with in-memory fixtures.
+- Ensure TypeScript compiles and tests pass in under 2s.
+
+Acceptance criteria:
+- `npm test` (or `pnpm test`) runs vitest and all tests pass.
+- Tests assert both final codes and the presence of meaningful trace entries.
+- No changes to production endpoints; only a pure core extraction if needed.
