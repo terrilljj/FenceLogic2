@@ -536,6 +536,7 @@ export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: varchar("code", { length: 100 }).notNull().unique(),
   selectionId: varchar("selection_id", { length: 150 }).unique(), // Unique identifier for UI selection mapping (e.g., "pool_fencing_frameless_raked_panels")
+  categoryPaths: text("category_paths").array(), // Hierarchical paths (e.g., ["pool_fence/frameless/glass_panels", "balustrade/frameless/glass_panels"])
   description: text("description").notNull(),
   category: varchar("category", { length: 100 }),
   subcategory: varchar("subcategory", { length: 100 }),
@@ -715,8 +716,11 @@ export interface UIFieldConfig {
   max?: number;
   step?: number;
   options?: string[]; // For dropdown fields
-  optionProducts?: Record<string, string[]>; // Maps dropdown option to product codes
-  products?: string[]; // For toggle/other fields - array of associated product codes
+  optionPaths?: Record<string, string[]>; // Maps dropdown option to category paths (e.g., "12mm" → ["pool_fence/frameless/glass_panels"])
+  categoryPaths?: string[]; // For toggle/other fields - array of associated category paths
+  // Legacy fields (deprecated, use categoryPaths instead)
+  optionProducts?: Record<string, string[]>; // Maps dropdown option to product codes (DEPRECATED)
+  products?: string[]; // For toggle/other fields - array of associated product codes (DEPRECATED)
 }
 
 // Product UI Configuration table
