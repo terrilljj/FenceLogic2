@@ -184,3 +184,70 @@ Preferred communication style: Simple, everyday language.
 - `clsx` and `tailwind-merge` for class name utilities.
 - `nanoid` for unique ID generation.
 - Three.js types (for potential future 3D visualization).
+
+## Data Hygiene Linting
+
+**Product Data Linter** (`server/scripts/lint-products.ts`):
+- CLI tool to catch data hygiene issues without hitting the admin UI
+- Suitable for CI/CD integration
+
+**Detection:**
+- **Dead categoryPaths**: Paths referenced by UI configs with zero matching active products
+- **Dead subcategories**: Subcategories referenced by UI configs that don't exist or have zero active products
+- **Orphan SKUs**: Active products not referenced by any UI config (neither by categoryPaths nor subcategory)
+
+**Usage:**
+```bash
+# Print summary and exit 0
+npm run lint:data
+
+# Exit 1 if issues found (for CI)
+npm run lint:data:strict
+
+# Output JSON for automation
+npm run lint:data -- --json
+```
+
+**Example Output:**
+```
+─ Lint Summary
+
+Needed categoryPaths: 42
+Needed subcategories: 15
+
+Dead categoryPaths: 3
+  ✗ pool_fence/frameless/glass_panels/18mm
+  ✗ balustrade/frameless/standoffs/45mm
+  ✗ gates/master/hinge_left
+
+Dead subcategories: 1
+  ✗ Obsolete Hardware
+
+Orphan SKUs: 5
+  ⚠ LEGACY-POST-001 → Standard Posts [posts/legacy]
+  ⚠ OLD-BRACKET-123 → (no subcategory) (no paths)
+  ... and 3 more
+
+Issues found!
+
+Typical fixes:
+  • Map missing paths in UI Config editor
+  • Add subcategories in Category Manager
+  • Deactivate orphan SKUs or add proper category paths
+```
+
+**Typical Fixes:**
+- **Dead paths**: Add products with matching categoryPaths, or remove paths from UI config mappings
+- **Dead subcategories**: Add subcategories in Category Manager, or remove from UI config allowedSubcategories
+- **Orphan SKUs**: Add proper categoryPaths to products, map in UI config, or deactivate if obsolete
+
+**Required Package.json Scripts:**
+```json
+{
+  "scripts": {
+    "lint:data": "tsx server/scripts/lint-products.ts",
+    "lint:data:strict": "tsx server/scripts/lint-products.ts --strict",
+    "test": "vitest run"
+  }
+}
+```
