@@ -1,0 +1,37 @@
+Goal:
+Ensure admins (and the Agent) can only select valid, canonical values for categories, subcategories, and categoryPaths in the UI Config editor. Replace any free-text inputs with DB-driven selects.
+
+Server:
+1) Create a new endpoint:
+   - File: server/routes/meta-category-paths.ts
+   - Mount it in the main server.
+   - Route: GET /api/meta/category-paths
+   - Returns a distinct, sorted list of ALL strings found in products.category_paths JSONB arrays.
+   - Shape: { paths: string[] }
+   - Must handle products with NULL/empty category_paths (treat as []).
+   - TypeScript must compile; server must start.
+
+Client (Admin UI /ui-config):
+2) Populate canonical sources:
+   - allowedCategories and allowedSubcategories:
+     * Fetch from existing categories APIs (already in app).
+     * Render as controlled multi-selects (no free text).
+   - categoryPaths inside fieldConfigs mappings (dropdown.option → mapping.categoryPaths[] and toggle.mapping.on.categoryPaths[]):
+     * Replace free-text fields with a searchable multi-select component powered by GET /api/meta/category-paths.
+     * Component should only allow selecting from returned values; no custom entries.
+
+3) Backward compatibility:
+   - If existing saved configs contain values not present in the canonical lists:
+     * Render them with a warning chip “unknown” and keep them selected (read-only) so the admin can replace/remove them.
+     * Do NOT block saving; rely on the existing Zod + canonical DB checks server-side to reject on save if needed.
+
+4) UX details:
+   - Add a small “From catalog” hint below these controls to indicate values are DB-driven.
+   - Debounce API lookups to avoid excessive calls.
+   - Reuse shadcn/ui components (Badge/Command/Popover) for multi-select.
+
+Acceptance criteria:
+- GET /api/meta/category-paths returns 200 with { paths: [...] } and handles empty DB safely.
+- UI Config editor only allows picking from canonical categories, subcategories, and categoryPaths (no free-typed values).
+- Unknown legacy values render with an “unknown” badge but cannot be newly added.
+- TypeScript compiles; app runs; existing save flow unchanged.

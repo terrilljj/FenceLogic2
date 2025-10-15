@@ -16,6 +16,7 @@ import { Save, ArrowLeft, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import type { ProductVariant, UIFieldConfig, UIInputField, ProductCategory, ProductSubcategory, Category, Subcategory } from "@shared/schema";
 import { fetchCoverage, type CoverageResponse } from "@/lib/adminCoverage";
+import { PathMultiSelect } from "@/components/PathMultiSelect";
 
 const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string }[] = [
   { variant: "glass-pool-spigots", label: "Glass Pool - Spigots", group: "Glass Pool Fencing" },
@@ -112,6 +113,9 @@ export default function UIConfigPage() {
   const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
   const [pathCountByPath, setPathCountByPath] = useState<Record<string, number>>({});
   const [subCountByName, setSubCountByName] = useState<Record<string, number>>({});
+  
+  // Available categoryPaths from catalog
+  const [availablePaths, setAvailablePaths] = useState<string[]>([]);
 
   const { data: configs, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/ui-configs"],
@@ -128,6 +132,20 @@ export default function UIConfigPage() {
   const { data: subcategories = [] } = useQuery<Subcategory[]>({
     queryKey: ["/api/admin/subcategories"],
   });
+
+  // Fetch available category paths from catalog
+  useEffect(() => {
+    const fetchPaths = async () => {
+      try {
+        const response = await fetch("/api/meta/category-paths");
+        const data = await response.json();
+        setAvailablePaths(data.paths || []);
+      } catch (error) {
+        console.error("Failed to fetch category paths:", error);
+      }
+    };
+    fetchPaths();
+  }, []);
 
   const saveMutation = useMutation({
     mutationFn: async (data: { productVariant: string; fieldConfigs: UIFieldConfig[]; allowedCategories: string[]; allowedSubcategories: string[] }) => {
@@ -672,36 +690,36 @@ export default function UIConfigPage() {
                                     <div className="text-xs text-muted-foreground mb-2">
                                       Map each option to category paths (e.g., pool_fence/frameless/glass_panels)
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-3">
                                       {fc.options.map((option) => {
                                         const paths = fc.optionPaths?.[option] || [];
                                         return (
-                                          <div key={option} className="flex items-center gap-2">
-                                            <div className="w-32 text-sm font-medium">{option}</div>
-                                            <Input
-                                              className="h-8 flex-1 font-mono text-xs"
-                                              value={paths.join("; ")}
-                                              onChange={(e) => {
-                                                const newPaths = e.target.value.split(";").map(p => p.trim()).filter(p => p !== "");
-                                                handleOptionPathsChange(fc.field, option, newPaths);
-                                              }}
-                                              disabled={!fc.enabled}
-                                              placeholder="e.g., pool_fence/frameless/glass_panels; balustrade/frameless/glass_panels"
-                                              data-testid={`input-paths-${fc.field}-${option}`}
-                                            />
-                                            <div className="flex gap-1">
-                                              {paths.map(path => {
-                                                const count = pathCountByPath[path] ?? 0;
-                                                return (
-                                                  <Badge
-                                                    key={path}
-                                                    variant={count > 0 ? "default" : "destructive"}
-                                                    className="text-xs"
-                                                  >
-                                                    {count}
-                                                  </Badge>
-                                                );
-                                              })}
+                                          <div key={option} className="space-y-1">
+                                            <div className="text-sm font-medium">{option}</div>
+                                            <div className="flex items-start gap-2">
+                                              <div className="flex-1">
+                                                <PathMultiSelect
+                                                  value={paths}
+                                                  onChange={(newPaths) => handleOptionPathsChange(fc.field, option, newPaths)}
+                                                  availablePaths={availablePaths}
+                                                  placeholder="Select category paths..."
+                                                  disabled={!fc.enabled}
+                                                />
+                                              </div>
+                                              <div className="flex gap-1 pt-1">
+                                                {paths.map(path => {
+                                                  const count = pathCountByPath[path] ?? 0;
+                                                  return (
+                                                    <Badge
+                                                      key={path}
+                                                      variant={count > 0 ? "default" : "destructive"}
+                                                      className="text-xs"
+                                                    >
+                                                      {count}
+                                                    </Badge>
+                                                  );
+                                                })}
+                                              </div>
                                             </div>
                                           </div>
                                         );
@@ -729,25 +747,23 @@ export default function UIConfigPage() {
                                 {fc.enabled && (
                                   <div className="col-span-12 mt-2 pt-2 border-t">
                                     <Label className="text-xs font-medium mb-2 block">Associated Category Paths</Label>
-                                    <div className="text-xs text-muted-foreground mb-2">
-                                      Enter category paths (semicolon-separated), e.g., pool_fence/frameless/spigots; balustrade/frameless/spigots
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Input
-                                        className="h-8 flex-1 font-mono text-xs"
-                                        value={(fc.categoryPaths || []).join("; ")}
-                                        onChange={(e) => {
-                                          const paths = e.target.value.split(";").map(p => p.trim()).filter(p => p !== "");
-                                          setFieldConfigs(prev => 
-                                            prev.map(field => 
-                                              field.field === fc.field ? { ...field, categoryPaths: paths } : field
-                                            )
-                                          );
-                                        }}
-                                        placeholder="e.g., pool_fence/frameless/spigots; balustrade/frameless/spigots"
-                                        data-testid={`input-category-paths-${fc.field}`}
-                                      />
-                                      <div className="flex gap-1">
+                                    <div className="flex items-start gap-2">
+                                      <div className="flex-1">
+                                        <PathMultiSelect
+                                          value={fc.categoryPaths || []}
+                                          onChange={(paths) => {
+                                            setFieldConfigs(prev => 
+                                              prev.map(field => 
+                                                field.field === fc.field ? { ...field, categoryPaths: paths } : field
+                                              )
+                                            );
+                                          }}
+                                          availablePaths={availablePaths}
+                                          placeholder="Select category paths..."
+                                          disabled={!fc.enabled}
+                                        />
+                                      </div>
+                                      <div className="flex gap-1 pt-1">
                                         {(fc.categoryPaths || []).map(path => {
                                           const count = pathCountByPath[path] ?? 0;
                                           return (

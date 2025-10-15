@@ -8,6 +8,7 @@ import { createDebugUIConfigRouter } from "./routes/debug-ui-config";
 import { createDebugResolveTraceRouter } from "./routes/debug-resolve-trace";
 import { createDebugProductsLintRouter } from "./routes/debug-products-lint";
 import { UiConfigSchema } from "./schemas/ui-config";
+import metaCategoryPathsRouter from "./routes/meta-category-paths";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -889,6 +890,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/debug/ui-config", createDebugUIConfigRouter(storage));
   app.use("/api/debug/resolve-trace", createDebugResolveTraceRouter(storage));
   app.use("/api/debug/products-lint", createDebugProductsLintRouter(storage));
+
+  // Meta routes
+  app.use("/api/meta", metaCategoryPathsRouter);
 
   const httpServer = createServer(app);
 
