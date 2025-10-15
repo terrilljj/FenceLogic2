@@ -79,10 +79,15 @@ Preferred communication style: Simple, everyday language.
 - `FenceDesign`, `SpanConfig`, `Component`, `PanelLayout`.
 - `Product` - Product catalog with comprehensive fields:
   - **Core fields**: code, description, category, subcategory, price, active status
+  - **Selection identifiers**: selectionId (legacy snake_case), categoryPaths (hierarchical array)
   - **Physical specs**: weight, dimensions, units
   - **Metadata**: tags (array), notes (internal), imageUrl
   - All optional fields support CSV import/export
-- `ProductUIConfig` - UI configuration for product variants (field visibility, position, labels, tooltips).
+- `ProductUIConfig` - UI configuration for product variants (field visibility, position, labels, tooltips):
+  - **Field mapping**: optionPaths (hierarchical category paths), categoryPaths for toggle fields
+  - **Legacy support**: optionProducts, products (deprecated, use category paths instead)
+  - **Path format**: Hierarchical slash-separated (e.g., `pool_fence/frameless/glass_panels`, `pool_fence/frameless/master_gate`)
+  - Products automatically resolved by matching categoryPaths array
 - Supports complex gate configurations (hardware types, hinge positions) and custom glass panels (width, height, positioning, distinct visualization).
 - Top rail configurations with type, material, finish, and termination options.
 

@@ -247,12 +247,12 @@ export default function UIConfigPage() {
     );
   };
 
-  const handleOptionProductsChange = (field: UIInputField, option: string, productCodes: string[]) => {
+  const handleOptionPathsChange = (field: UIInputField, option: string, paths: string[]) => {
     setFieldConfigs(prev => 
       prev.map(fc => {
         if (fc.field === field) {
-          const optionProducts = { ...(fc.optionProducts || {}), [option]: productCodes };
-          return { ...fc, optionProducts };
+          const optionPaths = { ...(fc.optionPaths || {}), [option]: paths };
+          return { ...fc, optionPaths };
         }
         return fc;
       })
@@ -606,52 +606,30 @@ export default function UIConfigPage() {
                                   />
                                 </div>
                                 
-                                {/* Product mapping table for dropdown options */}
+                                {/* Category path mapping for dropdown options */}
                                 {fc.enabled && fc.options && fc.options.length > 0 && (
                                   <div className="col-span-12 mt-2 pt-2 border-t">
-                                    <Label className="text-xs font-medium mb-2 block">Product Mappings</Label>
+                                    <Label className="text-xs font-medium mb-2 block">Category Path Mappings</Label>
+                                    <div className="text-xs text-muted-foreground mb-2">
+                                      Map each option to category paths (e.g., pool_fence/frameless/glass_panels)
+                                    </div>
                                     <div className="space-y-1">
                                       {fc.options.map((option) => {
-                                        const selectedProducts = fc.optionProducts?.[option] || [];
+                                        const paths = fc.optionPaths?.[option] || [];
                                         return (
                                           <div key={option} className="flex items-center gap-2">
                                             <div className="w-32 text-sm font-medium">{option}</div>
-                                            <Popover>
-                                              <PopoverTrigger asChild>
-                                                <Button
-                                                  variant="outline"
-                                                  className="h-8 flex-1 justify-between text-sm"
-                                                  disabled={!fc.enabled}
-                                                  data-testid={`button-products-${fc.field}-${option}`}
-                                                >
-                                                  {selectedProducts.length > 0
-                                                    ? `${selectedProducts.length} product(s) selected`
-                                                    : "Select products..."}
-                                                  <ChevronDown className="h-4 w-4 ml-2" />
-                                                </Button>
-                                              </PopoverTrigger>
-                                              <PopoverContent className="w-96 p-3" align="start">
-                                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                                  {products?.filter((p: any) => p.active).map((product: any) => (
-                                                    <div key={product.code} className="flex items-center space-x-2">
-                                                      <Checkbox
-                                                        checked={selectedProducts.includes(product.code)}
-                                                        onCheckedChange={(checked) => {
-                                                          const newProducts = checked
-                                                            ? [...selectedProducts, product.code]
-                                                            : selectedProducts.filter((p: string) => p !== product.code);
-                                                          handleOptionProductsChange(fc.field, option, newProducts);
-                                                        }}
-                                                        data-testid={`checkbox-product-${fc.field}-${option}-${product.code}`}
-                                                      />
-                                                      <label className="text-sm cursor-pointer flex-1">
-                                                        {product.code} - {product.description}
-                                                      </label>
-                                                    </div>
-                                                  ))}
-                                                </div>
-                                              </PopoverContent>
-                                            </Popover>
+                                            <Input
+                                              className="h-8 flex-1 font-mono text-xs"
+                                              value={paths.join("; ")}
+                                              onChange={(e) => {
+                                                const newPaths = e.target.value.split(";").map(p => p.trim()).filter(p => p !== "");
+                                                handleOptionPathsChange(fc.field, option, newPaths);
+                                              }}
+                                              disabled={!fc.enabled}
+                                              placeholder="e.g., pool_fence/frameless/glass_panels; balustrade/frameless/glass_panels"
+                                              data-testid={`input-paths-${fc.field}-${option}`}
+                                            />
                                           </div>
                                         );
                                       })}
@@ -674,46 +652,27 @@ export default function UIConfigPage() {
                                   />
                                 </div>
                                 
-                                {/* Product selection for toggle fields */}
+                                {/* Category paths for toggle fields */}
                                 {fc.enabled && (
                                   <div className="col-span-12 mt-2 pt-2 border-t">
-                                    <Label className="text-xs font-medium mb-2 block">Associated Products</Label>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          className="h-8 w-full justify-between text-sm"
-                                          data-testid={`button-products-${fc.field}`}
-                                        >
-                                          {(fc.products?.length || 0) > 0
-                                            ? `${fc.products?.length} product(s) selected`
-                                            : "Select products..."}
-                                          <ChevronDown className="h-4 w-4 ml-2" />
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent className="w-96 p-3" align="start">
-                                        <div className="space-y-2 max-h-64 overflow-y-auto">
-                                          {products?.filter((p: any) => p.active).map((product: any) => (
-                                            <div key={product.code} className="flex items-center space-x-2">
-                                              <Checkbox
-                                                checked={fc.products?.includes(product.code) || false}
-                                                onCheckedChange={(checked) => {
-                                                  const currentProducts = fc.products || [];
-                                                  const newProducts = checked
-                                                    ? [...currentProducts, product.code]
-                                                    : currentProducts.filter((p: string) => p !== product.code);
-                                                  handleProductsChange(fc.field, newProducts);
-                                                }}
-                                                data-testid={`checkbox-product-${fc.field}-${product.code}`}
-                                              />
-                                              <label className="text-sm cursor-pointer flex-1">
-                                                {product.code} - {product.description}
-                                              </label>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </PopoverContent>
-                                    </Popover>
+                                    <Label className="text-xs font-medium mb-2 block">Associated Category Paths</Label>
+                                    <div className="text-xs text-muted-foreground mb-2">
+                                      Enter category paths (semicolon-separated), e.g., pool_fence/frameless/spigots; balustrade/frameless/spigots
+                                    </div>
+                                    <Input
+                                      className="h-8 w-full font-mono text-xs"
+                                      value={(fc.categoryPaths || []).join("; ")}
+                                      onChange={(e) => {
+                                        const paths = e.target.value.split(";").map(p => p.trim()).filter(p => p !== "");
+                                        setFieldConfigs(prev => 
+                                          prev.map(field => 
+                                            field.field === fc.field ? { ...field, categoryPaths: paths } : field
+                                          )
+                                        );
+                                      }}
+                                      placeholder="e.g., pool_fence/frameless/spigots; balustrade/frameless/spigots"
+                                      data-testid={`input-category-paths-${fc.field}`}
+                                    />
                                   </div>
                                 )}
                               </>
