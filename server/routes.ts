@@ -413,9 +413,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const products = await storage.getAllProducts();
       
-      const csvHeader = "code,description,category,subcategory,price,weight,dimensions,units,tags,notes,imageUrl,active\n";
+      const csvHeader = "code,selectionId,categoryPaths,description,category,subcategory,price,weight,dimensions,units,active,tags,notes,imageUrl\n";
       const csvRows = products.map((p) => {
         const code = p.code.replace(/"/g, '""');
+        const selectionId = (p.selectionId || "").replace(/"/g, '""');
+        const categoryPaths = (p.categoryPaths || []).join(";").replace(/"/g, '""');
         const description = p.description.replace(/"/g, '""');
         const category = (p.category || "").replace(/"/g, '""');
         const subcategory = (p.subcategory || "").replace(/"/g, '""');
@@ -423,11 +425,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const weight = (p.weight || "").replace(/"/g, '""');
         const dimensions = (p.dimensions || "").replace(/"/g, '""');
         const units = (p.units || "").replace(/"/g, '""');
-        const tags = (p.tags || []).join(", ").replace(/"/g, '""');
+        const tags = (p.tags || []).join(",").replace(/"/g, '""');
         const notes = (p.notes || "").replace(/"/g, '""');
         const imageUrl = (p.imageUrl || "").replace(/"/g, '""');
         const active = p.active;
-        return `"${code}","${description}","${category}","${subcategory}","${price}","${weight}","${dimensions}","${units}","${tags}","${notes}","${imageUrl}",${active}`;
+        return `"${code}","${selectionId}","${categoryPaths}","${description}","${category}","${subcategory}","${price}","${weight}","${dimensions}","${units}",${active},"${tags}","${notes}","${imageUrl}"`;
       }).join("\n");
       
       const csv = csvHeader + csvRows;
@@ -534,6 +536,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const productData = {
             code: rowData.code,
+            selectionId: rowData.selectionid || undefined,
+            categoryPaths: rowData.categorypaths ? rowData.categorypaths.split(";").map((p: string) => p.trim()).filter((p: string) => p !== "") : undefined,
             description: rowData.description,
             category: rowData.category || undefined,
             subcategory: rowData.subcategory || undefined,
