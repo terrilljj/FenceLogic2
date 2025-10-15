@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireAdmin } from "./middleware/auth";
 import { createDebugUIConfigRouter } from "./routes/debug-ui-config";
 import { createDebugResolveTraceRouter } from "./routes/debug-resolve-trace";
+import { createDebugProductsLintRouter } from "./routes/debug-products-lint";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -821,6 +822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug routes
   app.use("/api/debug/ui-config", createDebugUIConfigRouter(storage));
   app.use("/api/debug/resolve-trace", createDebugResolveTraceRouter(storage));
+  app.use("/api/debug/products-lint", createDebugProductsLintRouter(storage));
 
   const httpServer = createServer(app);
 
