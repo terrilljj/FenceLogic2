@@ -143,20 +143,24 @@ function drawFooter(
   // Vertical branding on right edge if enabled
   if (drawWatermark) {
     doc.save();
-    // Position from right edge with safe margin
-    const xPos = 842 - 20;  // 20pt from right edge for visibility
-    const yPos = 595 / 2;   // Centered vertically
+    const brandingText = 'FenceLogic By Barrier Dynamics © 2025';
+    
+    // Position: right edge with margin, vertically centered
+    const xPos = 842 - 18;
+    const yPos = 595 / 2;
+    
+    // Set font size first, then measure text width
+    doc.fontSize(9);
+    const textWidth = doc.widthOfString(brandingText);
     
     doc.translate(xPos, yPos);
     doc.rotate(-90);
     
-    // Draw text with enough width to prevent clipping
-    const brandingText = 'FenceLogic By Barrier Dynamics © 2025';
-    doc.fontSize(9)
-      .fillColor('#666')
-      .text(brandingText, -165, 0, {
-        width: 330,
-        align: 'center',
+    // Left-align from negative half of text width for perfect centering
+    doc.fillColor('#666')
+      .text(brandingText, -(textWidth / 2), 0, {
+        width: textWidth + 20,
+        align: 'left',
         lineBreak: false,
       });
     doc.restore();
