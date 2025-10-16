@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getSheetValues } from '../utils/googleSheets';
-import { rowsToObjects, parseBool, parseNumber, parseJSONorSplit, parsePrice, toStringArray } from '../utils/rows';
+import { rowsToObjects, parseBool, parseBoolOrUndefined, parseNumber, parseJSONorSplit, parsePrice, toStringArray } from '../utils/rows';
 import { ProductRowSchema, UIConfigRowSchema, type ProductRow, type UIConfigRow } from '../validation/sheets';
 import { diffProducts, diffUIConfig } from '../services/sheetsDiff';
 import { storage } from '../storage';
@@ -97,11 +97,11 @@ router.post('/pull', async (req, res) => {
     const validatedProducts: ProductRow[] = [];
     productObjects.forEach((obj, index) => {
       try {
-        const parsed: ProductRow = {
+        const parsed = {
           code: obj.code || '',
           description: obj.description || undefined,
           price: parsePrice(obj.price) || 0,
-          active: parseBool(obj.active),
+          active: parseBoolOrUndefined(obj.active),
           weight: parseNumber(obj.weight),
           imageUrl: obj.imageUrl || undefined,
           subcategory: obj.subcategory || undefined,

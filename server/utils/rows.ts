@@ -27,6 +27,16 @@ export function parseBool(value: string | undefined): boolean {
 }
 
 /**
+ * Parses boolean from string, returns undefined for blank/empty values
+ * This allows Zod defaults to apply for optional boolean fields
+ */
+export function parseBoolOrUndefined(value: string | undefined): boolean | undefined {
+  if (!value || value.trim() === '') return undefined;
+  const lower = value.toLowerCase().trim();
+  return lower === '1' || lower === 'true' || lower === 'yes';
+}
+
+/**
  * Parses number, returns undefined for blanks
  */
 export function parseNumber(value: string | undefined): number | undefined {
