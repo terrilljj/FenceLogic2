@@ -187,6 +187,11 @@ export function calculatePanelLayout(
       // If equalizePanels found a solution with the desired panel count, use it
       if (equalizeResult.widthsMm && equalizeResult.widthsMm.length === numVariablePanels) {
         variablePanels = equalizeResult.widthsMm;
+        
+        // CRITICAL: Verify all panels are within valid range (especially MAX_PANEL constraint)
+        if (variablePanels.some(p => p < MIN_PANEL || p > MAX_PANEL)) {
+          continue; // Skip this configuration if any panel exceeds max panel width
+        }
       } else {
         // Fallback to original algorithm if equalizePanels can't produce exact count
         const averagePanelWidth = totalVariablePanelWidth / numVariablePanels;
