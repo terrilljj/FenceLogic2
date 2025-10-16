@@ -64,6 +64,7 @@ Preferred communication style: Simple, everyday language.
 **Numeric Field SKU Selection System:**
 - **SKU Selector Service**: Extracts width from product codes, performs tolerance-based matching and snapping to standard sizes.
 - Integrates with numeric fields for automatic SKU selection, fallback to UI config defaults, and context filtering.
+- **Feature Flag HINGE_AUTO_ENABLED**: Controls hinge panel auto-sizing (default: '0' = disabled). When off, requires explicit hinge widths. Gate fields unaffected. UI banner shown when disabled. API endpoint `/api/feature-flags` exposes status.
 
 ### Development Workflow
 
