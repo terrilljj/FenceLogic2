@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Product types
-export type ProductType = "glass-pool" | "glass-balustrade" | "aluminium-pool" | "aluminium-balustrade" | "pvc" | "general";
+export type ProductType = "glass-pool" | "glass-balustrade" | "aluminium-pool" | "aluminium-balustrade" | "pvc" | "general" | "custom";
 
 // Product variants
 export type ProductVariant = 
@@ -29,7 +29,8 @@ export type ProductVariant =
   | "general-blade"
   | "general-barr"
   | "custom-panel-designer"
-  | "custom-glass";
+  | "custom-glass"
+  | "custom-frameless";
 
 // Channel mounting types (for glass channel systems)
 export type ChannelMounting = "wall" | "ground";
@@ -464,7 +465,8 @@ export const fenceDesignSchema = z.object({
     "general-blade",
     "general-barr",
     "custom-panel-designer",
-    "custom-glass"
+    "custom-glass",
+    "custom-frameless"
   ]).default("glass-pool-spigots"),
   shape: z.enum(["inline", "l-shape", "u-shape", "enclosed", "custom"]),
   customSides: z.number().min(3).max(10).optional(),

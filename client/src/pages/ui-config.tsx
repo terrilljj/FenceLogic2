@@ -34,6 +34,7 @@ const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string 
   { variant: "pvc-hamptons-3rail", label: "Hamptons PVC - 3 Rail", group: "Hamptons PVC" },
   { variant: "custom-panel-designer", label: "Custom Panel Designer (BETA)", group: "Advanced Options" },
   { variant: "custom-glass", label: "Custom Glass", group: "Glass Pool Fencing" },
+  { variant: "custom-frameless", label: "Custom Frameless", group: "Custom" },
 ];
 
 type FieldType = "numeric" | "slider" | "dropdown" | "toggle";
@@ -108,6 +109,9 @@ const VARIANT_FIELDS: Record<ProductVariant, UIInputField[]> = {
   
   // Custom Glass (All panels individually sized)
   "custom-glass": ["section-length", "left-gap", "right-gap", "glass-thickness"],
+  
+  // Custom Frameless (Auto-calc panels with exact gaps)
+  "custom-frameless": ["section-length", "left-gap", "right-gap", "max-panel-width", "glass-thickness"],
 };
 
 // Type guard for numeric fields

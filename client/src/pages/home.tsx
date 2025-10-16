@@ -123,6 +123,13 @@ const productOptions: ProductOption[] = [
     name: "Custom Glass",
     description: "Every panel individually sized",
     visual: "frameless-glass"
+  },
+  {
+    id: "custom-frameless",
+    type: "custom",
+    name: "Frameless Spigots",
+    description: "Auto-calc panels with exact gaps",
+    visual: "frameless-glass"
   }
 ];
 
@@ -490,6 +497,44 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {productOptions
               .filter((p) => p.type === "glass-balustrade" || p.type === "aluminium-balustrade")
+              .map((product) => (
+                <Card
+                  key={product.id}
+                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  onClick={() => handleSelectProduct(product.type, product.id)}
+                  data-testid={`card-home-product-${product.id}`}
+                >
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <ProductVisual type={product.visual} />
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {product.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </Card>
+              ))}
+          </div>
+        </div>
+
+        {/* Custom Section */}
+        <div className="mb-16">
+          <div className="mb-8">
+            <h2 className="text-3xl font-semibold mb-3" data-testid="text-custom-title">
+              Custom
+            </h2>
+            <p className="text-muted-foreground">
+              Advanced configurator with auto-calculated panel widths
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {productOptions
+              .filter((p) => p.type === "custom")
               .map((product) => (
                 <Card
                   key={product.id}
