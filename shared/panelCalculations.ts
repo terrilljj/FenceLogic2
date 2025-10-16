@@ -1,4 +1,5 @@
 import { PanelLayout, PanelType } from "./schema";
+import { equalizePanels } from "./calc/equalize";
 
 /**
  * Calculate panel layout based on desired gap size
@@ -171,57 +172,70 @@ export function calculatePanelLayout(
     let variablePanels: number[] = [];
     
     if (numVariablePanels > 0) {
-      // Calculate average panel width and round to nearest increment
-      const averagePanelWidth = totalVariablePanelWidth / numVariablePanels;
-      const idealPanelWidth = Math.round(averagePanelWidth / PANEL_INCREMENT) * PANEL_INCREMENT;
+      // Use equalizePanels to distribute panels on 50mm grid
+      const equalizeResult = equalizePanels({
+        targetMm: totalVariablePanelWidth,
+        stepMm: PANEL_INCREMENT,
+        maxPanelMm: MAX_PANEL,
+        minPanelMm: MIN_PANEL,
+      });
       
-      if (hasGate && numVariablePanels === 2) {
-        console.log('Average panel width:', averagePanelWidth, '→ rounded ideal:', idealPanelWidth, 'for', numVariablePanels, 'panels');
-      }
-      
-      if (idealPanelWidth < MIN_PANEL || idealPanelWidth > MAX_PANEL) {
-        continue;
-      }
-      
-      // Start with all variable panels at ideal width
-      variablePanels = Array(numVariablePanels).fill(idealPanelWidth);
-      let currentTotal = numVariablePanels * idealPanelWidth;
-      const remainder = totalVariablePanelWidth - currentTotal;
-      
-      // Distribute remainder evenly across panels if possible
-      if (Math.abs(remainder) > 0.001) { // Use tolerance for floating point comparison
-        const absRemainder = Math.abs(remainder);
+      // If equalizePanels found a solution with the desired panel count, use it
+      if (equalizeResult.widthsMm && equalizeResult.widthsMm.length === numVariablePanels) {
+        variablePanels = equalizeResult.widthsMm;
+      } else {
+        // Fallback to original algorithm if equalizePanels can't produce exact count
+        const averagePanelWidth = totalVariablePanelWidth / numVariablePanels;
+        const idealPanelWidth = Math.round(averagePanelWidth / PANEL_INCREMENT) * PANEL_INCREMENT;
         
-        // For negative remainder (panels too large), reduce panel size to avoid variance
-        if (remainder < 0) {
-          // Always try to reduce at least one panel to eliminate negative variance
-          let remainingToSubtract = Math.ceil(absRemainder / PANEL_INCREMENT) * PANEL_INCREMENT;
-          for (let i = 0; i < numVariablePanels && remainingToSubtract > 0; i++) {
-            const canSubtract = Math.min(variablePanels[i] - MIN_PANEL, remainingToSubtract);
-            if (canSubtract >= PANEL_INCREMENT) {
-              variablePanels[i] -= PANEL_INCREMENT;
-              remainingToSubtract -= PANEL_INCREMENT;
-            }
-          }
-        } else if (remainder > 0) {
-          // For positive remainder, only add if it's a full increment
-          if (absRemainder >= PANEL_INCREMENT) {
-            let remainingToAdd = Math.floor(absRemainder / PANEL_INCREMENT) * PANEL_INCREMENT;
-            for (let i = 0; i < numVariablePanels && remainingToAdd > 0; i++) {
-              const canAdd = Math.min(MAX_PANEL - variablePanels[i], remainingToAdd);
-              if (canAdd >= PANEL_INCREMENT) {
-                variablePanels[i] += PANEL_INCREMENT;
-                remainingToAdd -= PANEL_INCREMENT;
+        if (hasGate && numVariablePanels === 2) {
+          console.log('Average panel width:', averagePanelWidth, '→ rounded ideal:', idealPanelWidth, 'for', numVariablePanels, 'panels');
+        }
+        
+        if (idealPanelWidth < MIN_PANEL || idealPanelWidth > MAX_PANEL) {
+          continue;
+        }
+        
+        // Start with all variable panels at ideal width
+        variablePanels = Array(numVariablePanels).fill(idealPanelWidth);
+        let currentTotal = numVariablePanels * idealPanelWidth;
+        const remainder = totalVariablePanelWidth - currentTotal;
+        
+        // Distribute remainder evenly across panels if possible
+        if (Math.abs(remainder) > 0.001) { // Use tolerance for floating point comparison
+          const absRemainder = Math.abs(remainder);
+          
+          // For negative remainder (panels too large), reduce panel size to avoid variance
+          if (remainder < 0) {
+            // Always try to reduce at least one panel to eliminate negative variance
+            let remainingToSubtract = Math.ceil(absRemainder / PANEL_INCREMENT) * PANEL_INCREMENT;
+            for (let i = 0; i < numVariablePanels && remainingToSubtract > 0; i++) {
+              const canSubtract = Math.min(variablePanels[i] - MIN_PANEL, remainingToSubtract);
+              if (canSubtract >= PANEL_INCREMENT) {
+                variablePanels[i] -= PANEL_INCREMENT;
+                remainingToSubtract -= PANEL_INCREMENT;
               }
             }
+          } else if (remainder > 0) {
+            // For positive remainder, only add if it's a full increment
+            if (absRemainder >= PANEL_INCREMENT) {
+              let remainingToAdd = Math.floor(absRemainder / PANEL_INCREMENT) * PANEL_INCREMENT;
+              for (let i = 0; i < numVariablePanels && remainingToAdd > 0; i++) {
+                const canAdd = Math.min(MAX_PANEL - variablePanels[i], remainingToAdd);
+                if (canAdd >= PANEL_INCREMENT) {
+                  variablePanels[i] += PANEL_INCREMENT;
+                  remainingToAdd -= PANEL_INCREMENT;
+                }
+              }
+            }
+            // Small positive remainders (< PANEL_INCREMENT) will be absorbed by gaps
           }
-          // Small positive remainders (< PANEL_INCREMENT) will be absorbed by gaps
         }
-      }
-      
-      // Verify all variable panels are within valid range
-      if (variablePanels.some(p => p < MIN_PANEL || p > MAX_PANEL)) {
-        continue;
+        
+        // Verify all variable panels are within valid range
+        if (variablePanels.some(p => p < MIN_PANEL || p > MAX_PANEL)) {
+          continue;
+        }
       }
     }
     

@@ -65,6 +65,7 @@ Preferred communication style: Simple, everyday language.
 - **SKU Selector Service**: Extracts width from product codes, performs tolerance-based matching and snapping to standard sizes.
 - Integrates with numeric fields for automatic SKU selection, fallback to UI config defaults, and context filtering.
 - **Feature Flag HINGE_AUTO_ENABLED**: Controls hinge panel auto-sizing (default: '0' = disabled). When off, requires explicit hinge widths. Gate fields unaffected. UI banner shown when disabled. API endpoint `/api/feature-flags` exposes status.
+- **Panel Equalization**: `equalizePanels` function (`shared/calc/equalize.ts`) distributes remainder panels on 50mm grid with min/max bounds enforcement. Integrated into `calculatePanelLayout` with fallback to original algorithm. Ensures minimal variance between panel widths.
 
 ### Development Workflow
 

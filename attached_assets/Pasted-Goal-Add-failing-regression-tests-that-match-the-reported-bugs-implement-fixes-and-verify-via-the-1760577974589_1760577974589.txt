@@ -1,0 +1,99 @@
+Goal:
+Add failing regression tests that match the reported bugs, implement fixes, and verify via the existing QA script that results are correct and persisted to logs/ and replit.md.
+
+Bugs to reproduce:
+- B1) Section = 5000 mm, hinge width explicit = 1200 (G2G). After toggling mount mode or “auto”, hinge width drifts to 1000 (should NOT drift).
+- B2) Move gate to far right then flip side: gate disappears and solver returns only two panels 2×2000 (sum=4000), losing 1000 mm (must conserve length).
+- B3) Equalize remainder is NOT using a 50 mm grid (must equalize on 50 mm steps and stay within min/max).
+
+Tasks:
+
+1) Regression tests (Vitest)
+   File: server/tests/regression-gate-bugs.spec.ts
+
+   Set up pure, in-memory fixtures (no DB). Use the same helpers you’ve built (gate mode shim, numeric fields, resolver core). Create the following:
+
+   T1 — “Hinge width is preserved across mount toggles”
+   - Given selection (variant frameless):
+       run_length_mm: 5000
+       mount_mode: "GLASS_TO_GLASS"
+       hinge_side: "LEFT"
+       gate_system: "Master Range"
+       gate_width_mm: 850
+       hinge_panel_width_mm: 1200  // explicit
+       start_gap_mm: 40, end_gap_mm: 40, between_gap_mm: 20
+     Resolve → capture chosen hinge.
+     Change only mount_mode → "POST" (keep hinge_panel_width_mm=1200 in selection)
+     Resolve → hinge panel must NOT be created (POST), but when toggling back to "GLASS_TO_GLASS" in the next call:
+     Resolve → hinge panel width must remain 1200 (not 1000). Assert via trace + BOM.
+
+   T2 — “Conservation of length when gate at far right & flip”
+   - Same variant. Place gate to the far right (simulate with hinge_side:"RIGHT", mount_mode:"GLASS_TO_GLASS", explicit hinge=1200, gate=850, same gaps).
+   - Resolve, record the sequence. Flip side to "LEFT" (hinge_side only).
+   - Assert: sum(gaps + panels + hingePanel (if G2G) + gate + gateGaps) == run_length_mm within ±2 mm.
+   - Assert: gate is present both before and after flip (no disappearance).
+
+   T3 — “Equalize uses 50 mm grid and stays within min/max”
+   - Use run_length_mm: 12000, start_gap=40, end_gap=40, between_gap=20, hinge_panel_width_mm: 1100, gate_width_mm: 850, mount_mode: "GLASS_TO_GLASS".
+   - With UI-config (or injected defaults): max_panel_width_mm=1400, min_panel_width_mm=300, panel_layout_mode='EQUALIZE'.
+   - Assert all remainder panel widths are multiples of 50; each in [min,max]; difference between largest/smallest ≤ 50; sum conserves length ±2 mm.
+
+   Make tests fail first if the bug still exists.
+
+2) Implement/fix Equalize @ 50 mm
+   Files:
+   - shared/calc/equalize.ts (create if missing)
+   - server/services/resolve.ts (integration)
+
+   Implement:
+   export function equalizePanels({
+     targetMm, stepMm=50, maxPanelMm, minPanelMm=300
+   }): { widthsMm:number[], error?:string }
+
+   Algorithm:
+   - Start with count = ceil(targetMm / maxPanelMm) (at least 1).
+   - Loop up to count+20:
+       base = floor((targetMm / count) / stepMm) * stepMm
+       leftover = targetMm - base*count
+       steps = round(leftover / stepMm)
+       widths = Array(count).fill(base)
+       for i in 0..steps-1: widths[i] += stepMm
+       if every width in [min,max] AND sum(widths)==targetMm (±2 mm), success.
+       else count++ and retry.
+   - If no solution, return error describing infeasible bounds.
+
+   Integration:
+   - In resolver, after placing fixed items (start/end gaps, hingePanel if G2G via explicit width, gate with hinge/latch gaps, and known std panels if any), compute remainder and call equalizePanels with UI-config min/max.
+   - Convert widths to stock/custom using existing policy; if policy not present, mark custom by default.
+   - Add trace { source:'equalize', key:'step=50', notes:[`count=${widths.length}`] }.
+
+3) Preserve hinge width across toggles and flips
+   - Ensure resolver NEVER mutates hinge_panel_width_mm. It should come from:
+       selection.hinge_panel_width_mm ?? uiConfigDefault (when GLASS_TO_GLASS only)
+   - When mount_mode=POST/WALL, do NOT delete or alter hinge width; simply skip inserting a hinge-panel SKU.
+   - Client: confirm hinge width is stored in form state independent of mount_mode; toggling mount_mode must not reset the field (only visual depends on mode).
+
+4) Fix the “lost 1000 mm” bug
+   - Audit gap counting & segment composer:
+       * Number of between gaps is (#panels + gate + hingePanel_in_G2G − 1) across each contiguous glass sequence.
+       * Do NOT double-count betweenGap around hingeGap/latchGap. The gate’s hingeGap and latchGap replace the betweenGap at those interfaces.
+   - Add a small invariant checker in resolver (dev only): sumParts ≈ run_length (±2 mm). If not, include a warning in the trace and fix the count logic accordingly.
+
+5) Re-run QA and persist to memory
+   - Run: npx tsx server/scripts/qa-gate.ts
+   - Ensure the markdown/json reports are written to logs/ and replit.md is appended.
+   - The QA must show:
+       S2 (G2G LEFT): hinge-panel present; preserved when toggling; no drift from 1200.
+       S3 (POST RIGHT): post-anchor present; no hinge panel; lengths conserved.
+       S4 (flip POST→G2G): hinge_side preserved; lengths conserved; equalize trace present when applicable.
+
+Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: regression-gate-bugs.spec.ts pass? <yes/no> (plus totals by file)
+- Equalize integration: step=50 enforced? <yes/no>
+- Length conservation: all cases within ±2 mm? <yes/no>
+- Hinge width persistence across toggles/flips: <yes/no>
+- QA reports written: <filenames>
+- Files changed: (list)
+- Follow-ups (only if something failed): 1–3 bullets with minimal diffs
