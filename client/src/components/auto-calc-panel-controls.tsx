@@ -322,20 +322,48 @@ export function AutoCalcPanelControls({
         <div className="bg-background rounded-md p-3 border">
           <Label className="text-sm font-medium mb-2 block">Panel Height</Label>
           <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={1200}
-              max={1800}
-              step={50}
-              value={panelHeight}
-              onChange={(e) => {
-                const value = parseInt(e.target.value) || 1200;
-                updatePanelHeight(Math.max(1200, value));
+            <Select
+              value={panelHeight === 1000 ? "1000" : panelHeight === 1200 ? "1200" : "manual"}
+              onValueChange={(value) => {
+                if (value === "1000") {
+                  updatePanelHeight(1000);
+                } else if (value === "1200") {
+                  updatePanelHeight(1200);
+                } else {
+                  // For manual, keep current value or default to 1500
+                  if (panelHeight === 1000 || panelHeight === 1200) {
+                    updatePanelHeight(1500);
+                  }
+                }
               }}
-              className="h-9 w-full"
-              data-testid={`panel-height-${spanId}`}
-            />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
+            >
+              <SelectTrigger className="h-9 w-24" data-testid={`panel-height-selector-${spanId}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1000">1000mm</SelectItem>
+                <SelectItem value="1200">1200mm</SelectItem>
+                <SelectItem value="manual">Manual</SelectItem>
+              </SelectContent>
+            </Select>
+            {panelHeight !== 1000 && panelHeight !== 1200 && (
+              <>
+                <Input
+                  type="number"
+                  min={1000}
+                  max={1800}
+                  step={50}
+                  value={panelHeight}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 1000;
+                    updatePanelHeight(Math.max(1000, value));
+                  }}
+                  className="h-9 w-20"
+                  data-testid={`panel-height-manual-${spanId}`}
+                />
+                <span className="text-sm text-muted-foreground">mm</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -354,6 +382,80 @@ export function AutoCalcPanelControls({
               <SelectItem value="15mm">15mm Toughened</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      {/* Panel Types Configuration */}
+      <div className="bg-card rounded-md p-4 border space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">Panel Types</Label>
+          <div className="flex gap-1">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => applyTypeToAll("standard")}
+              data-testid={`apply-standard-all-${spanId}`}
+            >
+              All Standard
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => applyTypeToAll("gate")}
+              data-testid={`apply-gate-all-${spanId}`}
+            >
+              All Gate
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => applyTypeToAll("hinge")}
+              data-testid={`apply-hinge-all-${spanId}`}
+            >
+              All Hinge
+            </Button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-2">
+          {panelTypes.map((type, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <Badge variant="outline" className="w-20 justify-center">
+                Panel {index + 1}
+              </Badge>
+              <Select
+                value={type}
+                onValueChange={(value) => updatePanelType(index, value as PanelType)}
+              >
+                <SelectTrigger className="h-9 flex-1" data-testid={`panel-type-${spanId}-${index}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard Glass</SelectItem>
+                  <SelectItem value="gate">Gate Panel</SelectItem>
+                  <SelectItem value="hinge">Hinge Panel</SelectItem>
+                </SelectContent>
+              </Select>
+              <Badge className={
+                type === "standard" ? "bg-blue-500" : 
+                type === "gate" ? "bg-green-500" : 
+                "bg-orange-500"
+              }>
+                {panelWidths[index]}mm
+              </Badge>
+              {layoutMode === "manual-individual" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removePanel(index)}
+                  disabled={panelTypes.length <= 1}
+                  data-testid={`remove-panel-${spanId}-${index}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

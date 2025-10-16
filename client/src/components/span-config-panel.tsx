@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -539,17 +540,35 @@ export function SpanConfigPanel({
           )}
 
           {/* Section Length */}
-          <NumericInput
-            label="Section Length"
-            value={span.length}
-            onChange={(length) => updateSpan({ length })}
-            min={0}
-            max={50000}
-            step={100}
-            unit="mm"
-            testId={`span-${span.spanId}-length`}
-            tooltip="Enter the total length of this fence section. The default end gap is 25mm for corner junctions. Maximum end gap is 150mm to allow for adding a post or other non-fence item into the section."
-          />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">Section Length</Label>
+              <InfoTooltip content="Enter the total length of this fence section. The default end gap is 25mm for corner junctions. Maximum end gap is 150mm to allow for adding a post or other non-fence item into the section." />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 w-48">
+                <Input
+                  type="number"
+                  value={span.length}
+                  onChange={(e) => updateSpan({ length: parseInt(e.target.value) || 0 })}
+                  min={0}
+                  max={50000}
+                  step={100}
+                  className="h-9"
+                  data-testid={`span-${span.spanId}-length`}
+                />
+                <span className="text-sm text-muted-foreground">mm</span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9"
+                data-testid={`span-${span.spanId}-calc-button`}
+              >
+                Calc
+              </Button>
+            </div>
+          </div>
 
           {/* Glass Balustrade Configuration - glass thickness and top rail */}
           {(productVariant === "glass-bal-spigots" || productVariant === "glass-bal-channel" || productVariant === "glass-bal-standoffs") && (

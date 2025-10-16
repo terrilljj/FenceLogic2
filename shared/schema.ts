@@ -437,7 +437,7 @@ export const spanConfigSchema = z.object({
   autoCalcConfig: z.object({
     layoutMode: z.enum(["auto", "manual-qty", "manual-individual"]).optional(), // Layout mode for panel configuration
     maxPanelWidth: z.number().min(500).max(2000),
-    panelHeight: z.number().min(1200).max(1800).default(1500), // Standard panel height
+    panelHeight: z.number().min(1000).max(1800).default(1500), // Panel height (1000mm for semi-frameless, 1200mm+ for standard)
     glassType: z.enum(["12mm", "15mm"]).default("12mm"), // Glass thickness
     gapMode: z.enum(["auto", "manual"]).default("auto"), // Auto-calc gaps or user-defined
     interPanelGaps: z.array(z.number().min(6).max(100)), // Exact gap values between panels
