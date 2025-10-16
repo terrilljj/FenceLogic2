@@ -886,6 +886,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Feature flags endpoint
+  app.get("/api/feature-flags", (req, res) => {
+    res.json({
+      HINGE_AUTO_ENABLED: process.env.HINGE_AUTO_ENABLED === "1",
+    });
+  });
+
   // Debug routes
   app.use("/api/debug/ui-config", createDebugUIConfigRouter(storage));
   app.use("/api/debug/resolve-trace", createDebugResolveTraceRouter(storage));

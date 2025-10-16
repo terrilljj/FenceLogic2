@@ -159,6 +159,19 @@ export function resolveSelectionToProductsCore(
 
     // Handle numeric fields (gate-width-mm, hinge-panel-width-mm)
     if (fieldConfig.type === "number") {
+      // Check feature flag for hinge auto-sizing
+      const isHingeField = fieldConfig.context === "hinge";
+      const hingeAutoEnabled = process.env.HINGE_AUTO_ENABLED === "1";
+      
+      // If this is a hinge field and auto-sizing is disabled, require explicit width
+      if (isHingeField && !hingeAutoEnabled) {
+        // Only process if shopper explicitly provided a width
+        if (typeof fieldValue !== "number" || fieldValue === null) {
+          // Skip hinge field when auto-sizing is disabled and no explicit width provided
+          continue;
+        }
+      }
+      
       // Use shopper selection value or fall back to UI config default
       // Treat null the same as undefined (common when clearing form inputs)
       const targetWidth = (typeof fieldValue === "number" && fieldValue !== null) 
