@@ -52,6 +52,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { SheetsSyncDialog } from "@/components/sheets-sync-dialog";
 
 export default function Products() {
   const { toast } = useToast();
@@ -307,6 +308,7 @@ export default function Products() {
                 <Upload className="w-4 h-4 mr-2" />
                 {importMutation.isPending ? "Importing..." : "Import CSV"}
               </Button>
+              <SheetsSyncDialog />
               <Button
                 onClick={() => handleOpenDialog()}
                 data-testid="button-add-product"
@@ -330,6 +332,15 @@ export default function Products() {
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   UI Config
+                </Button>
+              </Link>
+              <Link href="/admin-settings">
+                <Button
+                  variant="outline"
+                  data-testid="button-admin-settings"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
                 </Button>
               </Link>
               <Button
