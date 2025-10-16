@@ -1,0 +1,105 @@
+Goal:
+Allow me to paste Google OAuth + Sheets IDs as a chat prompt and have the app store them securely (encrypted on disk), then use them at runtime. Keep environment variables supported; file is a fallback. Admin-only write access.
+
+What to build
+
+1) Config loader (ENV-first, then file)
+File: server/utils/config.ts
+- Export:
+  type GoogleConfig = {
+    oauthClientId: string;
+    oauthClientSecret: string;
+    spreadsheetId: string;
+  }
+  function getAppEncSecret(): string; // returns APP_ENC_SECRET; if missing, auto-generate at first write and persist
+  async function loadGoogleConfig(): Promise<GoogleConfig|null>;  // ENV → file (decrypt)
+  async function saveGoogleConfig(c: GoogleConfig): Promise<void>; // encrypt & write file
+  function hasGoogleConfigInEnv(): boolean;
+
+- Details:
+  • ENV names: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_SHEETS_SPREADSHEET_ID, APP_ENC_SECRET
+  • File path: ./server/config/secure/google.json.enc  (create dirs if needed)
+  • Use AES-256-GCM with random 12-byte IV; store {iv, tag, ciphertext, createdAt}
+  • APP_ENC_SECRET is 32 bytes (Base64). If not set and we need to write, generate a random 32-byte secret, write it to ./server/config/secure/.app.enc.secret (mode 600), and also set process.env.APP_ENC_SECRET at runtime.
+
+- Add helpers:
+  function ensureDir(p: string)
+  function readFileSafe, writeFileSafe
+  function encryptJson(obj, secretB64): {iv, tag, ciphertext}
+  function decryptJson(payload, secretB64): any
+
+2) OAuth utils (switch to file-backed secrets if ENV missing)
+File: server/utils/googleOAuth.ts
+- Replace static ENV reads with:
+  const cfg = await loadGoogleConfig();  // fall back to ENV via hasGoogleConfigInEnv()
+- Keep existing functions:
+  getAuthUrl(state, redirectUri)
+  exchangeCodeForTokens(code, redirectUri)
+  getAuthorizedClient()  // ensures refresh token from storage (unchanged)
+
+3) Sheets util (unchanged API, new cfg source)
+File: server/utils/googleSheets.ts
+- Use getAuthorizedClient() from googleOAuth to read 'Products!A1:Z', 'UI_Config!A1:Z'
+
+4) Admin config API (admin-only)
+File: server/routes/adminConfig.ts
+- POST /api/admin/config/google
+  Body: { oauthClientId, oauthClientSecret, spreadsheetId }
+  • Validate basic shapes (non-empty strings)
+  • saveGoogleConfig(body)
+  • Return { ok:true }
+
+- GET /api/admin/config/google/status
+  • Return { source: 'env'|'file'|'missing', connected: boolean }
+  • connected true if we have refresh token stored (reuse existing /api/admin/google/oauth/status or call into it)
+
+- Wire routes in server/index.ts or routes.ts, behind requireAdmin middleware.
+
+5) Admin UI (minimal)
+File: client/src/pages/admin-settings.tsx (or add a tab to existing admin)
+- Show Config card:
+  • Status: source (env/file/missing), connected (OAuth)
+  • A small form with three inputs (client id, client secret, spreadsheet id) and “Save” button (POST to /api/admin/config/google)
+  • After save, show toast and link “Connect Google” (/api/admin/google/oauth/start)
+
+6) Security & repo hygiene
+- Add to .gitignore:
+  /server/config/secure/*
+  !/server/config/secure/.gitkeep
+- On saveGoogleConfig:
+  • Ensure directory exists (mode 700) and set file mode 600 where possible.
+- Never log secrets. Only log the path written.
+
+7) Tests (light)
+File: server/tests/app-config.spec.ts
+- Mocks fs; verifies:
+  • saveGoogleConfig writes encrypted payload (ciphertext not containing client id)
+  • loadGoogleConfig decrypts to the original values
+  • auto-generate APP_ENC_SECRET if absent (creates .app.enc.secret)
+  • ENV-first behavior when ENV present
+
+8) Acceptance (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Admin routes:
+  • POST /api/admin/config/google → saves encrypted config: ✅/❌
+  • GET /api/admin/config/google/status → reports source & connected: ✅/❌
+- OAuth + Sheets pull use file config when ENV missing: ✅/❌
+- Secrets file path: server/config/secure/google.json.enc (gitignored): ✅/❌
+- Tests passing (app-config.spec.ts): <yes/no> (X/Y)
+- Files changed: (list)
+
+After implementation, run:
+1) POST the secrets (as admin):
+curl -s -X POST https://<your-replit>.replit.app/api/admin/config/google \
+  -H "Content-Type: application/json" \
+  --cookie "connect.sid=<adminCookie>" \
+  -d '{"oauthClientId":"<paste>","oauthClientSecret":"<paste>","spreadsheetId":"<paste>"}' | jq .
+
+2) Start OAuth:
+Open https://<your-replit>.replit.app/api/admin/google/oauth/start
+
+3) Dry-run sync:
+curl -s -X POST "https://<your-replit>.replit.app/api/admin/sheets/pull?dryRun=1" \
+  -H "Content-Type: application/json" \
+  --cookie "connect.sid=<adminCookie>" | jq .

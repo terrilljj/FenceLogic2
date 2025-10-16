@@ -872,3 +872,15 @@ export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
 
 export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
 export type Subcategory = typeof subcategories.$inferSelect;
+
+// System settings table for storing app-wide key-value settings (e.g., OAuth tokens)
+export const systemSettings = pgTable("system_settings", {
+  key: varchar("key", { length: 200 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: varchar("updated_at").notNull().default(sql`now()::text`),
+});
+
+export const insertSystemSettingSchema = createInsertSchema(systemSettings);
+
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;

@@ -4,3 +4,7 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Encrypted config files (keep .gitkeep)
+/server/config/secure/*
+!/server/config/secure/.gitkeep
