@@ -1,0 +1,104 @@
+Goal:
+Add secure Google Sheets → App sync (pull model). Admin-only, with dryRun diff, validation, transactional upsert, and logs. Cover Products and UI Config first. Optional Categories.
+
+Tasks
+
+0) Env & deps
+- Add deps: googleapis
+- Secrets (set in Replit):
+  GOOGLE_SHEETS_CLIENT_EMAIL
+  GOOGLE_SHEETS_PRIVATE_KEY   (with \n → real newlines)
+  GOOGLE_SHEETS_SPREADSHEET_ID
+
+1) Sheets util
+File: server/utils/googleSheets.ts
+- Export getSheetValues(range: string): Promise<string[][]>
+  • Auth via google.auth.JWT using env secrets
+  • spreadsheets.values.get({ spreadsheetId, range })
+
+2) CSV-to-object mapping (header based)
+File: server/utils/rows.ts
+- rowsToObjects(values: string[][]): Array<Record<string,string>>
+- helpers:
+  parseBool("1"/"0"/"TRUE"/"FALSE")
+  parseNumber (handle blanks)
+  parseJSONorSplit (for categoryPaths: try JSON; else split on ';' and trim)
+  parsePrice (accept 123.45 → store cents = 12345)
+  toStringArray (tags split on ';' or ',')
+
+3) Zod schemas
+File: server/validation/sheets.ts
+- ProductRow:
+  { code: string, description?: string, price: number, active: boolean,
+    weight?: number, imageUrl?: string,
+    subcategory?: string, categoryPaths?: string[] (optional),
+    tags?: string[], notes?: string }
+- UIConfigRow:
+  { variantKey: string,
+    allowedCategories?: string[], allowedSubcategories?: string[],
+    field?: string, type?: 'number'|'standard'|'toggle',
+    default?: string|number, min?: number, max?: number, step?: number, tolerance?: number,
+    categoryPaths?: string[] }
+- (Optional) CategoryRow: { category?: string, subcategory?: string, displayOrder?: number }
+
+4) Diff engine
+File: server/services/sheetsDiff.ts
+- diffProducts(dbProducts, sheetProducts):
+  • key: code
+  • classify: added (not in DB), updated (changed fields), deactivated (in DB active=1 but missing from sheet or active=0 in sheet)
+- diffUIConfig(current, sheetRows):
+  • For each variantKey, build a normalized JSONB doc:
+    { allowedCategories, allowedSubcategories, fieldConfigs: { [field]: { type, default, min,max,step,tolerance, categoryPaths } } }
+  • Compare deep-equal to DB to produce updated/added sets
+
+5) Pull endpoint (admin-only)
+File: server/routes/adminSheets.ts
+- POST /api/admin/sheets/pull?dryRun=1|0
+  • Read ranges:
+    'Products!A1:Z' and 'UI_Config!A1:Z' (add ‘Categories!A1:Z’ if present)
+  • Map rows → objects, Zod-validate; accumulate errors
+  • Load DB (Products, UI Config, Categories)
+  • Compute diffs with sheetsDiff
+  • If dryRun=1: return { summary, errors, samples } WITHOUT changes
+  • Else: run a transaction to:
+      - upsert Products (insert/update), set active=0 for “deactivated” if that policy is enabled
+      - upsert UI Config JSONB per variant
+      - (optional) upsert Categories
+    Write logs to logs/sync-<ISO>.json and logs/sync-<ISO>.md (counts, errors)
+  • Respond with summary { added, updated, deactivated } for products and { variantsUpdated } for UI config
+
+6) Admin UI button
+File: client/src/pages/products.tsx (or wherever)
+- If user is admin: add “Sync from Google Sheets”
+- On click: call /api/admin/sheets/pull?dryRun=1 → show diff preview (counts + first 5 items in each bucket)
+- Provide “Apply” button → POST /api/admin/sheets/pull?dryRun=0
+- Toast success/fail
+
+7) Scripts
+package.json:
+  "sync:dry": "node -e \"fetch('http://localhost:5000/api/admin/sheets/pull?dryRun=1',{method:'POST',credentials:'include'}).then(r=>r.text()).then(console.log)\"",
+  "sync:pull": "node -e \"fetch('http://localhost:5000/api/admin/sheets/pull?dryRun=0',{method:'POST',credentials:'include'}).then(r=>r.text()).then(console.log)\""
+
+8) Logging & lint
+- Log files with ISO timestamp and summary (added/updated/deactivated + ui-config changes)
+- Re-use existing lint:data scripts to warn about orphans after sync
+
+9) Tests (Vitest, minimal but useful)
+File: server/tests/sheets-sync.spec.ts
+- Mock getSheetValues() to return headers+rows
+- Verify:
+  • rows → objects → Zod validation
+  • diffProducts classification
+  • UI config merge for number/toggle fields to JSONB shape
+  • dryRun returns summary, no DB writes
+  • apply = writes and logs
+
+10) Acceptance output (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Pull endpoint /api/admin/sheets/pull (dryRun+apply): ✅/❌
+- Diff summary example: (print counts)
+- Logs written: <filenames>
+- Admin UI button added: ✅/❌ (path)
+- Tests passing (sheets-sync.spec.ts): <yes/no> (X/Y)
+- Files changed: (list)

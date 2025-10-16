@@ -154,8 +154,6 @@ function drawFooter(
     const textWidth = doc.widthOfString(brandingText);
     const xOffset = -(textWidth / 2);
     
-    console.log('[PDF] Branding textWidth:', textWidth, 'xOffset:', xOffset);
-    
     doc.translate(xPos, yPos);
     doc.rotate(-90);
     
