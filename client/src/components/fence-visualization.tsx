@@ -229,7 +229,7 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
           <title>${design.name} - FenceLogic</title>
           <style>
             @page {
-              margin: 0.4in;
+              margin: 0.3in;
               size: auto;
             }
             
@@ -238,9 +238,14 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
               }
-              body {
+              html, body {
+                height: 100%;
                 margin: 0;
                 padding: 0;
+              }
+              body {
+                display: flex;
+                flex-direction: column;
               }
               .header {
                 display: none;
@@ -252,41 +257,41 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
                 display: none;
               }
               h1 {
-                margin: 0 0 2px 0;
-                font-size: 16px;
+                margin: 0 0 1px 0;
+                font-size: 14px;
                 color: #000;
-                line-height: 1.1;
+                line-height: 1;
               }
               .date {
                 color: #666;
-                font-size: 9px;
-                margin-bottom: 2px;
+                font-size: 8px;
+                margin-bottom: 1px;
                 line-height: 1;
               }
               .info {
                 color: #666;
-                margin-bottom: 6px;
-                font-size: 9px;
-                line-height: 1.1;
+                margin-bottom: 4px;
+                font-size: 8px;
+                line-height: 1;
               }
               img {
                 max-width: 100%;
-                max-height: 680px;
+                max-height: 480px;
                 height: auto;
                 display: block;
-                margin: 6px auto;
+                margin: 4px auto;
                 border: 1px solid #ddd;
                 page-break-inside: avoid;
                 object-fit: contain;
               }
               .footer {
-                margin-top: 6px;
-                padding-top: 6px;
+                margin-top: 4px;
+                padding-top: 4px;
                 border-top: 1px solid #ddd;
                 text-align: center;
                 color: #333;
-                font-size: 10px;
-                line-height: 1.2;
+                font-size: 9px;
+                line-height: 1;
                 font-weight: bold;
               }
               .no-print {
