@@ -229,165 +229,153 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
           <title>${design.name} - FenceLogic</title>
           <style>
             @page {
-              margin: 0.3in;
-              size: auto;
+              margin: 0.2in;
+              size: landscape;
+            }
+            
+            * {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              box-sizing: border-box;
+            }
+            
+            html, body {
+              height: 100vh;
+              margin: 0;
+              padding: 0;
+              font-family: Arial, sans-serif;
+            }
+            
+            body {
+              display: flex;
+              flex-direction: row;
+              page-break-inside: avoid;
+              padding: 0.2in;
+            }
+            
+            .main-content {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              min-width: 0;
+              padding-right: 0.3in;
+            }
+            
+            .header-info {
+              display: flex;
+              gap: 8px;
+              align-items: baseline;
+              margin-bottom: 8px;
+              flex-shrink: 0;
+            }
+            
+            h1 {
+              margin: 0;
+              font-size: 14px;
+              color: #000;
+              font-weight: bold;
+            }
+            
+            .date {
+              color: #666;
+              font-size: 9px;
+            }
+            
+            .info {
+              color: #666;
+              font-size: 9px;
+            }
+            
+            .visualization-container {
+              flex: 1;
+              min-height: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              border: 1px solid #ddd;
+            }
+            
+            .branding-sidebar {
+              width: 1.25in;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
+            }
+            
+            .vertical-text {
+              writing-mode: vertical-rl;
+              transform: rotate(180deg);
+              font-weight: bold;
+              font-size: 14px;
+              color: #000;
+              white-space: nowrap;
+              text-align: center;
+            }
+            
+            .no-print {
+              display: none;
             }
             
             @media print {
-              * {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              html, body {
-                height: 100%;
-                margin: 0;
-                padding: 0;
-              }
-              body {
-                display: flex;
-                flex-direction: column;
-              }
-              .header {
-                display: none;
-              }
-              .branding {
-                display: none;
-              }
-              .tagline {
-                display: none;
-              }
-              h1 {
-                margin: 0 0 1px 0;
-                font-size: 14px;
-                color: #000;
-                line-height: 1;
-              }
-              .date {
-                color: #666;
-                font-size: 8px;
-                margin-bottom: 1px;
-                line-height: 1;
-              }
-              .info {
-                color: #666;
-                margin-bottom: 4px;
-                font-size: 8px;
-                line-height: 1;
-              }
-              img {
-                max-width: 100%;
-                max-height: 480px;
-                height: auto;
-                display: block;
-                margin: 4px auto;
-                border: 1px solid #ddd;
-                page-break-inside: avoid;
-                object-fit: contain;
-              }
-              .footer {
-                margin-top: 4px;
-                padding-top: 4px;
-                border-top: 1px solid #ddd;
-                text-align: center;
-                color: #333;
-                font-size: 9px;
-                line-height: 1;
-                font-weight: bold;
-              }
               .no-print {
                 display: none;
               }
             }
-            body {
-              margin: 20px;
-              font-family: Arial, sans-serif;
-              color: #333;
-            }
-            .header {
-              border-bottom: 3px solid #000;
-              padding-bottom: 15px;
-              margin-bottom: 20px;
-            }
-            .branding {
-              font-size: 24px;
-              font-weight: bold;
-              color: #000;
-              margin-bottom: 5px;
-            }
-            .tagline {
-              font-size: 14px;
-              color: #666;
-              font-style: italic;
-            }
-            h1 {
-              margin: 20px 0 10px 0;
-              font-size: 28px;
-              color: #000;
-            }
-            .date {
-              color: #666;
-              font-size: 14px;
-              margin-bottom: 10px;
-            }
-            .info {
-              color: #666;
-              margin-bottom: 20px;
-              font-size: 14px;
-            }
-            img {
-              max-width: 100%;
-              height: auto;
-              display: block;
-              margin: 20px auto;
-              border: 1px solid #ddd;
-            }
-            .footer {
-              margin-top: 30px;
-              padding-top: 15px;
-              border-top: 1px solid #ddd;
-              text-align: center;
-              color: #999;
-              font-size: 12px;
-            }
-            .no-print {
-              text-align: center;
-              margin-top: 20px;
-            }
-            button {
-              padding: 10px 20px;
-              font-size: 16px;
-              cursor: pointer;
-              background: #000;
-              color: white;
-              border: none;
-              border-radius: 4px;
-            }
-            button:hover {
-              background: #333;
+            
+            @media screen {
+              body {
+                padding: 20px;
+              }
+              .no-print {
+                display: block;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+              }
+              button {
+                padding: 10px 20px;
+                font-size: 16px;
+                cursor: pointer;
+                background: #000;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                margin-left: 10px;
+              }
+              button:hover {
+                background: #333;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div class="branding">FenceLogic</div>
-            <div class="tagline">By Barrier Dynamics</div>
+          <div class="main-content">
+            <div class="header-info">
+              <h1>${design.name}</h1>
+              <span class="date">${currentDate}</span>
+              <span class="info">•</span>
+              <span class="info">${design.productVariant} • ${design.shape} • ${design.spans.length} section${design.spans.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="visualization-container">
+              <img src="${imageDataUrl}" alt="Fence Design Visualization" />
+            </div>
           </div>
           
-          <h1>${design.name}</h1>
-          <div class="date">${currentDate}</div>
-          <div class="info">
-            <strong>Product:</strong> ${design.productVariant} • <strong>Configuration:</strong> ${design.shape} • <strong>Sections:</strong> ${design.spans.length}
-          </div>
-          
-          <img src="${imageDataUrl}" alt="Fence Design Visualization" />
-          
-          <div class="footer">
-            <p>FenceLogic By Barrier Dynamics &copy; ${new Date().getFullYear()}</p>
+          <div class="branding-sidebar">
+            <div class="vertical-text">FenceLogic By Barrier Dynamics &copy; ${new Date().getFullYear()}</div>
           </div>
           
           <div class="no-print">
             <button onclick="window.print()">Print / Save as PDF</button>
-            <button onclick="window.close()" style="background: #666; margin-left: 10px;">Close</button>
+            <button onclick="window.close()" style="background: #666;">Close</button>
           </div>
           <script>
             // Auto-trigger print dialog after a short delay
