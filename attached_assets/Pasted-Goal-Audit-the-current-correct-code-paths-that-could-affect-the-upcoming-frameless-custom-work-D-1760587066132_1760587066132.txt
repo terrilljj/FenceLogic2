@@ -1,0 +1,47 @@
+Goal:
+Audit the current (correct) code paths that could affect the upcoming frameless_custom work. Do NOT modify any files. Produce a concise report.
+
+Tasks (read-only):
+
+1) List & snapshot key files
+- Show relative paths and git status for:
+  - shared/calc/compose.ts
+  - shared/calc/equalize.ts
+  - shared/calc/lengthAccounting.ts
+  - shared/calc/gateAnchor.ts (if present)
+  - server/services/resolve.ts
+  - server/services/gate-mode-shim.ts
+  - server/services/sku-selector.ts
+  - server/tests/*gate*.spec.ts
+  - server/tests/*resolve*.spec.ts
+- For each file above, print:
+  - Exported functions/types (names + signatures)
+  - Any TODO/FIXME comments
+  - First 30 lines and the specific regions around gate logic (search: “gate”, “hinge”, “betweenGap”, “compose”, “equalize”, “policy”, “LOCKED_STRICT”, “LOCKED_OR_RESIDUAL”).
+
+2) Gate logic invariants — scan & verify
+Confirm from code (not by editing) that:
+- Between-gap is NOT applied at hinge/latch interfaces.
+- GLASS_TO_GLASS inserts exactly one hinge-panel; POST/WALL inserts no hinge-panel and uses a post anchor.
+- Gate presence is enforced (exactly one) when gate_required=true.
+- Length conservation check exists and throws on violation (report the function/line).
+
+3) Policy & flags
+- Report current default EndGapPolicy for existing frameless (non-custom) flow.
+- Report whether STRICT_END_GAP is read anywhere and how it toggles behavior.
+
+4) Dynamic smoke tests (use existing tests)
+- Run vitest filtered to gate + resolve suites:
+  npx vitest run --reporter=basic --silent server/tests/*gate*.spec.ts server/tests/*resolve*.spec.ts
+- Summarize: passed/failed by file.
+- If any fail, include the failure messages and stack snippets.
+
+5) Output a concise “Audit Report”:
+- Files scanned: N (list)
+- Invariants present: yes/no (brief notes)
+- Policy default + flags respected: summary
+- Smoke tests: X/Y passed (by file)
+- High-risk areas for frameless_custom integration:
+  - (1–3 bullets: e.g., compose.ts depends on X; equalize.ts assumes Y; resolve.ts variant switch location Z)
+- Suggested integration points for frameless_custom:
+  - (1–3 bullets with file:function anchors)
