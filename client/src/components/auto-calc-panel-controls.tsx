@@ -493,6 +493,11 @@ export function AutoCalcPanelControls({
                 {remaining > 0 ? '+' : ''}{remaining}mm
               </span>
             </div>
+            {!isValid && (
+              <p className="text-xs text-destructive mt-2 pt-2 border-t">
+                ⚠️ Length mismatch exceeds tolerance (±2mm). Adjust panel count or max width.
+              </p>
+            )}
           </div>
         </AlertDescription>
       </Alert>

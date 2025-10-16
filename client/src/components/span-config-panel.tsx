@@ -135,53 +135,10 @@ export function SpanConfigPanel({
       return;
     }
 
-    // Handle auto-calc layout mode - convert autoCalcConfig to panelLayout for visualization
-    if (span.layoutMode === "auto-calc" && span.autoCalcConfig) {
-      const { panelTypes, interPanelGaps, panelWidthOverrides, maxPanelWidth } = span.autoCalcConfig;
-      const leftGapSize = span.leftGap?.size || 0;
-      const rightGapSize = span.rightGap?.size || 0;
-      const totalGaps = interPanelGaps.reduce((sum, gap) => sum + gap, 0);
-      const availableForPanels = span.length - leftGapSize - rightGapSize - totalGaps;
-      
-      // Calculate panel widths
-      let fixedWidth = 0;
-      let flexiblePanelCount = panelTypes.length;
-      
-      if (panelWidthOverrides) {
-        Object.values(panelWidthOverrides).forEach(width => {
-          fixedWidth += width;
-          flexiblePanelCount--;
-        });
-      }
-      
-      const remainingForFlexible = availableForPanels - fixedWidth;
-      const calculatedWidth = flexiblePanelCount > 0 ? Math.floor(remainingForFlexible / flexiblePanelCount) : 0;
-      
-      const panelWidths: number[] = [];
-      for (let i = 0; i < panelTypes.length; i++) {
-        if (panelWidthOverrides?.[i]) {
-          panelWidths.push(panelWidthOverrides[i]);
-        } else {
-          panelWidths.push(Math.min(calculatedWidth, maxPanelWidth));
-        }
-      }
-      
-      const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
-      const totalGapWidth = interPanelGaps.reduce((sum, g) => sum + g, 0);
-      const averageGap = interPanelGaps.length > 0 ? totalGapWidth / interPanelGaps.length : 0;
-
-      const autoCalcPanelLayout = {
-        panels: panelWidths,
-        gaps: interPanelGaps,
-        totalPanelWidth,
-        totalGapWidth,
-        averageGap,
-        panelTypes: panelTypes as any,
-      };
-
-      if (JSON.stringify(span.panelLayout) !== JSON.stringify(autoCalcPanelLayout)) {
-        updateSpan({ panelLayout: autoCalcPanelLayout });
-      }
+    // Handle auto-calc layout mode - panelLayout is managed by AutoCalcPanelControls component
+    // This useEffect only handles other layout modes (fully-custom, standard panel calculations)
+    if (span.layoutMode === "auto-calc") {
+      // panelLayout is set by AutoCalcPanelControls onUpdate handler with proper remainder distribution
       return;
     }
 
@@ -326,6 +283,7 @@ export function SpanConfigPanel({
       span.gateConfig?.savedGlassPosition,
       span.customPanel?.enabled, span.customPanel?.width, span.customPanel?.height, span.customPanel?.position,
       span.layoutMode, span.customLayout, // Add fully-custom layout dependencies
+      span.autoCalcConfig, // Add auto-calc configuration dependencies
       span.bladeHeight, span.bladeLayoutMode, // Add Blade-specific dependencies
       span.barrHeight, span.barrLayoutMode, // Add BARR-specific dependencies
       span.tubularHeight, span.tubularPanelWidth, span.tubularLayoutMode, // Add Tubular-specific dependencies
@@ -545,28 +503,18 @@ export function SpanConfigPanel({
               <Label className="text-sm font-medium">Section Length</Label>
               <InfoTooltip content="Enter the total length of this fence section. The default end gap is 25mm for corner junctions. Maximum end gap is 150mm to allow for adding a post or other non-fence item into the section." />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 w-48">
-                <Input
-                  type="number"
-                  value={span.length}
-                  onChange={(e) => updateSpan({ length: parseInt(e.target.value) || 0 })}
-                  min={0}
-                  max={50000}
-                  step={100}
-                  className="h-9"
-                  data-testid={`span-${span.spanId}-length`}
-                />
-                <span className="text-sm text-muted-foreground">mm</span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
+            <div className="flex items-center gap-1 w-48">
+              <Input
+                type="number"
+                value={span.length}
+                onChange={(e) => updateSpan({ length: parseInt(e.target.value) || 0 })}
+                min={0}
+                max={50000}
+                step={100}
                 className="h-9"
-                data-testid={`span-${span.spanId}-calc-button`}
-              >
-                Calc
-              </Button>
+                data-testid={`span-${span.spanId}-length`}
+              />
+              <span className="text-sm text-muted-foreground">mm</span>
             </div>
           </div>
 
