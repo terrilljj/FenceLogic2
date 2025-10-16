@@ -12,6 +12,7 @@ import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
 import { CustomPanelControls } from "./custom-panel-controls";
 import { FullyCustomPanelControls } from "./fully-custom-panel-controls";
+import { AutoCalcPanelControls } from "./auto-calc-panel-controls";
 import { InfoTooltip } from "./info-tooltip";
 
 interface SpanConfigPanelProps {
@@ -1657,6 +1658,44 @@ export function SpanConfigPanel({
                   rightGapSize={span.rightGap?.size || 0}
                   spanId={span.spanId}
                   onUpdate={(customLayout) => updateSpan({ customLayout })}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Auto-Calc Configuration - Only for custom-frameless */}
+          {productVariant === "custom-frameless" && (
+            <div className="space-y-3 pt-4 border-t border-card-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Auto-Calc Configuration</Label>
+                  <InfoTooltip content="Specify exact gap values, panel types (standard/gate/hinge), and max panel width. Panel widths are automatically calculated to fit perfectly." />
+                </div>
+                <Switch
+                  checked={span.layoutMode === "auto-calc"}
+                  onCheckedChange={(enabled) =>
+                    updateSpan({
+                      layoutMode: enabled ? "auto-calc" : "auto-equalize",
+                      autoCalcConfig: enabled ? {
+                        maxPanelWidth: 1200,
+                        panelHeight: 1500,
+                        glassType: "12mm",
+                        interPanelGaps: [10],
+                        panelTypes: ["standard", "standard"],
+                      } : undefined,
+                    })
+                  }
+                  data-testid={`span-${span.spanId}-auto-calc-toggle`}
+                />
+              </div>
+              {span.layoutMode === "auto-calc" && span.autoCalcConfig && (
+                <AutoCalcPanelControls
+                  autoCalcConfig={span.autoCalcConfig}
+                  spanLength={span.length}
+                  leftGapSize={span.leftGap?.size || 0}
+                  rightGapSize={span.rightGap?.size || 0}
+                  spanId={span.spanId}
+                  onUpdate={(autoCalcConfig) => updateSpan({ autoCalcConfig })}
                 />
               )}
             </div>

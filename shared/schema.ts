@@ -423,7 +423,7 @@ export const spanConfigSchema = z.object({
     height: z.number().min(1200).max(1800), // Custom panel height in mm
     position: z.number().min(0), // Panel position index (like glass-to-glass gate)
   }).optional(),
-  layoutMode: z.enum(["auto-equalize", "fully-custom"]).default("auto-equalize"), // Layout calculation mode
+  layoutMode: z.enum(["auto-equalize", "fully-custom", "auto-calc"]).default("auto-equalize"), // Layout calculation mode
   customLayout: z.object({
     panels: z.array(z.object({
       widthMm: z.number().min(200).max(2000),
@@ -434,6 +434,22 @@ export const spanConfigSchema = z.object({
     })),
     enforceExactFit: z.boolean().default(true),
   }).optional(), // Fully custom panel layout (user specifies each panel individually)
+  autoCalcConfig: z.object({
+    maxPanelWidth: z.number().min(500).max(2000),
+    panelHeight: z.number().min(1200).max(1800).default(1500), // Standard panel height
+    glassType: z.enum(["12mm", "15mm"]).default("12mm"), // Glass thickness
+    interPanelGaps: z.array(z.number().min(6).max(30)), // Exact gap values between panels
+    panelTypes: z.array(z.enum(["standard", "gate", "hinge"])), // Type for each panel position
+    gateConfigs: z.array(z.object({
+      position: z.number(), // Index of the gate panel
+      widthMm: z.number().optional(), // Fixed width if specified
+      hardwareType: z.string().optional(),
+    })).optional(),
+    hingeConfigs: z.array(z.object({
+      position: z.number(), // Index of the hinge panel
+      widthMm: z.number().optional(), // Fixed width if specified
+    })).optional(),
+  }).optional(), // Auto-calc configuration (custom-frameless variant)
 });
 
 export type SpanConfig = z.infer<typeof spanConfigSchema>;
