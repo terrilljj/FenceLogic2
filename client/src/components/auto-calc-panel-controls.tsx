@@ -65,18 +65,13 @@ export function AutoCalcPanelControls({
   // Auto-calculate number of panels that fit with max panel width
   const autoCalculatePanelCount = (): number => {
     const availableLength = spanLength - leftGapSize - rightGapSize;
-    let numPanels = 1;
     
-    while (numPanels <= 20) {
-      const totalGaps = (numPanels - 1) * gapSize;
-      const totalPanelWidth = numPanels * maxPanelWidth;
-      if (totalPanelWidth + totalGaps <= availableLength) {
-        numPanels++;
-      } else {
-        break;
-      }
-    }
-    return Math.max(1, numPanels - 1);
+    // Calculate minimum panels needed so that when evenly distributed,
+    // no panel exceeds maxPanelWidth
+    // Formula: n >= (availableLength + gapSize) / (maxPanelWidth + gapSize)
+    const minPanels = Math.ceil((availableLength + gapSize) / (maxPanelWidth + gapSize));
+    
+    return Math.max(1, minPanels);
   };
 
   // Calculate panel widths based on mode
