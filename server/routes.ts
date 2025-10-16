@@ -12,6 +12,7 @@ import { createDebugFramelessCustomRouter } from "./routes/debug-frameless-custo
 import { UiConfigSchema } from "./schemas/ui-config";
 import metaCategoryPathsRouter from "./routes/meta-category-paths";
 import { pdfRouter } from "./routes/pdf";
+import adminConfigRouter from "./routes/adminConfig";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -895,6 +896,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       HINGE_AUTO_ENABLED: process.env.HINGE_AUTO_ENABLED === "1",
     });
   });
+
+  // Admin config routes (Google Sheets OAuth & config)
+  app.use("/api/admin/config", requireAdmin, adminConfigRouter);
+  app.use("/api/admin/google", requireAdmin, adminConfigRouter);
 
   // PDF generation
   app.use("/api", pdfRouter);
