@@ -152,13 +152,16 @@ function drawFooter(
     // Set font size first, then measure text width
     doc.fontSize(9);
     const textWidth = doc.widthOfString(brandingText);
+    const xOffset = -(textWidth / 2);
+    
+    console.log('[PDF] Branding textWidth:', textWidth, 'xOffset:', xOffset);
     
     doc.translate(xPos, yPos);
     doc.rotate(-90);
     
     // Left-align from negative half of text width for perfect centering
     doc.fillColor('#666')
-      .text(brandingText, -(textWidth / 2), 0, {
+      .text(brandingText, xOffset, 0, {
         width: textWidth + 20,
         align: 'left',
         lineBreak: false,
