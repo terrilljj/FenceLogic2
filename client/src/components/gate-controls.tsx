@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, TriangleAlert } from "lucide-react";
+import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, TriangleAlert, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getGateGaps, HingeType, LatchType } from "@shared/schema";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 interface GateConfig {
   required: boolean;
@@ -34,6 +36,7 @@ interface GateControlsProps {
 
 export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSize, numPanels = 1 }: GateControlsProps) {
   const [hingeWarningAcknowledged, setHingeWarningAcknowledged] = useState(false);
+  const { data: featureFlags } = useFeatureFlags();
 
   const updateConfig = (updates: Partial<GateConfig>) => {
     // Automatically update gaps when hardware or hingeFrom changes
@@ -63,6 +66,16 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
 
   return (
     <div className="space-y-4 bg-muted/30 rounded-md p-4" data-testid={`gate-controls-${spanId}`}>
+      {/* Feature flag banner: Show when auto hinge sizing is disabled */}
+      {featureFlags && !featureFlags.HINGE_AUTO_ENABLED && config.hingeFrom === "glass" && (
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30" data-testid={`hinge-auto-disabled-banner-${spanId}`}>
+          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">
+            Auto hinge sizing is off. Enter hinge panel width explicitly.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div className="space-y-3">
         <div className="space-y-2">
           <Label className="text-sm font-medium">Gate Hardware</Label>
