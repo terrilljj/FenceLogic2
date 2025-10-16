@@ -1,0 +1,87 @@
+Goal:
+Eliminate cases where a required gate disappears and totals no longer equal section length. Add a hard invariant, fix gap counting, and reproduce the exact 5000 mm scenario from the screenshot in a test.
+
+Bugs to address:
+- Gate Required = true but no 'gate' segment gets inserted (composer continues with only panels + between gaps).
+- Length conservation broken when gate is near/right edge or after flips/toggles.
+- Equalize sometimes runs BEFORE fixed elements (hinge/gate/gaps) are placed.
+
+Tasks:
+
+1) Add a strict invariant in the resolver/composer
+   File: server/services/resolve.ts (or your composition module)
+   - After assembling segments but BEFORE finalizing:
+     * If selection.gate_required === true:
+         - Assert exactly ONE segment with kind === 'gate'.
+         - Assert mount_mode === 'GLASS_TO_GLASS' ⇒ NO 'post-anchor' is fine; POST/WALL ⇒ must have a 'post-anchor' segment on hingeSide.
+     * Compute sumMm = startGap + Σ(panel widths) + Σ(between gaps actually used) + (hingeGap + latchGap around the gate) + endGap [+ hinge panel width if G2G].
+       - Replace the betweenGap at gate interfaces with hingeGap/latchGap (no double-counting).
+       - If |sumMm - runLengthMm| > 2, throw a 400 with { code:"LENGTH_INVARIANT", expected: runLengthMm, got: sumMm, segments } and DO NOT fall back to a 2×2000 layout.
+   - Add a trace entry 'invariant-check' with { sumMm, runLengthMm, ok: true/false }.
+
+2) Fix ordering: equalize AFTER fixed elements
+   - Ensure the sequence is built in this order:
+     a) startGap
+     b) left-side std panels (if any)
+     c) (GLASS_TO_GLASS) hinge panel width (explicit) + hingeGap
+        (POST/WALL) post-anchor + hingeGap
+     d) gate (gateWidth)
+     e) latchGap
+     f) fill remainder via equalizePanels(...) into N panels using step=50
+     g) endGap
+   - Equalize runs ONLY on the computed remainder span(s).
+
+3) Gap math helper
+   File: shared/calc/gaps.ts (new)
+   export function computeBetweenGapCount(sequence: Array<'panel'|'hinge'|'gate'|'post'|'gap'>): number
+   - Between gaps appear between adjacent **glass** elements (panel or hinge panel), NOT between:
+       • start/end gaps
+       • hingeGap/latchGap around the gate
+       • posts
+   - Use this to build the final sum precisely and avoid double-counting.
+
+4) Reproduction test (matches screenshot)
+   File: server/tests/regression-visual-5000.spec.ts
+   Case R1:
+   - variant: frameless pool fence
+   - selection:
+       run_length_mm: 5000
+       start_gap_mm: 25
+       between_gap_mm: 50
+       end_gap_mm: 25
+       gate_required: true
+       mount_mode: "GLASS_TO_GLASS"
+       hinge_side: "LEFT"
+       gate_system: "Polaris Soft Close"
+       gate_width_mm: 900
+       hinge_panel_width_mm: 1200
+   - Assert:
+       • exactly one 'gate' segment present
+       • if G2G ⇒ exactly one 'hinge-panel' segment present
+       • all panel widths are multiples of 50 (equalize)
+       • total length within ±2 mm of 5000
+   Case R2:
+   - Same inputs, then flip hinge_side to 'RIGHT'
+   - Assertions identical (gate still present; length conserved)
+
+5) Front-end debug overlay (non-invasive)
+   - Add a tiny developer toggle (query param `?debug=1`) that shows:
+       • Sum(mm), Run Length(mm), Delta(mm)
+       • Count of panels / gate / hinge / between gaps
+     Implement by calling the existing resolve-trace/debug endpoint and overlaying the numbers in the canvas corner. This helps verify in the UI that totals hit 5000 mm.
+
+6) Run tests + QA
+   - Run `npm test`
+   - Run `npx tsx server/scripts/qa-gate.ts`
+   - Ensure QA markdown/json are written to logs/ and that S2/S3/S4 show invariants OK.
+
+Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: regression-visual-5000.spec.ts pass? <yes/no> (totals by file)
+- Invariant enforced: gate present when required? <yes/no>
+- Equalize step=50 confirmed on remainder? <yes/no>
+- Length conservation within ±2 mm in all cases? <yes/no>
+- QA reports written: <filenames>
+- Files changed: (list)
+- Notes: any thrown LENGTH_INVARIANT incidents and their cause (brief)
