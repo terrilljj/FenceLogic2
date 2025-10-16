@@ -365,12 +365,17 @@ export function calculatePanelLayout(
             let numHardwareGaps: number;
             let remainingGapSpace: number;
             
+            // Recalculate gate position to determine if at end
+            const panelPosition = Math.max(0, Math.floor(gateConfig.position));
+            const beforeCount = Math.min(panelPosition, variablePanels.length);
+            const gateAtEnd = beforeCount >= variablePanels.length;
+            
             if (gateConfig.position === 0 && !gateConfig.flipped) {
               // Gate at start, not flipped: only hinge gap exists
               numHardwareGaps = 1;
               remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
-            } else if (gateConfig.position === 1 && gateConfig.flipped) {
-              // Gate at end, flipped: only hinge gap exists
+            } else if (gateAtEnd && gateConfig.flipped) {
+              // Gate at end, flipped: only hinge gap exists (no latch gap to wall)
               numHardwareGaps = 1;
               remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
             } else {
@@ -416,17 +421,20 @@ export function calculatePanelLayout(
                 regularGapSize = numRegularGaps > 0 ? remainingGapSpace / numRegularGaps : actualGap;
               } else {
                 // Glass-to-glass: hardware gaps depend on gate position
-                // Gate at position 0: only hinge gap (latch to wall, not counted)
-                // Gate at position 1+: both hinge gap and latch gap
                 let numHardwareGaps: number;
                 let remainingGapSpace: number;
+                
+                // Recalculate gate position to determine if at end
+                const panelPosition = Math.max(0, Math.floor(gateConfig.position));
+                const beforeCount = Math.min(panelPosition, variablePanels.length);
+                const gateAtEnd = beforeCount >= variablePanels.length;
                 
                 if (gateConfig.position === 0 && !gateConfig.flipped) {
                   // Gate at start, not flipped: only hinge gap exists
                   numHardwareGaps = 1;
                   remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
-                } else if (gateConfig.position === 1 && gateConfig.flipped) {
-                  // Gate at end, flipped: only hinge gap exists  
+                } else if (gateAtEnd && gateConfig.flipped) {
+                  // Gate at end, flipped: only hinge gap exists (no latch gap to wall)
                   numHardwareGaps = 1;
                   remainingGapSpace = actualTotalGapWidth - gateConfig.hingeGap;
                 } else {
