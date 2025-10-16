@@ -81,6 +81,78 @@ export function validateSegmentComposition(
 }
 
 /**
+ * Apply gap precedence rules for custom panel insertion.
+ * 
+ * Rules:
+ * 1. Custom gaps (gapBeforeMm/gapAfterMm) REPLACE connector gaps at those interfaces
+ * 2. Connector gaps only appear between adjacent variable panels
+ * 3. No double counting at boundaries
+ * 
+ * @returns Ordered segments array with gaps properly inserted
+ */
+export function applyGapPrecedence(
+  leftPanels: number[],
+  customPanel: { widthMm: number; gapBeforeMm?: number; gapAfterMm?: number } | null,
+  rightPanels: number[],
+  betweenGapMm: number
+): Segment[] {
+  const segments: Segment[] = [];
+
+  // Helper: Add panels with connector gaps between them
+  const addPanelsWithConnectorGaps = (panels: number[]) => {
+    panels.forEach((width, i) => {
+      segments.push({ kind: 'panel', widthMm: width });
+      // Add connector gap ONLY between adjacent panels (not after last)
+      if (i < panels.length - 1) {
+        segments.push({ kind: 'gap', widthMm: betweenGapMm, gapType: 'between' });
+      }
+    });
+  };
+
+  if (!customPanel) {
+    // No custom panel: just variable panels with connector gaps
+    addPanelsWithConnectorGaps([...leftPanels, ...rightPanels]);
+    return segments;
+  }
+
+  const hasLeftPanels = leftPanels.length > 0;
+  const hasRightPanels = rightPanels.length > 0;
+
+  // Add left panels with connector gaps
+  if (hasLeftPanels) {
+    addPanelsWithConnectorGaps(leftPanels);
+  }
+
+  // Add gap before custom panel (custom gap takes precedence, else connector if adjacent panels)
+  if (customPanel.gapBeforeMm !== undefined && customPanel.gapBeforeMm > 0) {
+    // Custom gap specified: use it (replaces connector gap)
+    segments.push({ kind: 'gap', widthMm: customPanel.gapBeforeMm, gapType: 'between' });
+  } else if (hasLeftPanels) {
+    // No custom gap but left panels exist: add connector gap
+    segments.push({ kind: 'gap', widthMm: betweenGapMm, gapType: 'between' });
+  }
+
+  // Add custom panel
+  segments.push({ kind: 'panel', widthMm: customPanel.widthMm });
+
+  // Add gap after custom panel (custom gap takes precedence, else connector if adjacent panels)
+  if (customPanel.gapAfterMm !== undefined && customPanel.gapAfterMm > 0) {
+    // Custom gap specified: use it (replaces connector gap)
+    segments.push({ kind: 'gap', widthMm: customPanel.gapAfterMm, gapType: 'between' });
+  } else if (hasRightPanels) {
+    // No custom gap but right panels exist: add connector gap
+    segments.push({ kind: 'gap', widthMm: betweenGapMm, gapType: 'between' });
+  }
+
+  // Add right panels with connector gaps
+  if (hasRightPanels) {
+    addPanelsWithConnectorGaps(rightPanels);
+  }
+
+  return segments;
+}
+
+/**
  * Builds segment sequence from panel layout and gate configuration
  * Order: startGap → left panels → hinge/post → gate → latch → right panels → endGap
  */

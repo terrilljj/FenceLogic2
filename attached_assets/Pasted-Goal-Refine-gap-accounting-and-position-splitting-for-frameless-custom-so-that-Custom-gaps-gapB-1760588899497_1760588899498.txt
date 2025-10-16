@@ -1,0 +1,84 @@
+Goal:
+Refine gap accounting and position splitting for frameless_custom so that:
+- Custom gaps (gapBeforeMm/gapAfterMm) are honored and replace connector gaps at those interfaces.
+- Connector (between) gaps auto-insert only between adjacent variable panels.
+- RIGHT position places the custom panel within ≤ 200 mm of the intended anchor after snapping to the 50 mm grid.
+- Length is conserved (±2 mm tolerance for non-gate).
+- All frameless_custom tests pass.
+
+Key Rules (make these the single source of truth)
+1) Gap precedence:
+   a) If a custom gap (before/after) is specified next to the custom panel, it REPLACES a connector gap at that interface.
+   b) Connector (between) gaps appear ONLY between two variable glass panels (panel | panel).
+   c) No connector gaps adjacent to start or end gaps.
+   d) No double counting: a boundary can contribute at most one gap (custom OR connector).
+2) Position splitting (LEFT=0.0, MIDDLE=0.5, RIGHT=1.0):
+   a) Compute the target anchor along the variable-panels block (sum of equalized widths + connector gaps).
+   b) Snap the split boundary to the nearest BETWEEN boundary (i.e., between panels), not through a panel.
+   c) For RIGHT=1.0, clamp to the final between boundary if any; if none (N=1), split to the right of the single panel (i.e., left set empty).
+   d) Distance from requested split anchor to actual chosen between boundary must be ≤ 200 mm after snapping; otherwise log a trace warning but proceed deterministically.
+3) Single custom panel edge case:
+   a) If N=0 (no variable panels), the layout is [startGap] + [custom_gap_before?] + [custom_panel] + [custom_gap_after?] + [endGap], and still must conserve length.
+   b) If N=1, there is no connector gap around the single variable panel; only custom gaps may appear if specified.
+4) Length conservation invariant:
+   After composing segments, sum widths and assert |sum − runLength| ≤ 2 mm (non-gate). On fail, throw LENGTH_INVARIANT with segments dump.
+
+Tasks
+1) Update composeFenceSegments (NON-gate branch):
+   - Introduce a pure helper `applyGapPrecedence(leftPanels, customPanel, rightPanels, betweenGapMm, customBeforeMm?, customAfterMm?)`
+     Returns an ordered segments array where:
+       • Inserts connector gaps ONLY between adjacent variable panels (left group and right group).
+       • Inserts `customBeforeMm` BEFORE the custom panel and `customAfterMm` AFTER it (if >0).
+       • Ensures no connector gap is inserted adjacent to those custom gaps.
+   - Update the position split:
+       • Build the equalized variable block widths[] and total connector gap count = (N−1).
+       • Compute target anchor = position * (sum(widths) + (N−1)*betweenGap).
+       • Walk through widths[] + between gaps to find the nearest BETWEEN boundary index; split left/right there.
+       • RIGHT=1.0 clamps to the last between boundary if N>1; else to the right edge of the only panel.
+       • Record `trace.push({source:'position-split', position, targetMm, chosenBoundaryIndex, boundaryOffsetMm, warning: boundaryOffsetMm>200 })`
+   - Apply the gap precedence helper to build the final sequence.
+   - Keep end-gap policy as implemented (LOCKED_OR_RESIDUAL default, STRICT flag respected).
+   - Recompute and check length invariant.
+
+2) Tests — server/tests/frameless-custom.spec.ts (add/adjust so total = 13+ passing):
+   A) Gap precedence basic:
+      - customBefore=30, customAfter=40; verify NO connector gaps adjacent to these; final sum conserved.
+   B) Connector-only case:
+      - no custom gaps; N>1; verify connector gaps inserted only between variable panels.
+   C) Position RIGHT (1.0) with N>1:
+      - verify split picks last between boundary; boundaryOffset ≤ 200; conserved length.
+   D) Position RIGHT with N=1:
+      - verify left set empty; no connector gaps; custom gap rules still apply; conserved length.
+   E) N=0 edge case:
+      - set maxPanel too small so equalizer picks N=0 (or PanelsTarget=0); sequence emits only start/custom gaps/custom panel/end; conserved length.
+   F) Mixed tolerances / variance:
+      - case where residual end gap is used; variance reported; length conserved.
+   G) Regression for the previously failing specs:
+      - Port the 12 failing-to-pass scenarios (now expected pass); confirm ≥ 13/13 passing.
+
+3) Debug endpoint:
+   - Ensure POST /api/debug/frameless-custom/compose prints the trace entries:
+     • end-gap-policy
+     • equalize { step, count, panelsMm }
+     • position-split { position, targetMm, chosenBoundaryIndex, boundaryOffsetMm, warning }
+     • invariant-check
+   - On errors, include the segments dump in payload for quick inspection.
+
+4) QA:
+   - Add/extend a QA runner (server/scripts/qa-frameless-custom.ts) with 3 payloads:
+     • Centered custom with/without custom gaps
+     • RIGHT=1.0 with N>1
+     • Edge N=0 or N=1
+   - Write logs to logs/qa-frameless-custom-<ISO>.{json,md} and append a one-liner to replit.md.
+
+Acceptance (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests (frameless-custom.spec.ts) passing: <yes/no> (X/Y)
+- Gap precedence correct (custom gaps replace connector gaps at interfaces): <yes/no>
+- RIGHT position within ≤200 mm after snapping to boundary: <yes/no>
+- Single custom edge cases (N=0, N=1) handled: <yes/no>
+- Length conserved (±2 mm, non-gate): <yes/no>
+- Debug endpoint includes position-split trace: <yes/no>
+- QA reports written: <filenames>
+- Files changed: (list)
