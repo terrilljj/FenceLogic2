@@ -228,17 +228,63 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
         <head>
           <title>${design.name} - FenceLogic</title>
           <style>
+            @page {
+              margin: 0.5in;
+            }
+            
             @media print {
               body {
                 margin: 0;
-                padding: 20px;
+                padding: 0;
+              }
+              .header {
+                border-bottom: 2px solid #000;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+              }
+              .branding {
+                font-size: 20px;
+                font-weight: bold;
+                color: #000;
+                margin-bottom: 3px;
+              }
+              .tagline {
+                font-size: 12px;
+                color: #666;
+                font-style: italic;
+              }
+              h1 {
+                margin: 10px 0 5px 0;
+                font-size: 22px;
+                color: #000;
+              }
+              .date {
+                color: #666;
+                font-size: 11px;
+                margin-bottom: 5px;
+              }
+              .info {
+                color: #666;
+                margin-bottom: 10px;
+                font-size: 11px;
               }
               img {
                 max-width: 100%;
+                max-height: 65vh;
                 height: auto;
                 display: block;
-                margin: 20px auto;
+                margin: 10px auto;
+                border: 1px solid #ddd;
                 page-break-inside: avoid;
+                object-fit: contain;
+              }
+              .footer {
+                margin-top: 15px;
+                padding-top: 10px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                color: #999;
+                font-size: 10px;
               }
               .no-print {
                 display: none;
