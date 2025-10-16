@@ -74,6 +74,12 @@ Preferred communication style: Simple, everyday language.
   - Strongly prefers fewer panels (penalty: 500 per panel) to maintain layout stability
   - Accepts up to 100mm gap variance from equalization (50mm grid constraint)
   - Prioritizes configurations with required components (gates, custom panels) first
+- **Frameless Custom Panel Feature** (In Development):
+  - `CustomPanelConfig` type extends `CompositionInput` to support fixed-width custom panels
+  - Position-based insertion at LEFT (0.0), MIDDLE (0.5), or RIGHT (1.0) within variable panel array
+  - Custom gap support via `gapBeforeMm` and `gapAfterMm` properties
+  - Debug endpoint: `POST /api/debug/frameless-custom/compose` for testing
+  - Status: Core functionality implemented, gap accounting refinement needed for edge cases
 
 **Numeric Field SKU Selection System:**
 - **SKU Selector Service**: Extracts width from product codes, performs tolerance-based matching and snapping to standard sizes.
