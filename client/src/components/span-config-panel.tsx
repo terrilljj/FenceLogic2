@@ -1430,7 +1430,7 @@ export function SpanConfigPanel({
                       });
                     }}
                     min={6}
-                    max={30}
+                    max={100}
                     testId={`span-${span.spanId}-between-gap`}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
