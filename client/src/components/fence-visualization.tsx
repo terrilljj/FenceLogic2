@@ -243,40 +243,42 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
                 padding: 0;
               }
               .header {
-                border-bottom: 2px solid #000;
-                padding-bottom: 6px;
-                margin-bottom: 8px;
+                border-bottom: 1px solid #000;
+                padding-bottom: 4px;
+                margin-bottom: 6px;
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
               }
               .branding {
-                font-size: 18px;
+                font-size: 16px;
                 font-weight: bold;
                 color: #000;
-                margin-bottom: 2px;
-                line-height: 1.2;
+                line-height: 1;
               }
               .tagline {
-                font-size: 11px;
+                font-size: 10px;
                 color: #666;
                 font-style: italic;
-                line-height: 1.2;
+                line-height: 1;
               }
               h1 {
-                margin: 6px 0 3px 0;
-                font-size: 18px;
+                margin: 4px 0 2px 0;
+                font-size: 16px;
                 color: #000;
-                line-height: 1.2;
+                line-height: 1.1;
               }
               .date {
                 color: #666;
-                font-size: 10px;
-                margin-bottom: 3px;
-                line-height: 1.2;
+                font-size: 9px;
+                margin-bottom: 2px;
+                line-height: 1;
               }
               .info {
                 color: #666;
-                margin-bottom: 8px;
-                font-size: 10px;
-                line-height: 1.2;
+                margin-bottom: 6px;
+                font-size: 9px;
+                line-height: 1.1;
               }
               img {
                 max-width: 100%;
