@@ -1397,7 +1397,7 @@ export function SpanConfigPanel({
                           updateSpan({
                             autoCalcConfig: {
                               ...(span.autoCalcConfig || {
-                                maxPanelWidth: 1200,
+                                maxPanelWidth: span.maxPanelWidth || 1200,
                                 panelHeight: 1500,
                                 glassType: "12mm",
                                 interPanelGaps: [10],
@@ -1419,7 +1419,7 @@ export function SpanConfigPanel({
                       updateSpan({
                         autoCalcConfig: {
                           ...(span.autoCalcConfig || {
-                            maxPanelWidth: 1200,
+                            maxPanelWidth: span.maxPanelWidth || 1200,
                             panelHeight: 1500,
                             glassType: "12mm",
                             gapMode: "auto",
@@ -1449,7 +1449,7 @@ export function SpanConfigPanel({
               <AutoCalcPanelControls
                 autoCalcConfig={span.autoCalcConfig || {
                   layoutMode: "auto" as const,
-                  maxPanelWidth: 1200,
+                  maxPanelWidth: span.maxPanelWidth || 1200,
                   panelHeight: 1500,
                   glassType: "12mm" as const,
                   gapMode: "auto" as const,
@@ -1462,7 +1462,8 @@ export function SpanConfigPanel({
                 spanId={span.spanId}
                 onUpdate={(autoCalcConfig) => updateSpan({ 
                   autoCalcConfig,
-                  layoutMode: "auto-calc" 
+                  layoutMode: "auto-calc",
+                  maxPanelWidth: autoCalcConfig.maxPanelWidth
                 })}
               />
             </div>

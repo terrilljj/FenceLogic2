@@ -80,7 +80,9 @@ export function AutoCalcPanelControls({
 
   // Calculate panel widths based on mode
   const calculatePanelWidths = (): number[] => {
-    const totalGaps = interPanelGaps.reduce((sum, gap) => sum + gap, 0);
+    // Calculate correct total gaps based on actual number of panels (N panels = N-1 gaps)
+    const numGaps = Math.max(0, numPanels - 1);
+    const totalGaps = numGaps * gapSize;
     const availableForPanels = spanLength - leftGapSize - rightGapSize - totalGaps;
     
     if (layoutMode === "manual-individual" && panelWidthOverrides) {
@@ -108,7 +110,8 @@ export function AutoCalcPanelControls({
 
   const panelWidths = calculatePanelWidths();
   const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
-  const totalGapWidth = interPanelGaps.reduce((sum, g) => sum + g, 0);
+  const numGaps = Math.max(0, numPanels - 1);
+  const totalGapWidth = numGaps * gapSize;
   const totalUsed = leftGapSize + totalPanelWidth + totalGapWidth + rightGapSize;
   const remaining = spanLength - totalUsed;
   const isValid = Math.abs(remaining) <= 2;
