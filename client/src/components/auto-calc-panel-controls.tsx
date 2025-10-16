@@ -328,7 +328,10 @@ export function AutoCalcPanelControls({
               max={1800}
               step={50}
               value={panelHeight}
-              onChange={(e) => updatePanelHeight(parseInt(e.target.value) || 1500)}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 1200;
+                updatePanelHeight(Math.max(1200, value));
+              }}
               className="h-9 w-full"
               data-testid={`panel-height-${spanId}`}
             />
