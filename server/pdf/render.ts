@@ -149,10 +149,13 @@ function drawFooter(
     
     doc.translate(xPos, yPos);
     doc.rotate(-90);
+    
+    // Draw text with enough width to prevent clipping
+    const brandingText = 'FenceLogic By Barrier Dynamics © 2025';
     doc.fontSize(9)
       .fillColor('#666')
-      .text('FenceLogic By Barrier Dynamics © 2025', -140, 0, {
-        width: 280,
+      .text(brandingText, -165, 0, {
+        width: 330,
         align: 'center',
         lineBreak: false,
       });
