@@ -13,6 +13,7 @@ import { UiConfigSchema } from "./schemas/ui-config";
 import metaCategoryPathsRouter from "./routes/meta-category-paths";
 import { pdfRouter } from "./routes/pdf";
 import adminConfigRouter from "./routes/adminConfig";
+import adminSheetsRouter from "./routes/adminSheets";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -900,6 +901,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin config routes (Google Sheets OAuth & config)
   app.use("/api/admin/config", requireAdmin, adminConfigRouter);
   app.use("/api/admin/google", requireAdmin, adminConfigRouter);
+  
+  // Admin sheets sync routes
+  app.use("/api/admin/sheets", requireAdmin, adminSheetsRouter);
 
   // PDF generation
   app.use("/api", pdfRouter);

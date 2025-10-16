@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { saveGoogleConfig, loadGoogleConfig, getConfigSource } from '../utils/config';
-import { isOAuthConnected, getAuthUrl } from '../utils/googleOAuth';
+import { saveGoogleConfig, loadGoogleConfig } from '../utils/config';
+import { isOAuthConnected, getAuthUrl, getConfigSource } from '../utils/googleOAuth';
 
 const router = Router();
 
