@@ -78,6 +78,56 @@ export function SpanConfigPanel({
       return;
     }
 
+    // Handle auto-calc layout mode - convert autoCalcConfig to panelLayout for visualization
+    if (span.layoutMode === "auto-calc" && span.autoCalcConfig) {
+      const { panelTypes, interPanelGaps, panelWidthOverrides, maxPanelWidth } = span.autoCalcConfig;
+      const leftGapSize = span.leftGap?.size || 0;
+      const rightGapSize = span.rightGap?.size || 0;
+      const totalGaps = interPanelGaps.reduce((sum, gap) => sum + gap, 0);
+      const availableForPanels = span.length - leftGapSize - rightGapSize - totalGaps;
+      
+      // Calculate panel widths
+      let fixedWidth = 0;
+      let flexiblePanelCount = panelTypes.length;
+      
+      if (panelWidthOverrides) {
+        Object.values(panelWidthOverrides).forEach(width => {
+          fixedWidth += width;
+          flexiblePanelCount--;
+        });
+      }
+      
+      const remainingForFlexible = availableForPanels - fixedWidth;
+      const calculatedWidth = flexiblePanelCount > 0 ? Math.floor(remainingForFlexible / flexiblePanelCount) : 0;
+      
+      const panelWidths: number[] = [];
+      for (let i = 0; i < panelTypes.length; i++) {
+        if (panelWidthOverrides?.[i]) {
+          panelWidths.push(panelWidthOverrides[i]);
+        } else {
+          panelWidths.push(Math.min(calculatedWidth, maxPanelWidth));
+        }
+      }
+      
+      const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
+      const totalGapWidth = interPanelGaps.reduce((sum, g) => sum + g, 0);
+      const averageGap = interPanelGaps.length > 0 ? totalGapWidth / interPanelGaps.length : 0;
+
+      const autoCalcPanelLayout = {
+        panels: panelWidths,
+        gaps: interPanelGaps,
+        totalPanelWidth,
+        totalGapWidth,
+        averageGap,
+        panelTypes: panelTypes as any,
+      };
+
+      if (JSON.stringify(span.panelLayout) !== JSON.stringify(autoCalcPanelLayout)) {
+        updateSpan({ panelLayout: autoCalcPanelLayout });
+      }
+      return;
+    }
+
     let layout;
 
     // Blade fencing uses a different calculation
