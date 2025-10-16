@@ -47,7 +47,7 @@ export function CustomPanelControls({ config, spanId, onUpdate, numPanels = 1, m
               type="number"
               min={200}
               max={effectiveMaxWidth}
-              step={50}
+              step={1}
               value={config.width}
               onChange={(e) => {
                 const value = parseInt(e.target.value) || 200;
@@ -56,7 +56,7 @@ export function CustomPanelControls({ config, spanId, onUpdate, numPanels = 1, m
               data-testid={`custom-panel-${spanId}-width`}
             />
             <p className="text-xs text-muted-foreground">
-              Max: {effectiveMaxWidth}mm (from panel config)
+              Any size 200-{effectiveMaxWidth}mm (not restricted to stock sizes)
             </p>
           </div>
 
@@ -66,11 +66,14 @@ export function CustomPanelControls({ config, spanId, onUpdate, numPanels = 1, m
               type="number"
               min={1200}
               max={1800}
-              step={50}
+              step={1}
               value={config.height}
               onChange={(e) => updateConfig({ height: parseInt(e.target.value) || 1200 })}
               data-testid={`custom-panel-${spanId}-height`}
             />
+            <p className="text-xs text-muted-foreground">
+              Any size 1200-1800mm
+            </p>
           </div>
         </div>
 
