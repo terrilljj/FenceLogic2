@@ -188,12 +188,19 @@ export interface CustomPanelFixed {
 
 export function computeFixedCustomPanel(
   custom: { required: boolean; panelWidthMm: number; gapBeforeMm?: number; gapAfterMm?: number } | undefined,
-  defaultHeightMm: number
+  defaultHeightMm: number,
+  betweenGapMm: number = 50
 ): CustomPanelFixed {
   if (!custom?.required) {
     return { customPanelMm: 0, customGapsMm: 0, fixedLeftMm: 0, fixedRightMm: 0 };
   }
   const width = Math.max(0, Math.round(custom.panelWidthMm));
-  const gaps = Math.max(0, Math.round((custom.gapBeforeMm ?? 0) + (custom.gapAfterMm ?? 0)));
-  return { customPanelMm: width, customGapsMm: gaps, fixedLeftMm: 0, fixedRightMm: 0 };
+  
+  // Treat unspecified gaps as neutral (0 delta)
+  // Add specified gaps in full as fixed components
+  const gapBeforeMm = custom.gapBeforeMm ?? 0;
+  const gapAfterMm = custom.gapAfterMm ?? 0;
+  const customGapsMm = gapBeforeMm + gapAfterMm;
+  
+  return { customPanelMm: width, customGapsMm, fixedLeftMm: 0, fixedRightMm: 0 };
 }

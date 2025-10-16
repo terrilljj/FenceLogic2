@@ -400,7 +400,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
   } else {
     // NO GATE PATH - with optional custom panel support
     const defaultHeightMm = 1200; // Default height for custom panels
-    const customPanel = computeFixedCustomPanel(customPanelConfig, defaultHeightMm);
+    const customPanel = computeFixedCustomPanel(customPanelConfig, defaultHeightMm, betweenGapMm);
     
     const policy: EndGapPolicy = process.env.STRICT_END_GAP === '1' 
       ? 'LOCKED_STRICT' 
@@ -586,7 +586,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       
       // Find split index by accumulating panels + gaps
       let accumulated = 0;
-      let splitIndex = 0;
+      let splitIndex = panelWidths.length; // Default: all panels go to left (for position=1.0)
       
       for (let i = 0; i < panelWidths.length; i++) {
         if (accumulated + panelWidths[i] / 2 >= leftShare) {

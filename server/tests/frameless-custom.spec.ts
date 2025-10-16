@@ -19,6 +19,15 @@ describe('Frameless Custom Panel Feature', () => {
         },
       });
 
+      if (!result.success) {
+        console.log('=== DEBUG: LEFT position test failed ===');
+        console.log('Validation:', JSON.stringify(result.validation, null, 2));
+        if ('errors' in result) {
+          console.log('Errors:', JSON.stringify(result.errors, null, 2));
+        }
+        console.log('Last 3 trace steps:', JSON.stringify(result.trace?.slice(-3), null, 2));
+      }
+
       expect(result.success).toBe(true);
       
       // Find custom panel in segments

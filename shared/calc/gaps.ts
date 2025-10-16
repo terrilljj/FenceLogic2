@@ -169,41 +169,29 @@ export function buildSegmentSequence(config: {
   } else {
     // No gate - may have custom panel
     if (config.customPanelConfig?.required) {
-      // Add left panels
-      if (config.leftPanels.length > 0) {
-        addPanelsWithGaps(config.leftPanels);
-        // Add between gap before custom panel
-        segments.push({ kind: 'gap', widthMm: config.betweenGapMm, gapType: 'between' });
-      }
+      const hasLeftPanels = config.leftPanels.length > 0;
+      const hasRightPanels = config.rightPanels.length > 0;
       
-      // Add gap before custom panel (if specified)
-      if (config.customPanelConfig.gapBeforeMm && config.customPanelConfig.gapBeforeMm > 0) {
-        segments.push({ kind: 'gap', widthMm: config.customPanelConfig.gapBeforeMm, gapType: 'between' });
+      // Add left panels with gaps
+      if (hasLeftPanels) {
+        addPanelsWithGaps(config.leftPanels);
+        // Always add connector gap before custom when left panels exist
+        const gapBefore = config.customPanelConfig.gapBeforeMm ?? config.betweenGapMm;
+        segments.push({ kind: 'gap', widthMm: gapBefore, gapType: 'between' });
       }
       
       // Add custom panel
       segments.push({ 
         kind: 'panel', 
         widthMm: config.customPanelConfig.panelWidthMm,
-        // Store custom height in metadata (note: Segment type may need extension)
       });
       
-      // Add gap after custom panel (if specified)
-      if (config.customPanelConfig.gapAfterMm && config.customPanelConfig.gapAfterMm > 0) {
-        segments.push({ kind: 'gap', widthMm: config.customPanelConfig.gapAfterMm, gapType: 'between' });
-      }
-      
-      // Add right panels
-      if (config.rightPanels.length > 0) {
-        // Add between gap before first right panel
-        segments.push({ kind: 'gap', widthMm: config.betweenGapMm, gapType: 'between' });
-        // Add first right panel
-        segments.push({ kind: 'panel', widthMm: config.rightPanels[0] });
-        // Remaining right panels with between gaps
-        for (let i = 1; i < config.rightPanels.length; i++) {
-          segments.push({ kind: 'gap', widthMm: config.betweenGapMm, gapType: 'between' });
-          segments.push({ kind: 'panel', widthMm: config.rightPanels[i] });
-        }
+      // Add right panels with gaps
+      if (hasRightPanels) {
+        // Always add connector gap after custom when right panels exist
+        const gapAfter = config.customPanelConfig.gapAfterMm ?? config.betweenGapMm;
+        segments.push({ kind: 'gap', widthMm: gapAfter, gapType: 'between' });
+        addPanelsWithGaps(config.rightPanels);
       }
     } else {
       // No gate, no custom panel - just panels
