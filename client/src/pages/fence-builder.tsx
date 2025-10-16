@@ -301,6 +301,7 @@ export default function FenceLogic() {
         onLoad={handleLoad}
         onReset={handleReset}
         isSaving={saveDesignMutation.isPending}
+        productVariant={design.productVariant}
       />
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_420px] overflow-hidden">

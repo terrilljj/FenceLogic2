@@ -3,6 +3,38 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "./theme-provider";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
+import type { ProductVariant } from "@shared/schema";
+
+// Helper function to get display name for product variant
+function getProductDisplayName(variant: ProductVariant): string {
+  const productMap: Record<ProductVariant, string> = {
+    "glass-pool-spigots": "Glass Pool - Spigots",
+    "glass-pool-channel": "Glass Pool - Channel",
+    "glass-bal-spigots": "Glass Balustrade - Spigots",
+    "glass-bal-channel": "Glass Balustrade - Channel",
+    "glass-bal-standoffs": "Glass Balustrade - Standoffs",
+    "alu-pool-barr": "Aluminium Pool - BARR",
+    "alu-pool-blade": "Aluminium Pool - Blade",
+    "alu-pool-tubular": "Aluminium Pool - Tubular Flat Top",
+    "alu-pool-pik": "Aluminium Pool - PIK",
+    "alu-bal-barr": "Aluminium Balustrade - BARR",
+    "alu-bal-blade": "Aluminium Balustrade - Blade",
+    "alu-bal-visor": "Aluminium Balustrade - Visor",
+    "pvc-hamptons-full-privacy": "Hamptons PVC - Full Privacy",
+    "pvc-hamptons-combo": "Hamptons PVC - Combo",
+    "pvc-hamptons-vertical-paling": "Hamptons PVC - Vertical Paling",
+    "pvc-hamptons-semi-privacy": "Hamptons PVC - Semi Privacy",
+    "pvc-hamptons-3rail": "Hamptons PVC - 3 Rail",
+    "general-zeus": "General Fencing - Zeus",
+    "general-blade": "General Fencing - Blade",
+    "general-barr": "General Fencing - BARR",
+    "custom-panel-designer": "Custom Panel Designer (BETA)",
+    "custom-glass": "Custom Glass",
+    "custom-frameless": "Custom Frameless Spigots",
+  };
+  
+  return productMap[variant] || "Glass Pool Fence Calculator";
+}
 
 interface AppHeaderProps {
   progress: number;
@@ -10,9 +42,10 @@ interface AppHeaderProps {
   onLoad: () => void;
   onReset: () => void;
   isSaving?: boolean;
+  productVariant?: ProductVariant;
 }
 
-export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false }: AppHeaderProps) {
+export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false, productVariant }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
   const [, setLocation] = useLocation();
 
@@ -30,7 +63,9 @@ export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false 
             </div>
             <div>
               <h1 className="text-lg font-semibold">Fence Logic</h1>
-              <p className="text-xs text-muted-foreground">Glass Pool Fence Calculator</p>
+              <p className="text-xs text-muted-foreground">
+                {productVariant ? getProductDisplayName(productVariant) : "Glass Pool Fence Calculator"}
+              </p>
             </div>
           </div>
 
