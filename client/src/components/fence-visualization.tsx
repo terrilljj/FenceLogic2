@@ -229,62 +229,73 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
           <title>${design.name} - FenceLogic</title>
           <style>
             @page {
-              margin: 0.5in;
+              margin: 0.4in;
+              size: auto;
             }
             
             @media print {
+              * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
               body {
                 margin: 0;
                 padding: 0;
               }
               .header {
                 border-bottom: 2px solid #000;
-                padding-bottom: 10px;
-                margin-bottom: 15px;
+                padding-bottom: 6px;
+                margin-bottom: 8px;
               }
               .branding {
-                font-size: 20px;
+                font-size: 18px;
                 font-weight: bold;
                 color: #000;
-                margin-bottom: 3px;
+                margin-bottom: 2px;
+                line-height: 1.2;
               }
               .tagline {
-                font-size: 12px;
+                font-size: 11px;
                 color: #666;
                 font-style: italic;
+                line-height: 1.2;
               }
               h1 {
-                margin: 10px 0 5px 0;
-                font-size: 22px;
+                margin: 6px 0 3px 0;
+                font-size: 18px;
                 color: #000;
+                line-height: 1.2;
               }
               .date {
                 color: #666;
-                font-size: 11px;
-                margin-bottom: 5px;
+                font-size: 10px;
+                margin-bottom: 3px;
+                line-height: 1.2;
               }
               .info {
                 color: #666;
-                margin-bottom: 10px;
-                font-size: 11px;
+                margin-bottom: 8px;
+                font-size: 10px;
+                line-height: 1.2;
               }
               img {
                 max-width: 100%;
-                max-height: 65vh;
+                max-height: 550px;
                 height: auto;
                 display: block;
-                margin: 10px auto;
+                margin: 8px auto;
                 border: 1px solid #ddd;
                 page-break-inside: avoid;
                 object-fit: contain;
               }
               .footer {
-                margin-top: 15px;
-                padding-top: 10px;
+                margin-top: 8px;
+                padding-top: 6px;
                 border-top: 1px solid #ddd;
                 text-align: center;
                 color: #999;
-                font-size: 10px;
+                font-size: 9px;
+                line-height: 1.2;
               }
               .no-print {
                 display: none;
