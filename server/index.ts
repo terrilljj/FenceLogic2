@@ -6,8 +6,8 @@ import { setupShopifyRoutes } from "./shopify-routes";
 import "./types"; // Import session type extensions
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // Trust proxy for cookies to work in Replit iframe
 app.set("trust proxy", 1);
