@@ -1,0 +1,108 @@
+Goal:
+Add internal-only frameless_custom with custom panel capability on the NON-GATE path, reusing the existing equalize & sequencing rules. Do NOT modify the gate flow.
+
+Scope:
+- New CustomPanelConfig in compose/lengthAccounting
+- Non-gate path supports: fixed custom panel (width/height), optional gaps before/after, optional position
+- Equalize the remainder on 50 mm grid (LOCKED_OR_RESIDUAL default)
+- Tests + a debug endpoint; no UI yet
+
+Tasks
+
+1) Types
+- In shared/calc/compose.ts:
+  export interface CustomPanelConfig {
+    required: boolean;
+    panelWidthMm: number;
+    panelHeightMm?: number;          // defaults to defaultHeight
+    position?: number;               // 0..1 fraction along the run; if omitted, place centrally in remainder
+    gapBeforeMm?: number;            // optional additional gap before this custom panel
+    gapAfterMm?: number;             // optional additional gap after this custom panel
+  }
+  // Extend CompositionInput with:
+  customPanelConfig?: CustomPanelConfig;
+
+2) Fixed accounting for custom panel
+- In shared/calc/lengthAccounting.ts add:
+  export interface CustomPanelFixed {
+    customPanelMm: number;          // width
+    customGapsMm: number;           // gapBefore + gapAfter
+    fixedLeftMm: number;            // for position-based split; for now compute as 0 (Phase 1 keeps simple insertion later)
+    fixedRightMm: number;
+  }
+  export function computeFixedCustomPanel(
+    custom: CustomPanelConfig | undefined,
+    defaultHeightMm: number
+  ): CustomPanelFixed {
+    if (!custom?.required) return { customPanelMm:0, customGapsMm:0, fixedLeftMm:0, fixedRightMm:0 };
+    const width = Math.max(0, Math.round(custom.panelWidthMm));
+    const gaps = Math.max(0, Math.round((custom.gapBeforeMm ?? 0) + (custom.gapAfterMm ?? 0)));
+    return { customPanelMm: width, customGapsMm: gaps, fixedLeftMm:0, fixedRightMm:0 };
+  }
+
+3) Extend non-gate composer (composeFenceSegments)
+- In shared/calc/compose.ts, within the ELSE (non-gate) branch:
+  a) Call computeFixedCustomPanel(customPanelConfig, defaultHeight).
+  b) Compute F = startGapMm + endGapMm + customPanel.customPanelMm + customPanel.customGapsMm
+  c) LOCKED first:
+     targetPanels = runLengthMm − F
+     Find N via findFeasibleN({ targetMm:targetPanels, minPanelMm, maxPanelMm, stepMm:50 })
+     If not feasible and policy==='LOCKED_STRICT' → push error UNREACHABLE and return.
+  d) If not feasible and policy LOCKED_OR_RESIDUAL → provisional = runLengthMm − (startGapMm + (customPanel width+gaps)); solve equalize; set residualEndGap = runLength − (startGap + custom + sum(panels)+(N−1)*between); variance = residual − requested; ensure residual ≥ 0, else increase N while ≤ Nmax or return UNREACHABLE.
+  e) Build segments:
+     - start gap
+     - “left panels” (if placing custom at some position) — PHASE 1: place custom centrally if position omitted, or compute leftShare = round((position || 0.5) * (sum(panels) + (N−1)*between)) and split panel array at nearest between boundary.
+     - ‘panel’ segments for left set, separated by betweenGap
+     - custom panel (kind:'panel', widthMm:customPanelMm, heightMm:custom.panelHeightMm ?? defaultHeightMm, note:'custom')
+     - custom.gapAfterMm as a gap segment if >0
+     - right panels separated by betweenGap
+     - end gap (requested or residual per policy)
+  f) Invariants:
+     - No gate segments allowed on non-gate path
+     - All panel widths %50==0; length conserved (±1 mm with gate=false → use ±2 mm as current code)
+  g) Trace:
+     - {source:'custom-panel', width:customPanelMm, gaps:customGapsMm, position:custom.position ?? 0.5}
+     - {source:'equalize', step:50, count:N, panelsMm:sum(equalized)}
+     - {source:'end-gap-policy', policy, residualUsed, varianceEndGapMm}
+
+4) Resolver wire-up (frameless_custom)
+- In server/services/resolve.ts add variant handling:
+  if (variantKey === 'frameless_custom') {
+    // Build CompositionInput from selection
+    // selection fields expected:
+    // run_length_mm, start_gap_mm, between_gap_mm, end_gap_mm, default_height_mm,
+    // max_panel_width_mm, min_panel_width_mm (opt), step_mm (opt),
+    // end_gap_policy (opt), custom_panel: { required, panel_width_mm, panel_height_mm?, position?, gap_before_mm?, gap_after_mm? }
+    // Call composeFenceSegments with gateConfig: undefined and customPanelConfig from selection.
+    // Map segments→BOM:
+    //  - ‘panel’ with note:'custom' → code 'CUSTOM-GLASS' (include width/height props)
+    //  - stock panels (if you later add STOCK_THEN_CUSTOM_TAIL in Phase 2)
+    //  - gap segments excluded from BOM
+    // Return trace + finalCodes = panel codes (custom or stock)
+  }
+- Add a debug route:
+  POST /api/debug/frameless-custom/compose
+  Body: { selection:..., variant:'frameless_custom' }
+  Returns: { result, trace }
+
+5) Tests
+- Create server/tests/frameless-custom.spec.ts with:
+  A) Basic: run=12000, start=40, between=20, end=40, defaultHeight=1200, max=1400, custom panel 1100 mm centered → success; all panels %50; no gate; length conserved; residual mode allowed if needed.
+  B) Positioned: same but custom.position=0.2 → custom appears ~20% along; left/right counts differ appropriately; length conserved.
+  C) Strict lock: set STRICT_END_GAP=1 when target impossible → 400 UNREACHABLE.
+  D) Edge: custom panel + gaps leaves tiny remainder but still solvable → success.
+  E) Edge: infeasible (minPanel too large) → 400 UNREACHABLE.
+
+6) Flags & security
+- Guard debug route behind INTERNAL_CUSTOM_LAYOUT=1.
+- Do not expose in nav.
+
+7) Acceptance output (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Variant 'frameless_custom' non-gate composer working: ✅/❌
+- Debug endpoint /api/debug/frameless-custom/compose: ✅/❌
+- Tests (frameless-custom.spec.ts): pass? <yes/no> with totals
+- Panels on 50 mm grid; length conserved (±2 mm tolerance for non-gate): <yes/no>
+- End-gap policy: default LOCKED_OR_RESIDUAL honored; STRICT flag respected: <yes/no>
+- Files changed: (list)

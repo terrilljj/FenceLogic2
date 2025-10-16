@@ -14,6 +14,15 @@ import {
 
 export type EndGapPolicy = 'LOCKED_STRICT' | 'LOCKED_OR_RESIDUAL';
 
+export interface CustomPanelConfig {
+  required: boolean;
+  panelWidthMm: number;
+  panelHeightMm?: number;          // defaults to defaultHeight
+  position?: number;               // 0..1 fraction along the run; if omitted, place centrally in remainder
+  gapBeforeMm?: number;            // optional additional gap before this custom panel
+  gapAfterMm?: number;             // optional additional gap after this custom panel
+}
+
 export interface CompositionInput {
   runLengthMm: number;
   startGapMm: number;
@@ -32,6 +41,7 @@ export interface CompositionInput {
     hingeSide: 'LEFT' | 'RIGHT';
     position?: number; // 0-1, where to place gate (0 = left, 1 = right)
   };
+  customPanelConfig?: CustomPanelConfig;
 }
 
 export interface CompositionResult {
