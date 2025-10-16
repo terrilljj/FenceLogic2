@@ -1713,43 +1713,27 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Auto-Calc Configuration - Only for custom-frameless */}
+          {/* Auto-Calc Configuration - Only for custom-frameless - Always visible at top */}
           {productVariant === "custom-frameless" && (
-            <div className="space-y-3 pt-4 border-t border-card-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Auto-Calc Configuration</Label>
-                  <InfoTooltip content="Specify exact gap values, panel types (standard/gate/hinge), and max panel width. Panel widths are automatically calculated to fit perfectly." />
-                </div>
-                <Switch
-                  checked={span.layoutMode === "auto-calc"}
-                  onCheckedChange={(enabled) =>
-                    updateSpan({
-                      layoutMode: enabled ? "auto-calc" : "auto-equalize",
-                      autoCalcConfig: enabled ? {
-                        maxPanelWidth: 1200,
-                        panelHeight: 1500,
-                        glassType: "12mm",
-                        gapMode: "auto",
-                        interPanelGaps: [10],
-                        panelTypes: ["standard", "standard"],
-                      } : undefined,
-                    })
-                  }
-                  data-testid={`span-${span.spanId}-auto-calc-toggle`}
-                />
-              </div>
-              {span.layoutMode === "auto-calc" && span.autoCalcConfig && (
-                <AutoCalcPanelControls
-                  autoCalcConfig={span.autoCalcConfig}
-                  spanLength={span.length}
-                  leftGapSize={span.leftGap?.size || 0}
-                  rightGapSize={span.rightGap?.size || 0}
-                  spanId={span.spanId}
-                  onUpdate={(autoCalcConfig) => updateSpan({ autoCalcConfig })}
-                />
-              )}
-            </div>
+            <AutoCalcPanelControls
+              autoCalcConfig={span.autoCalcConfig || {
+                layoutMode: "auto" as const,
+                maxPanelWidth: 1200,
+                panelHeight: 1500,
+                glassType: "12mm" as const,
+                gapMode: "auto" as const,
+                interPanelGaps: [10],
+                panelTypes: ["standard" as const, "standard" as const],
+              }}
+              spanLength={span.length}
+              leftGapSize={span.leftGap?.size || 0}
+              rightGapSize={span.rightGap?.size || 0}
+              spanId={span.spanId}
+              onUpdate={(autoCalcConfig) => updateSpan({ 
+                autoCalcConfig,
+                layoutMode: "auto-calc" 
+              })}
+            />
           )}
 
           {/* Custom Panel - Hide for BARR, Blade, and Tubular */}
