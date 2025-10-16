@@ -109,6 +109,13 @@ const productOptions: ProductOption[] = [
     name: "Hamptons 3 Rail",
     description: "1525mm adjustable height rails",
     visual: "pvc-hamptons-3rail"
+  },
+  {
+    id: "custom-panel-designer",
+    type: "general",
+    name: "Custom Panel Designer",
+    description: "Advanced custom panel layout",
+    visual: "frameless-glass"
   }
 ];
 
@@ -483,6 +490,47 @@ export default function Home() {
                   onClick={() => handleSelectProduct(product.type, product.id)}
                   data-testid={`card-home-product-${product.id}`}
                 >
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <ProductVisual type={product.visual} />
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {product.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </Card>
+              ))}
+          </div>
+        </div>
+
+        {/* Advanced Options Section */}
+        <div className="mb-16">
+          <div className="mb-8">
+            <h2 className="text-3xl font-semibold mb-3" data-testid="text-advanced-title">
+              Advanced Options
+            </h2>
+            <p className="text-muted-foreground">
+              Custom panel layouts and advanced configurations
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {productOptions
+              .filter((p) => p.type === "general")
+              .map((product) => (
+                <Card
+                  key={`${product.type}-${product.name}`}
+                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group relative"
+                  onClick={() => handleSelectProduct(product.type, product.id)}
+                  data-testid={`card-home-product-custom-panel`}
+                >
+                  <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-md font-semibold">
+                    BETA
+                  </div>
                   <div className="flex flex-col items-center text-center space-y-2">
                     <ProductVisual type={product.visual} />
                     <div className="space-y-1">

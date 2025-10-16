@@ -1,0 +1,99 @@
+Goal:
+Resolve the remaining 5 failing tests in frameless_custom by correcting gap accounting with custom gaps, clamping RIGHT placement, handling N=0/N=1 edge cases, and tracking end-gap variance. Update the debug endpoint to include the new trace fields and add a QA runner.
+
+Fixes to apply
+
+1) Custom gaps must not double-subtract betweenGap
+Files: shared/calc/gaps.ts (applyGapPrecedence), shared/calc/compose.ts (non-gate branch)
+- Rule: At each interface, there can be EITHER a connector (betweenGap) OR a custom gap; never both.
+- Implementation in applyGapPrecedence:
+  a) When building the left block, insert betweenGap ONLY between two variable panels.
+  b) When the boundary to the custom panel is reached:
+     - If customBeforeMm > 0: do NOT insert a betweenGap at the left boundary; emit {kind:'gap', gapType:'custom-before', widthMm:customBeforeMm} then the custom panel.
+     - Else (no customBefore): if there is a preceding variable panel, insert a betweenGap as usual.
+  c) After the custom panel:
+     - If customAfterMm > 0: emit {kind:'gap', gapType:'custom-after', widthMm:customAfterMm} and do NOT add a betweenGap before the next variable panel.
+     - Else: if the next item is a variable panel, insert a betweenGap as usual.
+- Ensure the function never subtracts betweenGap from budgets outside of sequence construction; just construct the sequence, then the composer computes the total.
+
+2) RIGHT position clamp and boundary tolerance
+Files: shared/calc/compose.ts (position split logic)
+- Compute the list of BETWEEN boundaries over the equalized variable block:
+   boundaries[i] = sum(widths[0..i]) + i*betweenGap, for i=1..N-1 (length N-1).
+- For position=1.0 (RIGHT), if N>1: choose index = boundaries.length-1. If N<=1: the split is at "after the only panel" (left set = all panels).
+- For general position p in [0..1], compute target = p * (sum(widths)+(N-1)*betweenGap); pick nearest boundary by absolute distance; clamp to [0, boundaries.length-1].
+- Compute boundaryOffsetMm = |target - chosenBoundaryMm|; push trace {source:'position-split', position:p, targetMm:..., chosenBoundaryIndex, chosenBoundaryMm, boundaryOffsetMm, warning: boundaryOffsetMm>200 }.
+- Do not fail when >200 mm; just warn (as per spec).
+
+3) N=0 and N=1 edge cases
+Files: shared/calc/compose.ts (non-gate branch)
+- After equalization:
+  a) If N==0:
+     Sequence must be: [startGap] + [customBefore?] + [customPanel] + [customAfter?] + [endGap(actual)]
+     No connector gaps at all. Ensure length invariant uses endGap (requested or residual).
+  b) If N==1:
+     No connector gaps around the single variable panel. Gap precedence still applies with customBefore/customAfter.
+- Ensure length is recomputed after sequence build and checked |sum - run| ≤ 2 mm.
+
+4) End-gap variance tracking on custom path
+Files: shared/calc/compose.ts (non-gate branch)
+- When policy='LOCKED_OR_RESIDUAL' and locked fails:
+  residualEndGapMm = section - (startGap + customBlock + sum(widths) + (N-1)*between + endBlockWithoutEndGap)
+  varianceEndGapMm = residualEndGapMm - requestedEndGapMm
+- Always include in the result:
+  { residualEndGapMm, varianceEndGapMm, endGapPolicy, success:true/false }
+- Add trace entry:
+  { source:'end-gap-policy', policy, residualUsed:true/false, varianceEndGapMm }
+
+5) Update debug endpoint to surface new traces
+Files: server/index.ts or routes controller for /api/debug/frameless-custom/compose
+- Ensure response JSON includes:
+  - result.segments (final sequence)
+  - result.residualEndGapMm, result.varianceEndGapMm, result.endGapPolicy
+  - trace array with 'position-split', 'end-gap-policy', 'equalize', 'invariant-check'
+- Include a short 'summary' object with totals and whether custom gaps suppressed connector gaps on each side (booleans).
+
+6) Tests — fix the 5 failing cases and assert new behavior
+File: server/tests/frameless-custom.spec.ts
+- Adjust/add tests:
+
+T1 Custom gaps specified (previously failing):
+  - Provide gapBefore=30, gapAfter=40; assert:
+    • No connector gap adjacent to custom panel.
+    • Sequence contains 'gap:custom-before' and 'gap:custom-after'.
+    • Length conserved ±2 mm; success true.
+
+T2 RIGHT position with N>1 (previously failing):
+  - position=1.0; expect chosenBoundaryIndex = N-2; boundaryOffsetMm ≤ 200; success true.
+
+T3 RIGHT position with N=1 (previously failing):
+  - position=1.0; N=1 case; left set empty; no connector gaps; success true.
+
+T4 N=0 edge (previously failing):
+  - Force targetPanels=0 (e.g., run equals start+custom+end); expect the sequence with only custom + gaps + start/end; success true; length conserved.
+
+T5 End-gap variance on residual:
+  - Construct a case that cannot lock; under LOCKED_OR_RESIDUAL assert residualEndGapMm defined, varianceEndGapMm ≠ 0, success true.
+
+7) QA runner
+File: server/scripts/qa-frameless-custom.ts (new)
+- Run 3 payloads (centered, RIGHT=1.0 with custom gaps, N=0/N=1 edge).
+- Write logs to logs/qa-frameless-custom-<ISO>.json & .md
+- Append a one-liner to replit.md with pass/fail and any boundaryOffset warnings.
+
+Run & Output
+
+- Run tests: `npm test`
+- Run QA: `npx tsx server/scripts/qa-frameless-custom.ts`
+
+Acceptance (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests passing (frameless-custom.spec.ts): <yes/no> (X/Y)
+- Custom gaps replace connector gaps at interfaces: <yes/no>
+- RIGHT=1.0 clamps to final boundary; tolerance ≤200mm: <yes/no>
+- N=0 and N=1 edge cases handled: <yes/no>
+- Residual end gap variance tracked on custom path: <yes/no>
+- Debug endpoint exposes position-split trace: <yes/no>
+- QA reports written: <filenames>
+- Files changed: (list)

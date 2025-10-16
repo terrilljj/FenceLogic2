@@ -449,24 +449,36 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     
     lockedTried = true;
     
-    const feasibleResult = findFeasibleN(targetPanels, minPanelMm, maxPanelMm, 50);
-    
     let panelWidths: number[] | null = null;
     let N = 0;
     
-    trace.push({
-      step: 'locked-attempt',
-      data: { targetPanels, feasibleResult },
-    });
-    
-    if ('N' in feasibleResult && feasibleResult.N) {
-      // Try equalization with between gaps
-      const N_try = feasibleResult.N;
+    // Special case: N=0 (no variable panels, only custom panel)
+    if (customPanelConfig?.required && Math.abs(targetPanels) < 2) {
+      // Custom panel fills the space exactly (within tolerance)
+      panelWidths = [];
+      N = 0;
+      actualEndGapMm = endGapMm;
+      varianceEndGapMm = 0;
       
-      // Account for connector gaps:
-      // - Without custom panel: (N-1) gaps between N panels
-      // - With custom panel: N gaps (custom splits panels, adding 1 extra gap)
-      const gapCount = customPanelConfig?.required ? N_try : (N_try - 1);
+      trace.push({
+        step: 'N=0-edge-case',
+        data: { targetPanels, customPanelOnly: true },
+      });
+    } else {
+      const feasibleResult = findFeasibleN(targetPanels, minPanelMm, maxPanelMm, 50);
+      
+      trace.push({
+        step: 'locked-attempt',
+        data: { targetPanels, feasibleResult },
+      });
+      
+      if ('N' in feasibleResult && feasibleResult.N) {
+        // Try equalization with between gaps
+        const N_try = feasibleResult.N;
+      
+      // When custom panel splits variable panels: N connector gaps (1 before custom, 1 after, N-2 between variables)
+      // When no custom panel: (N-1) connector gaps between N panels
+      const gapCount = (customPanelConfig?.required && N_try > 0) ? N_try : (N_try - 1);
       const panelsTarget = targetPanels - gapCount * betweenGapMm;
       
       const result = equalizePanelsExact(panelsTarget, N_try, 50, minPanelMm, maxPanelMm);
@@ -481,6 +493,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
           step: 'locked-success',
           data: { N, panelSum: panelWidths.reduce((a,b) => a+b, 0), gapCount },
         });
+      }
       }
     }
     
@@ -502,8 +515,9 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       let residualSolution: { N: number; panelWidths: number[]; residualEndGap: number } | null = null;
       
       for (let N_try = N_min_residual; N_try <= N_max_residual; N_try++) {
-        // Account for connector gaps (same logic as locked mode)
-        const gapCount = customPanelConfig?.required ? N_try : (N_try - 1);
+        // When custom panel splits variable panels: N connector gaps
+        // When no custom panel: (N-1) connector gaps
+        const gapCount = (customPanelConfig?.required && N_try > 0) ? N_try : (N_try - 1);
         const panelsTargetResidual = provisionalTarget - gapCount * betweenGapMm;
         
         if (panelsTargetResidual < N_try * minPanelMm) continue;
@@ -606,23 +620,30 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
         }
       }
       
-      // Find closest boundary to target
-      let chosenBoundaryIndex = 0;
-      let minDistance = Math.abs(boundaries[0] - targetAnchorMm);
+      // Special handling for RIGHT=1.0: clamp to last boundary
+      let chosenBoundaryIndex: number;
       
-      for (let i = 1; i < boundaries.length; i++) {
-        const distance = Math.abs(boundaries[i] - targetAnchorMm);
-        if (distance < minDistance) {
-          minDistance = distance;
-          chosenBoundaryIndex = i;
+      if (position >= 1.0) {
+        // RIGHT position: place custom panel after all variable panels
+        chosenBoundaryIndex = N > 0 ? N : 0;
+      } else if (position <= 0.0) {
+        // LEFT position: place custom panel before all variable panels
+        chosenBoundaryIndex = 0;
+      } else {
+        // Find closest boundary to target for middle positions
+        chosenBoundaryIndex = 0;
+        let minDistance = Math.abs(boundaries[0] - targetAnchorMm);
+        
+        for (let i = 1; i < boundaries.length; i++) {
+          const distance = Math.abs(boundaries[i] - targetAnchorMm);
+          if (distance < minDistance) {
+            minDistance = distance;
+            chosenBoundaryIndex = i;
+          }
         }
-      }
-      
-      // Special handling for RIGHT=1.0: clamp to last boundary if N>1
-      if (position >= 1.0 && N > 1) {
-        chosenBoundaryIndex = N; // Last boundary (after all panels)
-      } else if (position >= 1.0 && N === 1) {
-        chosenBoundaryIndex = 1; // After the single panel (left empty)
+        
+        // Clamp to valid range to prevent array access issues
+        chosenBoundaryIndex = Math.max(0, Math.min(chosenBoundaryIndex, boundaries.length - 1));
       }
       
       const boundaryOffsetMm = Math.abs(boundaries[chosenBoundaryIndex] - targetAnchorMm);

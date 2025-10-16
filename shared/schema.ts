@@ -27,7 +27,8 @@ export type ProductVariant =
   | "pvc-hamptons-3rail"
   | "general-zeus"
   | "general-blade"
-  | "general-barr";
+  | "general-barr"
+  | "custom-panel-designer";
 
 // Channel mounting types (for glass channel systems)
 export type ChannelMounting = "wall" | "ground";
