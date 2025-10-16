@@ -196,15 +196,17 @@ export function computeFixedCustomPanel(
   }
   const width = Math.max(0, Math.round(custom.panelWidthMm));
   
-  // Custom gaps: count only if specified (they REPLACE connector gaps per applyGapPrecedence)
-  // Unspecified = 0 (connector gaps will be used from variable panel calculation)
-  // Specified = full value (replaces connector gap at that interface)
+  // Custom gaps accounting:
+  // - Custom gaps REPLACE connector gaps at those interfaces (per applyGapPrecedence)
+  // - Only count them as fixed if they're DIFFERENT from standard betweenGap
+  // - If unspecified, we use betweenGap (no delta to fixed)
+  // - If specified, we count the DELTA from betweenGap
   let customGapsMm = 0;
   if (custom.gapBeforeMm !== undefined) {
-    customGapsMm += custom.gapBeforeMm;
+    customGapsMm += custom.gapBeforeMm - betweenGapMm;
   }
   if (custom.gapAfterMm !== undefined) {
-    customGapsMm += custom.gapAfterMm;
+    customGapsMm += custom.gapAfterMm - betweenGapMm;
   }
   
   return { customPanelMm: width, customGapsMm, fixedLeftMm: 0, fixedRightMm: 0 };

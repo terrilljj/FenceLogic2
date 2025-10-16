@@ -462,7 +462,12 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     if ('N' in feasibleResult && feasibleResult.N) {
       // Try equalization with between gaps
       const N_try = feasibleResult.N;
-      const panelsTarget = targetPanels - (N_try - 1) * betweenGapMm;
+      
+      // Account for connector gaps:
+      // - Without custom panel: (N-1) gaps between N panels
+      // - With custom panel: N gaps (custom splits panels, adding 1 extra gap)
+      const gapCount = customPanelConfig?.required ? N_try : (N_try - 1);
+      const panelsTarget = targetPanels - gapCount * betweenGapMm;
       
       const result = equalizePanelsExact(panelsTarget, N_try, 50, minPanelMm, maxPanelMm);
       
@@ -474,7 +479,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
         
         trace.push({
           step: 'locked-success',
-          data: { N, panelSum: panelWidths.reduce((a,b) => a+b, 0) },
+          data: { N, panelSum: panelWidths.reduce((a,b) => a+b, 0), gapCount },
         });
       }
     }
@@ -497,7 +502,9 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       let residualSolution: { N: number; panelWidths: number[]; residualEndGap: number } | null = null;
       
       for (let N_try = N_min_residual; N_try <= N_max_residual; N_try++) {
-        const panelsTargetResidual = provisionalTarget - (N_try - 1) * betweenGapMm;
+        // Account for connector gaps (same logic as locked mode)
+        const gapCount = customPanelConfig?.required ? N_try : (N_try - 1);
+        const panelsTargetResidual = provisionalTarget - gapCount * betweenGapMm;
         
         if (panelsTargetResidual < N_try * minPanelMm) continue;
         
@@ -505,12 +512,12 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
         
         if ('widthsMm' in resultResidual) {
           const panelSum = resultResidual.widthsMm.reduce((a, b) => a + b, 0);
-          const betweenGapsTotal = (N_try - 1) * betweenGapMm;
+          const betweenGapsTotal = gapCount * betweenGapMm;
           const residualEndGap = runLengthMm - startGapMm - customPanel.customPanelMm - customPanel.customGapsMm - panelSum - betweenGapsTotal;
           
           trace.push({
             step: `residual-try-N-${N_try}`,
-            data: { N_try, panelsTargetResidual, panelSum, betweenGapsTotal, residualEndGap },
+            data: { N_try, panelsTargetResidual, panelSum, betweenGapsTotal, residualEndGap, gapCount },
           });
           
           if (residualEndGap >= 0) {

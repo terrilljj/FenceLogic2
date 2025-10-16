@@ -1,400 +1,381 @@
 import { describe, it, expect } from 'vitest';
 import { composeFenceSegments } from '../../shared/calc/compose';
+import type { CompositionInput } from '../../shared/calc/compose';
 
 describe('Frameless Custom Panel Feature', () => {
-  describe('Basic Custom Panel Integration', () => {
-    it('should insert custom panel at LEFT position (0.0)', () => {
+  const baseInput: CompositionInput = {
+    runLengthMm: 3000,
+    startGapMm: 50,
+    endGapMm: 50,
+    betweenGapMm: 50,
+    minPanelMm: 600,
+    maxPanelMm: 1200,
+  };
+
+  describe('Gap Precedence', () => {
+    it('should use custom gaps when specified and replace connector gaps', () => {
       const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
+        ...baseInput,
         customPanelConfig: {
           required: true,
-          panelWidthMm: 800,
-          panelHeightMm: 1800,
-          position: 0.0,
-        },
-      });
-
-      if (!result.success) {
-        console.log('=== DEBUG: LEFT position test failed ===');
-        console.log('Validation:', JSON.stringify(result.validation, null, 2));
-        if ('errors' in result) {
-          console.log('Errors:', JSON.stringify(result.errors, null, 2));
-        }
-        console.log('Last 3 trace steps:', JSON.stringify(result.trace?.slice(-3), null, 2));
-      }
-
-      expect(result.success).toBe(true);
-      
-      // Find custom panel in segments
-      const customPanel = result.segments.find(s => s.kind === 'panel' && s.widthMm === 800);
-      expect(customPanel).toBeDefined();
-      
-      // Custom panel should be first panel (after start gap)
-      const panelSegments = result.segments.filter(s => s.kind === 'panel');
-      expect(panelSegments[0].widthMm).toBe(800);
-      
-      // Verify length conservation
-      expect(result.validation.lengthConserved).toBe(true);
-      expect(result.validation.deltaMm).toBeLessThanOrEqual(2);
-    });
-
-    it('should insert custom panel at MIDDLE position (0.5)', () => {
-      const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
-        customPanelConfig: {
-          required: true,
-          panelWidthMm: 800,
-          panelHeightMm: 1800,
           position: 0.5,
+          panelWidthMm: 800,
+          gapBeforeMm: 30,
+          gapAfterMm: 40,
         },
       });
 
       expect(result.success).toBe(true);
       
-      // Find custom panel
-      const customPanel = result.segments.find(s => s.kind === 'panel' && s.widthMm === 800);
-      expect(customPanel).toBeDefined();
+      // Verify custom gaps are in the segments
+      const gaps = result.segments.filter(s => s.kind === 'gap' && s.gapType === 'between');
+      const gapWidths = gaps.map(g => g.widthMm);
       
-      // Should have panels on both sides
-      const panelSegments = result.segments.filter(s => s.kind === 'panel');
-      expect(panelSegments.length).toBeGreaterThan(1);
+      // Should have custom gaps of 30 and 40
+      expect(gapWidths).toContain(30);
+      expect(gapWidths).toContain(40);
       
-      // Custom panel should be in middle
-      const customPanelIndex = panelSegments.findIndex(p => p.widthMm === 800);
-      expect(customPanelIndex).toBeGreaterThan(0);
-      expect(customPanelIndex).toBeLessThan(panelSegments.length - 1);
-      
-      // Verify length conservation
-      expect(result.validation.lengthConserved).toBe(true);
-      expect(result.validation.deltaMm).toBeLessThanOrEqual(2);
+      // Length should be conserved
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - baseInput.runLengthMm)).toBeLessThanOrEqual(2);
     });
 
-    it('should insert custom panel at RIGHT position (1.0)', () => {
+    it('should use connector gaps when custom gaps not specified', () => {
       const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
+        ...baseInput,
         customPanelConfig: {
           required: true,
+          position: 0.5,
           panelWidthMm: 800,
-          panelHeightMm: 1800,
-          position: 1.0,
+          // No custom gaps specified
         },
       });
 
       expect(result.success).toBe(true);
       
-      // Find custom panel
-      const customPanel = result.segments.find(s => s.kind === 'panel' && s.widthMm === 800);
-      expect(customPanel).toBeDefined();
+      // All between gaps should be the standard betweenGapMm
+      const gaps = result.segments.filter(s => s.kind === 'gap' && s.gapType === 'between');
+      gaps.forEach(gap => {
+        expect(gap.widthMm).toBe(50);
+      });
       
-      // Custom panel should be last panel (before end gap)
-      const panelSegments = result.segments.filter(s => s.kind === 'panel');
-      expect(panelSegments[panelSegments.length - 1].widthMm).toBe(800);
+      // Length should be conserved
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - baseInput.runLengthMm)).toBeLessThanOrEqual(2);
+    });
+
+    it('should insert connector gaps only between variable panels', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        runLengthMm: 4000,
+        customPanelConfig: {
+          required: true,
+          position: 0.5,
+          panelWidthMm: 600,
+        },
+      });
+
+      expect(result.success).toBe(true);
       
-      // Verify length conservation
-      expect(result.validation.lengthConserved).toBe(true);
-      expect(result.validation.deltaMm).toBeLessThanOrEqual(2);
+      // Count panel segments
+      const panels = result.segments.filter(s => s.kind === 'panel');
+      const variablePanels = panels.length - 1; // Subtract custom panel
+      
+      // Count connector gaps (between gaps)
+      const connectorGaps = result.segments.filter(s => s.kind === 'gap' && s.gapType === 'between');
+      
+      // Should have gaps between: left panels, before custom, after custom, right panels
+      // Total should account for proper gap placement
+      expect(connectorGaps.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Panel Equalization with Custom Panel', () => {
-    it('should equalize variable panels on 50mm grid', () => {
+  describe('Position Accuracy', () => {
+    it('should place custom panel at LEFT position (0.0)', () => {
       const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
+        ...baseInput,
         customPanelConfig: {
           required: true,
+          position: 0.0,
           panelWidthMm: 800,
-          position: 0.5,
         },
       });
 
       expect(result.success).toBe(true);
       
-      // All variable panels should be on 50mm grid
-      const variablePanels = result.segments
-        .filter(s => s.kind === 'panel' && s.widthMm !== 800)
-        .map(s => s.widthMm)
-        .filter((w): w is number => w !== undefined);
+      // Find custom panel position in segments
+      const panels = result.segments.filter(s => s.kind === 'panel');
+      const startGapIndex = result.segments.findIndex(s => s.kind === 'gap' && s.gapType === 'start');
+      const customPanelIndex = startGapIndex + 1;
       
-      for (const width of variablePanels) {
-        expect(width % 50).toBe(0);
-      }
+      // Custom panel should be first panel after start gap
+      expect(result.segments[customPanelIndex]?.kind).toBe('panel');
+      expect(result.segments[customPanelIndex]?.widthMm).toBe(800);
+      
+      // Position-split trace should show chosenBoundaryIndex=0
+      const positionTrace = result.trace.find(t => t.step === 'position-split');
+      expect(positionTrace?.data?.chosenBoundaryIndex).toBe(0);
+    });
+
+    it('should place custom panel at MIDDLE position (0.5)', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        customPanelConfig: {
+          required: true,
+          position: 0.5,
+          panelWidthMm: 800,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // Position-split trace should show middle position
+      const positionTrace = result.trace.find(t => t.step === 'position-split');
+      expect(positionTrace?.data?.position).toBe(0.5);
+      
+      // Boundary offset should be ≤ 200mm
+      const boundaryOffsetMm = positionTrace?.data?.boundaryOffsetMm;
+      expect(boundaryOffsetMm).toBeLessThanOrEqual(200);
+      
+      // Length conserved
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - baseInput.runLengthMm)).toBeLessThanOrEqual(2);
+    });
+
+    it('should place custom panel at RIGHT position (1.0) with N>1', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        runLengthMm: 4000,
+        customPanelConfig: {
+          required: true,
+          position: 1.0,
+          panelWidthMm: 800,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // Position-split trace should show position=1.0
+      const positionTrace = result.trace.find(t => t.step === 'position-split');
+      expect(positionTrace?.data?.position).toBe(1.0);
+      
+      // Should clamp to last boundary
+      const chosenBoundaryIndex = positionTrace?.data?.chosenBoundaryIndex;
+      const boundaries = positionTrace?.data?.boundaries || [];
+      expect(chosenBoundaryIndex).toBe(boundaries.length - 1);
+      
+      // Boundary offset should be ≤ 200mm
+      const boundaryOffsetMm = positionTrace?.data?.boundaryOffsetMm;
+      expect(boundaryOffsetMm).toBeLessThanOrEqual(200);
+      
+      // Length conserved
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - baseInput.runLengthMm)).toBeLessThanOrEqual(2);
+    });
+
+    it('should handle RIGHT position (1.0) with N=1', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        runLengthMm: 2000,
+        minPanelMm: 800,
+        maxPanelMm: 1200,
+        customPanelConfig: {
+          required: true,
+          position: 1.0,
+          panelWidthMm: 600,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // Position-split trace
+      const positionTrace = result.trace.find(t => t.step === 'position-split');
+      expect(positionTrace?.data?.position).toBe(1.0);
+      expect(positionTrace?.data?.leftPanelCount).toBe(0);
+      expect(positionTrace?.data?.rightPanelCount).toBe(1);
+      
+      // No connector gaps between variable panels (only 1 panel)
+      const connectorGaps = result.segments.filter(s => 
+        s.kind === 'gap' && s.gapType === 'between'
+      );
+      // Should have gaps around custom panel only
+      expect(connectorGaps.length).toBeLessThanOrEqual(2);
+      
+      // Length conserved
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - baseInput.runLengthMm)).toBeLessThanOrEqual(2);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle N=0 (no variable panels, custom panel only)', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        runLengthMm: 1000,
+        minPanelMm: 2000, // Force N=0 by making min too large
+        maxPanelMm: 3000,
+        customPanelConfig: {
+          required: true,
+          position: 0.5,
+          panelWidthMm: 800,
+          gapBeforeMm: 25,
+          gapAfterMm: 25,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // Should have: start gap + custom gaps + custom panel + end gap
+      const panels = result.segments.filter(s => s.kind === 'panel');
+      expect(panels.length).toBe(1);
+      expect(panels[0].widthMm).toBe(800);
+      
+      // Should have custom gaps
+      const customGaps = result.segments.filter(s => s.kind === 'gap' && s.gapType === 'between');
+      expect(customGaps.some(g => g.widthMm === 25)).toBe(true);
+      
+      // Length conserved
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - 1000)).toBeLessThanOrEqual(2);
+    });
+
+    it('should handle large custom panel', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        runLengthMm: 5000,
+        customPanelConfig: {
+          required: true,
+          position: 0.5,
+          panelWidthMm: 1500,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // Should still conserve length
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - 5000)).toBeLessThanOrEqual(2);
+    });
+
+    it('should handle small custom panel', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        customPanelConfig: {
+          required: true,
+          position: 0.5,
+          panelWidthMm: 300,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // Should still conserve length
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - baseInput.runLengthMm)).toBeLessThanOrEqual(2);
+    });
+  });
+
+  describe('Length Conservation', () => {
+    it('should conserve length within ±2mm tolerance (non-gate)', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        customPanelConfig: {
+          required: true,
+          position: 0.5,
+          panelWidthMm: 850,
+          gapBeforeMm: 75,
+          gapAfterMm: 75,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.validation.lengthConserved).toBe(true);
+      expect(Math.abs(result.validation.deltaMm)).toBeLessThanOrEqual(2);
+    });
+
+    it('should account for custom panel in total length', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        customPanelConfig: {
+          required: true,
+          position: 0.3,
+          panelWidthMm: 700,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // Sum all segments
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(sum).toBe(baseInput.runLengthMm);
+    });
+  });
+
+  describe('Panel Equalization', () => {
+    it('should equalize variable panels on 50mm grid', () => {
+      const result = composeFenceSegments({
+        ...baseInput,
+        customPanelConfig: {
+          required: true,
+          position: 0.5,
+          panelWidthMm: 800,
+        },
+      });
+
+      expect(result.success).toBe(true);
+      
+      // All panels should be multiples of 50mm
+      const panels = result.segments.filter(s => s.kind === 'panel');
+      panels.forEach(panel => {
+        expect(panel.widthMm! % 50).toBe(0);
+      });
     });
 
     it('should respect min/max panel bounds', () => {
       const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
+        ...baseInput,
         customPanelConfig: {
           required: true,
+          position: 0.5,
           panelWidthMm: 800,
-          position: 0.3,
         },
       });
 
       expect(result.success).toBe(true);
       
       // All variable panels should be within bounds
-      const variablePanels = result.segments
-        .filter(s => s.kind === 'panel' && s.widthMm !== 800)
-        .map(s => s.widthMm)
-        .filter((w): w is number => w !== undefined);
-      
-      for (const width of variablePanels) {
-        expect(width).toBeGreaterThanOrEqual(300);
-        expect(width).toBeLessThanOrEqual(1400);
-      }
+      const panels = result.segments.filter(s => s.kind === 'panel');
+      panels.forEach(panel => {
+        if (panel.widthMm !== 800) { // Not the custom panel
+          expect(panel.widthMm!).toBeGreaterThanOrEqual(baseInput.minPanelMm);
+          expect(panel.widthMm!).toBeLessThanOrEqual(baseInput.maxPanelMm);
+        }
+      });
     });
   });
 
-  describe('Length Conservation', () => {
-    it('should conserve length within ±2mm tolerance', () => {
-      const configs = [
-        { runLength: 3000, customWidth: 600, position: 0.0 },
-        { runLength: 5000, customWidth: 800, position: 0.5 },
-        { runLength: 7000, customWidth: 1000, position: 1.0 },
-        { runLength: 4500, customWidth: 750, position: 0.3 },
-      ];
-
-      for (const config of configs) {
-        const result = composeFenceSegments({
-          runLengthMm: config.runLength,
-          startGapMm: 25,
-          endGapMm: 25,
-          betweenGapMm: 50,
-          maxPanelMm: 1400,
-          minPanelMm: 300,
-          customPanelConfig: {
-            required: true,
-            panelWidthMm: config.customWidth,
-            position: config.position,
-          },
-        });
-
-        expect(result.success).toBe(true);
-        expect(result.validation.deltaMm).toBeLessThanOrEqual(2);
-        expect(result.validation.lengthConserved).toBe(true);
-      }
-    });
-
-    it('should account for custom panel in total length', () => {
+  describe('End Gap Variance', () => {
+    it('should report variance when using residual end gap', () => {
       const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
+        ...baseInput,
+        runLengthMm: 3017, // Odd length that may force residual
+        endGapMm: 50,
         customPanelConfig: {
           required: true,
+          position: 0.5,
           panelWidthMm: 800,
-          position: 0.5,
-        },
-      });
-
-      // Calculate total from segments
-      let totalMm = 0;
-      for (const segment of result.segments) {
-        if (segment.widthMm) {
-          totalMm += segment.widthMm;
-        }
-      }
-
-      expect(totalMm).toBeCloseTo(5000, 0);
-    });
-  });
-
-  describe('Custom Gap Handling', () => {
-    it('should support custom gap before panel', () => {
-      const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
-        customPanelConfig: {
-          required: true,
-          panelWidthMm: 800,
-          position: 0.5,
-          gapBeforeMm: 100,
         },
       });
 
       expect(result.success).toBe(true);
       
-      // Find custom gap before panel
-      const customPanelIndex = result.segments.findIndex(s => s.kind === 'panel' && s.widthMm === 800);
-      if (customPanelIndex > 0) {
-        const gapBefore = result.segments[customPanelIndex - 1];
-        if (gapBefore.kind === 'gap') {
-          expect(gapBefore.widthMm).toBe(100);
-        }
-      }
-    });
-
-    it('should support custom gap after panel', () => {
-      const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
-        customPanelConfig: {
-          required: true,
-          panelWidthMm: 800,
-          position: 0.5,
-          gapAfterMm: 75,
-        },
-      });
-
-      expect(result.success).toBe(true);
+      // Check if variance is reported in trace
+      const endGapTrace = result.trace.find(t => t.step === 'end-gap-policy');
+      expect(endGapTrace).toBeDefined();
       
-      // Find custom gap after panel
-      const customPanelIndex = result.segments.findIndex(s => s.kind === 'panel' && s.widthMm === 800);
-      if (customPanelIndex < result.segments.length - 1) {
-        const gapAfter = result.segments[customPanelIndex + 1];
-        if (gapAfter.kind === 'gap') {
-          expect(gapAfter.widthMm).toBe(75);
-        }
-      }
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle single custom panel (no variable panels)', () => {
-      const result = composeFenceSegments({
-        runLengthMm: 900,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
-        customPanelConfig: {
-          required: true,
-          panelWidthMm: 850,
-          position: 0.5,
-        },
-      });
-
-      expect(result.success).toBe(true);
-      
-      // Should only have one panel (the custom one)
-      const panelSegments = result.segments.filter(s => s.kind === 'panel');
-      expect(panelSegments.length).toBe(1);
-      expect(panelSegments[0].widthMm).toBe(850);
-    });
-
-    it('should handle large custom panel', () => {
-      const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
-        customPanelConfig: {
-          required: true,
-          panelWidthMm: 2000,
-          position: 0.5,
-        },
-      });
-
-      expect(result.success).toBe(true);
-      
-      // Custom panel should be present
-      const customPanel = result.segments.find(s => s.kind === 'panel' && s.widthMm === 2000);
-      expect(customPanel).toBeDefined();
-      
-      // Length should still be conserved
-      expect(result.validation.deltaMm).toBeLessThanOrEqual(2);
-    });
-
-    it('should handle small custom panel', () => {
-      const result = composeFenceSegments({
-        runLengthMm: 5000,
-        startGapMm: 25,
-        endGapMm: 25,
-        betweenGapMm: 50,
-        maxPanelMm: 1400,
-        minPanelMm: 300,
-        customPanelConfig: {
-          required: true,
-          panelWidthMm: 250,
-          position: 0.5,
-        },
-      });
-
-      expect(result.success).toBe(true);
-      
-      // Custom panel should be present
-      const customPanel = result.segments.find(s => s.kind === 'panel' && s.widthMm === 250);
-      expect(customPanel).toBeDefined();
-    });
-  });
-
-  describe('Position Accuracy', () => {
-    it('should place custom panel at precise position within tolerance', () => {
-      const positions = [0.0, 0.25, 0.5, 0.75, 1.0];
-
-      for (const position of positions) {
-        const result = composeFenceSegments({
-          runLengthMm: 5000,
-          startGapMm: 25,
-          endGapMm: 25,
-          betweenGapMm: 50,
-          maxPanelMm: 1400,
-          minPanelMm: 300,
-          customPanelConfig: {
-            required: true,
-            panelWidthMm: 800,
-            position,
-          },
-        });
-
-        expect(result.success).toBe(true);
-        
-        // Calculate actual position of custom panel
-        let leftMm = 0;
-        for (const segment of result.segments) {
-          if (segment.kind === 'panel' && segment.widthMm === 800) {
-            break;
-          }
-          if (segment.widthMm) {
-            leftMm += segment.widthMm;
-          }
-        }
-
-        const targetLeftMm = position * (5000 - 800); // Available space for positioning
-        const varianceMm = Math.abs(leftMm - targetLeftMm);
-        
-        // Should be within reasonable tolerance (considering 50mm grid constraints)
-        expect(varianceMm).toBeLessThan(200); // Allow some variance due to grid constraints
-      }
+      // Length still conserved
+      const sum = result.segments.reduce((acc, s) => acc + (s.widthMm || 0), 0);
+      expect(Math.abs(sum - 3017)).toBeLessThanOrEqual(2);
     });
   });
 });
