@@ -59,13 +59,22 @@ Preferred communication style: Simple, everyday language.
 **Panel Calculation System:**
 - Algorithm for mixed panel widths and precise gap spacing.
 - Supports raked panels and integrates gates with hardware-specific gap calculations.
-- Flexible gap tolerance with intelligent remainder distribution and scoring.
+- **End Gap Policy System** (`shared/calc/compose.ts`):
+  - Default: `LOCKED_OR_RESIDUAL` - tries exact requested end gap first, falls back to computed residual if impossible on 50mm grid
+  - Strict mode: `LOCKED_STRICT` via env flag `STRICT_END_GAP=1` - fails with UNREACHABLE if exact end gap impossible
+  - Always reports variance from requested end gap in response
+  - Provisional target rounded DOWN to nearest 50mm to prevent panel overflow
+- **Length Conservation**: Strict ±1mm tolerance for gate scenarios, ±2mm for non-gate
+- **Panel Equalization on 50mm Grid**:
+  - `equalizePanelsExact()` (`shared/calc/equalize.ts`): Distributes panels on fixed 50mm steps with min/max bounds
+  - `findFeasibleN()`: Searches for optimal panel count that achieves target on grid
+  - Ensures all panels are multiples of 50mm
+  - Integrated into `composeFenceSegments` with proper length accounting
 
 **Numeric Field SKU Selection System:**
 - **SKU Selector Service**: Extracts width from product codes, performs tolerance-based matching and snapping to standard sizes.
 - Integrates with numeric fields for automatic SKU selection, fallback to UI config defaults, and context filtering.
 - **Feature Flag HINGE_AUTO_ENABLED**: Controls hinge panel auto-sizing (default: '0' = disabled). When off, requires explicit hinge widths. Gate fields unaffected. UI banner shown when disabled. API endpoint `/api/feature-flags` exposes status.
-- **Panel Equalization**: `equalizePanels` function (`shared/calc/equalize.ts`) distributes remainder panels on 50mm grid with min/max bounds enforcement. Integrated into `calculatePanelLayout` with fallback to original algorithm. Ensures minimal variance between panel widths.
 
 ### Development Workflow
 

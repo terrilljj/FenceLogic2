@@ -1,0 +1,105 @@
+Goal:
+Make the frameless calculator stable and usable:
+- Repair shared/calc/compose.ts (broken block).
+- Default end-gap policy = LOCKED_OR_RESIDUAL (strict mode via env flag).
+- Gate never disappears when moved far right and flipped (mm-based anchor + clamping).
+- Panels on 50 mm grid; totals conserved.
+- All tests pass; QA report written.
+
+Tasks:
+
+1) Repair compose.ts with a clean single-pass composer
+Replace the broken end-gap loop with a deterministic function:
+
+export function composeSequence(params: {
+  sectionMm: number,
+  startGapMm: number,
+  betweenGapMm: number,
+  endGapRequestedMm: number,
+  mountMode: 'GLASS_TO_GLASS'|'POST'|'WALL',
+  hingeSide: 'LEFT'|'RIGHT',
+  gateSystem: 'MASTER'|'POLARIS',
+  gateWidthMm: number,
+  hingePanelWidthMm?: number,           // only if GLASS_TO_GLASS
+  minPanelMm: number,
+  maxPanelMm: number,
+  stepMm?: 50,
+  policy?: 'LOCKED_OR_RESIDUAL'|'LOCKED_STRICT',
+  anchor?: { hingeEdgeMm: number, side: 'LEFT'|'RIGHT' } // mm-based optional
+}): {
+  segments: Array<{kind:string, mm?:number, code?:string, note?:string}>,
+  trace: any[],
+  varianceEndGapMm: number,
+  residualUsed: boolean
+}
+
+Algorithm (no multi-loop):
+- Build system gaps (hingeGap, latchGap) from gateSystem constants.
+- policy = process.env.STRICT_END_GAP==='1' ? 'LOCKED_STRICT' : (params.policy ?? 'LOCKED_OR_RESIDUAL')
+- Compute fixed F WITHOUT between gaps:
+  F = startGap + (G2G? hingePanelWidthMm : 0) + hingeGap + gateWidthMm + latchGap
+- LOCKED attempt:
+  targetPanels = sectionMm - F - endGapRequestedMm
+  if targetPanels < 0 → throw 400 UNREACHABLE {reason:'fixed_exceeds_section'}
+  N_min = ceil(targetPanels/maxPanelMm); N_max = floor(targetPanels/minPanelMm)
+  Try N=N_min..N_max:
+    widths = equalizePanelsExact(targetPanels, N, 50, minPanelMm, maxPanelMm)
+    if success → residualUsed=false; varianceEndGap=0; goto COMPOSE
+  if policy==='LOCKED_STRICT' → throw 400 UNREACHABLE {reason:'no_50mm_solution_for_locked_end_gap'}
+- Fallback (RESIDUAL) for LOCKED_OR_RESIDUAL:
+  provisional = max(0, sectionMm - F)
+  Find N via findFeasibleN({targetMm:provisional, minPanelMm, maxPanelMm, stepMm:50})
+  widths = equalizePanelsExact(provisional, N, 50, minPanelMm, maxPanelMm)
+  residualEndGap = sectionMm - (startGap + sum(widths) + (N-1)*betweenGapMm + hingeGap + gateWidth + latchGap + (G2G? hingePanelWidthMm:0))
+  if residualEndGap < 0:
+    try N+1..N_max with recompute; if still <0 → throw 400 UNREACHABLE {reason:'residual_negative'}
+  residualUsed=true; varianceEndGap = residualEndGap - endGapRequestedMm
+
+COMPOSE:
+- Use mm-based gate anchor when provided:
+  clamp hingeEdgeMm to [startGap + (G2G?hingePanelWidth:0), sectionMm - endGap(actual) - (hingeGap+gateWidth+ latchGap)]
+  Do NOT derive gate from panel index; never drop gate.
+- Build sequence in order honoring hingeSide:
+  LEFT case (mirror for RIGHT):
+    [startGap] + [LEFT PANELS separated by betweenGap] +
+    [G2G? hingePanel] + [hingeGap] + [gate] + [latchGap] +
+    [RIGHT PANELS separated by betweenGap] + [endGap (requested or residual)]
+- BetweenGap ONLY between adjacent glass panels; NOT at hinge/latch interfaces.
+- Invariants (throw 400 LENGTH_INVARIANT if fail):
+  • If gate_required → exactly one 'gate'
+  • If GLASS_TO_GLASS → exactly one 'hinge-panel'; if POST/WALL → zero hinge-panels + one 'post-anchor' on hinge side
+  • |sum(all segments) - sectionMm| ≤ 1
+- Trace entries:
+  {source:'end-gap-policy', policy, residualUsed, varianceEndGapMm}
+  {source:'equalize', step:50, count:N, panelsMm: sum(widths)}
+  {source:'invariant-check', ok:true, total, section:sectionMm}
+
+2) Policy wiring
+- Resolver default policy for frameless: 'LOCKED_OR_RESIDUAL'
+- Respect STRICT_END_GAP=1 to force 'LOCKED_STRICT'
+- Always include policy + variance in trace
+
+3) Far-right flip bug
+- Ensure client keeps { hingeEdgeMm, side } in state; flip toggles only side.
+- On solve, call clamp before compose; never drop gate due to out-of-range anchor (fail with UNREACHABLE 'gate_exceeds_bounds' if impossible under STRICT)
+
+4) Tests
+- Fix the 8 failing tests by updating regression-visual-5000.spec.ts to expect success under default (residual may be used) and strict failure only when STRICT_END_GAP=1.
+- Keep strict tests in endgap-policy.spec.ts to assert proper 400 for infeasible locked gaps.
+- Ensure gate-anchor/gate-orientation tests still verify gate presence on flip and length conservation.
+
+5) Run & persist QA
+- Run: npm test  (all suites must pass)
+- Run: npx tsx server/scripts/qa-gate.ts
+- Ensure logs written to logs/ (json + md) and replit.md appended with policy + variance.
+
+Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: all suites passing? <yes/no> (totals)
+- compose.ts repaired and simplified (no multi-end-gap loop): <yes/no>
+- Default policy LOCKED_OR_RESIDUAL active; STRICT_END_GAP respected: <yes/no>
+- Gate preserved on far-right flip (no disappearance): <yes/no>
+- Panels 50 mm grid; length conserved ±1 mm: <yes/no>
+- QA report written: <filenames>
+- Files changed: (list)

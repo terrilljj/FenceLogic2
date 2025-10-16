@@ -90,6 +90,12 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
   let panelLayout: PanelLayout;
   let actualEndGapMm = endGapMm; // Use requested end gap (NOT residual)
   
+  // Policy tracking variables (for gate path)
+  let policy: EndGapPolicy = 'LOCKED_OR_RESIDUAL';
+  let lockedTried = false;
+  let residualUsed = false;
+  let varianceEndGapMm = 0;
+  
   if (gateConfig?.required) {
     // GATE REQUIRED PATH - STRICT LENGTH CONSERVATION
     trace.push({
@@ -129,157 +135,194 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       data: { fixedLR, F, R },
     });
     
-    // Step 2: Try different end gaps (requested ± 15mm) to find a solution
-    // With 50mm grid steps, exact requested end gap might not allow ±1mm precision
-    const endGapAttempts = [
-      endGapMm,           // Requested
-      endGapMm - 5,
-      endGapMm + 5,
-      endGapMm - 10,
-      endGapMm + 10,
-      endGapMm - 15,
-      endGapMm + 15,
-    ];
+    // Step 2: Determine end gap policy
+    policy = process.env.STRICT_END_GAP === '1' 
+      ? 'LOCKED_STRICT' 
+      : (input.endGapPolicy ?? 'LOCKED_OR_RESIDUAL');
     
-    let bestSolution: {
-      panelWidths: number[];
-      N: number;
-      actualEndGap: number;
-      delta: number;
-    } | null = null;
-    
-    for (const tryEndGap of endGapAttempts) {
-      if (tryEndGap < 0) continue; // Skip negative end gaps
-      
-      // Calculate target space for panels + between gaps
-      // Total = fixedLeftMm + panels + (N-1)*betweenGaps + fixedRightMm + tryEndGap
-      const panelsAndGapsTarget = R - fixedLR.fixedLeftMm - fixedLR.fixedRightMm - tryEndGap;
-      
-      if (panelsAndGapsTarget < 0) continue;
-      
-      trace.push({
-        step: `try-endgap-${tryEndGap}`,
-        data: { R, F, tryEndGap, requestedEndGap: endGapMm, panelsAndGapsTarget },
-      });
-    
-    // Step 3: Find N by trying different panel counts
-    // For each N: panelsTarget = panelsAndGapsTarget - (N-1)*betweenGap
     let panelWidths: number[] | null = null;
     let N: number = 0;
-    let lastError: string | null = null;
     
-    const N_min = Math.ceil(panelsAndGapsTarget / maxPanelMm);
-    const N_max = Math.floor(panelsAndGapsTarget / minPanelMm);
+    trace.push({
+      step: 'end-gap-policy',
+      data: { policy, requestedEndGap: endGapMm, strictEnvFlag: process.env.STRICT_END_GAP },
+    });
     
-    if (N_min > N_max) {
+    // Step 3: Try LOCKED mode (use requested end gap)
+    const targetPanelsLocked = R - F - endGapMm;
+    
+    if (targetPanelsLocked < 0) {
       return {
         success: false,
         segments: [],
         panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
         validation: {
-          sumMm: 0,
+          sumMm: F + endGapMm,
           expectedMm: runLengthMm,
-          deltaMm: runLengthMm,
+          deltaMm: runLengthMm - (F + endGapMm),
           gatePresent: true,
           lengthConserved: false,
         },
         errors: [{
           code: 'UNREACHABLE',
-          message: `Cannot fit panels in ${panelsAndGapsTarget}mm with constraints [${minPanelMm}-${maxPanelMm}]mm`,
-          details: { panelsAndGapsTarget, minPanelMm, maxPanelMm, N_min, N_max },
+          message: `Fixed components exceed section length`,
+          details: { reason: 'fixed_exceeds_section', F, endGapMm, R, targetPanelsLocked },
         }],
         trace,
       };
     }
     
-    // Try different N values, and for each N try micro-adjusting the panels target
-    // to find a solution that uses the requested end gap
-    for (let tryN = N_min; tryN <= N_max; tryN++) {
-      const betweenGapsTotal = (tryN - 1) * betweenGapMm;
-      const basePanelsTarget = panelsAndGapsTarget - betweenGapsTotal;
+    lockedTried = true;
+    
+    // Find feasible N for locked mode - account for between gaps
+    const N_min_locked = Math.ceil(targetPanelsLocked / maxPanelMm);
+    const N_max_locked = Math.floor(targetPanelsLocked / minPanelMm);
+    
+    trace.push({
+      step: 'locked-attempt',
+      data: { targetPanelsLocked, N_min_locked, N_max_locked },
+    });
+    
+    // Try each N to find one that works
+    for (let N_try = N_min_locked; N_try <= N_max_locked; N_try++) {
+      const panelsTarget = targetPanelsLocked - (N_try - 1) * betweenGapMm;
       
-      if (basePanelsTarget < tryN * minPanelMm || basePanelsTarget > tryN * maxPanelMm) {
+      if (panelsTarget < N_try * minPanelMm || panelsTarget > N_try * maxPanelMm) {
         continue;
       }
       
-      // Try adjusting panels target to find solution within ±1mm of runLength
-      // Start with exact target, then try ±50mm, ±100mm, etc.
-      const adjustments = [0, -50, 50, -100, 100, -150, 150, -200, 200];
+      const result = equalizePanelsExact(panelsTarget, N_try, 50, minPanelMm, maxPanelMm);
       
-      for (const adj of adjustments) {
-        const panelsTarget = basePanelsTarget + adj;
+      if ('widthsMm' in result) {
+        // Verify total with requested end gap
+        const panelSum = result.widthsMm.reduce((a, b) => a + b, 0);
+        const betweenGapsTotal = (N_try - 1) * betweenGapMm;
+        const total = startGapMm + panelSum + betweenGapsTotal + 
+                     fixedLR.hingeGapMm + (fixedLR.gateWidthMm || 0) + fixedLR.latchGapMm + 
+                     (fixedLR.hingePanelWidthMm || 0) + endGapMm;
         
-        if (panelsTarget < tryN * minPanelMm || panelsTarget > tryN * maxPanelMm) {
+        if (Math.abs(total - R) <= 1) {
+          panelWidths = result.widthsMm;
+          N = N_try;
+          actualEndGapMm = endGapMm;
+          varianceEndGapMm = 0;
+          residualUsed = false;
+          
+          trace.push({
+            step: 'locked-success',
+            data: { N, panelSum, total, delta: total - R },
+          });
+          break;
+        }
+      }
+    }
+    
+    // Step 4: If LOCKED failed, try RESIDUAL mode (if policy allows)
+    if (!panelWidths) {
+      if (policy === 'LOCKED_STRICT') {
+        return {
+          success: false,
+          segments: [],
+          panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
+          validation: {
+            sumMm: 0,
+            expectedMm: runLengthMm,
+            deltaMm: runLengthMm,
+            gatePresent: true,
+            lengthConserved: false,
+          },
+          errors: [{
+            code: 'UNREACHABLE',
+            message: `No 50mm grid solution exists for locked end gap ${endGapMm}mm`,
+            details: { reason: 'no_50mm_solution_for_locked_end_gap', endGapMm, targetPanelsLocked },
+          }],
+          trace,
+        };
+      }
+      
+      // RESIDUAL fallback: ignore end gap, fit panels, compute residual
+      trace.push({
+        step: 'residual-fallback',
+        data: { reason: 'locked_failed', policy },
+      });
+      
+      // Round DOWN to nearest 50mm to ensure panels on grid don't exceed space
+      const provisionalRaw = Math.max(0, R - F);
+      const provisionalTarget = Math.floor(provisionalRaw / 50) * 50;
+      
+      trace.push({
+        step: 'residual-provisional-target',
+        data: { provisionalRaw, provisionalTarget, roundedDown: provisionalRaw - provisionalTarget },
+      });
+      
+      const N_min_residual = Math.ceil(provisionalTarget / maxPanelMm);
+      const N_max_residual = Math.floor(provisionalTarget / minPanelMm);
+      
+      let residualSolution: { N: number; panelWidths: number[]; residualEndGap: number } | null = null;
+      
+      // Try each N to find one that gives non-negative residual end gap
+      for (let N_try = N_min_residual; N_try <= N_max_residual; N_try++) {
+        const panelsTargetResidual = provisionalTarget - (N_try - 1) * betweenGapMm;
+        
+        if (panelsTargetResidual < N_try * minPanelMm || panelsTargetResidual > N_try * maxPanelMm) {
           continue;
         }
         
-        const result = equalizePanelsExact(panelsTarget, tryN, 50, minPanelMm, maxPanelMm);
+        const resultResidual = equalizePanelsExact(panelsTargetResidual, N_try, 50, minPanelMm, maxPanelMm);
         
-        if ('widthsMm' in result) {
-          // Verify total length with REQUESTED end gap
-          // Note: fixedLR.fixedLeftMm already includes startGap
-          // Total = fixedLeftMm + panels + betweenGaps + fixedRightMm + endGap
-          const panelSum = result.widthsMm.reduce((a, b) => a + b, 0);
-          const totalWithRequestedGap = fixedLR.fixedLeftMm + panelSum + betweenGapsTotal + fixedLR.fixedRightMm + endGapMm;
-          const deltaFromRun = totalWithRequestedGap - R;
+        if ('widthsMm' in resultResidual) {
+          // Compute residual end gap
+          // F already includes all fixed components (start, hinge panel, hinge gap, gate, latch gap)
+          const panelSum = resultResidual.widthsMm.reduce((a, b) => a + b, 0);
+          const betweenGapsTotal = (N_try - 1) * betweenGapMm;
+          const residualEndGap = R - F - panelSum - betweenGapsTotal;
           
           trace.push({
-            step: `try-N-${tryN}-adj-${adj}`,
-            data: {
-              N: tryN,
-              betweenGapsTotal,
-              basePanelsTarget,
-              adjustment: adj,
-              panelsTarget,
-              panelSum,
-              totalWithRequestedGap,
-              requestedEndGap: endGapMm,
-              deltaFromRun,
-              accepted: Math.abs(deltaFromRun) <= 1,
-            },
+            step: `residual-try-N-${N_try}`,
+            data: { N_try, panelsTargetResidual, panelSum, betweenGapsTotal, residualEndGap, R, F },
           });
           
-          if (Math.abs(deltaFromRun) <= 1) {
-            panelWidths = result.widthsMm;
-            N = tryN;
-            actualEndGapMm = endGapMm; // Use requested end gap
+          if (residualEndGap >= 0) {
+            residualSolution = { N: N_try, panelWidths: resultResidual.widthsMm, residualEndGap };
             break;
           }
-        } else {
-          lastError = result.error;
         }
       }
       
-      if (panelWidths) break; // Found solution, exit N loop
+      if (!residualSolution) {
+        return {
+          success: false,
+          segments: [],
+          panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
+          validation: {
+            sumMm: 0,
+            expectedMm: runLengthMm,
+            deltaMm: runLengthMm,
+            gatePresent: true,
+            lengthConserved: false,
+          },
+          errors: [{
+            code: 'UNREACHABLE',
+            message: `Cannot achieve non-negative residual end gap`,
+            details: { reason: 'residual_negative', provisionalTarget },
+          }],
+          trace,
+        };
+      }
+      
+      panelWidths = residualSolution.panelWidths;
+      N = residualSolution.N;
+      actualEndGapMm = residualSolution.residualEndGap;
+      varianceEndGapMm = residualSolution.residualEndGap - endGapMm;
+      residualUsed = true;
+      
+      trace.push({
+        step: 'residual-success',
+        data: { N, panelSum: panelWidths.reduce((a,b) => a+b, 0), residualEndGap: residualSolution.residualEndGap, varianceEndGapMm },
+      });
     }
     
-    if (!panelWidths) {
-      return {
-        success: false,
-        segments: [],
-        panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
-        validation: {
-          sumMm: F,
-          expectedMm: runLengthMm,
-          deltaMm: runLengthMm - F,
-          gatePresent: true,
-          lengthConserved: false,
-        },
-        errors: [{
-          code: 'UNREACHABLE',
-          message: `No panel count in range [${N_min}-${N_max}] can hit target on 50mm grid`,
-          details: { panelsAndGapsTarget, lastError },
-        }],
-        trace,
-      };
-    }
-    
-    trace.push({
-      step: 'panel-count-solution',
-      data: { N, panelWidths },
-    });
-    
-    // Step 3: Split panels into left/right based on gate position
+    // Step 5: Split panels into left/right based on gate position
     const gatePosition = gateConfig.position !== undefined ? gateConfig.position : 0.5;
     const leftPanelCount = Math.floor(N * gatePosition);
     const rightPanelCount = N - leftPanelCount;
@@ -467,6 +510,11 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       lengthConserved,
     },
     actualEndGapMm: gateConfig?.required ? actualEndGapMm : undefined,
+    residualEndGapMm: gateConfig?.required && residualUsed ? actualEndGapMm : undefined,
+    varianceEndGapMm: gateConfig?.required ? varianceEndGapMm : undefined,
+    endGapPolicy: gateConfig?.required ? policy : undefined,
+    lockedTried: gateConfig?.required ? lockedTried : undefined,
+    residualUsed: gateConfig?.required ? residualUsed : undefined,
     errors: errors.length > 0 ? errors : undefined,
     trace,
   };
