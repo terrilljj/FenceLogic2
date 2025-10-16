@@ -321,7 +321,7 @@ export function AutoCalcPanelControls({
         {/* Panel Height */}
         <div className="bg-background rounded-md p-3 border">
           <Label className="text-sm font-medium mb-2 block">Panel Height</Label>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2">
             <Select
               value={panelHeight === 1000 ? "1000" : panelHeight === 1200 ? "1200" : "manual"}
               onValueChange={(value) => {
@@ -337,7 +337,7 @@ export function AutoCalcPanelControls({
                 }
               }}
             >
-              <SelectTrigger className="h-9 w-24" data-testid={`panel-height-selector-${spanId}`}>
+              <SelectTrigger className="h-9" data-testid={`panel-height-selector-${spanId}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -347,7 +347,7 @@ export function AutoCalcPanelControls({
               </SelectContent>
             </Select>
             {panelHeight !== 1000 && panelHeight !== 1200 && (
-              <>
+              <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   min={1000}
@@ -358,11 +358,11 @@ export function AutoCalcPanelControls({
                     const value = parseInt(e.target.value) || 1000;
                     updatePanelHeight(Math.max(1000, value));
                   }}
-                  className="h-9 w-20"
+                  className="h-9 flex-1"
                   data-testid={`panel-height-manual-${spanId}`}
                 />
-                <span className="text-sm text-muted-foreground">mm</span>
-              </>
+                <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
+              </div>
             )}
           </div>
         </div>
