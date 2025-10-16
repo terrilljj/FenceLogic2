@@ -77,7 +77,7 @@ pdfRouter.post('/designs/pdf', async (req: Request, res: Response) => {
       sections,
       packResult,
       opts: {
-        drawWatermark: false,
+        drawWatermark: true,  // Enable vertical branding on RHS
       },
     });
 

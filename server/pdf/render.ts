@@ -47,11 +47,12 @@ export function renderA4LandscapePdf(
       const section = sectionMap.get(placement.id);
       if (!section) return;
 
-      // Draw section title
-      if (section.title) {
-        doc.fontSize(10)
-          .fillColor('#000')
-          .text(section.title, placement.x, placement.y - 14, {
+      // Note: Section title is already in the header, no need to duplicate it here
+      // Only draw section-specific subtitle if different from main title
+      if (section.subtitle && section.subtitle !== documentTitle) {
+        doc.fontSize(8)
+          .fillColor('#666')
+          .text(section.subtitle, placement.x, placement.y - 12, {
             width: placement.w,
             align: 'left',
           });
@@ -139,21 +140,26 @@ function drawFooter(
       align: 'center',
     });
 
-  // Watermark on right edge if enabled
+  // Vertical branding on right edge if enabled
   if (drawWatermark) {
     doc.save();
-    doc.translate(842 - 12, 595 / 2);
+    // Position from right edge with safe margin
+    const xPos = 842 - 18;  // 18pt from right edge
+    const yPos = 595 / 2;   // Centered vertically
+    
+    doc.translate(xPos, yPos);
     doc.rotate(-90);
-    doc.fontSize(10)
-      .fillColor('#000', 1)
-      .text('FenceLogic By Barrier Dynamics', 0, 0, {
+    doc.fontSize(9)
+      .fillColor('#666')
+      .text('FenceLogic By Barrier Dynamics © 2025', -100, 0, {
+        width: 200,
         align: 'center',
       });
     doc.restore();
   } else {
     // Regular footer text
     doc.fontSize(9)
-      .fillColor('#000')
+      .fillColor('#666')
       .text('FenceLogic By Barrier Dynamics', 18, y, {
         width: 806,
         align: 'right',
