@@ -178,3 +178,22 @@ export function equalizePanelsForTarget(input: EqualizePanelsInput): EqualizePan
     deltaMm,
   };
 }
+
+export interface CustomPanelFixed {
+  customPanelMm: number;          // width
+  customGapsMm: number;           // gapBefore + gapAfter
+  fixedLeftMm: number;            // for position-based split; for now compute as 0 (Phase 1 keeps simple insertion later)
+  fixedRightMm: number;
+}
+
+export function computeFixedCustomPanel(
+  custom: { required: boolean; panelWidthMm: number; gapBeforeMm?: number; gapAfterMm?: number } | undefined,
+  defaultHeightMm: number
+): CustomPanelFixed {
+  if (!custom?.required) {
+    return { customPanelMm: 0, customGapsMm: 0, fixedLeftMm: 0, fixedRightMm: 0 };
+  }
+  const width = Math.max(0, Math.round(custom.panelWidthMm));
+  const gaps = Math.max(0, Math.round((custom.gapBeforeMm ?? 0) + (custom.gapAfterMm ?? 0)));
+  return { customPanelMm: width, customGapsMm: gaps, fixedLeftMm: 0, fixedRightMm: 0 };
+}
