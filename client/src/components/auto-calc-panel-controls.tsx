@@ -249,29 +249,50 @@ export function AutoCalcPanelControls({
           </Select>
         </div>
 
-        {/* Between Panel Gap - Always visible with stepper */}
+        {/* Gap Mode */}
         <div className="bg-background rounded-md p-3 border">
-          <Label className="text-sm font-medium mb-2 block">Between Panel Gap</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={6}
-              max={30}
-              step={1}
-              value={interPanelGaps[0] || 10}
-              onChange={(e) => {
-                const value = parseInt(e.target.value) || 10;
-                // Apply to all gaps
-                const newGaps = interPanelGaps.map(() => value);
-                onUpdate({ ...config, interPanelGaps: newGaps });
-              }}
-              className="h-9 w-full"
-              data-testid={`between-panel-gap-${spanId}`}
-            />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">Panels auto-resize when gap changes</p>
+          <Label className="text-sm font-medium mb-2 block">Gap Mode</Label>
+          <Select
+            value={gapMode}
+            onValueChange={(value) => onUpdate({ ...config, gapMode: value as "auto" | "manual" })}
+          >
+            <SelectTrigger className="h-9" data-testid={`gap-mode-${spanId}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Auto (with toggle)</SelectItem>
+              <SelectItem value="manual">Manual (fixed value)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+      </div>
+
+      {/* Gap Control - Shows different UI based on mode */}
+      <div className="bg-background rounded-md p-3 border">
+        <Label className="text-sm font-medium mb-2 block">Between Panel Gap</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={6}
+            max={30}
+            step={1}
+            value={interPanelGaps[0] || 10}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || 10;
+              // Apply to all gaps
+              const newGaps = interPanelGaps.map(() => value);
+              onUpdate({ ...config, interPanelGaps: newGaps });
+            }}
+            className="h-9 w-full"
+            data-testid={`between-panel-gap-${spanId}`}
+          />
+          <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          {gapMode === "auto" 
+            ? "Use up/down arrows to adjust - panels auto-resize to fit" 
+            : "Set fixed gap value - panels auto-resize to fit"}
+        </p>
       </div>
 
       {/* Apply Type to All */}
