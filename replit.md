@@ -70,6 +70,10 @@ Preferred communication style: Simple, everyday language.
   - `findFeasibleN()`: Searches for optimal panel count that achieves target on grid
   - Ensures all panels are multiples of 50mm
   - Integrated into `composeFenceSegments` with proper length accounting
+- **Panel Layout Scoring** (`shared/panelCalculations.ts`):
+  - Strongly prefers fewer panels (penalty: 500 per panel) to maintain layout stability
+  - Accepts up to 100mm gap variance from equalization (50mm grid constraint)
+  - Prioritizes configurations with required components (gates, custom panels) first
 
 **Numeric Field SKU Selection System:**
 - **SKU Selector Service**: Extracts width from product codes, performs tolerance-based matching and snapping to standard sizes.

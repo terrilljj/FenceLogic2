@@ -1,11 +1,11 @@
-# QA Report - Gate Disappearance Fix & EndGap Policy Implementation
+# QA Report - Gate Disappearance Fix & Panel Layout Stability
 
 **Date:** October 16, 2025  
 **Status:** ✅ All Tests Passing (57/57)
 
 ## Summary
 
-Successfully fixed critical gate disappearance bug and implemented EndGap Policy system with comprehensive testing and API support.
+Successfully fixed critical gate disappearance bug, implemented EndGap Policy system, and resolved panel layout instability when changing gap preferences.
 
 ## Issues Fixed
 
@@ -155,17 +155,39 @@ All configurations maintain strict length conservation:
 - `server/scripts/test-r2.ts`
 - `server/scripts/debug-endgap.ts`
 
+### 3. Panel Layout Stability Fix
+
+**Problem:** Panel configuration would change from 2 panels to 3 panels when adjusting gap preferences (e.g., changing from 50mm to 33mm target gap).
+
+**Root Cause:** 
+- Panel count penalty (100 per panel) was too low compared to gap difference penalty (10 per mm)
+- Gap tolerance (50mm) was too strict for panel equalization variance on 50mm grid
+- For large gap differences (e.g., 65mm actual vs 33mm target = 32mm × 10 = 320 penalty), adding a 3rd panel (100 penalty) was scored better
+
+**Solution:**
+- Increased panel count penalty from 100 to 500 to strongly prefer fewer panels
+- Increased gap tolerance from 50mm to 100mm to accept panel equalization variance
+- Scoring now ensures 2-panel layouts remain stable regardless of gap preference changes
+
+**Files Modified:**
+- `shared/panelCalculations.ts` - Updated scoring weights and gap tolerance
+
+**Verified Behavior:**
+- 5000mm section with gate now maintains 2×1300mm standard panels
+- Configuration stable when gap preference changes from 50mm to 33mm
+- Actual gaps (65mm) result from 50mm grid constraint, not layout instability
+
 ## Recommendations
 
 1. ✅ Gate disappearance bug fully resolved
 2. ✅ EndGap policy implemented and tested
-3. ✅ API endpoints functional and documented
-4. 🔄 Clean up debug scripts (see list above)
-5. 🔄 Final architect review recommended
+3. ✅ Panel layout stability fixed
+4. ✅ API endpoints functional and documented
+5. ✅ Architect review completed
+6. 🔄 Clean up debug scripts (see list above)
 
 ## Next Steps
 
 1. Clean up temporary debug files
-2. Final architect review of complete implementation
-3. Consider adding UI hints using endgap advice endpoint
-4. Document policy behavior in user-facing documentation
+2. Consider adding UI hints using endgap advice endpoint
+3. Document policy behavior in user-facing documentation
