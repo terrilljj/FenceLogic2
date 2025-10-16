@@ -1,0 +1,63 @@
+Task: Add a reusable QA runner that validates gate + hinge behavior (auto-sizing, mount-mode flip, gap math) and saves a timestamped report to logs/, plus appends a short summary to replit.md. Then run it now and return the “Done checklist”.
+
+Create:
+1) File: server/scripts/qa-gate.ts
+   Purpose: Run programmatic checks against the app (unit + debug API) and produce:
+     - JSON report at logs/qa-gate-<ISO>.json
+     - Markdown summary at logs/qa-gate-<ISO>.md
+   It should:
+   a) Print “QA START” with ISO timestamp.
+   b) Run `npm test` programmatically (child_process). Capture pass/fail summary by file.
+   c) Hit the following endpoints via fetch (node 18+):
+      - GET /api/debug/ui-config/pool_fence/frameless/coverage → summarize: selectedPaths count, deadPaths, deadSubcategories.
+      - POST /api/debug/resolve-trace with these selections (use the public variant key for frameless pool fence; if your variant key differs, detect it or set a constant at top):
+        S1 (no gate): { mount_mode:"GLASS_TO_GLASS", glass_thickness:"12mm", top_rail:false }
+        S2 (gate G2G left): { mount_mode:"GLASS_TO_GLASS", hinge_side:"LEFT", gate_system:"Master Range", gate_width_mm:1000, glass_thickness:"12mm", top_rail:false }
+        S3 (gate POST right): { mount_mode:"POST", hinge_side:"RIGHT", gate_system:"Master Range", gate_width_mm:1000, glass_thickness:"12mm", top_rail:false }
+        S4 (flip POST→G2G): first POST (RIGHT) then same payload with mount_mode="GLASS_TO_GLASS" (RIGHT)
+   d) For each response, run assertions:
+      - No negative gaps or NaN in computed segments (if segments not exposed, at least ensure total inferred length is within tolerance: |sum(panels + gaps) − runLength| ≤ 5mm when runLength present; otherwise skip).
+      - S2 must contain a “hinge-panel” trace entry (or hinge subcategory like “Hinge Panels Master”) and must NOT contain a “post-anchor”.
+      - S3 must contain a “post-anchor” trace entry and MUST NOT contain a “hinge-panel”.
+      - S4 flip must not change hinge_side value; and gate/latch gaps must remain within system spec (use GateSystems constants if exported; otherwise assert they are >0 and <50mm).
+   e) Collect failures into an array with {caseId, reason, details}.
+   f) Save full raw payloads + assertion results to logs/qa-gate-<ISO>.json.
+   g) Create logs/qa-gate-<ISO>.md with a human summary:
+        - Timestamp
+        - Tests: pass/fail counts by file
+        - Coverage: deadPaths N, deadSubcategories [names]
+        - S2: hinge-panel present? yes/no; post-anchor present? yes/no; finalCodes count
+        - S3: post-anchor present? yes/no; hinge-panel present? yes/no; finalCodes count
+        - S4: flip stable? yes/no; gap sanity ok? yes/no
+        - Failures (if any): bullet list
+   h) Console-print a compact “Done checklist” (see below).
+
+2) Scripts:
+   - If allowed, add to package.json:
+       "qa:gate": "tsx server/scripts/qa-gate.ts"
+     If you cannot edit package.json, print the exact diff needed and provide a fallback run command:
+       npx tsx server/scripts/qa-gate.ts
+
+3) Replit memory appendix:
+   - Open (or create) replit.md and append a section at bottom:
+     "## QA Session <ISO>\n- Gate/hinge: <PASS/FAIL>, deadPaths: <n>, deadSubcats: <list or none>\n- S2 hinge-panel: <yes/no>, S3 post-anchor: <yes/no>, S4 flip stable: <yes/no>\n"
+
+4) Run now:
+   - Execute the QA script once.
+   - Return the “Done checklist” in chat.
+
+Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: <passed>/<total> by file (resolve.spec, hinge.spec, gate-orientation.spec if present)
+- Coverage: deadPaths=<n>, deadSubcategories=[...]
+- S2 (G2G LEFT): hinge-panel in trace? <yes/no>; post-anchor? <yes/no>; finalCodes=<n>
+- S3 (POST RIGHT): post-anchor? <yes/no>; hinge-panel? <yes/no>; finalCodes=<n>
+- S4 (flip POST→G2G RIGHT): hinge_side preserved? <yes/no>; gap sanity ok? <yes/no>
+- Report files: logs/qa-gate-<ISO>.json, logs/qa-gate-<ISO>.md
+- Next actions (only if failures): 1–3 bullets with minimal patch proposals
+
+Constraints:
+- Do not refactor unrelated code.
+- If any endpoint path or variant differs, detect and adjust locally in the QA script (keep constants at top).
+- Keep output concise.

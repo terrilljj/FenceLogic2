@@ -1,0 +1,235 @@
+{
+  "timestamp": "2025-10-16T00-32-22-407Z",
+  "tests": [
+    {
+      "file": "resolve.spec.ts",
+      "passed": 6,
+      "total": 6
+    }
+  ],
+  "coverage": {
+    "selectedPathsCount": 0,
+    "deadPaths": [],
+    "deadSubcategories": [
+      "Gate Master",
+      "Gate Polaris/Atlantic",
+      "Hinge Panels Master",
+      "Hinge Panels Polaris/Atlantic"
+    ]
+  },
+  "selections": {
+    "S1": {
+      "request": {
+        "glass_thickness": "12mm",
+        "top_rail": false
+      },
+      "response": {
+        "variant": "glass-pool-spigots",
+        "selection": {
+          "glass_thickness": "12mm",
+          "top_rail": false
+        },
+        "trace": [
+          {
+            "source": "subcategory",
+            "key": "allowedSubcategories: Spigots, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, Standoffs",
+            "codes": [
+              "TEST-POOL-001",
+              "GP-1200-1000-12",
+              "TEST-BALUSTRADE-001",
+              "TEST-HAMPTONS-001"
+            ]
+          }
+        ],
+        "finalCodes": [
+          "TEST-POOL-001",
+          "GP-1200-1000-12",
+          "TEST-BALUSTRADE-001",
+          "TEST-HAMPTONS-001"
+        ],
+        "total": 4
+      },
+      "assertions": [
+        "✅ Valid response received"
+      ]
+    },
+    "S2": {
+      "request": {
+        "mount_mode": "GLASS_TO_GLASS",
+        "hinge_side": "LEFT",
+        "gate_system": "Master Range",
+        "gate_width_mm": 1000,
+        "glass_thickness": "12mm",
+        "top_rail": false
+      },
+      "response": {
+        "variant": "glass-pool-spigots",
+        "selection": {
+          "mount_mode": "GLASS_TO_GLASS",
+          "hinge_side": "LEFT",
+          "gate_system": "Master Range",
+          "gate_width_mm": 1000,
+          "glass_thickness": "12mm",
+          "top_rail": false
+        },
+        "trace": [
+          {
+            "source": "subcategory",
+            "key": "allowedSubcategories: Spigots, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, Standoffs",
+            "codes": [
+              "TEST-POOL-001",
+              "GP-1200-1000-12",
+              "TEST-BALUSTRADE-001",
+              "TEST-HAMPTONS-001"
+            ]
+          }
+        ],
+        "finalCodes": [
+          "TEST-POOL-001",
+          "GP-1200-1000-12",
+          "TEST-BALUSTRADE-001",
+          "TEST-HAMPTONS-001"
+        ],
+        "total": 4
+      },
+      "assertions": [
+        "✅ Hinge-panel present in trace",
+        "✅ Post-anchor correctly absent"
+      ]
+    },
+    "S3": {
+      "request": {
+        "mount_mode": "POST",
+        "hinge_side": "RIGHT",
+        "gate_system": "Master Range",
+        "gate_width_mm": 1000,
+        "glass_thickness": "12mm",
+        "top_rail": false
+      },
+      "response": {
+        "variant": "glass-pool-spigots",
+        "selection": {
+          "mount_mode": "POST",
+          "hinge_side": "RIGHT",
+          "gate_system": "Master Range",
+          "gate_width_mm": 1000,
+          "glass_thickness": "12mm",
+          "top_rail": false
+        },
+        "trace": [
+          {
+            "source": "subcategory",
+            "key": "allowedSubcategories: Spigots, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, Standoffs",
+            "codes": [
+              "TEST-POOL-001",
+              "GP-1200-1000-12",
+              "TEST-BALUSTRADE-001",
+              "TEST-HAMPTONS-001"
+            ]
+          }
+        ],
+        "finalCodes": [
+          "TEST-POOL-001",
+          "GP-1200-1000-12",
+          "TEST-BALUSTRADE-001",
+          "TEST-HAMPTONS-001"
+        ],
+        "total": 4
+      },
+      "assertions": [
+        "❌ Post-anchor NOT found for POST mount",
+        "❌ Hinge-panel should not be present for POST mount"
+      ]
+    },
+    "S4": {
+      "request": {
+        "mount_mode": "GLASS_TO_GLASS",
+        "hinge_side": "RIGHT",
+        "gate_system": "Master Range",
+        "gate_width_mm": 1000,
+        "glass_thickness": "12mm",
+        "top_rail": false
+      },
+      "response": {
+        "variant": "glass-pool-spigots",
+        "selection": {
+          "mount_mode": "GLASS_TO_GLASS",
+          "hinge_side": "RIGHT",
+          "gate_system": "Master Range",
+          "gate_width_mm": 1000,
+          "glass_thickness": "12mm",
+          "top_rail": false
+        },
+        "trace": [
+          {
+            "source": "subcategory",
+            "key": "allowedSubcategories: Spigots, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, Standoffs",
+            "codes": [
+              "TEST-POOL-001",
+              "GP-1200-1000-12",
+              "TEST-BALUSTRADE-001",
+              "TEST-HAMPTONS-001"
+            ]
+          }
+        ],
+        "finalCodes": [
+          "TEST-POOL-001",
+          "GP-1200-1000-12",
+          "TEST-BALUSTRADE-001",
+          "TEST-HAMPTONS-001"
+        ],
+        "total": 4
+      },
+      "assertions": [
+        "✅ Flip stable (hinge_side preserved in request)",
+        "✅ Gap sanity check passed (no API errors)"
+      ]
+    }
+  },
+  "failures": [
+    {
+      "caseId": "S3",
+      "reason": "Post-anchor not found for POST-mounted gate",
+      "details": [
+        {
+          "source": "subcategory",
+          "key": "allowedSubcategories: Spigots, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, Standoffs",
+          "codes": [
+            "TEST-POOL-001",
+            "GP-1200-1000-12",
+            "TEST-BALUSTRADE-001",
+            "TEST-HAMPTONS-001"
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "S3",
+      "reason": "Hinge-panel incorrectly present for POST mount",
+      "details": [
+        {
+          "source": "subcategory",
+          "key": "allowedSubcategories: Spigots, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, Standoffs",
+          "codes": [
+            "TEST-POOL-001",
+            "GP-1200-1000-12",
+            "TEST-BALUSTRADE-001",
+            "TEST-HAMPTONS-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalTests": 6,
+    "passedTests": 6,
+    "deadPathsCount": 0,
+    "deadSubcategoriesCount": 4,
+    "s2HingePanelPresent": true,
+    "s2PostAnchorPresent": false,
+    "s3PostAnchorPresent": false,
+    "s3HingePanelPresent": true,
+    "s4FlipStable": true,
+    "s4GapSanity": true
+  }
+}
