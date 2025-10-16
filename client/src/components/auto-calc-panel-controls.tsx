@@ -12,6 +12,7 @@ interface AutoCalcConfig {
   maxPanelWidth: number;
   panelHeight: number;
   glassType: "12mm" | "15mm";
+  gapMode: "auto" | "manual"; // Auto-calc gaps or user-defined
   interPanelGaps: number[]; // Exact gap values between panels
   panelTypes: PanelType[]; // Type for each panel position
   panelWidthOverrides?: { [index: number]: number }; // Optional width overrides for specific panels
@@ -48,11 +49,12 @@ export function AutoCalcPanelControls({
     maxPanelWidth: 1200,
     panelHeight: 1500,
     glassType: "12mm" as const,
+    gapMode: "auto" as const,
     interPanelGaps: [10], // One gap for 2 panels by default
     panelTypes: ["standard", "standard"],
   };
 
-  const { maxPanelWidth, panelHeight, glassType, interPanelGaps, panelTypes, panelWidthOverrides } = config;
+  const { maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides } = config;
   const numPanels = panelTypes.length;
 
   // Calculate auto panel widths
@@ -247,9 +249,28 @@ export function AutoCalcPanelControls({
           </Select>
         </div>
 
-        {/* Between Panel Gap */}
+        {/* Gap Mode */}
         <div className="bg-background rounded-md p-3 border">
-          <Label className="text-sm font-medium mb-2 block">Between Panel Gap</Label>
+          <Label className="text-sm font-medium mb-2 block">Gap Mode</Label>
+          <Select
+            value={gapMode}
+            onValueChange={(value) => onUpdate({ ...config, gapMode: value as "auto" | "manual" })}
+          >
+            <SelectTrigger className="h-9" data-testid={`gap-mode-${spanId}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Auto Calculate</SelectItem>
+              <SelectItem value="manual">User Defined</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Manual Gap Control - Only show when gap mode is manual */}
+      {gapMode === "manual" && (
+        <div className="bg-background rounded-md p-3 border">
+          <Label className="text-sm font-medium mb-2 block">Set All Gaps</Label>
           <div className="flex items-center gap-2">
             <Input
               type="number"
@@ -269,7 +290,7 @@ export function AutoCalcPanelControls({
             <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Apply Type to All */}
       <div className="bg-background rounded-md p-3 border">
@@ -314,8 +335,8 @@ export function AutoCalcPanelControls({
       <div className="space-y-3">
         {panelTypes.map((type, index) => (
           <div key={index} className="space-y-2">
-            {/* Gap before this panel (except first) */}
-            {index > 0 && (
+            {/* Gap before this panel (except first) - Only show in manual mode */}
+            {index > 0 && gapMode === "manual" && (
               <div className="flex items-center gap-2 bg-background rounded-md p-2">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Gap {index}:</Label>
                 <Input

@@ -1680,6 +1680,7 @@ export function SpanConfigPanel({
                         maxPanelWidth: 1200,
                         panelHeight: 1500,
                         glassType: "12mm",
+                        gapMode: "auto",
                         interPanelGaps: [10],
                         panelTypes: ["standard", "standard"],
                       } : undefined,
