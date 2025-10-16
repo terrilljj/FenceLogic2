@@ -973,8 +973,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         const latchWidth = 10;
         const latchHeight = 24;
         
-        // Determine hinge side based on flipped config (inverted logic)
-        const hingeOffset = gateConfig?.flipped ? hingeWidth / 2 : scaledPanelWidth - hingeWidth / 2;
+        // Determine hinge side based on gate type and configuration
+        let hingeOffset: number;
+        if (gateConfig?.hingeFrom === "wall") {
+          // Wall-mounted gate: hinge position based on which wall (position)
+          // Position 0 = left wall, so hinges on left
+          // Position 1 = right wall, so hinges on right
+          hingeOffset = gateConfig.position === 0 ? hingeWidth / 2 : scaledPanelWidth - hingeWidth / 2;
+        } else {
+          // Glass-to-glass gate: use flipped config (inverted logic)
+          hingeOffset = gateConfig?.flipped ? hingeWidth / 2 : scaledPanelWidth - hingeWidth / 2;
+        }
         
         // Top hinge
         ctx.fillStyle = "#4b5563";
@@ -1011,7 +1020,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         );
         
         // Latch on opposite side at top ¼ of panel
-        const latchOffset = gateConfig?.flipped ? scaledPanelWidth - latchWidth / 2 : latchWidth / 2;
+        let latchOffset: number;
+        if (gateConfig?.hingeFrom === "wall") {
+          // Wall-mounted gate: latch on opposite side from hinges
+          latchOffset = gateConfig.position === 0 ? scaledPanelWidth - latchWidth / 2 : latchWidth / 2;
+        } else {
+          // Glass-to-glass gate: use flipped config
+          latchOffset = gateConfig?.flipped ? scaledPanelWidth - latchWidth / 2 : latchWidth / 2;
+        }
         ctx.fillStyle = "#4b5563";
         ctx.fillRect(
           currentX + latchOffset - latchWidth / 2,

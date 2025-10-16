@@ -1,0 +1,81 @@
+Goal:
+Correct hinge orientation and panel insertion when the gate mount mode is POST or WALL (vs GLASS_TO_GLASS). Currently, after switching to POST-mounted, hinges appear on the wrong side and a hinge glass panel may still be inserted incorrectly.
+
+Additions/Changes:
+1) Core modeling (shared)
+   - Create shared/calc/gate.ts with:
+     export type MountMode = 'GLASS_TO_GLASS' | 'POST' | 'WALL';
+     export interface GatePlacementInput {
+       runLengthMm: number;
+       startGapMm: number;
+       endGapMm: number;
+       betweenGapMm: number;
+       gateWidthMm: number;
+       hingeSide: 'LEFT' | 'RIGHT';   // relative to section left→right
+       mountMode: MountMode;
+       system: GateSpec;              // reuse from shared/calc/hinge.ts
+     }
+     export interface GatePlacementResult {
+       segments: Array<
+         | { kind:'gap', mm:number }
+         | { kind:'std-panels', totalMm:number }     // placeholder: caller fills actual std distribution
+         | { kind:'hinge-panel', widthMm:number }    // only for GLASS_TO_GLASS
+         | { kind:'post' }                           // only for POST/WALL on hinge side or latch side when applicable
+         | { kind:'gate', widthMm:number }
+         | { kind:'latch-gap', mm:number }
+       >;
+       hingeSide: 'LEFT'|'RIGHT';
+       mountMode: MountMode;
+       notes?: string[];
+     }
+
+   - Implement computeGateScaffold(input: GatePlacementInput): GatePlacementResult that returns the *scaffold* ordering for each mount mode:
+     • GLASS_TO_GLASS:
+         [startGap] + [std-panels (left)] + [HINGE-PANEL @ hingeSide] + [hingeGap] + [GATE] + [latchGap] + [std-panels (right)] + [endGap]
+       (Let the caller decide how to split std-panels left/right. Keep hinge/latch gaps from system.hingeGapMm/latchGapMm)
+     • POST:
+         [startGap] + [std-panels (left)] + [POST @ hingeSide] + [hingeGap] + [GATE] + [latchGap] + [std-panels (right)] + [endGap]
+       (No hinge glass panel at all. Ensure the POST is on the *declared* hingeSide.)
+     • WALL:
+         same as POST, but the hinge anchor element is {kind:'post'} labelled in notes:'wall-anchor', and you may reuse the same renderer.
+
+   - Important: hingeSide is always interpreted relative to the section’s left→right, not the observer.
+   - Add unit-safe helpers to mirror the scaffold when hingeSide === 'RIGHT' (so ordering correct without duplicating logic).
+
+2) Resolver wiring (server/services/resolve.ts)
+   - After standard panel distribution is computed, call computeGateScaffold(...) to determine element order.
+   - If mountMode === 'GLASS_TO_GLASS':
+       * Use chooseHingePanelWidth(...) to get the hinge panel SKU for the hingeSide.
+       * Insert {kind:'hinge-panel'} with that width; add its SKU to BOM and add a trace entry source:'subcategory' with the proper hinge panel subcategory.
+     Else (POST or WALL):
+       * Do NOT insert a hinge panel SKU.
+       * Insert {kind:'post'} at the hingeSide position and add the correct post SKU from UI-config mapping (e.g., Post 50x50/Pass-thru if applicable). Add a trace entry indicating 'post-anchor'.
+   - Ensure latch gap and hinge gap values come from the selected system (Master/Polaris) regardless of mount mode.
+
+3) Visualization (client)
+   - Update the elevation renderer to:
+     * Draw a POST icon/element on the hingeSide for mountMode POST/WALL (instead of a hinge-panel glass).
+     * Keep the GATE located between hingeGap and latchGap segments.
+     * Honor LEFT/RIGHT flips (mirror layout).
+   - Do not change unrelated visuals; keep canvas code minimal.
+
+4) Tests (Vitest)
+   - Add server/tests/gate-orientation.spec.ts with cases:
+     A) GLASS_TO_GLASS, hingeSide='LEFT' → scaffold places hinge-panel left of the gate; no POST segments.
+     B) POST, hingeSide='LEFT' → scaffold places POST left of the gate; no hinge-panel segments.
+     C) POST, hingeSide='RIGHT' → scaffold places POST right of the gate; no hinge-panel segments.
+     D) WALL behaves like POST but notes include 'wall-anchor'.
+     E) Switching mountMode G2G→POST preserves hingeSide and moves anchor correctly (no inversion).
+   - Keep tests fast; do not hit DB. Use pure functions and small fixtures.
+
+Constraints:
+- Do not rename folders. Keep all new code under shared/calc and server/tests.
+- Do not change existing API shapes.
+- TypeScript must compile; app must start.
+- Existing tests must remain green.
+
+Acceptance criteria:
+- New tests pass.
+- In manual QA, selecting POST-mounted gate with hingeSide LEFT shows post on left, gate next, then latch gap and adjacent glass on right (and vice versa for RIGHT).
+- No hinge glass panel is created for POST/WALL; GLASS_TO_GLASS still uses hinge panel chooser.
+- Resolve-trace includes a clear entry for the anchor type: 'hinge-panel' (G2G) or 'post-anchor' (POST/WALL).
