@@ -46,8 +46,6 @@ export function AutoCalcPanelControls({
   spanId,
   onUpdate
 }: AutoCalcPanelControlsProps) {
-  const defaultPanelWidth = 1200;
-  
   // Initialize with default config if not exists
   const config = autoCalcConfig || {
     layoutMode: "auto" as const,
@@ -63,14 +61,14 @@ export function AutoCalcPanelControls({
   const numPanels = panelTypes.length;
   const gapSize = interPanelGaps[0] || 10;
 
-  // Auto-calculate number of panels that fit with default panel width
+  // Auto-calculate number of panels that fit with max panel width
   const autoCalculatePanelCount = (): number => {
     const availableLength = spanLength - leftGapSize - rightGapSize;
     let numPanels = 1;
     
     while (numPanels <= 20) {
       const totalGaps = (numPanels - 1) * gapSize;
-      const totalPanelWidth = numPanels * defaultPanelWidth;
+      const totalPanelWidth = numPanels * maxPanelWidth;
       if (totalPanelWidth + totalGaps <= availableLength) {
         numPanels++;
       } else {
@@ -89,7 +87,7 @@ export function AutoCalcPanelControls({
       // Use individual overrides
       const panelWidths: number[] = [];
       for (let i = 0; i < numPanels; i++) {
-        panelWidths.push(panelWidthOverrides[i] || defaultPanelWidth);
+        panelWidths.push(panelWidthOverrides[i] || maxPanelWidth);
       }
       return panelWidths;
     }
