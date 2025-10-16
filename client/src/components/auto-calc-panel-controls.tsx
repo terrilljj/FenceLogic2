@@ -2,20 +2,22 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Settings2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-type PanelType = "standard" | "gate" | "hinge" | "raked";
+type PanelType = "standard" | "gate" | "hinge";
+type LayoutMode = "auto" | "manual-qty" | "manual-individual";
 
 interface AutoCalcConfig {
+  layoutMode?: LayoutMode;
   maxPanelWidth: number;
   panelHeight: number;
   glassType: "12mm" | "15mm";
-  gapMode: "auto" | "manual"; // Auto-calc gaps or user-defined
-  interPanelGaps: number[]; // Exact gap values between panels
-  panelTypes: PanelType[]; // Type for each panel position
-  panelWidthOverrides?: { [index: number]: number }; // Optional width overrides for specific panels
+  gapMode: "auto" | "manual";
+  interPanelGaps: number[];
+  panelTypes: PanelType[];
+  panelWidthOverrides?: { [index: number]: number };
   gateConfigs?: Array<{
     position: number;
     widthMm?: number;
@@ -44,72 +46,60 @@ export function AutoCalcPanelControls({
   spanId,
   onUpdate
 }: AutoCalcPanelControlsProps) {
+  const defaultPanelWidth = 1200;
+  
   // Initialize with default config if not exists
   const config = autoCalcConfig || {
+    layoutMode: "auto" as const,
     maxPanelWidth: 1200,
     panelHeight: 1500,
     glassType: "12mm" as const,
     gapMode: "auto" as const,
-    interPanelGaps: [10], // One gap for 2 panels by default
+    interPanelGaps: [10],
     panelTypes: ["standard", "standard"],
   };
 
-  const { maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides } = config;
+  const { layoutMode = "auto", maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides } = config;
   const numPanels = panelTypes.length;
+  const gapSize = interPanelGaps[0] || 10;
 
-  // Calculate auto panel widths
+  // Auto-calculate number of panels that fit with default panel width
+  const autoCalculatePanelCount = (): number => {
+    const availableLength = spanLength - leftGapSize - rightGapSize;
+    let numPanels = 1;
+    
+    while (numPanels <= 20) {
+      const totalGaps = (numPanels - 1) * gapSize;
+      const totalPanelWidth = numPanels * defaultPanelWidth;
+      if (totalPanelWidth + totalGaps <= availableLength) {
+        numPanels++;
+      } else {
+        break;
+      }
+    }
+    return Math.max(1, numPanels - 1);
+  };
+
+  // Calculate panel widths based on mode
   const calculatePanelWidths = (): number[] => {
     const totalGaps = interPanelGaps.reduce((sum, gap) => sum + gap, 0);
     const availableForPanels = spanLength - leftGapSize - rightGapSize - totalGaps;
     
-    // Count fixed-width panels (overrides, gates, hinges with specified width)
-    let fixedWidth = 0;
-    let flexiblePanelCount = numPanels;
-    
-    // Account for width overrides
-    if (panelWidthOverrides) {
-      Object.values(panelWidthOverrides).forEach(width => {
-        fixedWidth += width;
-        flexiblePanelCount--;
-      });
+    if (layoutMode === "manual-individual" && panelWidthOverrides) {
+      // Use individual overrides
+      const panelWidths: number[] = [];
+      for (let i = 0; i < numPanels; i++) {
+        panelWidths.push(panelWidthOverrides[i] || defaultPanelWidth);
+      }
+      return panelWidths;
     }
     
-    config.gateConfigs?.forEach(gc => {
-      if (gc.widthMm && !panelWidthOverrides?.[gc.position]) {
-        fixedWidth += gc.widthMm;
-        flexiblePanelCount--;
-      }
-    });
+    // For auto and manual-qty modes, distribute evenly
+    const calculatedWidth = numPanels > 0 ? Math.floor(availableForPanels / numPanels) : 0;
     
-    config.hingeConfigs?.forEach(hc => {
-      if (hc.widthMm && !panelWidthOverrides?.[hc.position]) {
-        fixedWidth += hc.widthMm;
-        flexiblePanelCount--;
-      }
-    });
-    
-    const remainingForFlexible = availableForPanels - fixedWidth;
-    const calculatedWidth = flexiblePanelCount > 0 ? Math.floor(remainingForFlexible / flexiblePanelCount) : 0;
-    
-    // Build panel width array
     const panelWidths: number[] = [];
     for (let i = 0; i < numPanels; i++) {
-      // Check for width override first
-      if (panelWidthOverrides?.[i]) {
-        panelWidths.push(panelWidthOverrides[i]);
-        continue;
-      }
-      
-      const isGate = config.gateConfigs?.find(gc => gc.position === i);
-      const isHinge = config.hingeConfigs?.find(hc => hc.position === i);
-      
-      if (isGate?.widthMm) {
-        panelWidths.push(isGate.widthMm);
-      } else if (isHinge?.widthMm) {
-        panelWidths.push(isHinge.widthMm);
-      } else {
-        panelWidths.push(Math.min(calculatedWidth, maxPanelWidth));
-      }
+      panelWidths.push(Math.min(calculatedWidth, maxPanelWidth));
     }
     
     return panelWidths;
@@ -120,7 +110,85 @@ export function AutoCalcPanelControls({
   const totalGapWidth = interPanelGaps.reduce((sum, g) => sum + g, 0);
   const totalUsed = leftGapSize + totalPanelWidth + totalGapWidth + rightGapSize;
   const remaining = spanLength - totalUsed;
-  const isValid = Math.abs(remaining) <= 2; // ±2mm tolerance
+  const isValid = Math.abs(remaining) <= 2;
+
+  const updateLayoutMode = (mode: LayoutMode) => {
+    if (mode === "auto") {
+      // Auto-calculate panel count
+      const autoPanelCount = autoCalculatePanelCount();
+      const newTypes = Array(autoPanelCount).fill("standard");
+      const newGaps = Array(autoPanelCount - 1).fill(gapSize);
+      onUpdate({
+        ...config,
+        layoutMode: mode,
+        panelTypes: newTypes,
+        interPanelGaps: newGaps,
+        panelWidthOverrides: undefined,
+      });
+    } else {
+      onUpdate({ ...config, layoutMode: mode });
+    }
+  };
+
+  const updatePanelCount = (count: number) => {
+    const newTypes = Array(count).fill("standard");
+    const newGaps = Array(Math.max(0, count - 1)).fill(gapSize);
+    onUpdate({
+      ...config,
+      panelTypes: newTypes,
+      interPanelGaps: newGaps,
+      panelWidthOverrides: undefined,
+    });
+  };
+
+  const updatePanelType = (index: number, type: PanelType) => {
+    const newTypes = [...panelTypes];
+    newTypes[index] = type;
+    onUpdate({ ...config, panelTypes: newTypes });
+  };
+
+  const updatePanelWidth = (index: number, width: number) => {
+    const newOverrides = { ...(panelWidthOverrides || {}) };
+    newOverrides[index] = width;
+    onUpdate({ ...config, panelWidthOverrides: newOverrides });
+  };
+
+  const clearPanelOverride = (index: number) => {
+    if (!panelWidthOverrides) return;
+    const newOverrides = { ...panelWidthOverrides };
+    delete newOverrides[index];
+    onUpdate({ ...config, panelWidthOverrides: newOverrides });
+  };
+
+  const addPanel = () => {
+    const newTypes = [...panelTypes, "standard" as PanelType];
+    const newGaps = [...interPanelGaps, gapSize];
+    onUpdate({
+      ...config,
+      panelTypes: newTypes,
+      interPanelGaps: newGaps,
+    });
+  };
+
+  const removePanel = (index: number) => {
+    if (panelTypes.length <= 1) return;
+    
+    const newTypes = panelTypes.filter((_, i) => i !== index);
+    const newGaps = interPanelGaps.filter((_, i) => {
+      if (index === 0) return i !== 0;
+      return i !== index - 1;
+    });
+    
+    const newOverrides = { ...(panelWidthOverrides || {}) };
+    delete newOverrides[index];
+    
+    onUpdate({
+      ...config,
+      panelTypes: newTypes,
+      interPanelGaps: newGaps.length > 0 ? newGaps : [gapSize],
+      panelWidthOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined,
+    });
+  };
 
   const updateMaxPanelWidth = (value: number) => {
     onUpdate({ ...config, maxPanelWidth: value });
@@ -134,65 +202,70 @@ export function AutoCalcPanelControls({
     onUpdate({ ...config, glassType: value });
   };
 
-  const updateGap = (index: number, value: number) => {
-    const newGaps = [...interPanelGaps];
-    newGaps[index] = value;
-    onUpdate({ ...config, interPanelGaps: newGaps });
-  };
-
-  const updatePanelType = (index: number, type: PanelType) => {
-    const newTypes = [...panelTypes];
-    newTypes[index] = type;
-    onUpdate({ ...config, panelTypes: newTypes });
-  };
-
   const applyTypeToAll = (type: PanelType) => {
-    const newTypes = Array(numPanels).fill(type);
+    const newTypes = panelTypes.map(() => type);
     onUpdate({ ...config, panelTypes: newTypes });
-  };
-
-  const updatePanelWidthOverride = (index: number, widthMm: number | null) => {
-    const newOverrides = { ...(panelWidthOverrides || {}) };
-    if (widthMm === null) {
-      delete newOverrides[index];
-    } else {
-      newOverrides[index] = widthMm;
-    }
-    onUpdate({ ...config, panelWidthOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined });
-  };
-
-  const addPanel = () => {
-    const newTypes = [...panelTypes, "standard" as PanelType];
-    const newGaps = [...interPanelGaps, 10];
-    onUpdate({ ...config, panelTypes: newTypes, interPanelGaps: newGaps });
-  };
-
-  const removePanel = (index: number) => {
-    if (numPanels <= 1) return;
-    
-    const newTypes = panelTypes.filter((_, i) => i !== index);
-    // Remove gap: if removing last panel, remove last gap; otherwise remove gap at index
-    const newGaps = index === numPanels - 1 
-      ? interPanelGaps.slice(0, -1)
-      : interPanelGaps.filter((_, i) => i !== index);
-    
-    onUpdate({ ...config, panelTypes: newTypes, interPanelGaps: newGaps });
   };
 
   return (
-    <div className="space-y-4 bg-muted/30 rounded-md p-4" data-testid={`auto-calc-panel-controls-${spanId}`}>
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Auto-Calc Panel Configuration</h4>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={addPanel}
-          data-testid={`add-panel-${spanId}`}
+    <div className="space-y-4">
+      {/* Layout Mode Selector - First Input */}
+      <div className="bg-card rounded-md p-4 border">
+        <Label className="text-sm font-medium mb-3 block">Panel Layout Mode</Label>
+        <Select
+          value={layoutMode}
+          onValueChange={(value) => updateLayoutMode(value as LayoutMode)}
         >
-          <Plus className="h-4 w-4 mr-1" />
-          Add Panel
-        </Button>
+          <SelectTrigger className="h-9" data-testid={`layout-mode-${spanId}`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto">Auto Set Panel Widths</SelectItem>
+            <SelectItem value="manual-qty">Manual Set Qty of Panels</SelectItem>
+            <SelectItem value="manual-individual">Manual Set Every Panel</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground mt-2">
+          {layoutMode === "auto" && "Automatically calculates number of panels based on default 1200mm width"}
+          {layoutMode === "manual-qty" && "Specify the number of panels - widths auto-calculated to fit"}
+          {layoutMode === "manual-individual" && "Set width for each individual panel"}
+        </p>
       </div>
+
+      {/* Panel Count - Only for Manual Qty Mode */}
+      {layoutMode === "manual-qty" && (
+        <div className="bg-card rounded-md p-4 border">
+          <Label className="text-sm font-medium mb-3 block">Number of Panels</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={1}
+              max={20}
+              value={numPanels}
+              onChange={(e) => updatePanelCount(parseInt(e.target.value) || 1)}
+              className="h-9"
+              data-testid={`panel-count-${spanId}`}
+            />
+            <span className="text-sm text-muted-foreground">panels</span>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Remove Panels - Only for Manual Individual Mode */}
+      {layoutMode === "manual-individual" && (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={addPanel}
+            className="flex-1"
+            data-testid={`add-panel-${spanId}`}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Panel
+          </Button>
+        </div>
+      )}
 
       {/* Panel Specifications */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -267,7 +340,7 @@ export function AutoCalcPanelControls({
         </div>
       </div>
 
-      {/* Gap Control - Shows different UI based on mode */}
+      {/* Gap Control */}
       <div className="bg-background rounded-md p-3 border">
         <Label className="text-sm font-medium mb-2 block">Between Panel Gap</Label>
         <div className="flex items-center gap-2">
@@ -279,7 +352,6 @@ export function AutoCalcPanelControls({
             value={interPanelGaps[0] || 10}
             onChange={(e) => {
               const value = parseInt(e.target.value) || 10;
-              // Apply to all gaps
               const newGaps = interPanelGaps.map(() => value);
               onUpdate({ ...config, interPanelGaps: newGaps });
             }}
@@ -298,11 +370,12 @@ export function AutoCalcPanelControls({
       {/* Apply Type to All */}
       <div className="bg-background rounded-md p-3 border">
         <Label className="text-sm font-medium mb-2 block">Quick Apply Type</Label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={() => applyTypeToAll("standard")}
+            className="flex-1"
             data-testid={`apply-standard-${spanId}`}
           >
             All Standard
@@ -311,6 +384,7 @@ export function AutoCalcPanelControls({
             size="sm"
             variant="outline"
             onClick={() => applyTypeToAll("gate")}
+            className="flex-1"
             data-testid={`apply-gate-${spanId}`}
           >
             All Gate
@@ -319,17 +393,10 @@ export function AutoCalcPanelControls({
             size="sm"
             variant="outline"
             onClick={() => applyTypeToAll("hinge")}
+            className="flex-1"
             data-testid={`apply-hinge-${spanId}`}
           >
             All Hinge
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => applyTypeToAll("raked")}
-            data-testid={`apply-raked-${spanId}`}
-          >
-            All Raked
           </Button>
         </div>
       </div>
@@ -338,122 +405,98 @@ export function AutoCalcPanelControls({
       <div className="space-y-3">
         {panelTypes.map((type, index) => (
           <div key={index} className="space-y-2">
-
             {/* Panel */}
             <div className="flex items-center gap-2 bg-background rounded-md p-3 border">
               <div className="flex-1 space-y-2">
+                {/* Panel Type and Width */}
                 <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium">Panel {index + 1}</Label>
-                  <Badge variant="secondary" className="text-xs">
-                    {panelWidths[index]}mm
-                  </Badge>
-                  {panelWidthOverrides?.[index] && (
-                    <Badge variant="outline" className="text-xs">Override</Badge>
+                  <Label className="text-sm font-medium whitespace-nowrap min-w-[80px]">Panel {index + 1}:</Label>
+                  <Select
+                    value={type}
+                    onValueChange={(value) => updatePanelType(index, value as PanelType)}
+                  >
+                    <SelectTrigger className="h-8 flex-1" data-testid={`panel-type-${spanId}-${index}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">Standard</SelectItem>
+                      <SelectItem value="gate">Gate</SelectItem>
+                      <SelectItem value="hinge">Hinge</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={500}
+                      max={2000}
+                      step={50}
+                      value={panelWidthOverrides?.[index] || panelWidths[index]}
+                      onChange={(e) => updatePanelWidth(index, parseInt(e.target.value) || 1200)}
+                      className="h-8 w-24"
+                      disabled={layoutMode !== "manual-individual"}
+                      data-testid={`panel-width-${spanId}-${index}`}
+                    />
+                    <span className="text-xs text-muted-foreground">mm</span>
+                  </div>
+                  {panelWidthOverrides?.[index] && layoutMode === "manual-individual" && (
+                    <Badge variant="secondary" className="text-xs">Override</Badge>
                   )}
                 </div>
-                <Select
-                  value={type}
-                  onValueChange={(value) => updatePanelType(index, value as PanelType)}
-                >
-                  <SelectTrigger className="h-9" data-testid={`panel-type-${spanId}-${index}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard Glass</SelectItem>
-                    <SelectItem value="gate">Gate Panel</SelectItem>
-                    <SelectItem value="hinge">Hinge Panel</SelectItem>
-                    <SelectItem value="raked">Raked Panel</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {/* Width Override */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={200}
-                    max={2000}
-                    step={1}
-                    placeholder="Auto"
-                    value={panelWidthOverrides?.[index] || ""}
-                    onChange={(e) => {
-                      const value = e.target.value ? parseInt(e.target.value) : null;
-                      updatePanelWidthOverride(index, value);
-                    }}
-                    className="h-8 text-xs"
-                    data-testid={`panel-width-override-${spanId}-${index}`}
-                  />
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">mm (override)</span>
-                </div>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => removePanel(index)}
-                disabled={numPanels <= 1}
-                className="h-9 w-9"
-                data-testid={`remove-panel-${spanId}-${index}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              
+              {/* Remove Panel Button - Only for Manual Individual */}
+              {layoutMode === "manual-individual" && panelTypes.length > 1 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removePanel(index)}
+                  data-testid={`remove-panel-${spanId}-${index}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
       </div>
 
       {/* Summary */}
-      <div className={`rounded-md border p-3 ${isValid ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-destructive/10 border-destructive/50'}`}>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <span className="text-muted-foreground">Total Length:</span>
-            <span className="ml-2 font-medium">{totalUsed}mm</span>
+      <Alert variant={isValid ? "default" : "destructive"}>
+        <AlertDescription className="text-sm">
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span>Section Length:</span>
+              <span className="font-medium">{spanLength}mm</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Left Gap:</span>
+              <span className="font-medium">{leftGapSize}mm</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Panel Width:</span>
+              <span className="font-medium">{totalPanelWidth}mm</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Gap Width:</span>
+              <span className="font-medium">{totalGapWidth}mm</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Right Gap:</span>
+              <span className="font-medium">{rightGapSize}mm</span>
+            </div>
+            <div className="flex justify-between border-t pt-1 mt-1">
+              <span>Total Used:</span>
+              <span className="font-medium">{totalUsed}mm</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Remaining:</span>
+              <span className={`font-medium ${isValid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                {remaining > 0 ? '+' : ''}{remaining}mm
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="text-muted-foreground">Available:</span>
-            <span className="ml-2 font-medium">{spanLength}mm</span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-muted-foreground">Remaining:</span>
-            <span className={`ml-2 font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-              {remaining > 0 ? '+' : ''}{remaining}mm
-            </span>
-            {!isValid && (
-              <span className="ml-2 text-destructive text-xs">(Must be within ±2mm)</span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Breakdown */}
-      <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-        <div className="flex justify-between">
-          <span>Left Gap:</span>
-          <span>{leftGapSize}mm</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Panels ({numPanels}):</span>
-          <span>{totalPanelWidth}mm</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Inter-Panel Gaps ({interPanelGaps.length}):</span>
-          <span>{totalGapWidth}mm</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Right Gap:</span>
-          <span>{rightGapSize}mm</span>
-        </div>
-        <div className="flex justify-between font-semibold pt-1 border-t">
-          <span>Total:</span>
-          <span>{totalUsed}mm</span>
-        </div>
-      </div>
-
-      {!isValid && (
-        <Alert variant="destructive">
-          <AlertDescription className="text-xs">
-            Adjust number of panels, gaps, or max panel width to fit within ±2mm tolerance.
-          </AlertDescription>
-        </Alert>
-      )}
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }
