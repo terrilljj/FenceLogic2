@@ -86,24 +86,39 @@ export function AutoCalcPanelControls({
     const totalGaps = numGaps * gapSize;
     const availableForPanels = spanLength - leftGapSize - rightGapSize - totalGaps;
     
-    if (layoutMode === "manual-individual" && panelWidthOverrides) {
-      // Use individual overrides
-      const panelWidths: number[] = [];
-      for (let i = 0; i < numPanels; i++) {
-        panelWidths.push(panelWidthOverrides[i] || maxPanelWidth);
+    // For gate/hinge panels, use specified widths; standard panels distribute remaining space
+    const fixedPanels: { index: number; width: number }[] = [];
+    let fixedWidth = 0;
+    let standardPanelCount = 0;
+    
+    for (let i = 0; i < numPanels; i++) {
+      if (panelTypes[i] === "gate" || panelTypes[i] === "hinge") {
+        const width = panelWidthOverrides?.[i] || (panelTypes[i] === "gate" ? 900 : 1200);
+        fixedPanels.push({ index: i, width });
+        fixedWidth += width;
+      } else {
+        standardPanelCount++;
       }
-      return panelWidths;
     }
     
-    // For auto and manual-qty modes, distribute evenly to fill available space
-    const baseWidth = numPanels > 0 ? Math.floor(availableForPanels / numPanels) : 0;
-    const remainder = availableForPanels - (baseWidth * numPanels);
+    // Calculate width for standard panels
+    const availableForStandard = availableForPanels - fixedWidth;
+    const baseWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
+    const remainder = availableForStandard - (baseWidth * standardPanelCount);
     
+    // Build final widths array
     const panelWidths: number[] = [];
+    let standardIndex = 0;
+    
     for (let i = 0; i < numPanels; i++) {
-      // Distribute remainder across first panels to fill exactly
-      const extraMm = i < remainder ? 1 : 0;
-      panelWidths.push(baseWidth + extraMm);
+      const fixedPanel = fixedPanels.find(fp => fp.index === i);
+      if (fixedPanel) {
+        panelWidths.push(fixedPanel.width);
+      } else {
+        const extraMm = standardIndex < remainder ? 1 : 0;
+        panelWidths.push(baseWidth + extraMm);
+        standardIndex++;
+      }
     }
     
     return panelWidths;
@@ -276,9 +291,9 @@ export function AutoCalcPanelControls({
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground mt-2">
-          {layoutMode === "auto" && "Automatically calculates number of panels based on default 1200mm width"}
-          {layoutMode === "manual-qty" && "Specify the number of panels - widths auto-calculated to fit"}
-          {layoutMode === "manual-individual" && "Set width for each individual panel"}
+          {layoutMode === "auto" && "Automatically calculates number of panels based on max panel width"}
+          {layoutMode === "manual-qty" && "Specify number of panels - standard panels auto-size, gate/hinge panels customizable"}
+          {layoutMode === "manual-individual" && "Add/remove panels - standard panels auto-distribute, gate/hinge panels customizable"}
         </p>
       </div>
 
@@ -456,16 +471,17 @@ export function AutoCalcPanelControls({
                 </SelectContent>
               </Select>
               
-              {layoutMode === "manual-individual" ? (
+              {/* Show width input ONLY for gate/hinge panels */}
+              {type === "gate" || type === "hinge" ? (
                 <div className="flex items-center gap-1 shrink-0">
                   <Input
                     type="number"
                     min={200}
                     max={2000}
                     step={50}
-                    value={panelWidthOverrides?.[index] || panelWidths[index]}
+                    value={panelWidthOverrides?.[index] || (type === "gate" ? 900 : 1200)}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || panelWidths[index];
+                      const value = parseInt(e.target.value) || (type === "gate" ? 900 : 1200);
                       updatePanelWidth(index, value);
                     }}
                     className="h-9 w-24"
@@ -474,11 +490,7 @@ export function AutoCalcPanelControls({
                   <span className="text-sm text-muted-foreground">mm</span>
                 </div>
               ) : (
-                <Badge className={
-                  type === "standard" ? "bg-blue-500" : 
-                  type === "gate" ? "bg-green-500" : 
-                  "bg-orange-500"
-                }>
+                <Badge className="bg-blue-500">
                   {panelWidths[index]}mm
                 </Badge>
               )}
