@@ -295,12 +295,16 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const scale = Math.min((rect.width - 150) / longestSpan, 0.15);
   
   // Drawing constants
-  const panelHeight = 1200; // 1200mm standard height
+  const panelHeight = 1200; // 1200mm standard height (fallback)
   const startX = 100;
   
-  // Find max panel height including raked panels (which can be up to 1800mm) and custom panels
+  // Find max panel height including raked panels, custom panels, and auto-calc config
   let maxPanelHeight = panelHeight;
   design.spans.forEach(span => {
+    // Check auto-calc config panel height (for custom-frameless)
+    if (span.autoCalcConfig?.panelHeight && span.autoCalcConfig.panelHeight > maxPanelHeight) {
+      maxPanelHeight = span.autoCalcConfig.panelHeight;
+    }
     if (span.leftRakedPanel?.enabled && span.leftRakedPanel.height > maxPanelHeight) {
       maxPanelHeight = span.leftRakedPanel.height;
     }
@@ -475,7 +479,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       // Get individual panel width (may vary for mixed panels)
       const currentPanelWidth = span.panelLayout?.panels[i] || panelWidth;
       const scaledPanelWidth = currentPanelWidth * scale;
-      let scaledPanelHeight = panelHeight * scale;
+      
+      // Determine actual panel height for this span
+      const actualPanelHeight = span.autoCalcConfig?.panelHeight || panelHeight;
+      let scaledPanelHeight = actualPanelHeight * scale;
       
       // Check if this is a raked panel
       const isRaked = panelType === "raked";
