@@ -114,13 +114,21 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     // Fixed gate elements
     const gateElementSpace = gateWidthMm + hingeGapMm + latchGapMm;
     const hingePanelSpace = mountMode === 'GLASS_TO_GLASS' ? (hingePanelWidthMm || 0) : 0;
-    const totalFixedSpace = gateElementSpace + hingePanelSpace;
+    
+    // IMPORTANT: We need to reserve space for the between gap that appears between
+    // left panels and hinge panel (if there are left panels)
+    const gatePosition = gateConfig.position !== undefined ? gateConfig.position : 0.5;
+    const hasLeftPanels = gatePosition > 0;
+    const leftBetweenGapReserve = hasLeftPanels ? betweenGapMm : 0;
+    
+    const totalFixedSpace = gateElementSpace + hingePanelSpace + leftBetweenGapReserve;
     
     trace.push({
       step: 'fixed-space-calculation',
       data: {
         gateElementSpace,
         hingePanelSpace,
+        leftBetweenGapReserve,
         totalFixedSpace,
         effectiveLengthMm,
       },
@@ -150,64 +158,124 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       };
     }
     
-    // Determine gate position
-    const gatePosition = gateConfig.position !== undefined ? gateConfig.position : 0.5;
-    
     // Calculate space for left and right panels
-    // For now, use simple split based on position
-    // Left side gets panels, right side gets remainder (equalized)
-    const leftSpace = remainingSpace * gatePosition;
-    const rightSpace = remainingSpace * (1 - gatePosition);
+    // (gatePosition already determined above in fixed space calculation)
+    // IMPORTANT: To avoid rounding errors, calculate left space and then
+    // make right space the exact remainder
+    const leftSpaceTarget = remainingSpace * gatePosition;
+    
+    // Distribute left panels and get actual space used
+    let leftActualSpace = 0;
     
     trace.push({
       step: 'space-distribution',
       data: {
         remainingSpace,
         gatePosition,
-        leftSpace,
-        rightSpace,
+        leftSpaceTarget,
       },
     });
     
-    // Equalize left panels (if any space)
-    if (leftSpace >= minPanelMm) {
-      const leftResult = equalizePanels({
-        targetMm: leftSpace,
-        stepMm: 50,
-        maxPanelMm,
-        minPanelMm,
-      });
+    // Helper function to distribute space into panels
+    // IMPORTANT: spaceMm should be the TOTAL space including between gaps within this group
+    const distributePanels = (spaceMm: number, label: string): number[] => {
+      const panels: number[] = [];
       
-      if (leftResult.widthsMm) {
-        leftPanels = leftResult.widthsMm;
-      } else {
-        // Fallback: single panel
-        const rounded = Math.round(leftSpace / 50) * 50;
-        if (rounded >= minPanelMm && rounded <= maxPanelMm) {
-          leftPanels = [rounded];
+      // Round to nearest 50mm
+      const roundedSpace = Math.round(spaceMm / 50) * 50;
+      
+      if (roundedSpace < minPanelMm) {
+        return panels; // Not enough space
+      }
+      
+      // We need to account for between gaps within this panel group
+      // If we have N panels, we'll have (N-1) between gaps
+      // So: panelSpace + (N-1) * betweenGapMm = roundedSpace
+      // We need to find N such that panels fit
+      
+      // Try different numbers of panels to find best fit
+      let bestPanels: number[] = [];
+      let bestDelta = Infinity;
+      
+      for (let numPanels = 1; numPanels <= Math.ceil(roundedSpace / minPanelMm); numPanels++) {
+        const gapSpace = (numPanels - 1) * betweenGapMm;
+        const panelSpace = roundedSpace - gapSpace;
+        
+        if (panelSpace < numPanels * minPanelMm) {
+          break; // Not enough space for this many panels
+        }
+        
+        // Try to equalize this panel space across numPanels
+        const result = equalizePanels({
+          targetMm: panelSpace,
+          stepMm: 50,
+          maxPanelMm,
+          minPanelMm,
+        });
+        
+        if (result.widthsMm && result.widthsMm.length === numPanels) {
+          const actualTotal = result.widthsMm.reduce((s, p) => s + p, 0) + gapSpace;
+          const delta = Math.abs(actualTotal - roundedSpace);
+          
+          if (delta < bestDelta) {
+            bestDelta = delta;
+            bestPanels = result.widthsMm;
+          }
+          
+          if (delta === 0) break; // Perfect match
         }
       }
+      
+      // If no solution found via equalize, try simple fallback
+      if (bestPanels.length === 0) {
+        const numPanels = Math.ceil(roundedSpace / maxPanelMm);
+        const gapSpace = (numPanels - 1) * betweenGapMm;
+        const panelSpace = roundedSpace - gapSpace;
+        const avgWidth = panelSpace / numPanels;
+        const baseWidth = Math.round(avgWidth / 50) * 50;
+        
+        if (baseWidth >= minPanelMm && baseWidth <= maxPanelMm) {
+          for (let i = 0; i < numPanels; i++) {
+            bestPanels.push(baseWidth);
+          }
+        }
+      }
+      
+      trace.push({
+        step: `${label}-panel-distribution`,
+        data: {
+          spaceMm,
+          roundedSpace,
+          panels: bestPanels,
+          totalWithGaps: bestPanels.reduce((s, p) => s + p, 0) + (bestPanels.length - 1) * betweenGapMm,
+        },
+      });
+      
+      return bestPanels;
+    };
+    
+    // Distribute left panels
+    if (leftSpaceTarget >= minPanelMm) {
+      leftPanels = distributePanels(leftSpaceTarget, 'left');
+      leftActualSpace = leftPanels.reduce((sum, p) => sum + p, 0);
     }
     
-    // Equalize right panels (remainder space)
-    if (rightSpace >= minPanelMm) {
-      const rightResult = equalizePanels({
-        targetMm: rightSpace,
-        stepMm: 50,
-        maxPanelMm,
-        minPanelMm,
-      });
-      
-      if (rightResult.widthsMm) {
-        rightPanels = rightResult.widthsMm;
-      } else {
-        // Fallback: single panel
-        const rounded = Math.round(rightSpace / 50) * 50;
-        if (rounded >= minPanelMm && rounded <= maxPanelMm) {
-          rightPanels = [rounded];
-        }
-      }
+    // Right panels get the EXACT remainder to avoid rounding errors
+    const rightSpaceExact = remainingSpace - leftActualSpace;
+    
+    if (rightSpaceExact >= minPanelMm) {
+      rightPanels = distributePanels(rightSpaceExact, 'right');
     }
+    
+    trace.push({
+      step: 'final-panel-distribution',
+      data: {
+        leftActualSpace,
+        rightSpaceExact,
+        leftPanels,
+        rightPanels,
+      },
+    });
     
     trace.push({
       step: 'panel-equalization',

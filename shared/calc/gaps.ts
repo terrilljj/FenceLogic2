@@ -149,7 +149,14 @@ export function buildSegmentSequence(config: {
     
     // 6. Right side panels (if any)
     if (config.rightPanels.length > 0) {
-      addPanelsWithGaps(config.rightPanels);
+      // First right panel - no gap needed (latch gap already there)
+      segments.push({ kind: 'panel', widthMm: config.rightPanels[0] });
+      
+      // Remaining right panels - add with between gaps
+      for (let i = 1; i < config.rightPanels.length; i++) {
+        segments.push({ kind: 'gap', widthMm: config.betweenGapMm, gapType: 'between' });
+        segments.push({ kind: 'panel', widthMm: config.rightPanels[i] });
+      }
     }
   } else {
     // No gate - just panels
