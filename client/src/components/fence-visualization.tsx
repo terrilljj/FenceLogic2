@@ -243,27 +243,16 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
                 padding: 0;
               }
               .header {
-                border-bottom: 1px solid #000;
-                padding-bottom: 4px;
-                margin-bottom: 6px;
-                display: flex;
-                align-items: baseline;
-                gap: 8px;
+                display: none;
               }
               .branding {
-                font-size: 16px;
-                font-weight: bold;
-                color: #000;
-                line-height: 1;
+                display: none;
               }
               .tagline {
-                font-size: 10px;
-                color: #666;
-                font-style: italic;
-                line-height: 1;
+                display: none;
               }
               h1 {
-                margin: 4px 0 2px 0;
+                margin: 0 0 2px 0;
                 font-size: 16px;
                 color: #000;
                 line-height: 1.1;
@@ -282,22 +271,23 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
               }
               img {
                 max-width: 100%;
-                max-height: 550px;
+                max-height: 680px;
                 height: auto;
                 display: block;
-                margin: 8px auto;
+                margin: 6px auto;
                 border: 1px solid #ddd;
                 page-break-inside: avoid;
                 object-fit: contain;
               }
               .footer {
-                margin-top: 8px;
+                margin-top: 6px;
                 padding-top: 6px;
                 border-top: 1px solid #ddd;
                 text-align: center;
-                color: #999;
-                font-size: 9px;
+                color: #333;
+                font-size: 10px;
                 line-height: 1.2;
+                font-weight: bold;
               }
               .no-print {
                 display: none;
