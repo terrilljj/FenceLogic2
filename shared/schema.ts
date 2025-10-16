@@ -439,7 +439,8 @@ export const spanConfigSchema = z.object({
     panelHeight: z.number().min(1200).max(1800).default(1500), // Standard panel height
     glassType: z.enum(["12mm", "15mm"]).default("12mm"), // Glass thickness
     interPanelGaps: z.array(z.number().min(6).max(30)), // Exact gap values between panels
-    panelTypes: z.array(z.enum(["standard", "gate", "hinge"])), // Type for each panel position
+    panelTypes: z.array(z.enum(["standard", "gate", "hinge", "raked"])), // Type for each panel position
+    panelWidthOverrides: z.record(z.number()).optional(), // Optional width overrides for specific panels (index -> width)
     gateConfigs: z.array(z.object({
       position: z.number(), // Index of the gate panel
       widthMm: z.number().optional(), // Fixed width if specified

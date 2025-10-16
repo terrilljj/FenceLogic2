@@ -6,7 +6,7 @@ import { Plus, Trash2, Settings2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-type PanelType = "standard" | "gate" | "hinge";
+type PanelType = "standard" | "gate" | "hinge" | "raked";
 
 interface AutoCalcConfig {
   maxPanelWidth: number;
@@ -14,6 +14,7 @@ interface AutoCalcConfig {
   glassType: "12mm" | "15mm";
   interPanelGaps: number[]; // Exact gap values between panels
   panelTypes: PanelType[]; // Type for each panel position
+  panelWidthOverrides?: { [index: number]: number }; // Optional width overrides for specific panels
   gateConfigs?: Array<{
     position: number;
     widthMm?: number;
@@ -51,7 +52,7 @@ export function AutoCalcPanelControls({
     panelTypes: ["standard", "standard"],
   };
 
-  const { maxPanelWidth, panelHeight, glassType, interPanelGaps, panelTypes } = config;
+  const { maxPanelWidth, panelHeight, glassType, interPanelGaps, panelTypes, panelWidthOverrides } = config;
   const numPanels = panelTypes.length;
 
   // Calculate auto panel widths
@@ -59,19 +60,27 @@ export function AutoCalcPanelControls({
     const totalGaps = interPanelGaps.reduce((sum, gap) => sum + gap, 0);
     const availableForPanels = spanLength - leftGapSize - rightGapSize - totalGaps;
     
-    // Count fixed-width panels (gates/hinges with specified width)
+    // Count fixed-width panels (overrides, gates, hinges with specified width)
     let fixedWidth = 0;
     let flexiblePanelCount = numPanels;
     
+    // Account for width overrides
+    if (panelWidthOverrides) {
+      Object.values(panelWidthOverrides).forEach(width => {
+        fixedWidth += width;
+        flexiblePanelCount--;
+      });
+    }
+    
     config.gateConfigs?.forEach(gc => {
-      if (gc.widthMm) {
+      if (gc.widthMm && !panelWidthOverrides?.[gc.position]) {
         fixedWidth += gc.widthMm;
         flexiblePanelCount--;
       }
     });
     
     config.hingeConfigs?.forEach(hc => {
-      if (hc.widthMm) {
+      if (hc.widthMm && !panelWidthOverrides?.[hc.position]) {
         fixedWidth += hc.widthMm;
         flexiblePanelCount--;
       }
@@ -83,6 +92,12 @@ export function AutoCalcPanelControls({
     // Build panel width array
     const panelWidths: number[] = [];
     for (let i = 0; i < numPanels; i++) {
+      // Check for width override first
+      if (panelWidthOverrides?.[i]) {
+        panelWidths.push(panelWidthOverrides[i]);
+        continue;
+      }
+      
       const isGate = config.gateConfigs?.find(gc => gc.position === i);
       const isHinge = config.hingeConfigs?.find(hc => hc.position === i);
       
@@ -132,6 +147,16 @@ export function AutoCalcPanelControls({
   const applyTypeToAll = (type: PanelType) => {
     const newTypes = Array(numPanels).fill(type);
     onUpdate({ ...config, panelTypes: newTypes });
+  };
+
+  const updatePanelWidthOverride = (index: number, widthMm: number | null) => {
+    const newOverrides = { ...(panelWidthOverrides || {}) };
+    if (widthMm === null) {
+      delete newOverrides[index];
+    } else {
+      newOverrides[index] = widthMm;
+    }
+    onUpdate({ ...config, panelWidthOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined });
   };
 
   const addPanel = () => {
@@ -249,7 +274,7 @@ export function AutoCalcPanelControls({
       {/* Apply Type to All */}
       <div className="bg-background rounded-md p-3 border">
         <Label className="text-sm font-medium mb-2 block">Quick Apply Type</Label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
             variant="outline"
@@ -273,6 +298,14 @@ export function AutoCalcPanelControls({
             data-testid={`apply-hinge-${spanId}`}
           >
             All Hinge
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => applyTypeToAll("raked")}
+            data-testid={`apply-raked-${spanId}`}
+          >
+            All Raked
           </Button>
         </div>
       </div>
@@ -307,6 +340,9 @@ export function AutoCalcPanelControls({
                   <Badge variant="secondary" className="text-xs">
                     {panelWidths[index]}mm
                   </Badge>
+                  {panelWidthOverrides?.[index] && (
+                    <Badge variant="outline" className="text-xs">Override</Badge>
+                  )}
                 </div>
                 <Select
                   value={type}
@@ -319,8 +355,28 @@ export function AutoCalcPanelControls({
                     <SelectItem value="standard">Standard Glass</SelectItem>
                     <SelectItem value="gate">Gate Panel</SelectItem>
                     <SelectItem value="hinge">Hinge Panel</SelectItem>
+                    <SelectItem value="raked">Raked Panel</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                {/* Width Override */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={200}
+                    max={2000}
+                    step={1}
+                    placeholder="Auto"
+                    value={panelWidthOverrides?.[index] || ""}
+                    onChange={(e) => {
+                      const value = e.target.value ? parseInt(e.target.value) : null;
+                      updatePanelWidthOverride(index, value);
+                    }}
+                    className="h-8 text-xs"
+                    data-testid={`panel-width-override-${spanId}-${index}`}
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">mm (override)</span>
+                </div>
               </div>
               <Button
                 size="icon"
