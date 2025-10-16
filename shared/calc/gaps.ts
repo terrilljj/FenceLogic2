@@ -240,35 +240,21 @@ export function buildSegmentSequence(config: {
     }
   } else {
     // No gate - may have custom panel
-    if (config.customPanelConfig?.required) {
-      const hasLeftPanels = config.leftPanels.length > 0;
-      const hasRightPanels = config.rightPanels.length > 0;
-      
-      // Add left panels with gaps
-      if (hasLeftPanels) {
-        addPanelsWithGaps(config.leftPanels);
-        // Always add connector gap before custom when left panels exist
-        const gapBefore = config.customPanelConfig.gapBeforeMm ?? config.betweenGapMm;
-        segments.push({ kind: 'gap', widthMm: gapBefore, gapType: 'between' });
-      }
-      
-      // Add custom panel
-      segments.push({ 
-        kind: 'panel', 
-        widthMm: config.customPanelConfig.panelWidthMm,
-      });
-      
-      // Add right panels with gaps
-      if (hasRightPanels) {
-        // Always add connector gap after custom when right panels exist
-        const gapAfter = config.customPanelConfig.gapAfterMm ?? config.betweenGapMm;
-        segments.push({ kind: 'gap', widthMm: gapAfter, gapType: 'between' });
-        addPanelsWithGaps(config.rightPanels);
-      }
-    } else {
-      // No gate, no custom panel - just panels
-      addPanelsWithGaps([...config.leftPanels, ...config.rightPanels]);
-    }
+    // Use applyGapPrecedence helper for proper gap handling
+    const customPanel = config.customPanelConfig?.required ? {
+      widthMm: config.customPanelConfig.panelWidthMm,
+      gapBeforeMm: config.customPanelConfig.gapBeforeMm,
+      gapAfterMm: config.customPanelConfig.gapAfterMm,
+    } : null;
+    
+    const panelSegments = applyGapPrecedence(
+      config.leftPanels,
+      customPanel,
+      config.rightPanels,
+      config.betweenGapMm
+    );
+    
+    segments.push(...panelSegments);
   }
   
   // 7. End gap

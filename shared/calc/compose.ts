@@ -581,39 +581,68 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       const betweenGapsTotal = (N - 1) * betweenGapMm;
       const totalVariableSpace = panelSum + betweenGapsTotal;
       
-      // Calculate split point
-      const leftShare = Math.round(position * totalVariableSpace);
+      // Compute target anchor along variable-panels block
+      const targetAnchorMm = position * totalVariableSpace;
       
-      // Find split index by accumulating panels + gaps
-      let accumulated = 0;
-      let splitIndex = panelWidths.length; // Default: all panels go to left (for position=1.0)
+      // Find nearest BETWEEN boundary (snap to boundary between panels, not through panel)
+      // Boundaries are: before panel 0, between 0-1, between 1-2, ..., after panel N-1
+      const boundaries: number[] = [];
+      let accum = 0;
       
-      for (let i = 0; i < panelWidths.length; i++) {
-        if (accumulated + panelWidths[i] / 2 >= leftShare) {
-          splitIndex = i;
-          break;
-        }
-        accumulated += panelWidths[i];
-        if (i < panelWidths.length - 1) {
-          accumulated += betweenGapMm;
+      for (let i = 0; i <= N; i++) {
+        boundaries.push(accum);
+        if (i < N) {
+          accum += panelWidths[i];
+          if (i < N - 1) {
+            accum += betweenGapMm;
+          }
         }
       }
       
-      leftPanels = panelWidths.slice(0, splitIndex);
-      rightPanels = panelWidths.slice(splitIndex);
+      // Find closest boundary to target
+      let chosenBoundaryIndex = 0;
+      let minDistance = Math.abs(boundaries[0] - targetAnchorMm);
+      
+      for (let i = 1; i < boundaries.length; i++) {
+        const distance = Math.abs(boundaries[i] - targetAnchorMm);
+        if (distance < minDistance) {
+          minDistance = distance;
+          chosenBoundaryIndex = i;
+        }
+      }
+      
+      // Special handling for RIGHT=1.0: clamp to last boundary if N>1
+      if (position >= 1.0 && N > 1) {
+        chosenBoundaryIndex = N; // Last boundary (after all panels)
+      } else if (position >= 1.0 && N === 1) {
+        chosenBoundaryIndex = 1; // After the single panel (left empty)
+      }
+      
+      const boundaryOffsetMm = Math.abs(boundaries[chosenBoundaryIndex] - targetAnchorMm);
+      const warning = boundaryOffsetMm > 200 ? `Boundary offset ${boundaryOffsetMm}mm exceeds 200mm tolerance` : null;
+      
+      leftPanels = panelWidths.slice(0, chosenBoundaryIndex);
+      rightPanels = panelWidths.slice(chosenBoundaryIndex);
       
       trace.push({
-        step: 'custom-panel-insertion',
+        step: 'position-split',
         data: { 
           position, 
-          leftShare, 
-          splitIndex, 
+          targetMm: targetAnchorMm,
+          chosenBoundaryIndex,
+          boundaryOffsetMm,
+          warning,
+          boundaries,
           leftPanelCount: leftPanels.length, 
           rightPanelCount: rightPanels.length,
           customPanelMm: customPanel.customPanelMm,
           customGapsMm: customPanel.customGapsMm,
         },
       });
+      
+      if (warning) {
+        trace.push({ step: 'position-split-warning', data: { warning } });
+      }
     } else {
       // No custom panel, all panels go to right
       rightPanels = panelWidths;

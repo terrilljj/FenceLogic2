@@ -196,11 +196,16 @@ export function computeFixedCustomPanel(
   }
   const width = Math.max(0, Math.round(custom.panelWidthMm));
   
-  // Treat unspecified gaps as neutral (0 delta)
-  // Add specified gaps in full as fixed components
-  const gapBeforeMm = custom.gapBeforeMm ?? 0;
-  const gapAfterMm = custom.gapAfterMm ?? 0;
-  const customGapsMm = gapBeforeMm + gapAfterMm;
+  // Custom gaps: count only if specified (they REPLACE connector gaps per applyGapPrecedence)
+  // Unspecified = 0 (connector gaps will be used from variable panel calculation)
+  // Specified = full value (replaces connector gap at that interface)
+  let customGapsMm = 0;
+  if (custom.gapBeforeMm !== undefined) {
+    customGapsMm += custom.gapBeforeMm;
+  }
+  if (custom.gapAfterMm !== undefined) {
+    customGapsMm += custom.gapAfterMm;
+  }
   
   return { customPanelMm: width, customGapsMm, fixedLeftMm: 0, fixedRightMm: 0 };
 }
