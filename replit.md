@@ -58,6 +58,18 @@ Preferred communication style: Simple, everyday language.
 - **Product Catalog Management** at `/products` and **Category Manager** at `/categories` (CRUD operations for categories/subcategories with display order control and transactional deletion).
 - **UI Configuration portal** at `/ui-config` for defining product groups, field visibility, order, labels, tooltips, and SKU selection behavior.
 
+**Google Sheets OAuth Sync:**
+- **Secure credential storage**: AES-256-GCM encryption with auto-generated 32-byte keys, ENV-first fallback to encrypted file storage.
+- **OAuth flow**: Google OAuth 2.0 with refresh token persistence in `systemSettings` database table.
+- **Admin settings page** at `/admin-settings`: Configure OAuth credentials, connect to Google, manage sync settings.
+- **Sync endpoints**: `/api/admin/sheets/pull?dryRun=1|0` for preview-before-apply workflow with diff visualization.
+- **Diff engine**: Compares Google Sheets data with database, identifies added/updated/deactivated products and UI config changes.
+- **Data validation**: Zod schemas validate sheet data before sync, with detailed error reporting.
+- **Sync UI**: Products page includes "Sync from Google Sheets" button with diff preview dialog showing summary stats and sample changes.
+- **Bug fix (Oct 2025)**: Blank "Active" cells now correctly default to `true` via `parseBoolOrUndefined` helper, preventing mass deactivations.
+- **Logging**: Sync operations write JSON and markdown logs to `./logs/sync-{timestamp}.{json,md}` for audit trail.
+- **Test coverage**: Config encryption tests (`server/utils/config.test.ts`) and row parsing regression tests (`server/utils/rows.test.ts`).
+
 **Panel Calculation System:**
 - Algorithm for mixed panel widths and precise gap spacing.
 - Supports raked panels and integrates gates with hardware-specific gap calculations.
