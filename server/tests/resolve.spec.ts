@@ -196,7 +196,7 @@ describe("resolveSelectionToProductsCore", () => {
       "gate-config": "Master Range",
     };
 
-    const result = resolveSelectionToProductsCore(uiConfig, products, selection);
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "pool_fence/frameless");
 
     // Should include glass 12mm panels
     expect(result.finalCodes).toContain("GLASS-12-1000");
@@ -253,7 +253,7 @@ describe("resolveSelectionToProductsCore", () => {
       "top-rail": true,
     };
 
-    const result = resolveSelectionToProductsCore(uiConfig, products, selection);
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "pool_fence/frameless");
 
     // Should include glass 12mm panels
     expect(result.finalCodes).toContain("GLASS-12-1000");
@@ -289,7 +289,7 @@ describe("resolveSelectionToProductsCore", () => {
 
     const selection = {};
 
-    const result = resolveSelectionToProductsCore(uiConfig, products, selection);
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "pool_fence/frameless");
 
     // Should only include products from allowedSubcategories
     expect(result.finalCodes).toContain("GATE-MASTER-HINGE");
@@ -323,7 +323,7 @@ describe("resolveSelectionToProductsCore", () => {
 
     // Should not throw
     expect(() => {
-      const result = resolveSelectionToProductsCore(uiConfig, products, selection);
+      const result = resolveSelectionToProductsCore(uiConfig, products, selection, "pool_fence/frameless");
 
       // Should only include subcategory matches (Gate Master, Hinge Panels Master)
       expect(result.finalCodes).toContain("GATE-MASTER-HINGE");
@@ -337,7 +337,7 @@ describe("resolveSelectionToProductsCore", () => {
   });
 
   it("handles null uiConfig gracefully", () => {
-    const result = resolveSelectionToProductsCore(null, products, { some: "selection" });
+    const result = resolveSelectionToProductsCore(null, products, { some: "selection" }, "pool_fence/frameless");
 
     expect(result.finalCodes).toEqual([]);
     expect(result.trace).toEqual([]);
@@ -361,7 +361,7 @@ describe("resolveSelectionToProductsCore", () => {
       "glass-thickness": "12mm",
     };
 
-    const result = resolveSelectionToProductsCore(uiConfig, products, selection);
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "pool_fence/frameless");
 
     // Should include active 12mm products
     expect(result.finalCodes).toContain("GLASS-12-1000");

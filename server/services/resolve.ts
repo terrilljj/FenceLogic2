@@ -1,8 +1,9 @@
 import { type IStorage } from "../storage";
 import { type ProductUIConfig, type Product } from "@shared/schema";
+import { mapGateModeToCatalog, normalizeGateMode, normalizeGateSystem, type GateMode, type GateSystem } from "./gate-mode-shim";
 
 export interface ResolveTraceEntry {
-  source: "categoryPath" | "subcategory" | "direct";
+  source: "categoryPath" | "subcategory" | "direct" | "gate-mode-shim";
   key: string;
   codes: string[];
 }
@@ -23,7 +24,8 @@ export interface ResolveResult {
 export function resolveSelectionToProductsCore(
   uiConfig: ProductUIConfig | null,
   products: Product[],
-  selection: Record<string, any>
+  selection: Record<string, any>,
+  variantKey?: string
 ): ResolveResult {
   const trace: ResolveTraceEntry[] = [];
   const productCodesSet = new Set<string>();
@@ -34,6 +36,36 @@ export function resolveSelectionToProductsCore(
 
   // Filter to active products only
   const activeProducts = products.filter(p => p.active === 1);
+
+  // Apply gate mode shim if mount_mode is present
+  let gateModeIncludeSubcats: string[] = [];
+  let gateModeExcludeSubcats: string[] = [];
+  
+  if (selection.mount_mode && variantKey) {
+    const gateMode = normalizeGateMode(selection.mount_mode);
+    const gateSystem = normalizeGateSystem(selection.gate_system);
+    
+    if (gateMode) {
+      const mapping = mapGateModeToCatalog(variantKey, gateMode, gateSystem);
+      gateModeIncludeSubcats = mapping.includeSubcats;
+      gateModeExcludeSubcats = mapping.excludeSubcats;
+      
+      // Add trace entry for gate mode shim
+      const shimProducts = activeProducts.filter(p => 
+        p.subcategory && gateModeIncludeSubcats.includes(p.subcategory)
+      );
+      
+      if (shimProducts.length > 0) {
+        trace.push({
+          source: "gate-mode-shim",
+          key: `${gateMode}:${gateSystem} → include:[${gateModeIncludeSubcats.join(", ")}] exclude:[${gateModeExcludeSubcats.join(", ")}]`,
+          codes: shimProducts.map(p => p.code),
+        });
+        
+        shimProducts.forEach(p => productCodesSet.add(p.code));
+      }
+    }
+  }
 
   // Process each field in the selection
   for (const fieldConfig of uiConfig.fieldConfigs) {
@@ -124,9 +156,15 @@ export function resolveSelectionToProductsCore(
   }
 
   // Also check for subcategory-based resolution from allowedSubcategories
+  // BUT if gate mode shim is active, filter out excluded subcategories
   if (uiConfig.allowedSubcategories && uiConfig.allowedSubcategories.length > 0) {
+    // Filter allowedSubcategories to exclude any that are in the gate mode exclusion list
+    const effectiveAllowedSubcategories = gateModeExcludeSubcats.length > 0
+      ? uiConfig.allowedSubcategories.filter(sub => !gateModeExcludeSubcats.includes(sub))
+      : uiConfig.allowedSubcategories;
+    
     const subcategoryProducts = activeProducts.filter(p =>
-      p.subcategory && uiConfig.allowedSubcategories.includes(p.subcategory)
+      p.subcategory && effectiveAllowedSubcategories.includes(p.subcategory)
     );
     
     if (subcategoryProducts.length > 0) {
@@ -134,7 +172,7 @@ export function resolveSelectionToProductsCore(
       
       trace.push({
         source: "subcategory",
-        key: `allowedSubcategories: ${uiConfig.allowedSubcategories.join(", ")}`,
+        key: `allowedSubcategories: ${effectiveAllowedSubcategories.join(", ")}`,
         codes,
       });
       
@@ -167,6 +205,6 @@ export async function resolveSelectionToProducts(
   // Load all products
   const allProducts = await storage.getAllProducts();
   
-  // Call pure core resolver (convert undefined to null)
-  return resolveSelectionToProductsCore(uiConfig || null, allProducts, selection);
+  // Call pure core resolver (convert undefined to null), pass variant key for gate mode shim
+  return resolveSelectionToProductsCore(uiConfig || null, allProducts, selection, variant);
 }

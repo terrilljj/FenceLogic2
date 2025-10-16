@@ -258,3 +258,10 @@ Typical fixes:
 - **Issue**: POST mount mode not recognized by resolve API (returns same products as GLASS_TO_GLASS)
 - **Root cause**: Selection fields (mount_mode, hinge_side, gate_system) not mapped in UI config categoryPaths
 
+
+
+## QA Session 2025-10-16T00-40-49-857Z
+- Gate/hinge: FAIL, deadPaths: 0, deadSubcats: Gate Master, Gate Polaris/Atlantic, Hinge Panels Master, Hinge Panels Polaris/Atlantic
+- S2 hinge-panel: yes, S3 post-anchor: no, S4 flip stable: yes
+- **Issue**: POST mount mode not recognized by resolve API (returns same products as GLASS_TO_GLASS)
+- **Root cause**: Selection fields (mount_mode, hinge_side, gate_system) not mapped in UI config categoryPaths

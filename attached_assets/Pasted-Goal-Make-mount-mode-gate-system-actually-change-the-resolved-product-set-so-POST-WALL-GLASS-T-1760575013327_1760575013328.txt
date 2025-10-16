@@ -1,0 +1,82 @@
+Goal:
+Make mount_mode + gate_system actually change the resolved product set (so POST/WALL ≠ GLASS_TO_GLASS) without depending on Admin UI mappings. Add a minimal resolver-side shim for frameless pool fence and unit tests, then re-run the QA script.
+
+1) Add a resolver shim
+- File: server/services/gate-mode-shim.ts
+- Export:
+  type GateMode = 'GLASS_TO_GLASS' | 'POST' | 'WALL';
+  type GateSystem = 'MASTER' | 'POLARIS';
+  interface GateModeMapping { includeSubcats: string[]; excludeSubcats: string[]; includePaths?: string[]; excludePaths?: string[]; }
+  export function mapGateModeToCatalog(variantKey: string, mode: GateMode, system: GateSystem): GateModeMapping
+
+- Implement for frameless pool fence variant (use the exact variant key you resolve today, e.g., 'pool_fence/frameless' — detect from code):
+  * GLASS_TO_GLASS:
+      includeSubcats:
+        - Gate Master /or/ Gate Polaris/Atlantic   (pick by system)
+        - Hinge Panels Master /or/ Hinge Panels Polaris/Atlantic
+      excludeSubcats: []   // no posts
+  * POST:
+      includeSubcats:
+        - Gate Master /or/ Gate Polaris/Atlantic
+        - Posts (or Gate to Post Hardware if you have that subcategory)
+      excludeSubcats:
+        - Hinge Panels Master
+        - Hinge Panels Polaris/Atlantic
+  * WALL:
+      includeSubcats:
+        - Gate Master /or/ Gate Polaris/Atlantic
+        - Posts (or Gate to Wall Hardware if you have it)
+      excludeSubcats:
+        - Hinge Panels Master
+        - Hinge Panels Polaris/Atlantic
+  Note: Use the exact subcategory names present in the DB. If “Posts” doesn’t exist, fallback to the nearest relevant subcategory and add a code comment.
+
+2) Wire shim into resolver
+- File: server/services/resolve.ts
+- Where you collect products for the variant (frameless pool fence):
+  * Read selection.mount_mode and selection.gate_system. Normalize gate_system to 'MASTER'|'POLARIS' (default MASTER).
+  * Call mapGateModeToCatalog(...).
+  * Merge mapping.includeSubcats/includePaths into the candidate selection set BEFORE final product query or filtering.
+  * Remove any codes that belong to excludeSubcats/excludePaths from finalCodes.
+  * Preserve existing logic for GLASS_TO_GLASS hinge-panel sizing and for POST/WALL anchor selection (no hinge panel SKU for POST/WALL).
+
+- Add a trace entry indicating the mode shim decision, e.g.:
+  { source:'gate-mode-shim', key:`${mode}:${system}`, codes:[...affected codes or a count] }
+
+3) Unit tests
+- File: server/tests/gate-mode-shim.spec.ts
+- Pure in-memory fixtures with a minimal set of products:
+  Subcategories:
+    - "Gate Master", "Gate Polaris/Atlantic",
+    - "Hinge Panels Master", "Hinge Panels Polaris/Atlantic",
+    - "Posts"
+  Create a few mock product codes in each subcategory (active=true).
+- Cases:
+  A) GLASS_TO_GLASS + MASTER → includes a hinge-panel subcategory product; excludes Posts.
+  B) POST + MASTER → includes Posts; excludes hinge-panel subcategory.
+  C) WALL + POLARIS → includes Posts; excludes hinge-panel subcategory; includes Polaris gate.
+  D) If system is POLARIS in G2G → selects hinge panels Polaris, NOT Master.
+  Assertions compare resolved code sets; ensure GLASS_TO_GLASS ≠ POST for the same selection otherwise.
+
+4) Re-run the persistent QA
+- Run: npx tsx server/scripts/qa-gate.ts
+- This should now report:
+  * S2 (G2G LEFT): hinge-panel present, post-anchor absent.
+  * S3 (POST RIGHT): post-anchor present, hinge-panel absent.
+  * S4 (flip POST→G2G RIGHT): hinge_side preserved; gap sanity OK.
+
+5) Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: pass/fail summary by file (include gate-mode-shim.spec.ts)
+- QA summary: deadPaths=<n>, deadSubcategories=[...]
+- S2: hinge-panel in trace? <yes/no>; post-anchor? <yes/no>
+- S3: post-anchor? <yes/no>; hinge-panel? <yes/no>
+- S4: flip stable? <yes/no>; gap sanity ok? <yes/no>
+- Files changed: (list)
+- Minimal follow-ups (only if something failed): 1–3 bullets
+
+Constraints:
+- Do not alter Admin UI or UI-config save flow in this task.
+- Keep diffs small; no unrelated refactors.
+- Use existing subcategory names exactly; if a name is missing in DB, gracefully skip and log in trace.
