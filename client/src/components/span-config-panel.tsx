@@ -1495,9 +1495,12 @@ export function SpanConfigPanel({
                   let standardPanelCount = 0;
                   
                   for (let i = 0; i < numPanels; i++) {
-                    if (autoCalcConfig.panelTypes[i] === "gate" || autoCalcConfig.panelTypes[i] === "hinge") {
+                    if (autoCalcConfig.panelTypes[i] === "gate" || 
+                        autoCalcConfig.panelTypes[i] === "hinge" || 
+                        autoCalcConfig.panelTypes[i] === "custom") {
                       const width = autoCalcConfig.panelWidthOverrides?.[i] || 
-                        (autoCalcConfig.panelTypes[i] === "gate" ? 900 : 1200);
+                        (autoCalcConfig.panelTypes[i] === "gate" ? 900 : 
+                         autoCalcConfig.panelTypes[i] === "hinge" ? 1200 : 1000);
                       fixedPanels.push({ index: i, width });
                       fixedWidth += width;
                     } else {

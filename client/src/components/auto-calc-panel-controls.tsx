@@ -7,7 +7,7 @@ import { Plus, Trash2, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-type PanelType = "standard" | "gate" | "hinge";
+type PanelType = "standard" | "gate" | "hinge" | "custom";
 type LayoutMode = "auto" | "manual-qty" | "manual-individual";
 
 interface AutoCalcConfig {
@@ -86,8 +86,10 @@ export function AutoCalcPanelControls({
     let standardPanelCount = 0;
     
     for (let i = 0; i < numPanels; i++) {
-      if (panelTypes[i] === "gate" || panelTypes[i] === "hinge") {
-        const width = panelWidthOverrides?.[i] || (panelTypes[i] === "gate" ? 900 : 1200);
+      if (panelTypes[i] === "gate" || panelTypes[i] === "hinge" || panelTypes[i] === "custom") {
+        const width = panelWidthOverrides?.[i] || 
+          (panelTypes[i] === "gate" ? 900 : 
+           panelTypes[i] === "hinge" ? 1200 : 1000);
         fixedPanels.push({ index: i, width });
         fixedWidth += width;
       } else {
@@ -301,7 +303,7 @@ export function AutoCalcPanelControls({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Panel count auto-calculated based on max width. Mark panels as Gate/Hinge to set custom widths - standard panels auto-adjust to fill remaining space.
+          Panel count auto-calculated based on max width. Mark panels as Gate/Hinge/Custom to set specific widths - standard panels auto-adjust to fill remaining space.
         </AlertDescription>
       </Alert>
 
@@ -449,20 +451,25 @@ export function AutoCalcPanelControls({
                     <SelectItem value="standard">Standard Glass</SelectItem>
                     <SelectItem value="gate">Gate Panel</SelectItem>
                     <SelectItem value="hinge">Hinge Panel</SelectItem>
+                    <SelectItem value="custom">Custom Width</SelectItem>
                   </SelectContent>
                 </Select>
                 
-                {/* Show width input for gate/hinge, auto-calculated width for standard */}
-                {type === "gate" || type === "hinge" ? (
+                {/* Show width input for gate/hinge/custom, auto-calculated width for standard */}
+                {type === "gate" || type === "hinge" || type === "custom" ? (
                   <div className="flex items-center gap-1 shrink-0">
                     <Input
                       type="number"
                       min={200}
                       max={2000}
                       step={50}
-                      value={panelWidthOverrides?.[index] || (type === "gate" ? 900 : 1200)}
+                      value={panelWidthOverrides?.[index] || 
+                        (type === "gate" ? 900 : 
+                         type === "hinge" ? 1200 : 1000)}
                       onChange={(e) => {
-                        const value = parseInt(e.target.value) || (type === "gate" ? 900 : 1200);
+                        const defaultWidth = type === "gate" ? 900 : 
+                                           type === "hinge" ? 1200 : 1000;
+                        const value = parseInt(e.target.value) || defaultWidth;
                         updatePanelWidth(index, value);
                       }}
                       className="h-9 w-24"

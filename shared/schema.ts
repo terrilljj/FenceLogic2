@@ -441,7 +441,7 @@ export const spanConfigSchema = z.object({
     glassType: z.enum(["12mm", "15mm"]).default("12mm"), // Glass thickness
     gapMode: z.enum(["auto", "manual"]).default("auto"), // Auto-calc gaps or user-defined
     interPanelGaps: z.array(z.number().min(6).max(100)), // Exact gap values between panels
-    panelTypes: z.array(z.enum(["standard", "gate", "hinge"])), // Type for each panel position (no raked for custom-frameless)
+    panelTypes: z.array(z.enum(["standard", "gate", "hinge", "custom"])), // Type for each panel position (no raked for custom-frameless)
     panelWidthOverrides: z.record(z.number()).optional(), // Optional width overrides for specific panels (index -> width)
     gateConfigs: z.array(z.object({
       position: z.number(), // Index of the gate panel
