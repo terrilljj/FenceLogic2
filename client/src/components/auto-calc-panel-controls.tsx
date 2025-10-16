@@ -168,7 +168,7 @@ export function AutoCalcPanelControls({
       </div>
 
       {/* Panel Specifications */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Max Panel Width */}
         <div className="bg-background rounded-md p-3 border">
           <Label className="text-sm font-medium mb-2 block">Max Panel Width</Label>
@@ -180,10 +180,10 @@ export function AutoCalcPanelControls({
               step={50}
               value={maxPanelWidth}
               onChange={(e) => updateMaxPanelWidth(parseInt(e.target.value) || 1200)}
-              className="h-9"
+              className="h-9 w-full"
               data-testid={`max-panel-width-${spanId}`}
             />
-            <span className="text-sm text-muted-foreground">mm</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
           </div>
         </div>
 
@@ -198,10 +198,10 @@ export function AutoCalcPanelControls({
               step={50}
               value={panelHeight}
               onChange={(e) => updatePanelHeight(parseInt(e.target.value) || 1500)}
-              className="h-9"
+              className="h-9 w-full"
               data-testid={`panel-height-${spanId}`}
             />
-            <span className="text-sm text-muted-foreground">mm</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
           </div>
         </div>
 
@@ -220,6 +220,29 @@ export function AutoCalcPanelControls({
               <SelectItem value="15mm">15mm Toughened</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Between Panel Gap */}
+        <div className="bg-background rounded-md p-3 border">
+          <Label className="text-sm font-medium mb-2 block">Between Panel Gap</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={6}
+              max={30}
+              step={1}
+              value={interPanelGaps[0] || 10}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 10;
+                // Apply to all gaps
+                const newGaps = interPanelGaps.map(() => value);
+                onUpdate({ ...config, interPanelGaps: newGaps });
+              }}
+              className="h-9 w-full"
+              data-testid={`between-panel-gap-${spanId}`}
+            />
+            <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
+          </div>
         </div>
       </div>
 
