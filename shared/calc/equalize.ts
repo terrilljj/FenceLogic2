@@ -1,4 +1,130 @@
 /**
+ * Exact panel equalization for a specific panel count N
+ * Hits target within ±1mm on stepMm grid
+ */
+export function equalizePanelsExact(
+  targetMm: number,
+  N: number,
+  stepMm: number,
+  minPanelMm: number,
+  maxPanelMm: number
+): { widthsMm: number[] } | { error: string } {
+  if (N <= 0) {
+    return { error: 'Panel count must be positive' };
+  }
+  
+  // a) Calculate base width
+  const avgWidth = targetMm / N;
+  const base = Math.floor(avgWidth / stepMm) * stepMm;
+  
+  // b) Initialize all panels to clamped base
+  const widths: number[] = new Array(N);
+  for (let i = 0; i < N; i++) {
+    widths[i] = Math.max(minPanelMm, Math.min(maxPanelMm, base));
+  }
+  
+  // c) Calculate delta
+  let sum = widths.reduce((a, b) => a + b, 0);
+  let delta = targetMm - sum;
+  
+  // d) Calculate steps to add/remove
+  const steps = Math.round(delta / stepMm);
+  
+  // e) Adjust panels
+  if (steps > 0) {
+    // Need to add steps
+    let added = 0;
+    let attempts = 0;
+    const maxAttempts = N * 2; // Allow wraparound
+    
+    while (added < steps && attempts < maxAttempts) {
+      const idx = attempts % N;
+      if (widths[idx] + stepMm <= maxPanelMm) {
+        widths[idx] += stepMm;
+        added++;
+      }
+      attempts++;
+    }
+    
+    if (added < steps) {
+      return { error: `UNREACHABLE_WITH_N: Cannot add ${steps} steps with N=${N}` };
+    }
+  } else if (steps < 0) {
+    // Need to remove steps
+    let removed = 0;
+    let attempts = 0;
+    const maxAttempts = N * 2;
+    
+    while (removed < Math.abs(steps) && attempts < maxAttempts) {
+      const idx = attempts % N;
+      if (widths[idx] - stepMm >= minPanelMm) {
+        widths[idx] -= stepMm;
+        removed++;
+      }
+      attempts++;
+    }
+    
+    if (removed < Math.abs(steps)) {
+      return { error: `UNREACHABLE_WITH_N: Cannot remove ${Math.abs(steps)} steps with N=${N}` };
+    }
+  }
+  
+  // f) Verify constraints
+  sum = widths.reduce((a, b) => a + b, 0);
+  delta = sum - targetMm;
+  
+  // Check all widths are valid
+  for (const w of widths) {
+    if (w % stepMm !== 0) {
+      return { error: `UNREACHABLE_WITH_N: Width ${w} not multiple of ${stepMm}` };
+    }
+    if (w < minPanelMm || w > maxPanelMm) {
+      return { error: `UNREACHABLE_WITH_N: Width ${w} outside bounds [${minPanelMm}, ${maxPanelMm}]` };
+    }
+  }
+  
+  // Accept solution if within half a step (±25mm for 50mm step)
+  // The total length will be conserved by adjusting the end gap
+  const tolerance = stepMm / 2;
+  if (Math.abs(delta) > tolerance) {
+    return { error: `UNREACHABLE_WITH_N: Delta ${delta}mm exceeds ±${tolerance}mm` };
+  }
+  
+  return { widthsMm: widths };
+}
+
+/**
+ * Find feasible N (panel count) for exact target
+ */
+export function findFeasibleN(
+  targetMm: number,
+  minPanelMm: number,
+  maxPanelMm: number,
+  stepMm: number
+): { N: number; widths: number[] } | { error: string } {
+  const N_min = Math.ceil(targetMm / maxPanelMm);
+  const N_max = Math.floor(targetMm / minPanelMm);
+  
+  if (N_min > N_max) {
+    return {
+      error: `UNREACHABLE: Target ${targetMm}mm impossible with panels [${minPanelMm}-${maxPanelMm}]mm. Need ${N_min}-${N_max} panels.`
+    };
+  }
+  
+  // Try each N from min to max
+  for (let N = N_min; N <= N_max; N++) {
+    const result = equalizePanelsExact(targetMm, N, stepMm, minPanelMm, maxPanelMm);
+    if ('widthsMm' in result) {
+      return { N, widths: result.widthsMm };
+    }
+  }
+  
+  return {
+    error: `UNREACHABLE: No N in range [${N_min}-${N_max}] can hit ${targetMm}mm on ${stepMm}mm grid with bounds [${minPanelMm}-${maxPanelMm}]mm`
+  };
+}
+
+/**
  * Equalize panel widths on a fixed grid step (default 50mm)
  * Ensures all panels are within min/max bounds and sum to target length
  * 

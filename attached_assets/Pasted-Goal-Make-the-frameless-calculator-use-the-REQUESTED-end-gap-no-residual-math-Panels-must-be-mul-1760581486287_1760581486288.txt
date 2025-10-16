@@ -1,0 +1,69 @@
+Goal:
+Make the frameless calculator use the REQUESTED end gap (no residual math). Panels must be multiples of 50 mm. If the section cannot be satisfied with these constraints, the solver returns 400 UNREACHABLE (no silent adjustments). Also ensure the gate never disappears on flips.
+
+Scope:
+- Frameless variant only (current bug focus)
+- No residual end gap mode
+- Strict invariants; clear errors
+
+Tasks
+
+1) EndGap policy hard-set
+- Add a constant/policy for frameless: EndGapPolicy = 'LOCKED_STRICT'
+- Ensure resolver reads it (even if UI-config exposes other modes, override to 'LOCKED_STRICT' for frameless until we explicitly allow otherwise)
+
+2) Exact 50 mm panel solve with HARD failure
+- In equalize utilities:
+  - Keep `equalizePanelsExact(targetMm, N, step=50, min, max)` — must return widths that sum to targetMm (±1 mm float allowance), or FAIL.
+  - Keep/find N via:
+      N_min = ceil(targetMm / max)
+      N_max = floor(targetMm / min)
+      try N from N_min..N_max: first success wins
+      if none succeed → UNREACHABLE_WITH_N_RANGE
+- In resolver length accounting:
+  - F = startGap + (hingePanelWidth if G2G) + hingeGap + gateWidth + latchGap
+  - targetPanels = sectionLength − F − endGapRequested
+  - If targetPanels < 0 → 400 { code:'UNREACHABLE', reason:'fixed_exceeds_section' }
+  - Find N and widths via above; if none → 400 { code:'UNREACHABLE', reason:'no_50mm_solution_for_locked_end_gap', details:{ targetPanels, N_min, N_max, step:50 } }
+  - BetweenGap = (N−1) * betweenGap (only between glass panels; do NOT insert at hinge/latch interfaces)
+  - Final total := startGap + sum(widths) + (N−1)*betweenGap + hingeGap + gateWidth + latchGap + (hingePanelWidth if G2G) + endGapRequested
+  - Invariant: |total − sectionLength| ≤ 1 → else 400 { code:'LENGTH_INVARIANT', dump:segments }
+
+3) Gate must NEVER disappear
+- Adopt mm-based anchor if not already:
+  - Store gate hinge reference as `anchor.hingeEdgeMm` (absolute mm from start) + `anchor.side`
+  - On solve, clamp with your existing or added `clampGateAnchor(...)`
+  - Flipping only toggles `anchor.side`; it must NOT clear or move `hingeEdgeMm`
+  - If the anchor leaves no feasible space for any panels (under LOCKED_STRICT), return 400 { code:'UNREACHABLE', reason:'gate_exceeds_bounds' } — do not drop gate
+
+4) Frontend messaging (minimal)
+- On 400 UNREACHABLE with reason 'no_50mm_solution_for_locked_end_gap' or 'gate_exceeds_bounds':
+  - Show blocking toast: 
+    “This end gap cannot be achieved on a 50 mm grid with current settings. Try adjusting: end gap, panel min/max, or move the gate.”
+- Keep the “Variance” UI hidden/disabled for frameless while LOCKED_STRICT is enforced
+
+5) Regression tests
+- Update/confirm `server/tests/regression-visual-5000.spec.ts`:
+  R1 (LEFT hinge, G2G):
+    section=5000, start=25, between=50, end=25, gate=900 (Polaris), hinge=1200
+    Expect: success; one gate; one hinge panel; panels %50==0; |sum−5000|≤1; NO residual logic
+  R2 (RIGHT hinge flip): same expectations; gate present; sum ok
+  R3 (POST): no hinge panel; post anchor present; sum ok
+  R4 (Impossible case): choose params that make targetPanels incompatible with 50 mm grid within min/max → expect 400 with code 'no_50mm_solution_for_locked_end_gap'
+
+6) QA run to memory
+- Run full tests: `npm test`
+- Run `npx tsx server/scripts/qa-gate.ts`
+- Ensure logs written and replit.md appended; include end-gap policy and invariant ok:true in trace
+
+Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: regression-visual-5000.spec.ts pass? <yes/no> (plus totals)
+- Frameless policy forced to LOCKED_STRICT: <yes/no>
+- Panels on 50 mm grid and exact end gap (no residual): <yes/no>
+- Gate never disappears on flip: <yes/no>
+- Length conserved ±1 mm: <yes/no>
+- UNREACHABLE emits clear 400 with reason when impossible: <yes/no>
+- QA reports written: <filenames>
+- Files changed: (list)

@@ -1,0 +1,94 @@
+Goal:
+Eliminate negative residual end gaps and overshoot. Make panel equalization hit an EXACT target (±1mm) on a 50mm grid without double rounding. Choose N robustly. Keep end gap >= 0 always.
+
+Problems observed:
+- Residual end gap computed negative (e.g., −15mm) because panel sum overshot the target after rounding.
+- Composer silently drops negative end gaps → totals wrong.
+- Current N selection sticks to N=8 even when that combination cannot meet the exact target with min/max/step constraints.
+
+Tasks
+
+1) Upgrade equalizePanels to EXACT target solver
+File: shared/calc/equalize.ts
+
+Replace current algorithm with a deterministic exact solver:
+- Signature (keep): equalizePanels({ targetMm, stepMm=50, minPanelMm=300, maxPanelMm })
+- Add parameter count N (required). Create a separate wrapper that searches N.
+- Function equalizePanelsExact(targetMm, N, step, min, max):
+  Algorithm:
+    a) base = floor((targetMm / N) / step) * step
+    b) init widths[i] = clamp(base, min, max)
+    c) delta = targetMm - sum(widths)
+    d) steps = round(delta / step)  // can be positive or negative
+    e) If steps > 0: add +step to the first 'steps' panels, skipping any that would exceed max; wrap around as needed. If stuck → FAIL
+       If steps < 0: add −step to the first |steps| panels, skipping any that would go below min; wrap around as needed. If stuck → FAIL
+    f) After adjustments: assert every width multiple of step and in [min,max], and |sum(widths) − targetMm| ≤ 1. If not, FAIL.
+
+- Return { widthsMm } on success, or an error code on fail ("UNREACHABLE_WITH_N").
+
+2) Robust N selection (no overshoot)
+File: shared/calc/equalize.ts (or a small helper near it)
+
+Implement findFeasibleN({ targetMm, minPanelMm, maxPanelMm, stepMm }):
+- Lower bound: N_min = ceil(targetMm / maxPanelMm)
+- Upper bound: N_max = floor(targetMm / minPanelMm)
+- If N_min > N_max → UNREACHABLE (report clearly)
+- For N from N_min to N_max:
+    try equalizePanelsExact(targetMm, N, step, min, max)
+    return first success
+- If none succeed → UNREACHABLE
+
+3) Correct length accounting and end gap logic
+File: server/services/resolve.ts (or panel pipeline)
+
+- Compute fixed mm WITHOUT betweenGap:
+  F = startGap + (hingePanelWidth if G2G) + hingeGap + gateWidth + latchGap + (any fixed right-side items)
+- PanelsTarget = sectionLength − F − endGapRequested  // use the requested end gap here when deriving target
+- Clamp PanelsTarget ≥ 0 (if negative, early FAIL with message that fixed components exceed available space)
+- Now find N via findFeasibleN for this exact PanelsTarget.
+- Compute widths via equalizePanelsExact(PanelsTarget, N, 50, min, max).
+- Actual end gap = endGapRequested  // do NOT “compute residual” anymore (this prevents negatives); the panel sum has been forced to fit.
+- BetweenGap count = (N − 1) across the equalized group ONLY (no between gaps adjacent to hingeGap/latchGap).
+- Hard invariant: recompute total = startGap + sum(widths) + (N−1)*betweenGap + hingeGap + gateWidth + latchGap + (hingePanelWidth if G2G) + endGapRequested
+  If |total − sectionLength| > 1 → throw 400 {code:"LENGTH_INVARIANT", parts…}
+
+Note: This changes the strategy from “use residual end gap to fix totals” → “force panels to the exact target, keep the requested end gap”. This avoids negative residuals and double rounding.
+
+4) Composer guard (no silent drops)
+- If an input would yield negative end gap (before equalization), reject early with clear error: "End gap too small for chosen components."
+- Never drop a negative gap silently; never auto-fallback to a 2×2000 layout.
+
+5) Tests (strict)
+Update/add tests:
+
+A) server/tests/regression-visual-5000.spec.ts
+- Case R1 (LEFT hinge): section 5000, start=25, between=50, end=25, G2G, hinge=1200, gate=900 (Polaris).
+  Assert:
+    • exactly one gate
+    • one hinge-panel (G2G)
+    • all panel widths % 50 == 0 and within [min,max]
+    • total within ±1mm of 5000
+    • end gap equals requested (25), not computed residual
+- Case R2 (RIGHT hinge flip): same assertions.
+- Case R3 (POST): no hinge-panel; anchor present; totals within ±1mm.
+
+B) Add a new case UNREACHABLE:
+- Choose inputs that make PanelsTarget too small for any N with minPanel=300 and step=50.
+  Expect 400 with code "UNREACHABLE" and a helpful message.
+
+6) QA run (persist)
+- Run npm test (all)
+- Run npx tsx server/scripts/qa-gate.ts
+- Ensure QA markdown/json written; include the invariant-check ok:true and endGap handling note.
+
+Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: regression-visual-5000.spec.ts pass? <yes/no> (totals by file)
+- N selection uses exact target (no overshoot): <yes/no>
+- Panels 50mm grid and within [min,max]: <yes/no>
+- Length conservation within ±1mm with requested end gap: <yes/no>
+- No negative end gap ever emitted: <yes/no>
+- QA reports written: <filenames>
+- Files changed: (list)
+- If UNREACHABLE occurs, message example printed

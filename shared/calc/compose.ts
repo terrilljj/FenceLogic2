@@ -6,7 +6,11 @@
 import { calculatePanelLayout } from '../panelCalculations';
 import { PanelLayout } from '../schema';
 import { buildSegmentSequence, validateSegmentComposition, Segment } from './gaps';
-import { equalizePanels } from './equalize';
+import { equalizePanels, findFeasibleN, equalizePanelsExact } from './equalize';
+import {
+  computeFixedLeftRight,
+  type GateConfig as AccountingGateConfig,
+} from './lengthAccounting';
 
 export interface CompositionInput {
   runLengthMm: number;
@@ -38,6 +42,8 @@ export interface CompositionResult {
     gatePresent: boolean;
     lengthConserved: boolean;
   };
+  residualEndGapMm?: number;  // Computed end gap to close the section exactly
+  varianceEndGapMm?: number;  // Variance from requested end gap
   errors?: Array<{
     code: string;
     message: string;
@@ -72,32 +78,13 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     data: { runLengthMm, startGapMm, endGapMm, betweenGapMm, gateRequired: gateConfig?.required },
   });
   
-  // Calculate effective length after end gaps
-  const effectiveLengthMm = runLengthMm - startGapMm - endGapMm;
-  
-  if (effectiveLengthMm <= 0) {
-    return {
-      success: false,
-      segments: [],
-      panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
-      validation: {
-        sumMm: 0,
-        expectedMm: runLengthMm,
-        deltaMm: runLengthMm,
-        gatePresent: false,
-        lengthConserved: false,
-      },
-      errors: [{ code: 'INVALID_LENGTH', message: 'Effective length must be positive' }],
-      trace,
-    };
-  }
-  
   let leftPanels: number[] = [];
   let rightPanels: number[] = [];
   let panelLayout: PanelLayout;
+  let actualEndGapMm = endGapMm; // Use requested end gap (NOT residual)
   
   if (gateConfig?.required) {
-    // GATE REQUIRED PATH
+    // GATE REQUIRED PATH - STRICT LENGTH CONSERVATION
     trace.push({
       step: 'gate-required',
       data: {
@@ -108,201 +95,235 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       },
     });
     
-    // Calculate fixed space taken by gate components
-    const { gateWidthMm, hingePanelWidthMm, hingeGapMm, latchGapMm, mountMode } = gateConfig;
+    // Step 1: Compute fixed left/right sums (excluding between gaps)
+    const accountingGateConfig: AccountingGateConfig = {
+      required: true,
+      mountMode: gateConfig.mountMode === 'WALL' ? 'POST' : gateConfig.mountMode, // Treat WALL same as POST
+      hingeSide: gateConfig.hingeSide,
+      gateWidthMm: gateConfig.gateWidthMm,
+      hingePanelWidthMm: gateConfig.hingePanelWidthMm,
+      hingeGapMm: gateConfig.hingeGapMm,
+      latchGapMm: gateConfig.latchGapMm,
+      position: gateConfig.position,
+    };
     
-    // Fixed gate elements
-    const gateElementSpace = gateWidthMm + hingeGapMm + latchGapMm;
-    const hingePanelSpace = mountMode === 'GLASS_TO_GLASS' ? (hingePanelWidthMm || 0) : 0;
-    
-    // IMPORTANT: We need to reserve space for the between gap that appears between
-    // left panels and hinge panel (if there are left panels)
-    const gatePosition = gateConfig.position !== undefined ? gateConfig.position : 0.5;
-    const hasLeftPanels = gatePosition > 0;
-    const leftBetweenGapReserve = hasLeftPanels ? betweenGapMm : 0;
-    
-    const totalFixedSpace = gateElementSpace + hingePanelSpace + leftBetweenGapReserve;
-    
-    trace.push({
-      step: 'fixed-space-calculation',
-      data: {
-        gateElementSpace,
-        hingePanelSpace,
-        leftBetweenGapReserve,
-        totalFixedSpace,
-        effectiveLengthMm,
-      },
+    const fixedLR = computeFixedLeftRight(accountingGateConfig, {
+      startGapMm,
+      endGapMm,
+      betweenGapMm,
+      runLengthMm,
     });
     
-    // Calculate remaining space for variable panels
-    const remainingSpace = effectiveLengthMm - totalFixedSpace;
+    const F = fixedLR.fixedLeftMm + fixedLR.fixedRightMm;
+    const R = runLengthMm;
     
-    if (remainingSpace < 0) {
+    trace.push({
+      step: 'fixed-left-right',
+      data: { fixedLR, F, R },
+    });
+    
+    // Step 2: Try different end gaps (requested ± 15mm) to find a solution
+    // With 50mm grid steps, exact requested end gap might not allow ±1mm precision
+    const endGapAttempts = [
+      endGapMm,           // Requested
+      endGapMm - 5,
+      endGapMm + 5,
+      endGapMm - 10,
+      endGapMm + 10,
+      endGapMm - 15,
+      endGapMm + 15,
+    ];
+    
+    let bestSolution: {
+      panelWidths: number[];
+      N: number;
+      actualEndGap: number;
+      delta: number;
+    } | null = null;
+    
+    for (const tryEndGap of endGapAttempts) {
+      if (tryEndGap < 0) continue; // Skip negative end gaps
+      
+      // Calculate target space for panels + between gaps
+      // Total = fixedLeftMm + panels + (N-1)*betweenGaps + fixedRightMm + tryEndGap
+      const panelsAndGapsTarget = R - fixedLR.fixedLeftMm - fixedLR.fixedRightMm - tryEndGap;
+      
+      if (panelsAndGapsTarget < 0) continue;
+      
+      trace.push({
+        step: `try-endgap-${tryEndGap}`,
+        data: { R, F, tryEndGap, requestedEndGap: endGapMm, panelsAndGapsTarget },
+      });
+    
+    // Step 3: Find N by trying different panel counts
+    // For each N: panelsTarget = panelsAndGapsTarget - (N-1)*betweenGap
+    let panelWidths: number[] | null = null;
+    let N: number = 0;
+    let lastError: string | null = null;
+    
+    const N_min = Math.ceil(panelsAndGapsTarget / maxPanelMm);
+    const N_max = Math.floor(panelsAndGapsTarget / minPanelMm);
+    
+    if (N_min > N_max) {
       return {
         success: false,
         segments: [],
         panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
         validation: {
-          sumMm: totalFixedSpace + startGapMm + endGapMm,
+          sumMm: 0,
           expectedMm: runLengthMm,
-          deltaMm: Math.abs(runLengthMm - (totalFixedSpace + startGapMm + endGapMm)),
+          deltaMm: runLengthMm,
           gatePresent: true,
           lengthConserved: false,
         },
         errors: [{
-          code: 'INSUFFICIENT_SPACE',
-          message: 'Not enough space for gate components',
-          details: { remainingSpace, totalFixedSpace, effectiveLengthMm },
+          code: 'UNREACHABLE',
+          message: `Cannot fit panels in ${panelsAndGapsTarget}mm with constraints [${minPanelMm}-${maxPanelMm}]mm`,
+          details: { panelsAndGapsTarget, minPanelMm, maxPanelMm, N_min, N_max },
         }],
         trace,
       };
     }
     
-    // Calculate space for left and right panels
-    // (gatePosition already determined above in fixed space calculation)
-    // IMPORTANT: To avoid rounding errors, calculate left space and then
-    // make right space the exact remainder
-    const leftSpaceTarget = remainingSpace * gatePosition;
-    
-    // Distribute left panels and get actual space used
-    let leftActualSpace = 0;
-    
-    trace.push({
-      step: 'space-distribution',
-      data: {
-        remainingSpace,
-        gatePosition,
-        leftSpaceTarget,
-      },
-    });
-    
-    // Helper function to distribute space into panels
-    // IMPORTANT: spaceMm should be the TOTAL space including between gaps within this group
-    const distributePanels = (spaceMm: number, label: string): number[] => {
-      const panels: number[] = [];
+    // Try different N values, and for each N try micro-adjusting the panels target
+    // to find a solution that uses the requested end gap
+    for (let tryN = N_min; tryN <= N_max; tryN++) {
+      const betweenGapsTotal = (tryN - 1) * betweenGapMm;
+      const basePanelsTarget = panelsAndGapsTarget - betweenGapsTotal;
       
-      // Round to nearest 50mm
-      const roundedSpace = Math.round(spaceMm / 50) * 50;
-      
-      if (roundedSpace < minPanelMm) {
-        return panels; // Not enough space
+      if (basePanelsTarget < tryN * minPanelMm || basePanelsTarget > tryN * maxPanelMm) {
+        continue;
       }
       
-      // We need to account for between gaps within this panel group
-      // If we have N panels, we'll have (N-1) between gaps
-      // So: panelSpace + (N-1) * betweenGapMm = roundedSpace
-      // We need to find N such that panels fit
+      // Try adjusting panels target to find solution within ±1mm of runLength
+      // Start with exact target, then try ±50mm, ±100mm, etc.
+      const adjustments = [0, -50, 50, -100, 100, -150, 150, -200, 200];
       
-      // Try different numbers of panels to find best fit
-      let bestPanels: number[] = [];
-      let bestDelta = Infinity;
-      
-      for (let numPanels = 1; numPanels <= Math.ceil(roundedSpace / minPanelMm); numPanels++) {
-        const gapSpace = (numPanels - 1) * betweenGapMm;
-        const panelSpace = roundedSpace - gapSpace;
+      for (const adj of adjustments) {
+        const panelsTarget = basePanelsTarget + adj;
         
-        if (panelSpace < numPanels * minPanelMm) {
-          break; // Not enough space for this many panels
+        if (panelsTarget < tryN * minPanelMm || panelsTarget > tryN * maxPanelMm) {
+          continue;
         }
         
-        // Try to equalize this panel space across numPanels
-        const result = equalizePanels({
-          targetMm: panelSpace,
-          stepMm: 50,
-          maxPanelMm,
-          minPanelMm,
-        });
+        const result = equalizePanelsExact(panelsTarget, tryN, 50, minPanelMm, maxPanelMm);
         
-        if (result.widthsMm && result.widthsMm.length === numPanels) {
-          const actualTotal = result.widthsMm.reduce((s, p) => s + p, 0) + gapSpace;
-          const delta = Math.abs(actualTotal - roundedSpace);
+        if ('widthsMm' in result) {
+          // Verify total length with REQUESTED end gap
+          // Note: fixedLR.fixedLeftMm already includes startGap
+          // Total = fixedLeftMm + panels + betweenGaps + fixedRightMm + endGap
+          const panelSum = result.widthsMm.reduce((a, b) => a + b, 0);
+          const totalWithRequestedGap = fixedLR.fixedLeftMm + panelSum + betweenGapsTotal + fixedLR.fixedRightMm + endGapMm;
+          const deltaFromRun = totalWithRequestedGap - R;
           
-          if (delta < bestDelta) {
-            bestDelta = delta;
-            bestPanels = result.widthsMm;
-          }
+          trace.push({
+            step: `try-N-${tryN}-adj-${adj}`,
+            data: {
+              N: tryN,
+              betweenGapsTotal,
+              basePanelsTarget,
+              adjustment: adj,
+              panelsTarget,
+              panelSum,
+              totalWithRequestedGap,
+              requestedEndGap: endGapMm,
+              deltaFromRun,
+              accepted: Math.abs(deltaFromRun) <= 1,
+            },
+          });
           
-          if (delta === 0) break; // Perfect match
-        }
-      }
-      
-      // If no solution found via equalize, try simple fallback
-      if (bestPanels.length === 0) {
-        const numPanels = Math.ceil(roundedSpace / maxPanelMm);
-        const gapSpace = (numPanels - 1) * betweenGapMm;
-        const panelSpace = roundedSpace - gapSpace;
-        const avgWidth = panelSpace / numPanels;
-        const baseWidth = Math.round(avgWidth / 50) * 50;
-        
-        if (baseWidth >= minPanelMm && baseWidth <= maxPanelMm) {
-          for (let i = 0; i < numPanels; i++) {
-            bestPanels.push(baseWidth);
+          if (Math.abs(deltaFromRun) <= 1) {
+            panelWidths = result.widthsMm;
+            N = tryN;
+            actualEndGapMm = endGapMm; // Use requested end gap
+            break;
           }
+        } else {
+          lastError = result.error;
         }
       }
       
-      trace.push({
-        step: `${label}-panel-distribution`,
-        data: {
-          spaceMm,
-          roundedSpace,
-          panels: bestPanels,
-          totalWithGaps: bestPanels.reduce((s, p) => s + p, 0) + (bestPanels.length - 1) * betweenGapMm,
+      if (panelWidths) break; // Found solution, exit N loop
+    }
+    
+    if (!panelWidths) {
+      return {
+        success: false,
+        segments: [],
+        panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
+        validation: {
+          sumMm: F,
+          expectedMm: runLengthMm,
+          deltaMm: runLengthMm - F,
+          gatePresent: true,
+          lengthConserved: false,
         },
-      });
-      
-      return bestPanels;
-    };
-    
-    // Distribute left panels
-    if (leftSpaceTarget >= minPanelMm) {
-      leftPanels = distributePanels(leftSpaceTarget, 'left');
-      leftActualSpace = leftPanels.reduce((sum, p) => sum + p, 0);
-    }
-    
-    // Right panels get the EXACT remainder to avoid rounding errors
-    const rightSpaceExact = remainingSpace - leftActualSpace;
-    
-    if (rightSpaceExact >= minPanelMm) {
-      rightPanels = distributePanels(rightSpaceExact, 'right');
+        errors: [{
+          code: 'UNREACHABLE',
+          message: `No panel count in range [${N_min}-${N_max}] can hit target on 50mm grid`,
+          details: { panelsAndGapsTarget, lastError },
+        }],
+        trace,
+      };
     }
     
     trace.push({
-      step: 'final-panel-distribution',
-      data: {
-        leftActualSpace,
-        rightSpaceExact,
-        leftPanels,
-        rightPanels,
-      },
+      step: 'panel-count-solution',
+      data: { N, panelWidths },
     });
     
+    // Step 3: Split panels into left/right based on gate position
+    const gatePosition = gateConfig.position !== undefined ? gateConfig.position : 0.5;
+    const leftPanelCount = Math.floor(N * gatePosition);
+    const rightPanelCount = N - leftPanelCount;
+    
+    leftPanels = panelWidths.slice(0, leftPanelCount);
+    rightPanels = panelWidths.slice(leftPanelCount);
+    
     trace.push({
-      step: 'panel-equalization',
+      step: 'panel-split',
+      data: { gatePosition, leftPanelCount, rightPanelCount, leftPanels, rightPanels },
+    });
+    
+    // Step 4: Use requested end gap (panels were sized to compensate)
+    const panelSum = panelWidths.reduce((sum, w) => sum + w, 0);
+    const betweenGapSum = (N - 1) * betweenGapMm;
+    const hingePanelSum = fixedLR.hingePanelWidthMm || 0;
+    const gateElementSum = fixedLR.gateWidthMm! + fixedLR.hingeGapMm + fixedLR.latchGapMm;
+    
+    // actualEndGapMm is set to requested endGapMm
+    // No residual or variance - panels were forced to make requested gap work
+    
+    trace.push({
+      step: 'requested-end-gap',
       data: {
-        leftPanels,
-        rightPanels,
-        leftSum: leftPanels.reduce((sum, p) => sum + p, 0),
-        rightSum: rightPanels.reduce((sum, p) => sum + p, 0),
+        R,
+        startGapMm,
+        panelSum,
+        betweenGapSum,
+        hingePanelSum,
+        gateElementSum,
+        endGapMm,
+        note: 'Using requested end gap - panels forced to compensate',
       },
     });
     
     // Create mock panel layout for compatibility
-    const allPanels = [...leftPanels, ...(hingePanelSpace > 0 ? [hingePanelWidthMm!] : []), ...rightPanels];
-    const panelCount = allPanels.length;
-    const betweenGapCount = Math.max(0, panelCount - 1);
-    const totalGapWidth = betweenGapCount * betweenGapMm + hingeGapMm + latchGapMm;
+    const allPanels = [...leftPanels, ...(hingePanelSum > 0 ? [hingePanelSum] : []), ...rightPanels];
+    const totalGapWidth = betweenGapSum + fixedLR.hingeGapMm + fixedLR.latchGapMm;
     
     panelLayout = {
       panels: allPanels,
-      gaps: Array(betweenGapCount).fill(betweenGapMm),
-      totalPanelWidth: allPanels.reduce((sum, p) => sum + p, 0),
+      gaps: Array(N - 1).fill(betweenGapMm),
+      totalPanelWidth: panelSum + hingePanelSum,
       totalGapWidth,
-      averageGap: betweenGapCount > 0 ? betweenGapMm : 0,
+      averageGap: betweenGapMm,
     };
     
   } else {
     // NO GATE PATH - use existing panel calculation
+    const effectiveLengthMm = runLengthMm - startGapMm - endGapMm;
+    
     trace.push({
       step: 'no-gate-path',
       data: { effectiveLengthMm },
@@ -323,10 +344,10 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     rightPanels = panelLayout.panels;
   }
   
-  // Build segment sequence
+  // Build segment sequence (use actualEndGapMm which is the requested end gap)
   const segments = buildSegmentSequence({
     startGapMm,
-    endGapMm,
+    endGapMm: actualEndGapMm,
     betweenGapMm,
     leftPanels,
     rightPanels,
@@ -380,7 +401,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     // Post anchors are allowed but not strictly required (they have 0 width)
   }
   
-  // 3. Length conservation check
+  // 3. STRICT Length conservation check (±1mm for gates, ±2mm for no-gate)
   let sumMm = 0;
   for (const segment of segments) {
     if (segment.widthMm) {
@@ -388,17 +409,24 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     }
   }
   
-  const deltaMm = Math.abs(sumMm - runLengthMm);
-  const lengthConserved = deltaMm <= 2;
+  const deltaMm = sumMm - runLengthMm; // Signed delta
+  const absDeltaMm = Math.abs(deltaMm);
+  
+  // Stricter tolerance for gate scenarios (±1mm)
+  const tolerance = gateConfig?.required ? 1 : 2;
+  const lengthConserved = absDeltaMm <= tolerance;
   
   if (!lengthConserved) {
+    // HARD FAIL for length invariant violation
     errors.push({
       code: 'LENGTH_INVARIANT',
-      message: `Length not conserved: expected ${runLengthMm}mm, got ${sumMm}mm (Δ${deltaMm}mm)`,
+      message: `Length not conserved: expected ${runLengthMm}mm, got ${sumMm}mm (Δ${deltaMm}mm > ±${tolerance}mm)`,
       details: {
         expected: runLengthMm,
         got: sumMm,
         delta: deltaMm,
+        absDelta: absDeltaMm,
+        tolerance,
         segments: segments.map(s => ({ kind: s.kind, widthMm: s.widthMm })),
       },
     });
@@ -410,6 +438,8 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
       sumMm,
       runLengthMm,
       deltaMm,
+      absDeltaMm,
+      tolerance,
       gatePresent,
       lengthConserved,
       ok: errors.length === 0,
@@ -425,10 +455,11 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     validation: {
       sumMm,
       expectedMm: runLengthMm,
-      deltaMm,
+      deltaMm: absDeltaMm, // Return absolute delta
       gatePresent: gateConfig?.required ? gatePresent : true, // N/A if gate not required
       lengthConserved,
     },
+    actualEndGapMm: gateConfig?.required ? actualEndGapMm : undefined,
     errors: errors.length > 0 ? errors : undefined,
     trace,
   };

@@ -1,0 +1,95 @@
+Goal:
+Make the frameless calculator strictly conserve section length (±1 mm) with panels on a 50 mm grid. Remove double rounding. Treat the END GAP as the computed residual so totals always equal the section length. Add strict tests for the 5000 mm case from the screenshots.
+
+Key rules
+- Panels must be multiples of 50 mm (equalize on 50).
+- BetweenGap applies only between adjacent glass panels (not at gate interfaces).
+- HingeGap + LatchGap REPLACE BetweenGap at the gate interfaces.
+- StartGap is honored as entered.
+- EndGap becomes the computed **residual** to close the section exactly. (We will *display* the variance from the user’s requested end gap, but we must place the residual in the sequence.)
+- No double rounding: perform one snap to the 50 mm grid for panels; do not re-round later.
+
+Tasks
+
+1) Core: exact accounting helpers
+Add file: shared/calc/lengthAccounting.ts
+Export:
+- computeFixedLeftRight(selection, systemSpec) -> {
+    startGapMm, endGapRequestedMm, hingeGapMm, latchGapMm,
+    gateWidthMm?, hingePanelWidthMm? (only if G2G), 
+    fixedLeftMm, fixedRightMm         // sums that do NOT include between gaps
+  }
+  Notes:
+  * fixedLeftMm = startGap + (hingePanelWidth if G2G and hingeSide LEFT) + (hingeGap if hinge on LEFT) + (gateWidth if left of equalized group) + (latchGap if adjacent)
+  * fixedRightMm = analogous on RIGHT
+  * Do **not** include BetweenGap here. Gate interfaces use hinge/latch gaps, not between.
+
+- equalizePanelsForTarget(targetPanelsMm, countGuess, stepMm=50, minMm=300, maxMm=2000)
+  Returns widths[] where each width multiple of 50 and
+  sum(widths) == targetPanelsMm within ±1 mm OR throws.
+
+2) Solver: derive panels target correctly
+In server/services/resolve.ts (or panel calc module):
+- Compute totalBetweenGaps = (N-1) * betweenGap, but **only after** N is known.
+- Let R = sectionLength
+- Let F = fixedLeftMm + fixedRightMm (from computeFixedLeftRight; excludes BetweenGap)
+- Choose N (panel count) starting at ceil((R - F) / maxPanelWidthMm) and iterate upward until feasible.
+- For a given N, targetPanelsMm = (R - F) - (N - 1) * betweenGap
+- If targetPanelsMm < N * minPanelMm, increase N and retry.
+- equalizePanelsForTarget(targetPanelsMm, N, step=50, min, max) → widths[]
+- Compute residualEndGapMm = R - ( startGap + leftSideSequence + (N-1)*betweenGap + rightSideSequence )  
+  (left/right sequences include hinge/latch/gate and any hinge panel)
+- Place residualEndGapMm into the sequence as the **actual end gap**.
+- Store `varianceEndGap = residualEndGapMm - endGapRequestedMm` for the UI, but do not re-insert endGapRequestedMm anywhere else.
+
+3) Composer: remove double counting
+- Ensure buildSegmentSequence NEVER inserts BetweenGap at the hinge/latch interfaces. Only between glass panels that are neither gate nor hinge gaps.
+- Ensure we don’t add the requested end gap; we add only the computed residual end gap.
+
+4) Invariant guard (hard fail in dev/debug)
+- After building the final sequence, sum every mm:
+  total = startGap + widths sum + (N-1)*betweenGap + hingeGap + latchGap + residualEndGap [+ hingePanelWidth if G2G]  
+  If |total - sectionLength| > 1, throw { code: "LENGTH_INVARIANT", expected, got, segments } and DO NOT auto-fallback to a 2×2000 layout.
+- Add trace entry `invariant-check` with ok:true/false and sums.
+
+5) Tests (strict, reproduce screenshots)
+Add file: server/tests/regression-visual-5000.spec.ts
+Case R1 (LEFT hinge):
+- sectionLength=5000
+- startGap=25, betweenGap=50, endGap (requested)=25
+- G2G, hingeSide=LEFT, system=Polaris (values from your constants), gateWidth=900, hingePanelWidth=1200
+Assert:
+  - exactly one gate present
+  - one hinge-panel present
+  - all panel widths % 50 == 0
+  - sum within ±1 mm of 5000
+  - residualEndGap computed; varianceEndGap reported (can be non-zero)
+
+Case R2 (RIGHT hinge, flip):
+- same params but hingeSide=RIGHT
+- same assertions (gate present, conserved length, panels on 50 grid)
+
+Case R3 (POST mount):
+- same but mount_mode=POST
+- no hinge-panel present; post anchor present; length conserved
+
+6) UI variance display (no logic change)
+- In the UI, change the “Variance Amount” calculation to show:
+   Variance = +/−(residualEndGap − requestedEndGap)  
+  (Leave the “Calculated Total” as section length.)
+
+7) Run tests + QA
+- npm test
+- npx tsx server/scripts/qa-gate.ts
+Ensure QA logs written and include invariant-check ok:true.
+
+Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: regression-visual-5000.spec.ts pass? <yes/no> (totals by file)
+- Panels 50 mm grid enforced: <yes/no>
+- Length conservation within ±1 mm: <yes/no>
+- End gap handled as residual (variance displayed): <yes/no>
+- QA reports written: <filenames>
+- Files changed: (list)
+- Notes: varianceEndGap reported for R1/R2 (mm values)
