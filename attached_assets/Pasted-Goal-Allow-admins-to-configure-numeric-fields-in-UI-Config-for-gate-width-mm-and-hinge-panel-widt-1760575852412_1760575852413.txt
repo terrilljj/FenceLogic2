@@ -1,0 +1,90 @@
+Goal:
+Allow admins to configure numeric fields in UI Config for gate width (mm) and hinge panel width (mm), with min/max/step/tolerance and defaults. Use these values at resolve time (and allow the shopper selection to override). If no exact SKU exists, snap to nearest within tolerance; otherwise mark as custom and warn.
+
+1) Schema: add a numeric field type
+- File: server/schemas/ui-config.ts
+- Extend the discriminated union with:
+  { 
+    type: 'number',
+    label: string,
+    unit?: 'mm',
+    default?: number,
+    min?: number,
+    max?: number,
+    step?: number,
+    tolerance?: number,          // used to snap to nearest SKU
+    context?: 'gate'|'hinge',    // informs resolver which catalog to use
+    // optional hints:
+    subcategory?: string         // e.g. "Gate Master", "Hinge Panels Master" (fallback if not provided: infer from gate_system + mount_mode)
+  }
+- Ensure UiConfigSchema validates number fields. Reject invalid ranges (min>max, step<=0, tolerance<0). Keep existing types untouched.
+
+2) Admin UI: edit screen for numeric fields
+- In /ui-config editor (client), add a card to add/edit numeric fields:
+  - Fields: label, default, min, max, step, tolerance, context (select: gate/hinge), subcategory (optional, canonical dropdown from DB).
+  - Show live helper text like: “Range: 700–1200mm • Step 50 • Tolerance ±50”.
+- Persist via existing save endpoint (already Zod-validated).
+- No free-text for subcategory; use canonical list you already fetch.
+
+3) Resolver support
+- Files: server/services/resolve.ts (and optionally server/services/gate-utils.ts)
+- Read numeric fields from the active UI Config for the current variant:
+  - Prefer explicit shopper selection values (selection.gate_width_mm, selection.hinge_panel_width_mm).
+  - Else use UI-config defaults if present.
+- Gate SKU selection:
+  - Implement (or reuse) chooseGateSkuByNearest(targetMm, gateSkus[], toleranceMm):
+      -> returns { sku?, snappedWidthMm?, warning? }
+      -> pick closest active SKU by width within tolerance; if none, return warning 'no_gate_sku_within_tolerance'
+  - Gate SKUs set comes from:
+      - If UI Config number field provided a subcategory, use it.
+      - Else infer from gate_system: "Gate Master" or "Gate Polaris/Atlantic".
+- Hinge panel width (only when mount_mode === GLASS_TO_GLASS):
+  - If a numeric field with context:'hinge' exists:
+      - Use selection.hinge_panel_width_mm or the UI-config default; pass to your hinge chooser (chooseHingePanelWidth).
+      - If no SKU within tolerance, mark custom and warn.
+  - If POST/WALL, ignore hinge numeric field (no hinge panel SKU should be inserted).
+- Trace:
+  - Add entries like:
+    { source:'ui-config:number', key:'gate_width_mm', codes:[<chosen gate code or 'CUSTOM-GATE'>] }
+    { source:'ui-config:number', key:'hinge_panel_width_mm', codes:[<chosen hinge code or 'CUSTOM-GLASS'>] }
+  - If snapped, include note "snapped_from=<requested> to <snapped>".
+
+4) Tests (Vitest)
+- Add server/tests/ui-config-numbers.spec.ts with in-memory fixtures:
+  A) Gate width default from UI-config (e.g., default 850) chooses GM-GATE-850 exactly.
+  B) Shopper selection overrides default (e.g., 1000 selects GM-GATE-1000).
+  C) Snap within tolerance (e.g., request 975 → snaps to 1000 with tolerance 50; trace includes snapped note).
+  D) Hinge width default applied only for GLASS_TO_GLASS; ignored for POST (no hinge SKU present).
+  E) Out of tolerance → custom + warning; geometry uses requested width for gap math.
+- Keep previous tests green.
+
+5) Patch existing frameless variant UI-config (migration script)
+- File: server/scripts/patch-ui-config-gate-sizes.ts
+- For variant key used for frameless fence (detect from DB), upsert into fieldConfigs:
+  - number field { type:'number', label:'Gate Width', unit:'mm', default:850, min:700, max:1200, step:50, tolerance:50, context:'gate', subcategory:'Gate Master' }
+  - number field { type:'number', label:'Hinge Panel Width', unit:'mm', default:1100, min:300, max:1800, step:100, tolerance:50, context:'hinge', subcategory:'Hinge Panels Master' }
+- Do not remove existing fields. If fields already exist, update their properties minimally.
+- Print a summary of changes.
+
+6) Run & verify
+- If allowed, add npm scripts:
+    "patch:ui:numbers": "tsx server/scripts/patch-ui-config-gate-sizes.ts"
+  Else provide fallback command.
+- Re-run tests: npm test
+- Re-run QA: npx tsx server/scripts/qa-gate.ts
+  The QA should show:
+    - S2 (G2G LEFT): hinge-panel present; trace shows ui-config:number hinge_panel_width_mm (or equivalent key)
+    - S3 (POST RIGHT): post-anchor present; NO hinge-panel; gate width uses number field or selection
+    - S4 (flip POST→G2G): hinge_side preserved; gap sanity OK
+
+Acceptance checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: pass/fail by file (including ui-config-numbers.spec.ts)
+- UI-config patched: ✅/❌ (frameless variant has Gate & Hinge number fields)
+- QA:
+  - S2: hinge-panel in trace? <yes/no>; snapped? <yes/no>; finalCodes=<n>
+  - S3: post-anchor? <yes/no>; hinge-panel present? <yes/no>; finalCodes=<n>
+  - S4: hinge_side preserved? <yes/no>; gap sanity ok? <yes/no>
+- Files changed: (list)
+- Warnings (if any): list snapped/custom notes

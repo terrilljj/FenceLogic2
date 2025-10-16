@@ -702,26 +702,90 @@ export type UIInputField =
   | "panel-height"
   | "finish"
   | "layout-mode"
-  | "post-type";
+  | "post-type"
+  | "gate-width-mm"
+  | "hinge-panel-width-mm";
 
-export interface UIFieldConfig {
-  field: UIInputField;
+// Base field config properties
+export interface BaseUIFieldConfig {
   enabled: boolean;
   position: number;
   label?: string;
   tooltip?: string;
-  // Value configuration
+}
+
+// Unified field config (backward compatible)
+export interface UIFieldConfig extends BaseUIFieldConfig {
+  type?: "standard" | "number"; // Optional for backward compatibility
+  field: UIInputField;
+  // Standard field properties
   defaultValue?: any;
-  min?: number;
-  max?: number;
-  step?: number;
   options?: string[]; // For dropdown fields
   optionPaths?: Record<string, string[]>; // Maps dropdown option to category paths (e.g., "12mm" → ["pool_fence/frameless/glass_panels"])
   categoryPaths?: string[]; // For toggle/other fields - array of associated category paths
   // Legacy fields (deprecated, use categoryPaths instead)
   optionProducts?: Record<string, string[]>; // Maps dropdown option to product codes (DEPRECATED)
   products?: string[]; // For toggle/other fields - array of associated product codes (DEPRECATED)
+  // Numeric field properties (for type="number")
+  unit?: "mm";
+  default?: number; // For numeric fields
+  min?: number;
+  max?: number;
+  step?: number;
+  tolerance?: number; // Used to snap to nearest SKU (numeric fields only)
+  context?: "gate" | "hinge"; // Informs resolver which catalog to use (numeric fields only)
+  subcategory?: string; // e.g., "Gate Master", "Hinge Panels Master" (numeric fields only)
 }
+
+// Unified Zod schema for UI field config (backward compatible)
+export const UIFieldConfigSchema = z.object({
+  type: z.enum(["standard", "number"]).optional(),
+  field: z.string(),
+  enabled: z.boolean(),
+  position: z.number(),
+  label: z.string().optional(),
+  tooltip: z.string().optional(),
+  // Standard field properties
+  defaultValue: z.any().optional(),
+  options: z.array(z.string()).optional(),
+  optionPaths: z.record(z.array(z.string())).optional(),
+  categoryPaths: z.array(z.string()).optional(),
+  optionProducts: z.record(z.array(z.string())).optional(),
+  products: z.array(z.string()).optional(),
+  // Numeric field properties
+  unit: z.literal("mm").optional(),
+  default: z.number().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  step: z.number().positive().optional(),
+  tolerance: z.number().nonnegative().optional(),
+  context: z.enum(["gate", "hinge"]).optional(),
+  subcategory: z.string().optional(),
+}).refine(data => {
+  // Validate min <= max if both are provided
+  if (data.min !== undefined && data.max !== undefined && data.min > data.max) {
+    return false;
+  }
+  return true;
+}, {
+  message: "min must be less than or equal to max"
+}).refine(data => {
+  // Validate step > 0 if provided (for numeric fields)
+  if (data.type === "number" && data.step !== undefined && data.step <= 0) {
+    return false;
+  }
+  return true;
+}, {
+  message: "step must be positive for numeric fields"
+}).refine(data => {
+  // Validate tolerance >= 0 if provided (for numeric fields)
+  if (data.type === "number" && data.tolerance !== undefined && data.tolerance < 0) {
+    return false;
+  }
+  return true;
+}, {
+  message: "tolerance must be non-negative for numeric fields"
+});
 
 // Product UI Configuration table
 export const productUIConfigs = pgTable("product_ui_configs", {

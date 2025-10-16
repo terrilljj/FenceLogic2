@@ -102,6 +102,11 @@ const VARIANT_FIELDS: Record<ProductVariant, UIInputField[]> = {
   "general-barr": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
 };
 
+// Type guard for numeric fields
+function isNumericField(config: UIFieldConfig): boolean {
+  return config.type === "number";
+}
+
 export default function UIConfigPage() {
   const { toast } = useToast();
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>("glass-pool-spigots");

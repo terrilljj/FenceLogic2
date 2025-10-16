@@ -1,11 +1,13 @@
 import { type IStorage } from "../storage";
 import { type ProductUIConfig, type Product } from "@shared/schema";
 import { mapGateModeToCatalog, normalizeGateMode, normalizeGateSystem, type GateMode, type GateSystem } from "./gate-mode-shim";
+import { chooseGateSkuByNearest, chooseHingePanelWidth } from "./sku-selector";
 
 export interface ResolveTraceEntry {
-  source: "categoryPath" | "subcategory" | "direct" | "gate-mode-shim";
+  source: "categoryPath" | "subcategory" | "direct" | "gate-mode-shim" | "ui-config:number";
   key: string;
   codes: string[];
+  note?: string; // For snapping or custom warnings
 }
 
 export interface ResolveResult {
@@ -37,6 +39,9 @@ export function resolveSelectionToProductsCore(
   // Filter to active products only
   const activeProducts = products.filter(p => p.active === 1);
 
+  // Track which subcategories are handled by numeric fields (to prevent duplicate addition via allowedSubcategories)
+  const numericFieldHandledSubcats = new Set<string>();
+  
   // Apply gate mode shim if mount_mode is present
   let gateModeIncludeSubcats: string[] = [];
   let gateModeExcludeSubcats: string[] = [];
@@ -50,20 +55,13 @@ export function resolveSelectionToProductsCore(
       gateModeIncludeSubcats = mapping.includeSubcats;
       gateModeExcludeSubcats = mapping.excludeSubcats;
       
-      // Add trace entry for gate mode shim
-      const shimProducts = activeProducts.filter(p => 
-        p.subcategory && gateModeIncludeSubcats.includes(p.subcategory)
-      );
-      
-      if (shimProducts.length > 0) {
-        trace.push({
-          source: "gate-mode-shim",
-          key: `${gateMode}:${gateSystem} → include:[${gateModeIncludeSubcats.join(", ")}] exclude:[${gateModeExcludeSubcats.join(", ")}]`,
-          codes: shimProducts.map(p => p.code),
-        });
-        
-        shimProducts.forEach(p => productCodesSet.add(p.code));
-      }
+      // Add informational trace entry (products will be added later via numeric fields or allowedSubcategories)
+      trace.push({
+        source: "gate-mode-shim",
+        key: `${gateMode}:${gateSystem} → include:[${gateModeIncludeSubcats.join(", ")}] exclude:[${gateModeExcludeSubcats.join(", ")}]`,
+        codes: [], // No products added directly by shim
+        note: "Filter applied - products added by numeric fields or subcategory fallback",
+      });
     }
   }
 
@@ -71,8 +69,13 @@ export function resolveSelectionToProductsCore(
   for (const fieldConfig of uiConfig.fieldConfigs) {
     const fieldValue = selection[fieldConfig.field];
     
-    // Skip if this field is not in the selection or is disabled
-    if (fieldValue === undefined || !fieldConfig.enabled) {
+    // Skip if field is disabled
+    if (!fieldConfig.enabled) {
+      continue;
+    }
+    
+    // Skip non-numeric fields if no value provided (numeric fields can use defaults)
+    if (fieldValue === undefined && fieldConfig.type !== "number") {
       continue;
     }
 
@@ -153,15 +156,97 @@ export function resolveSelectionToProductsCore(
         productCodes.forEach(code => productCodesSet.add(code));
       }
     }
+
+    // Handle numeric fields (gate-width-mm, hinge-panel-width-mm)
+    if (fieldConfig.type === "number") {
+      // Use shopper selection value or fall back to UI config default
+      // Treat null the same as undefined (common when clearing form inputs)
+      const targetWidth = (typeof fieldValue === "number" && fieldValue !== null) 
+        ? fieldValue 
+        : fieldConfig.default;
+      
+      // Skip if no value available (neither from selection nor default)
+      if (targetWidth === undefined || targetWidth === null) {
+        continue;
+      }
+      
+      const tolerance = fieldConfig.tolerance || 50; // Default 50mm tolerance
+      const context = fieldConfig.context;
+      const subcategory = fieldConfig.subcategory;
+      
+      // Determine which subcategory to use for SKU selection
+      let targetSubcategory: string | null = null;
+      
+      if (subcategory) {
+        // Explicit subcategory provided
+        targetSubcategory = subcategory;
+      } else if (context === "gate" && selection.gate_system) {
+        // Infer from gate_system
+        const system = normalizeGateSystem(selection.gate_system);
+        targetSubcategory = system === "MASTER" ? "Gate Master" : "Gate Polaris/Atlantic";
+      } else if (context === "hinge" && selection.gate_system) {
+        // Infer from gate_system for hinge panels
+        const system = normalizeGateSystem(selection.gate_system);
+        targetSubcategory = system === "MASTER" ? "Hinge Panels Master" : "Hinge Panels Polaris/Atlantic";
+      }
+      
+      // For hinge panels, only apply if mount_mode is GLASS_TO_GLASS
+      if (context === "hinge" && selection.mount_mode) {
+        const mode = normalizeGateMode(selection.mount_mode);
+        if (mode !== "GLASS_TO_GLASS") {
+          // Skip hinge panel selection for POST/WALL mounts
+          continue;
+        }
+      }
+      
+      // Filter products by subcategory
+      const candidateProducts = targetSubcategory
+        ? activeProducts.filter(p => p.subcategory === targetSubcategory)
+        : activeProducts;
+      
+      // Choose the best SKU
+      const result = context === "gate"
+        ? chooseGateSkuByNearest(targetWidth, candidateProducts, tolerance)
+        : chooseHingePanelWidth(targetWidth, candidateProducts, tolerance);
+      
+      // Mark this subcategory as handled by numeric field
+      if (targetSubcategory) {
+        numericFieldHandledSubcats.add(targetSubcategory);
+      }
+      
+      if (result.sku) {
+        trace.push({
+          source: "ui-config:number",
+          key: fieldConfig.field,
+          codes: [result.sku],
+          note: result.note,
+        });
+        
+        productCodesSet.add(result.sku);
+      } else if (result.warning) {
+        // Add custom/warning entry to trace
+        trace.push({
+          source: "ui-config:number",
+          key: fieldConfig.field,
+          codes: [`CUSTOM-${context?.toUpperCase() || "UNKNOWN"}`],
+          note: result.warning + (result.note ? `: ${result.note}` : ""),
+        });
+      }
+    }
   }
 
   // Also check for subcategory-based resolution from allowedSubcategories
   // BUT if gate mode shim is active, filter out excluded subcategories
+  // ALSO exclude subcategories that were already handled by numeric fields
   if (uiConfig.allowedSubcategories && uiConfig.allowedSubcategories.length > 0) {
-    // Filter allowedSubcategories to exclude any that are in the gate mode exclusion list
-    const effectiveAllowedSubcategories = gateModeExcludeSubcats.length > 0
-      ? uiConfig.allowedSubcategories.filter(sub => !gateModeExcludeSubcats.includes(sub))
-      : uiConfig.allowedSubcategories;
+    // Filter allowedSubcategories to exclude:
+    // 1. Any that are in the gate mode exclusion list
+    // 2. Any that were handled by numeric fields
+    const effectiveAllowedSubcategories = uiConfig.allowedSubcategories.filter(sub => {
+      if (gateModeExcludeSubcats.includes(sub)) return false;
+      if (numericFieldHandledSubcats.has(sub)) return false;
+      return true;
+    });
     
     const subcategoryProducts = activeProducts.filter(p =>
       p.subcategory && effectiveAllowedSubcategories.includes(p.subcategory)
