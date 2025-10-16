@@ -112,16 +112,16 @@ function drawHeader(
 ): void {
   const y = 18;
   
-  // Left: document title
+  // Left: document title (only draw once!)
   doc.fontSize(10)
     .fillColor('#000')
-    .text(title, 18, y, { width: 400, align: 'left' });
+    .text(title, 18, y, { width: 400, align: 'left', lineBreak: false });
 
   // Right: date and job ref
   const rightText = jobRef ? `${date} • ${jobRef}` : date;
   doc.fontSize(9)
     .fillColor('#666')
-    .text(rightText, 18, y, { width: 806, align: 'right' });
+    .text(rightText, 450, y, { width: 374, align: 'right', lineBreak: false });
 }
 
 function drawFooter(
@@ -144,16 +144,17 @@ function drawFooter(
   if (drawWatermark) {
     doc.save();
     // Position from right edge with safe margin
-    const xPos = 842 - 18;  // 18pt from right edge
+    const xPos = 842 - 20;  // 20pt from right edge for visibility
     const yPos = 595 / 2;   // Centered vertically
     
     doc.translate(xPos, yPos);
     doc.rotate(-90);
     doc.fontSize(9)
       .fillColor('#666')
-      .text('FenceLogic By Barrier Dynamics © 2025', -100, 0, {
-        width: 200,
+      .text('FenceLogic By Barrier Dynamics © 2025', -140, 0, {
+        width: 280,
         align: 'center',
+        lineBreak: false,
       });
     doc.restore();
   } else {
