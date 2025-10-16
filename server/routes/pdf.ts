@@ -6,13 +6,17 @@ import { renderA4LandscapePdf, createPdfDocument, type SectionData } from '../pd
 export const pdfRouter = Router();
 
 // Generate PDF for a fence design
-pdfRouter.post('/designs/:id/pdf', async (req: Request, res: Response) => {
+pdfRouter.post('/designs/pdf', async (req: Request, res: Response) => {
   try {
+    console.log('[PDF] Received PDF generation request');
     const { design, sections } = req.body as { design: FenceDesign; sections: SectionData[] };
 
     if (!design || !sections || sections.length === 0) {
+      console.log('[PDF] Missing design or sections data');
       return res.status(400).json({ error: 'Missing design or sections data' });
     }
+    
+    console.log('[PDF] Design:', design.name, 'Sections:', sections.length);
 
     // Convert sections to SectionBox format (assume images are ~800x400px at 96dpi)
     const sectionBoxes: SectionBox[] = sections.map((section, index) => ({
