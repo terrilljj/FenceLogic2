@@ -370,6 +370,19 @@ export default function FenceLogic() {
         {/* Controls Panel */}
         <div className="h-full overflow-y-auto bg-card border-l border-card-border">
           <div className="p-6 space-y-6">
+            {/* Design Name */}
+            <div className="space-y-2">
+              <Label htmlFor="design-name" className="text-sm font-medium">Design Name</Label>
+              <Input
+                id="design-name"
+                value={design.name}
+                onChange={(e) => setDesign(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter design name"
+                className="text-lg font-semibold"
+                data-testid="input-design-name"
+              />
+            </div>
+
             {/* Product Type Selector Banner */}
             <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
               <div className="flex items-start gap-3">
