@@ -7,6 +7,7 @@ import { requireAdmin } from "./middleware/auth";
 import { createDebugUIConfigRouter } from "./routes/debug-ui-config";
 import { createDebugResolveTraceRouter } from "./routes/debug-resolve-trace";
 import { createDebugProductsLintRouter } from "./routes/debug-products-lint";
+import { createDebugEndgapAdviceRouter } from "./routes/debug-endgap-advice";
 import { UiConfigSchema } from "./schemas/ui-config";
 import metaCategoryPathsRouter from "./routes/meta-category-paths";
 
@@ -897,6 +898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/debug/ui-config", createDebugUIConfigRouter(storage));
   app.use("/api/debug/resolve-trace", createDebugResolveTraceRouter(storage));
   app.use("/api/debug/products-lint", createDebugProductsLintRouter(storage));
+  app.use("/api/debug/endgap-advice", createDebugEndgapAdviceRouter(storage));
 
   // Meta routes
   app.use("/api/meta", metaCategoryPathsRouter);
