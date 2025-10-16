@@ -1460,11 +1460,40 @@ export function SpanConfigPanel({
                 leftGapSize={span.leftGap?.size || 0}
                 rightGapSize={span.rightGap?.size || 0}
                 spanId={span.spanId}
-                onUpdate={(autoCalcConfig) => updateSpan({ 
-                  autoCalcConfig,
-                  layoutMode: "auto-calc",
-                  maxPanelWidth: autoCalcConfig.maxPanelWidth
-                })}
+                onUpdate={(autoCalcConfig) => {
+                  // Calculate panel widths to update panelLayout
+                  const numPanels = autoCalcConfig.panelTypes.length;
+                  const gapSize = autoCalcConfig.interPanelGaps[0] || 50;
+                  const numGaps = Math.max(0, numPanels - 1);
+                  const totalGaps = numGaps * gapSize;
+                  const availableForPanels = span.length - (span.leftGap?.size || 0) - (span.rightGap?.size || 0) - totalGaps;
+                  
+                  const baseWidth = numPanels > 0 ? Math.floor(availableForPanels / numPanels) : 0;
+                  const remainder = availableForPanels - (baseWidth * numPanels);
+                  
+                  const panelWidths: number[] = [];
+                  for (let i = 0; i < numPanels; i++) {
+                    const extraMm = i < remainder ? 1 : 0;
+                    panelWidths.push(baseWidth + extraMm);
+                  }
+                  
+                  const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
+                  const totalGapWidth = totalGaps;
+                  
+                  updateSpan({ 
+                    autoCalcConfig,
+                    layoutMode: "auto-calc",
+                    maxPanelWidth: autoCalcConfig.maxPanelWidth,
+                    panelLayout: {
+                      panels: panelWidths,
+                      gaps: autoCalcConfig.interPanelGaps,
+                      totalPanelWidth,
+                      totalGapWidth,
+                      averageGap: gapSize,
+                      panelTypes: autoCalcConfig.panelTypes,
+                    }
+                  });
+                }}
               />
             </div>
           )}
