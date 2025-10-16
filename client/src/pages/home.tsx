@@ -116,6 +116,13 @@ const productOptions: ProductOption[] = [
     name: "Custom Panel Designer",
     description: "Advanced custom panel layout",
     visual: "frameless-glass"
+  },
+  {
+    id: "custom-glass",
+    type: "glass-pool",
+    name: "Custom Glass",
+    description: "Every panel individually sized",
+    visual: "frameless-glass"
   }
 ];
 

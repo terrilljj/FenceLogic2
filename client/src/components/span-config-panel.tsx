@@ -11,6 +11,7 @@ import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
 import { CustomPanelControls } from "./custom-panel-controls";
+import { FullyCustomPanelControls } from "./fully-custom-panel-controls";
 import { InfoTooltip } from "./info-tooltip";
 
 interface SpanConfigPanelProps {
@@ -53,6 +54,29 @@ export function SpanConfigPanel({
 
   // Calculate panel layout whenever relevant parameters change
   useEffect(() => {
+    // Handle fully custom layout mode - convert customLayout to panelLayout for visualization
+    if (span.layoutMode === "fully-custom" && span.customLayout) {
+      const customPanels = span.customLayout.panels.map(p => p.widthMm);
+      const customGaps = span.customLayout.gaps.map(g => g.beforeMm);
+      const totalPanelWidth = customPanels.reduce((sum, w) => sum + w, 0);
+      const totalGapWidth = customGaps.reduce((sum, g) => sum + g, 0);
+      const averageGap = customGaps.length > 0 ? totalGapWidth / customGaps.length : 0;
+
+      const customPanelLayout = {
+        panels: customPanels,
+        gaps: customGaps,
+        totalPanelWidth,
+        totalGapWidth,
+        averageGap,
+        panelTypes: customPanels.map(() => "custom" as const),
+      };
+
+      if (JSON.stringify(span.panelLayout) !== JSON.stringify(customPanelLayout)) {
+        updateSpan({ panelLayout: customPanelLayout });
+      }
+      return;
+    }
+
     let layout;
 
     // Blade fencing uses a different calculation
@@ -193,6 +217,7 @@ export function SpanConfigPanel({
       span.gateConfig?.hingeGap, span.gateConfig?.latchGap,
       span.gateConfig?.savedGlassPosition,
       span.customPanel?.enabled, span.customPanel?.width, span.customPanel?.height, span.customPanel?.position,
+      span.layoutMode, span.customLayout, // Add fully-custom layout dependencies
       span.bladeHeight, span.bladeLayoutMode, // Add Blade-specific dependencies
       span.barrHeight, span.barrLayoutMode, // Add BARR-specific dependencies
       span.tubularHeight, span.tubularPanelWidth, span.tubularLayoutMode, // Add Tubular-specific dependencies
@@ -1599,6 +1624,42 @@ export function SpanConfigPanel({
               )}
             </div>
           </div>
+          )}
+
+          {/* Fully Custom Panel Layout - Only for custom-glass */}
+          {productVariant === "custom-glass" && (
+            <div className="space-y-3 pt-4 border-t border-card-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Fully Custom Layout</Label>
+                  <InfoTooltip content="Design every panel individually with exact measurements. Perfect for custom designs where each panel needs a specific width." />
+                </div>
+                <Switch
+                  checked={span.layoutMode === "fully-custom"}
+                  onCheckedChange={(enabled) =>
+                    updateSpan({
+                      layoutMode: enabled ? "fully-custom" : "auto-equalize",
+                      customLayout: enabled ? {
+                        panels: [{ widthMm: 1200 }],
+                        gaps: [],
+                        enforceExactFit: true,
+                      } : undefined,
+                    })
+                  }
+                  data-testid={`span-${span.spanId}-fully-custom-toggle`}
+                />
+              </div>
+              {span.layoutMode === "fully-custom" && span.customLayout && (
+                <FullyCustomPanelControls
+                  customLayout={span.customLayout}
+                  spanLength={span.length}
+                  leftGapSize={span.leftGap?.size || 0}
+                  rightGapSize={span.rightGap?.size || 0}
+                  spanId={span.spanId}
+                  onUpdate={(customLayout) => updateSpan({ customLayout })}
+                />
+              )}
+            </div>
           )}
 
           {/* Custom Panel - Hide for BARR, Blade, and Tubular */}

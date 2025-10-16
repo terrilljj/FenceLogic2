@@ -28,7 +28,8 @@ export type ProductVariant =
   | "general-zeus"
   | "general-blade"
   | "general-barr"
-  | "custom-panel-designer";
+  | "custom-panel-designer"
+  | "custom-glass";
 
 // Channel mounting types (for glass channel systems)
 export type ChannelMounting = "wall" | "ground";
@@ -421,6 +422,17 @@ export const spanConfigSchema = z.object({
     height: z.number().min(1200).max(1800), // Custom panel height in mm
     position: z.number().min(0), // Panel position index (like glass-to-glass gate)
   }).optional(),
+  layoutMode: z.enum(["auto-equalize", "fully-custom"]).default("auto-equalize"), // Layout calculation mode
+  customLayout: z.object({
+    panels: z.array(z.object({
+      widthMm: z.number().min(200).max(2000),
+      heightMm: z.number().min(1200).max(1800).optional(),
+    })),
+    gaps: z.array(z.object({
+      beforeMm: z.number().min(6).max(30),
+    })),
+    enforceExactFit: z.boolean().default(true),
+  }).optional(), // Fully custom panel layout (user specifies each panel individually)
 });
 
 export type SpanConfig = z.infer<typeof spanConfigSchema>;
@@ -450,7 +462,9 @@ export const fenceDesignSchema = z.object({
     "pvc-hamptons-3rail",
     "general-zeus",
     "general-blade",
-    "general-barr"
+    "general-barr",
+    "custom-panel-designer",
+    "custom-glass"
   ]).default("glass-pool-spigots"),
   shape: z.enum(["inline", "l-shape", "u-shape", "enclosed", "custom"]),
   customSides: z.number().min(3).max(10).optional(),
