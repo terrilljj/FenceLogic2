@@ -197,7 +197,64 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
     return "3D View";
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
+    let imageDataUrl: string | null = null;
+
+    // Capture canvas based on current view mode
+    if (viewMode === "3d" && rendererRef.current) {
+      // For 3D view, capture from WebGL renderer
+      imageDataUrl = rendererRef.current.domElement.toDataURL('image/png');
+    } else if (canvasRef.current) {
+      // For 2D/elevation view, capture from canvas
+      imageDataUrl = canvasRef.current.toDataURL('image/png');
+    }
+
+    if (!imageDataUrl) return;
+
+    try {
+      // Prepare sections data for PDF generation
+      const sections = design.spans.map((span, index) => ({
+        id: span.spanId || `section-${index}`,
+        title: `Section ${span.spanId}`,
+        subtitle: design.productVariant,
+        imageDataUrl: imageDataUrl,  // Same image for all sections for now
+      }));
+
+      // Send request to server to generate PDF
+      const response = await fetch('/api/designs/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          design,
+          sections,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${design.name || 'fence-design'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+      return;
+    }
+  };
+
+  // Fallback: Browser-based PDF (old method)
+  const handleDownloadPDFBrowser = () => {
     let imageDataUrl: string | null = null;
 
     // Capture canvas based on current view mode

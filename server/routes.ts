@@ -11,6 +11,7 @@ import { createDebugEndgapAdviceRouter } from "./routes/debug-endgap-advice";
 import { createDebugFramelessCustomRouter } from "./routes/debug-frameless-custom";
 import { UiConfigSchema } from "./schemas/ui-config";
 import metaCategoryPathsRouter from "./routes/meta-category-paths";
+import { pdfRouter } from "./routes/pdf";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -894,6 +895,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       HINGE_AUTO_ENABLED: process.env.HINGE_AUTO_ENABLED === "1",
     });
   });
+
+  // PDF generation
+  app.use("/api", pdfRouter);
 
   // Debug routes
   app.use("/api/debug/ui-config", createDebugUIConfigRouter(storage));

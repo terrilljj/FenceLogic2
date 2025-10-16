@@ -49,6 +49,7 @@
     "@shopify/polaris": "^13.9.5",
     "@shopify/shopify-api": "^12.0.0",
     "@tanstack/react-query": "^5.60.5",
+    "@types/pdfkit": "^0.17.3",
     "@types/three": "^0.180.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

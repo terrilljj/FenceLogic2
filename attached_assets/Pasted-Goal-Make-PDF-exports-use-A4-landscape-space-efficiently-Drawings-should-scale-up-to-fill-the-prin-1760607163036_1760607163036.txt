@@ -1,0 +1,116 @@
+Goal:
+Make PDF exports use A4 landscape space efficiently. Drawings should scale up to fill the printable area with consistent margins, minimal white space, and clean pagination.
+
+Tech context:
+- We use pdfkit. A4 landscape is 842 x 595 pt (72 dpi).
+- Current output wastes huge margins, shrinks sections, and stacks them with excessive spacing.
+
+Deliverables:
+- New layout engine that packs sections efficiently on A4 landscape
+- Header/footer system with compact styling
+- Deterministic scaling + pagination
+- Debug route + unit tests
+- No regressions to existing PDF metadata
+
+Tasks
+
+1) Create a layout module
+File: client/src/pdf/layout.ts (or shared/pdf/layout.ts if used server-side)
+
+Export:
+- `type PdfLayoutOptions = {
+    pageSize?: 'A4',
+    orientation?: 'landscape',
+    marginPt?: number,              // default 24
+    gutterPt?: number,              // default 16 between sections
+    headerPt?: number,              // default 24 (vertical space)
+    footerPt?: number,              // default 18 (vertical space)
+    minScale?: number,              // default 0.6
+    maxScale?: number,              // default 1.2
+    targetDpi?: number,             // default 144 when rasterizing canvas
+    drawWatermark?: boolean,        // default false
+  }`
+
+- `type SectionBox = { id:string; intrinsicW:number; intrinsicH:number; }`
+  (intrinsic in points; if we only know px, assume 96 dpi and convert)
+
+- `function packSectionsA4Landscape(sections: SectionBox[], opts?: PdfLayoutOptions): {
+    pages: Array<{
+      scale:number;                 // per-section scale chosen
+      placements: Array<{ id:string; x:number; y:number; w:number; h:number }>
+    }>,
+    pageSize: { w:number; h:number },
+    contentRect: { x:number; y:number; w:number; h:number },
+    usedStrategy: 'single-column'|'two-column'|'row-wrap'
+  }`
+
+Algorithm:
+- Page: A4 landscape → w=842, h=595.
+- Content rect = inset by marginPt on all sides, minus headerPt top and footerPt bottom.
+- Try strategies in order and pick the one with largest average scale:
+  1) Single-column vertical stack (each section scaled to content width)
+  2) Two-column (if any section width/intrinsicW ratio suggests good fit; pack by columns with gutter)
+  3) Row-wrap flow (greedy horizontal rows; each row scaled to content width; height accumulated with gutter)
+- For each strategy, compute scale per section within [minScale, maxScale] so that neither width nor height exceeds available slot.
+- If a section cannot fit on the current page at minScale, start a new page and continue.
+- Choose the strategy producing the highest minimal scale across placed sections on each page; tie-breaker = smallest total unused area.
+- Return placements (x,y,w,h) in content coordinates.
+
+2) PDF compositor
+File: client/src/pdf/render.ts
+
+- `renderA4LandscapePdf({ doc, sections, renderSection, header, footer, opts })`
+  Where:
+  - `sections: Array<{ id:string; title:string; canvas?:HTMLCanvasElement; draw?: (ctx) => void; subtitle?:string }>`
+  - `renderSection` handles drawing a section into the rectangle (x,y,w,h) at the chosen scale:
+      Prefer vector drawing if we have primitives; else rasterize canvas at targetDpi (scale image to w,h).
+  - `header(doc, pageIndex, totalPages)` draws a compact header (left: doc title, right: date + job ref)
+  - `footer(doc, pageIndex, totalPages)` draws a small page number; optional watermark if opts.drawWatermark
+
+Implementation notes:
+- A4 landscape page init: `doc.addPage({ size: 'A4', layout: 'landscape', margins: 0 })`
+- Use the `packSectionsA4Landscape` output to loop pages and place each section.
+- Titles: draw section title just above its box (inside the assigned box), ~10pt font, 2–4pt padding.
+- Gutter: respect gutterPt horizontally and vertically between boxes.
+
+3) Tight defaults to kill wasted space
+- Set `marginPt=18`, `headerPt=22`, `footerPt=14`, `gutterPt=12`. (We had excessive padding before.)
+- Keep fonts small: title 10pt, labels 8–9pt, no oversized logos.
+- Watermark/side label optional; if present, do not reserve extra wide margins—draw it semi-transparent on the content background or rotate along the right edge with 6pt padding.
+
+4) Wiring into existing PDF export
+File(s): the current PDF export entry (search for pdfkit usage; likely server-side or client build-to-blob):
+- Replace current placement logic with `packSectionsA4Landscape + renderA4LandscapePdf`.
+- Ensure we pass section intrinsic sizes from our visualization layer:
+  * If we render via canvas → get `widthPx`, `heightPx`, convert to pt = px * (72 / deviceDpi). Assume 96 if unknown.
+- If a single section is extremely wide compared to content: allow per-section downscaling but never below minScale.
+
+5) Debug route & dev toggle
+- Add route (admin-only) to generate a sample PDF with current visible sections:
+  GET /api/debug/pdf/a4-landscape?strategy=auto|minColumn=1|maxColumn=2
+  Return PDF stream.
+- Add a dev toggle `PDF_LAYOUT_DEBUG=1` to draw thin guide rectangles for contentRect and placements and to print scale % per section.
+
+6) Tests (Vitest; logic-only)
+File: client/tests/pdf-layout.spec.ts (or shared/tests/pdf-layout.spec.ts)
+- Given a set of sections (e.g., 5 with intrinsicW=2200, intrinsicH=900), assert:
+  * Single-column strategy produces scale near content width / 2200
+  * Two-column chosen when total height < page height and scale ≥ single-column scale
+  * Row-wrap places remaining sections on page 2 when height exceeded
+  * No placement exceeds contentRect bounds
+- Snapshot test for placements array to guard regressions.
+
+7) Acceptance visuals (manual QA)
+- Create 3 PDFs:
+  A) 2 long sections (like your screenshot): both should fill width with minimal top/bottom white space; titles inside boxes; drawing big.
+  B) 4–6 short sections: two-column or row-wrap should kick in; pages pack tightly.
+  C) Mixed tall/wide: algorithm should paginate cleanly and keep drawings readable (minScale respected).
+
+8) Output (print exactly):
+- TS compile: ✅/❌
+- Where wired (file paths)
+- New exports: packSectionsA4Landscape(), renderA4LandscapePdf()
+- Default margins/gutters used
+- Debug route available: ✅/❌ (URL)
+- Tests: pdf-layout.spec.ts passed: <yes/no>
+- Manual PDFs generated: <filenames or endpoints>
