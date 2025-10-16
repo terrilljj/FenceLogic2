@@ -2,146 +2,68 @@
 
 ## Overview
 
-Fence Logic is a web-based configurator tool designed for creating custom fencing and balustrade systems. It provides interactive visualization and precise configuration controls, enabling users to design fence layouts, specify spans and gates, and automatically generate component lists. The tool supports various product types including Glass Pool Fencing, Glass Balustrade, Aluminium Fencing (Pool, Balustrade, General), and PVC Fencing, with product-specific configuration options and multiple fence shapes. Its core purpose is to streamline the design process and provide accurate material calculations.
+Fence Logic is a web-based configurator tool for designing custom fencing and balustrade systems. It offers interactive visualization and precise configuration controls, allowing users to create fence layouts, specify spans and gates, and generate automatic component lists. The tool supports various product types, including Glass Pool Fencing, Glass Balustrade, Aluminium Fencing, and PVC Fencing, with product-specific options and multiple fence shapes. Its primary goal is to streamline the design process and provide accurate material calculations.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-
-## Product System
-
-**Supported Products:**
-- **Glass Pool Fencing & Balustrade**: Spigots, Channel mounting, Standoffs
-  - **Top-Mounted Rail (Balustrade only)**: Optional handrail system with 3 rail types
-    - 25×21mm NonoRail (12mm glass only)
-    - 30×21mm NanoRail (universal)
-    - 35×35mm Series 35 (universal)
-  - **Rail Materials**: Stainless Steel, Anodised Aluminium
-  - **Rail Finishes**: Polished, Satin, Black, White
-  - **Rail Terminations**: End Cap, Wall Tie, 90° Corner, Adjustable Corner
-  - **Rail Optimization**: 5800mm standard lengths with automatic wastage minimization across multiple sections
-- **Aluminium Fencing**: BARR (vertical slats), Blade (modern design), Tubular Flat Top
-- **Hamptons PVC Fencing**: 5 style variants with 2388mm standard panels and 127mm square posts
-  - Full Privacy (1800mm): Solid privacy panels
-  - Combo (1800mm): Solid bottom with slat topper
-  - Vertical Paling (1800mm): Vertical slats with gaps
-  - Semi Privacy (1000mm): Horizontal slats with gaps
-  - 3 Rail (1525mm): Three horizontal rails
-- **Layout Modes**: Full panels + cut end, Equally spaced (all cut) for aluminium and PVC products
-- **Gate Support**: All products support 1000mm gates with hardware integration
 
 ## System Architecture
 
 ### Frontend Architecture
 
 **Technology Stack:**
-- React 18+ with TypeScript
-- Vite for building and development
-- Wouter for routing
-- TanStack Query for server state management
-- shadcn/ui (Radix UI + Tailwind CSS) for UI components and styling
-- Custom theme system with light/dark modes
-- Inter (UI) and JetBrains Mono (numerical inputs) font families
-- Info tooltips for contextual help across various configuration elements.
+- React 18+ with TypeScript, Vite, Wouter for routing, and TanStack Query for server state.
+- UI built with shadcn/ui (Radix UI + Tailwind CSS), custom theme system (light/dark modes), and Inter/JetBrains Mono fonts.
+- Info tooltips provide contextual help.
 
 **Visualization System (V1 - Elevation Only):**
-- Canvas-based 2D side elevation rendering.
-- Displays proportionate representations of glass panels (with spigots), and various aluminium and PVC panel types (BARR, Blade, Tubular, Hamptons PVC) with appropriate posts, rails, and hardware.
-- Top-mounted rails shown on glass balustrades when enabled (thin horizontal line at top of panels).
-- N+1 post structure for aluminium products.
-- Gate hardware (hinges, latches) is visually represented, with inverted flip logic for correct hinge placement.
+- Canvas-based 2D side elevation rendering for proportionate representations of panels, posts, rails, and hardware across all product types.
+- Includes visual representation of top-mounted rails and gate hardware with inverted flip logic.
 
 **State Management:**
 - Local React state for configuration.
-- `react-hook-form` with Zod validation for form state.
+- `react-hook-form` with Zod for form validation.
 - Query client for API data.
 - Theme persistence in localStorage.
 
 ### Backend Architecture
 
 **Server Framework:**
-- Express.js with TypeScript.
-- ESM module system.
+- Express.js with TypeScript and ESM.
 - Custom middleware for logging and error handling.
 
 **API Design:**
-- RESTful endpoints for fence design CRUD operations.
-- JSON format for requests/responses.
+- RESTful endpoints for fence design CRUD operations using JSON.
 - Zod schema validation.
-- Error responses with appropriate HTTP status codes.
 
 **Data Storage:**
-- In-memory storage (MemStorage class) for development, adhering to an `IStorage` interface for future extensibility.
+- In-memory storage for development, adhering to an `IStorage` interface.
 - Configured for PostgreSQL via Drizzle ORM.
 - UUID-based resource identification.
 
 **Data Models:**
 - `FenceDesign`, `SpanConfig`, `Component`, `PanelLayout`.
-- `Product` - Product catalog with comprehensive fields:
-  - **Core fields**: code, description, category, subcategory, price, active status
-  - **Selection identifiers**: selectionId (legacy snake_case), categoryPaths (hierarchical array)
-  - **Physical specs**: weight, dimensions, units
-  - **Metadata**: tags (array), notes (internal), imageUrl
-  - All optional fields support CSV import/export
-- `ProductUIConfig` - UI configuration for product variants (field visibility, position, labels, tooltips):
-  - **Field mapping**: optionPaths (hierarchical category paths), categoryPaths for toggle fields
-  - **Legacy support**: optionProducts, products (deprecated, use category paths instead)
-  - **Path format**: Hierarchical slash-separated (e.g., `pool_fence/frameless/glass_panels`, `pool_fence/frameless/master_gate`)
-  - Products automatically resolved by matching categoryPaths array
-- Supports complex gate configurations (hardware types, hinge positions) and custom glass panels (width, height, positioning, distinct visualization).
-- Top rail configurations with type, material, finish, and termination options.
+- `Product`: Stores product catalog information (code, description, price, category paths, physical specs, metadata).
+- `ProductUIConfig`: Defines UI configuration for product variants (field visibility, position, labels, tooltips), field mapping to product codes, and numeric field SKU snapping.
+- Supports complex gate configurations and custom glass panels.
 
 **Admin Authentication:**
-- Session-based authentication for admin panel access.
-- Protected routes verify server session (not just localStorage).
-- Login endpoint: POST /api/admin/login (custom credentials via ADMIN_USERNAME/ADMIN_PASSWORD env vars).
-- Session verification: GET /api/admin/verify.
-- Logout endpoint: POST /api/admin/logout.
-- All product CRUD and CSV endpoints protected by `requireAdmin` middleware.
-- Session configuration for iframe support:
-  - `trust proxy: 1` enabled for Replit iframe context
-  - `sameSite: "none"` and `secure: true` for third-party cookie support
-  - `httpOnly: true` for security
-  - 24-hour expiry
-- Credentials include "include" on all fetch requests for proper cookie handling.
-- Admin panel accessible at `/admin-login` (direct URL, not in navigation).
-- Product catalog management at `/products` (requires authentication).
-- **Category Manager** at `/categories` (requires authentication):
-  - Database-driven category and subcategory management system
-  - Full CRUD operations (Create, Read, Update, Delete) for both categories and subcategories
-  - Display order control for organizing taxonomy hierarchy
-  - Database tables: `categories` and `subcategories` with id, name, displayOrder fields
-  - Transactional deletion with automatic cleanup:
-    - When category/subcategory is deleted, atomically removed from all UI configs using SQL
-    - JSONB `?` operator checks containment, COALESCE ensures empty arrays instead of NULL
-    - Transaction wraps UPDATE (cleanup) and DELETE operations for atomicity
-  - Storage by name (not ID) in UI config JSONB arrays
-  - Current subcategories include: Spigots, Channel, Standoffs, BARR, Blade, Tubular, PIK, Visor, Zeus, Gate Master, Gate Polaris/Atlantic, Raked, Hinge Panels Master, Hinge Panels Polaris/Atlantic, and Hamptons variants
-  - Accessible from Products page navigation
-- UI Configuration portal at `/ui-config` (requires authentication):
-  - **Product Groups Selection**: Define which product categories and subcategories apply to each variant
-    - Categories fetched dynamically from database (not hardcoded)
-    - Subcategories fetched dynamically from database (not hardcoded)
-    - Multi-select checkboxes for both categories and subcategories
-    - Selections persist independently per variant in database
-  - Configure which input fields appear for each product variant
-  - Control field visibility (toggle on/off)
-  - Set field display order/position
-  - Customize field labels and tooltip text
-  - Product mapping system:
-    - Dropdown fields: Map each option value to specific product codes (e.g., "12mm" → [PROD-1, PROD-2])
-    - Toggle fields: Associate products directly with the feature (e.g., Gate Config → [GATE-1, GATE-2])
-    - Supports both text and numeric dropdowns (max-panel-width, glass-thickness, etc.)
-  - Tab-based interface for 13 product variants
-  - Saves configurations to database with JSONB storage (allowedCategories, allowedSubcategories, fieldConfigs)
+- Session-based authentication for admin panel access (protected routes with `requireAdmin` middleware).
+- Login, verify, and logout endpoints.
+- Session configured for Replit iframe support (`trust proxy: 1`, `sameSite: "none"`, `secure: true`, `httpOnly: true`).
+- Admin panel accessible at `/admin-login`.
+- **Product Catalog Management** at `/products` and **Category Manager** at `/categories` (CRUD operations for categories/subcategories with display order control and transactional deletion).
+- **UI Configuration portal** at `/ui-config` for defining product groups, field visibility, order, labels, tooltips, and SKU selection behavior.
 
 **Panel Calculation System:**
-- Algorithm for mixed panel widths to achieve precise gap spacing.
-- Supports raked panels (fixed 1200mm width for height changes).
-- Integrates gates with glass-to-glass and wall/post-mounted modes, preserving position during mode switches.
-- Automatic calculation of hardware-specific gate gaps (e.g., Master Range, Polaris Soft Close).
-- Flexible gap tolerance (up to 50mm deviation) and intelligent remainder distribution for manufacturing constraints.
-- Gap scoring penalizes larger deviations.
+- Algorithm for mixed panel widths and precise gap spacing.
+- Supports raked panels and integrates gates with hardware-specific gap calculations.
+- Flexible gap tolerance with intelligent remainder distribution and scoring.
+
+**Numeric Field SKU Selection System:**
+- **SKU Selector Service**: Extracts width from product codes, performs tolerance-based matching and snapping to standard sizes.
+- Integrates with numeric fields for automatic SKU selection, fallback to UI config defaults, and context filtering.
 
 ### Development Workflow
 
@@ -150,16 +72,12 @@ Preferred communication style: Simple, everyday language.
 - TypeScript compilation checking.
 
 **Development Environment:**
-- HMR for frontend.
-- Vite middleware mode for integrated dev server.
-- Replit-specific plugins for error overlay and development banner.
+- HMR for frontend, Vite middleware mode, Replit-specific plugins.
 - Path aliases (`@/`, `@shared/`, `@assets/`).
 
 **Code Organization:**
 - Monorepo structure with shared types.
-- Component-based architecture with UI primitives.
-- Feature-based organization.
-- Centralized schema definitions.
+- Component-based, feature-based organization, centralized schema definitions.
 
 ## External Dependencies
 
@@ -168,100 +86,18 @@ Preferred communication style: Simple, everyday language.
 - `drizzle-kit` for migrations.
 
 **UI Components:**
-- Radix UI primitives.
-- shadcn/ui.
-- `class-variance-authority` for component variants.
-- `tailwind-merge` for dynamic class names.
+- Radix UI primitives, shadcn/ui.
+- `class-variance-authority`, `tailwind-merge`.
 
 **Validation & Forms:**
-- Zod for runtime type validation and schema generation.
+- Zod for runtime type validation.
 - React Hook Form for form state management.
 - `@hookform/resolvers` for Zod integration.
-- `drizzle-zod` for automatic schema generation from database models.
+- `drizzle-zod` for schema generation from database models.
 
 **Utilities:**
 - `date-fns` for date manipulation.
-- `clsx` and `tailwind-merge` for class name utilities.
-- `nanoid` for unique ID generation.
-- Three.js types (for potential future 3D visualization).
+- `clsx`, `nanoid`.
 
-## Data Hygiene Linting
-
-**Product Data Linter** (`server/scripts/lint-products.ts`):
-- CLI tool to catch data hygiene issues without hitting the admin UI
-- Suitable for CI/CD integration
-
-**Detection:**
-- **Dead categoryPaths**: Paths referenced by UI configs with zero matching active products
-- **Dead subcategories**: Subcategories referenced by UI configs that don't exist or have zero active products
-- **Orphan SKUs**: Active products not referenced by any UI config (neither by categoryPaths nor subcategory)
-
-**Usage:**
-```bash
-# Print summary and exit 0
-npm run lint:data
-
-# Exit 1 if issues found (for CI)
-npm run lint:data:strict
-
-# Output JSON for automation
-npm run lint:data -- --json
-```
-
-**Example Output:**
-```
-─ Lint Summary
-
-Needed categoryPaths: 42
-Needed subcategories: 15
-
-Dead categoryPaths: 3
-  ✗ pool_fence/frameless/glass_panels/18mm
-  ✗ balustrade/frameless/standoffs/45mm
-  ✗ gates/master/hinge_left
-
-Dead subcategories: 1
-  ✗ Obsolete Hardware
-
-Orphan SKUs: 5
-  ⚠ LEGACY-POST-001 → Standard Posts [posts/legacy]
-  ⚠ OLD-BRACKET-123 → (no subcategory) (no paths)
-  ... and 3 more
-
-Issues found!
-
-Typical fixes:
-  • Map missing paths in UI Config editor
-  • Add subcategories in Category Manager
-  • Deactivate orphan SKUs or add proper category paths
-```
-
-**Typical Fixes:**
-- **Dead paths**: Add products with matching categoryPaths, or remove paths from UI config mappings
-- **Dead subcategories**: Add subcategories in Category Manager, or remove from UI config allowedSubcategories
-- **Orphan SKUs**: Add proper categoryPaths to products, map in UI config, or deactivate if obsolete
-
-**Required Package.json Scripts:**
-```json
-{
-  "scripts": {
-    "lint:data": "tsx server/scripts/lint-products.ts",
-    "lint:data:strict": "tsx server/scripts/lint-products.ts --strict",
-    "test": "vitest run"
-  }
-}
-```
-
-## QA Session 2025-10-16T00-32-22-407Z
-- Gate/hinge: FAIL, deadPaths: 0, deadSubcats: Gate Master, Gate Polaris/Atlantic, Hinge Panels Master, Hinge Panels Polaris/Atlantic
-- S2 hinge-panel: yes, S3 post-anchor: no, S4 flip stable: yes
-- **Issue**: POST mount mode not recognized by resolve API (returns same products as GLASS_TO_GLASS)
-- **Root cause**: Selection fields (mount_mode, hinge_side, gate_system) not mapped in UI config categoryPaths
-
-
-
-## QA Session 2025-10-16T00-40-49-857Z
-- Gate/hinge: FAIL, deadPaths: 0, deadSubcats: Gate Master, Gate Polaris/Atlantic, Hinge Panels Master, Hinge Panels Polaris/Atlantic
-- S2 hinge-panel: yes, S3 post-anchor: no, S4 flip stable: yes
-- **Issue**: POST mount mode not recognized by resolve API (returns same products as GLASS_TO_GLASS)
-- **Root cause**: Selection fields (mount_mode, hinge_side, gate_system) not mapped in UI config categoryPaths
+**Data Hygiene Linting:**
+- Product Data Linter (`server/scripts/lint-products.ts`) to detect dead category paths, dead subcategories, and orphan SKUs.
