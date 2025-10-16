@@ -1484,24 +1484,49 @@ export function SpanConfigPanel({
                 rightGapSize={span.rightGap?.size || 0}
                 spanId={span.spanId}
                 onUpdate={(autoCalcConfig) => {
-                  // Calculate panel widths to update panelLayout
+                  // Calculate panel widths respecting gate/hinge overrides
                   const numPanels = autoCalcConfig.panelTypes.length;
-                  const gapSize = autoCalcConfig.interPanelGaps[0] || 50;
-                  const numGaps = Math.max(0, numPanels - 1);
-                  const totalGaps = numGaps * gapSize;
+                  const totalGaps = autoCalcConfig.interPanelGaps.reduce((sum, gap) => sum + gap, 0);
                   const availableForPanels = span.length - (span.leftGap?.size || 0) - (span.rightGap?.size || 0) - totalGaps;
                   
-                  const baseWidth = numPanels > 0 ? Math.floor(availableForPanels / numPanels) : 0;
-                  const remainder = availableForPanels - (baseWidth * numPanels);
+                  // Identify fixed panels (gate/hinge with custom widths) and calculate remaining space
+                  const fixedPanels: { index: number; width: number }[] = [];
+                  let fixedWidth = 0;
+                  let standardPanelCount = 0;
                   
-                  const panelWidths: number[] = [];
                   for (let i = 0; i < numPanels; i++) {
-                    const extraMm = i < remainder ? 1 : 0;
-                    panelWidths.push(baseWidth + extraMm);
+                    if (autoCalcConfig.panelTypes[i] === "gate" || autoCalcConfig.panelTypes[i] === "hinge") {
+                      const width = autoCalcConfig.panelWidthOverrides?.[i] || 
+                        (autoCalcConfig.panelTypes[i] === "gate" ? 900 : 1200);
+                      fixedPanels.push({ index: i, width });
+                      fixedWidth += width;
+                    } else {
+                      standardPanelCount++;
+                    }
+                  }
+                  
+                  // Calculate width for standard panels
+                  const availableForStandard = availableForPanels - fixedWidth;
+                  const baseWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
+                  const remainder = availableForStandard - (baseWidth * standardPanelCount);
+                  
+                  // Build final widths array
+                  const panelWidths: number[] = [];
+                  let standardIndex = 0;
+                  
+                  for (let i = 0; i < numPanels; i++) {
+                    const fixedPanel = fixedPanels.find(fp => fp.index === i);
+                    if (fixedPanel) {
+                      panelWidths.push(fixedPanel.width);
+                    } else {
+                      const extraMm = standardIndex < remainder ? 1 : 0;
+                      panelWidths.push(baseWidth + extraMm);
+                      standardIndex++;
+                    }
                   }
                   
                   const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
-                  const totalGapWidth = totalGaps;
+                  const gapSize = autoCalcConfig.interPanelGaps[0] || 50;
                   
                   updateSpan({ 
                     autoCalcConfig,
@@ -1511,7 +1536,7 @@ export function SpanConfigPanel({
                       panels: panelWidths,
                       gaps: autoCalcConfig.interPanelGaps,
                       totalPanelWidth,
-                      totalGapWidth,
+                      totalGapWidth: totalGaps,
                       averageGap: gapSize,
                       panelTypes: autoCalcConfig.panelTypes,
                     }
