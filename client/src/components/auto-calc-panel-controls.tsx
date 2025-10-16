@@ -249,28 +249,9 @@ export function AutoCalcPanelControls({
           </Select>
         </div>
 
-        {/* Gap Mode */}
+        {/* Between Panel Gap - Always visible with stepper */}
         <div className="bg-background rounded-md p-3 border">
-          <Label className="text-sm font-medium mb-2 block">Gap Mode</Label>
-          <Select
-            value={gapMode}
-            onValueChange={(value) => onUpdate({ ...config, gapMode: value as "auto" | "manual" })}
-          >
-            <SelectTrigger className="h-9" data-testid={`gap-mode-${spanId}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="auto">Auto Calculate</SelectItem>
-              <SelectItem value="manual">User Defined</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Manual Gap Control - Only show when gap mode is manual */}
-      {gapMode === "manual" && (
-        <div className="bg-background rounded-md p-3 border">
-          <Label className="text-sm font-medium mb-2 block">Set All Gaps</Label>
+          <Label className="text-sm font-medium mb-2 block">Between Panel Gap</Label>
           <div className="flex items-center gap-2">
             <Input
               type="number"
@@ -289,8 +270,9 @@ export function AutoCalcPanelControls({
             />
             <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">Panels auto-resize when gap changes</p>
         </div>
-      )}
+      </div>
 
       {/* Apply Type to All */}
       <div className="bg-background rounded-md p-3 border">
@@ -335,23 +317,6 @@ export function AutoCalcPanelControls({
       <div className="space-y-3">
         {panelTypes.map((type, index) => (
           <div key={index} className="space-y-2">
-            {/* Gap before this panel (except first) - Only show in manual mode */}
-            {index > 0 && gapMode === "manual" && (
-              <div className="flex items-center gap-2 bg-background rounded-md p-2">
-                <Label className="text-xs text-muted-foreground whitespace-nowrap">Gap {index}:</Label>
-                <Input
-                  type="number"
-                  min={6}
-                  max={30}
-                  step={1}
-                  value={interPanelGaps[index - 1] || 10}
-                  onChange={(e) => updateGap(index - 1, parseInt(e.target.value) || 10)}
-                  className="h-8"
-                  data-testid={`gap-${spanId}-${index}`}
-                />
-                <span className="text-xs text-muted-foreground">mm</span>
-              </div>
-            )}
 
             {/* Panel */}
             <div className="flex items-center gap-2 bg-background rounded-md p-3 border">
