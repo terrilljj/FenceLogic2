@@ -323,8 +323,23 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     }
     
     // Step 5: Split panels into left/right based on gate position
-    const gatePosition = gateConfig.position !== undefined ? gateConfig.position : 0.5;
-    const leftPanelCount = Math.floor(N * gatePosition);
+    const gatePositionRaw = gateConfig.position !== undefined ? gateConfig.position : 0.5;
+    
+    // Normalize position if it's an integer (0-N range) to 0-1 range
+    // If position > 1, assume it's an index and normalize by N
+    const gatePosition = gatePositionRaw > 1 ? gatePositionRaw / N : gatePositionRaw;
+    
+    // Calculate panel split, ensuring at least 1 panel on right if gate not at very end
+    let leftPanelCount = Math.floor(N * gatePosition);
+    
+    // Clamp to ensure gate is always surrounded by panels (at least 1 on each side when possible)
+    // Exception: allow all panels on one side only if N=1 or position is exactly 0 or 1
+    if (N > 1 && gatePosition > 0 && gatePosition < 1) {
+      leftPanelCount = Math.max(0, Math.min(leftPanelCount, N - 1));
+    } else if (gatePosition >= 1) {
+      leftPanelCount = N; // All panels on left, gate at end
+    }
+    
     const rightPanelCount = N - leftPanelCount;
     
     leftPanels = panelWidths.slice(0, leftPanelCount);
@@ -332,7 +347,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     
     trace.push({
       step: 'panel-split',
-      data: { gatePosition, leftPanelCount, rightPanelCount, leftPanels, rightPanels },
+      data: { gatePositionRaw, gatePosition, leftPanelCount, rightPanelCount, leftPanels, rightPanels },
     });
     
     // Step 4: Use requested end gap (panels were sized to compensate)

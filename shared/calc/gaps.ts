@@ -124,11 +124,12 @@ export function buildSegmentSequence(config: {
     // 2. Left side panels (if any)
     if (config.leftPanels.length > 0) {
       addPanelsWithGaps(config.leftPanels);
-    }
-    
-    // Add between gap before gate components if there were left panels
-    if (config.leftPanels.length > 0) {
-      segments.push({ kind: 'gap', widthMm: config.betweenGapMm, gapType: 'between' });
+      
+      // Add between-gap after left panels if hinge is on RIGHT
+      // (because left panels are regular panels, not part of gate assembly)
+      if (hingeSide === 'RIGHT') {
+        segments.push({ kind: 'gap', widthMm: config.betweenGapMm, gapType: 'between' });
+      }
     }
     
     // 3. Hinge side component + hinge gap
