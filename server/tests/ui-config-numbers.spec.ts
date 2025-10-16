@@ -391,3 +391,107 @@ describe("UI Config Numeric Fields", () => {
     expect(gateTrace?.codes).toContain("GM-GATE-850");
   });
 });
+
+describe("Feature Flag: HINGE_AUTO_ENABLED=0 (auto-sizing disabled)", () => {
+  const originalEnv = process.env.HINGE_AUTO_ENABLED;
+  
+  beforeEach(() => {
+    process.env.HINGE_AUTO_ENABLED = "0";
+  });
+  
+  afterEach(() => {
+    process.env.HINGE_AUTO_ENABLED = originalEnv;
+  });
+
+  it("K) With flag off, explicit hinge width picks exact SKU", () => {
+    const uiConfig = createNumericUIConfig();
+    const selection = {
+      "hinge-panel-width-mm": 1100, // Explicit width provided
+      mount_mode: "GLASS_TO_GLASS",
+    };
+
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "glass-pool-spigots");
+
+    // Should pick the exact 1100mm hinge panel
+    expect(result.finalCodes).toContain("HINGE-PANEL-1100");
+    
+    const hingeTrace = result.trace.find(t => t.source === "ui-config:number" && t.key === "hinge-panel-width-mm");
+    expect(hingeTrace).toBeDefined();
+    expect(hingeTrace?.codes).toContain("HINGE-PANEL-1100");
+  });
+
+  it("L) With flag off, explicit hinge width snaps within tolerance", () => {
+    const uiConfig = createNumericUIConfig();
+    const selection = {
+      "hinge-panel-width-mm": 1120, // Within tolerance of 1100
+      mount_mode: "GLASS_TO_GLASS",
+    };
+
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "glass-pool-spigots");
+
+    // Should snap to 1100mm (within 50mm tolerance)
+    expect(result.finalCodes).toContain("HINGE-PANEL-1100");
+    
+    const hingeTrace = result.trace.find(t => t.source === "ui-config:number" && t.key === "hinge-panel-width-mm");
+    expect(hingeTrace).toBeDefined();
+    expect(hingeTrace?.codes).toContain("HINGE-PANEL-1100");
+    expect(hingeTrace?.note).toContain("snapped_from=1120_to=1100");
+  });
+
+  it("M) With flag off, hinge width out of tolerance returns CUSTOM", () => {
+    const uiConfig = createNumericUIConfig();
+    const selection = {
+      "hinge-panel-width-mm": 2000, // Way out of tolerance
+      mount_mode: "GLASS_TO_GLASS",
+    };
+
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "glass-pool-spigots");
+
+    // Should return CUSTOM-HINGE warning
+    const hingeTrace = result.trace.find(t => t.source === "ui-config:number" && t.key === "hinge-panel-width-mm");
+    expect(hingeTrace).toBeDefined();
+    expect(hingeTrace?.codes).toContain("CUSTOM-HINGE");
+    expect(hingeTrace?.note).toContain("no_hinge_sku_within_tolerance");
+  });
+
+  it("N) With flag off and NO explicit hinge width, falls back to allowedSubcategories", () => {
+    const uiConfig = createNumericUIConfig();
+    const selection = {
+      // No hinge-panel-width-mm provided, and no default should be applied
+      mount_mode: "GLASS_TO_GLASS",
+    };
+
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "glass-pool-spigots");
+
+    // No numeric field trace entry should exist (because no explicit width)
+    const hingeTrace = result.trace.find(t => t.source === "ui-config:number" && t.key === "hinge-panel-width-mm");
+    expect(hingeTrace).toBeUndefined();
+    
+    // Instead, hinge panels should be added via allowedSubcategories fallback
+    const subcategoryTrace = result.trace.find(t => 
+      t.source === "subcategory" && 
+      t.key.includes("Hinge Panels Master")
+    );
+    expect(subcategoryTrace).toBeDefined();
+    
+    // Should include hinge panel products from subcategory fallback
+    expect(result.finalCodes).toContain("HINGE-PANEL-1100");
+  });
+
+  it("O) With flag off, gate fields still use defaults (flag only affects hinges)", () => {
+    const uiConfig = createNumericUIConfig();
+    const selection = {
+      // No gate-width-mm provided, should still use default
+      mount_mode: "GLASS_TO_GLASS",
+    };
+
+    const result = resolveSelectionToProductsCore(uiConfig, products, selection, "glass-pool-spigots");
+
+    // Gate should still use default 850mm (flag only affects hinges)
+    expect(result.finalCodes).toContain("GM-GATE-850");
+    
+    const gateTrace = result.trace.find(t => t.source === "ui-config:number" && t.key === "gate-width-mm");
+    expect(gateTrace).toBeDefined();
+    expect(gateTrace?.codes).toContain("GM-GATE-850");
+  });
+});
