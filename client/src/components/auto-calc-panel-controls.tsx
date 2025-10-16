@@ -439,7 +439,7 @@ export function AutoCalcPanelControls({
         <div className="grid grid-cols-1 gap-2">
           {panelTypes.map((type, index) => (
             <div key={index} className="flex items-center gap-2">
-              <Badge variant="outline" className="w-20 justify-center">
+              <Badge variant="outline" className="w-20 justify-center shrink-0">
                 Panel {index + 1}
               </Badge>
               <Select
@@ -455,13 +455,34 @@ export function AutoCalcPanelControls({
                   <SelectItem value="hinge">Hinge Panel</SelectItem>
                 </SelectContent>
               </Select>
-              <Badge className={
-                type === "standard" ? "bg-blue-500" : 
-                type === "gate" ? "bg-green-500" : 
-                "bg-orange-500"
-              }>
-                {panelWidths[index]}mm
-              </Badge>
+              
+              {layoutMode === "manual-individual" ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <Input
+                    type="number"
+                    min={200}
+                    max={2000}
+                    step={50}
+                    value={panelWidthOverrides?.[index] || panelWidths[index]}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || panelWidths[index];
+                      updatePanelWidth(index, value);
+                    }}
+                    className="h-9 w-24"
+                    data-testid={`panel-width-${spanId}-${index}`}
+                  />
+                  <span className="text-sm text-muted-foreground">mm</span>
+                </div>
+              ) : (
+                <Badge className={
+                  type === "standard" ? "bg-blue-500" : 
+                  type === "gate" ? "bg-green-500" : 
+                  "bg-orange-500"
+                }>
+                  {panelWidths[index]}mm
+                </Badge>
+              )}
+              
               {layoutMode === "manual-individual" && (
                 <Button
                   size="sm"
@@ -469,6 +490,7 @@ export function AutoCalcPanelControls({
                   onClick={() => removePanel(index)}
                   disabled={panelTypes.length <= 1}
                   data-testid={`remove-panel-${spanId}-${index}`}
+                  className="shrink-0"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
