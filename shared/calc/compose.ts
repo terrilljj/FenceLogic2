@@ -45,8 +45,12 @@ export interface CompositionResult {
     gatePresent: boolean;
     lengthConserved: boolean;
   };
+  actualEndGapMm?: number;    // Actual end gap used (may differ from requested)
   residualEndGapMm?: number;  // Computed end gap to close the section exactly
-  varianceEndGapMm?: number;  // Variance from requested end gap
+  varianceEndGapMm?: number;  // Variance from requested end gap  
+  endGapPolicy?: EndGapPolicy; // Policy used
+  lockedTried?: boolean;      // Whether locked approach was attempted
+  residualUsed?: boolean;     // Whether residual fallback was used
   errors?: Array<{
     code: string;
     message: string;

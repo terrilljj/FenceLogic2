@@ -1,0 +1,53 @@
+Goal:
+Ship a reliable default: try LOCKED_STRICT first; if impossible on a 50mm grid, compute a non-negative residual end gap and report variance. Keep LOCKED_STRICT behind a flag (STRICT_END_GAP=1) for QA. Add a small Advisor to suggest feasible end gaps near the requested value. Update tests and run QA.
+
+Tasks:
+
+1) Default policy
+- In resolver (frameless variant), set default EndGapPolicy = 'LOCKED_OR_RESIDUAL'.
+- If process.env.STRICT_END_GAP === '1', force 'LOCKED_STRICT'.
+- Trace: always add { source:'end-gap-policy', policy, lockedTried:true/false, residualUsed:true/false, varianceEndGap:mm }.
+
+2) Policy behavior
+- Keep current LOCKED_STRICT path (exact requested end gap; if impossible, 400 UNREACHABLE).
+- Implement fallback (RESIDUAL) for LOCKED_OR_RESIDUAL:
+  a) Recompute panel widths ignoring end gap: targetPanels0 = section - F (no end gap applied).
+  b) Find N via findFeasibleN, equalizePanelsExact(targetPanels0, N, step=50, min, max).
+  c) Compute residualEndGap = section - (startGap + sum(widths) + (N-1)*betweenGap + hingeGap + gateWidth + latchGap + (hingePanelWidth?))
+  d) Ensure residualEndGap >= 0; if negative, try increasing N up to N_max; if still negative → 400 UNREACHABLE with reason 'residual_negative'.
+  e) Record varianceEndGap = residualEndGap - requestedEndGap in trace/response warnings.
+
+3) Advisor endpoint (read-only)
+- Add file shared/calc/endgapAdvisor.ts with:
+  export function nearestFeasibleEndGaps(params): { requestedFeasible:boolean, candidates:Array<{endGapMm:number, deltaMm:number, N:number}> }
+  Logic: sweep endGapMm from requested-50 to requested+50 (step 5 or 10), try LOCKED_STRICT solve each; collect up to 3 closest feasible.
+- Add GET /api/debug/endgap-advice?variant=<frameless>&run=<mm>&start=<mm>&between=<mm>&end=<mm>&gate=<mm>&hinge=<mm>&mode=<G2G|POST|WALL>
+  Return JSON from advisor. Do not write DB.
+
+4) UI nudge (small)
+- If policy='LOCKED_OR_RESIDUAL' and residualUsed=true on response, show a small inline hint:
+  “Adjusted end gap by {{varianceEndGap}} mm to fit the 50 mm grid.”
+- (Optional) Add a “See alternatives” link that calls /api/debug/endgap-advice and lists top 3 feasible end gaps.
+
+5) Tests
+- Create/Update server/tests/endgap-policy.spec.ts with:
+  A) LOCKED_STRICT success case → variance=0; panels %50; sum ±1mm.
+  B) LOCKED_STRICT impossible → 400 UNREACHABLE reason 'no_50mm_solution_for_locked_end_gap'.
+  C) LOCKED_OR_RESIDUAL same inputs as B → success; residualUsed=true; varianceEndGap reported; panels %50; sum ±1mm.
+  D) Advisor returns requestedFeasible=false and 1–3 candidates with deltas and N.
+- Update regression-visual-5000.spec.ts (R1/R2) to expect success under default (LOCKED_OR_RESIDUAL): residualUsed may be true; totals exact; gate present; no disappearance.
+
+6) QA
+- Run full tests: npm test
+- Run persistent QA: npx tsx server/scripts/qa-gate.ts
+- Ensure logs/qa-*.json/md written and replit.md appended; include end-gap-policy + variance in the QA summary.
+
+Done checklist (print exactly):
+- Default policy set to LOCKED_OR_RESIDUAL: <yes/no>
+- STRICT_END_GAP flag respected: <yes/no>
+- Advisor endpoint available: <yes/no>
+- Tests pass (policy + advisor): <yes/no> (totals)
+- QA report written: <filenames>
+- Panels 50mm grid enforced and length conserved: <yes/no>
+- Residual end gap used only when locked infeasible: <yes/no>
+- Files changed: (list)
