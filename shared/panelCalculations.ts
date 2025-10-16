@@ -344,7 +344,8 @@ export function calculatePanelLayout(
     
     // Check if we achieved exact or near-exact gap spacing
     // Allow tolerance for positive variance (extra gap space to distribute)
-    const tolerance = PANEL_INCREMENT;
+    // Increased tolerance to account for panel equalization rounding (up to 100mm variance is acceptable)
+    const tolerance = 100;
     
     if (actualTotalGapWidth >= totalGapWidth - 2 && Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance) {
       const actualGap = actualTotalGapWidth / numGaps;
@@ -398,7 +399,8 @@ export function calculatePanelLayout(
         const hasRequiredComponents = (hasGate || hasCustomPanel) ? (numGatePanels + numCustomPanels > 0 ? 0 : 1000) : 0;
         const panelSizeScore = -Math.max(...finalPanels);
         const gapDiffPenalty = Math.abs(actualGap - targetGap) * 10;
-        const score = hasRequiredComponents + totalPanels * 100 + panelSizeScore + gapDiffPenalty;
+        // Increased panel count penalty from 100 to 500 to strongly prefer fewer panels
+        const score = hasRequiredComponents + totalPanels * 500 + panelSizeScore + gapDiffPenalty;
         
         if (score < bestScore) {
           bestScore = score;
