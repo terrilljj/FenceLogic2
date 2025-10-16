@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Box, Layers } from "lucide-react";
+import { RotateCcw, Box, Layers, Download } from "lucide-react";
 import { FenceDesign } from "@shared/schema";
 
 interface FenceVisualizationProps {
@@ -197,6 +197,106 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
     return "3D View";
   };
 
+  const handleDownloadPDF = () => {
+    let imageDataUrl: string | null = null;
+
+    // Capture canvas based on current view mode
+    if (viewMode === "3d" && rendererRef.current) {
+      // For 3D view, capture from WebGL renderer
+      imageDataUrl = rendererRef.current.domElement.toDataURL('image/png');
+    } else if (canvasRef.current) {
+      // For 2D/elevation view, capture from canvas
+      imageDataUrl = canvasRef.current.toDataURL('image/png');
+    }
+
+    if (!imageDataUrl) return;
+
+    // Create a printable HTML page with the image
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Fence Design - ${design.name}</title>
+          <style>
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              img {
+                max-width: 100%;
+                height: auto;
+                display: block;
+                margin: 0 auto;
+              }
+              .no-print {
+                display: none;
+              }
+            }
+            body {
+              margin: 20px;
+              font-family: Arial, sans-serif;
+            }
+            h1 {
+              text-align: center;
+              margin-bottom: 10px;
+            }
+            .info {
+              text-align: center;
+              color: #666;
+              margin-bottom: 20px;
+            }
+            img {
+              max-width: 100%;
+              height: auto;
+              display: block;
+              margin: 0 auto;
+              border: 1px solid #ddd;
+            }
+            .no-print {
+              text-align: center;
+              margin-top: 20px;
+            }
+            button {
+              padding: 10px 20px;
+              font-size: 16px;
+              cursor: pointer;
+              background: #000;
+              color: white;
+              border: none;
+              border-radius: 4px;
+            }
+            button:hover {
+              background: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${design.name}</h1>
+          <div class="info">
+            <p>${design.productVariant} • ${design.shape} configuration</p>
+            <p>${design.spans.length} section${design.spans.length > 1 ? 's' : ''}</p>
+          </div>
+          <img src="${imageDataUrl}" alt="Fence Design Visualization" />
+          <div class="no-print">
+            <button onclick="window.print()">Print / Save as PDF</button>
+            <button onclick="window.close()" style="background: #666; margin-left: 10px;">Close</button>
+          </div>
+          <script>
+            // Auto-trigger print dialog after a short delay
+            setTimeout(() => {
+              window.print();
+            }, 500);
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="relative w-full h-full bg-gradient-to-b from-background to-muted/30" data-testid="fence-visualization">
       {viewMode === "3d" ? (
@@ -208,6 +308,20 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
           data-testid={viewMode === "2d" ? "fence-2d-canvas" : "fence-elevation-canvas"}
         />
       )}
+
+      {/* Download PDF Button */}
+      <div className="absolute top-4 right-4 flex gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleDownloadPDF}
+          data-testid="button-download-pdf"
+          className="gap-2"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden sm:inline">Download PDF</span>
+        </Button>
+      </div>
 
       {/* View cycling disabled - only elevation view for v1 */}
       {false && (

@@ -20,12 +20,14 @@ Preferred communication style: Simple, everyday language.
 **Visualization System (V1 - Elevation Only):**
 - Canvas-based 2D side elevation rendering for proportionate representations of panels, posts, rails, and hardware across all product types.
 - Includes visual representation of top-mounted rails and gate hardware with inverted flip logic.
+- **PDF Export**: Download fence visualization as PDF for printing or sharing (captures canvas and opens print dialog).
 
 **State Management:**
 - Local React state for configuration.
 - `react-hook-form` with Zod for form validation.
 - Query client for API data.
 - Theme persistence in localStorage.
+- **Add Section Feature**: Users can incrementally add fence sections without losing work (auto-generates sequential IDs, copies last section's settings).
 
 ### Backend Architecture
 
@@ -74,12 +76,12 @@ Preferred communication style: Simple, everyday language.
   - Strongly prefers fewer panels (penalty: 500 per panel) to maintain layout stability
   - Accepts up to 100mm gap variance from equalization (50mm grid constraint)
   - Prioritizes configurations with required components (gates, custom panels) first
-- **Frameless Custom Panel Feature** (In Development):
-  - `CustomPanelConfig` type extends `CompositionInput` to support fixed-width custom panels
-  - Position-based insertion at LEFT (0.0), MIDDLE (0.5), or RIGHT (1.0) within variable panel array
-  - Custom gap support via `gapBeforeMm` and `gapAfterMm` properties
-  - Debug endpoint: `POST /api/debug/frameless-custom/compose` for testing
-  - Status: Core functionality implemented, gap accounting refinement needed for edge cases
+- **Custom Frameless Spigots Auto-Calculator**:
+  - Auto-calculates optimal panel count based on max panel width constraint
+  - Panel type options: Standard Glass (auto-sized), Gate Panel (customizable width, default 900mm), Hinge Panel (customizable width, default 1200mm), Custom Width (any specific width, default 1000mm)
+  - Individual gap controls: Default gap applies to all, with override capability for each gap
+  - Standard panels auto-distribute space around fixed-width panels (Gate/Hinge/Custom)
+  - Real-time visualization and component list updates
 
 **Numeric Field SKU Selection System:**
 - **SKU Selector Service**: Extracts width from product codes, performs tolerance-based matching and snapping to standard sizes.
