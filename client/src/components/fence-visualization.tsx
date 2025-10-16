@@ -213,12 +213,13 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
 
     try {
       // Prepare sections data for PDF generation
-      const sections = design.spans.map((span, index) => ({
-        id: span.spanId || `section-${index}`,
-        title: `Section ${span.spanId}`,
-        subtitle: design.productVariant,
-        imageDataUrl: imageDataUrl,  // Same image for all sections for now
-      }));
+      // Send one section with the complete fence visualization
+      const sections = [{
+        id: 'fence-design',
+        title: design.name || 'Fence Design',
+        subtitle: `${design.spans.length} ${design.spans.length === 1 ? 'Section' : 'Sections'} - ${design.productVariant}`,
+        imageDataUrl: imageDataUrl,
+      }];
 
       // Send request to server to generate PDF
       const response = await fetch('/api/designs/pdf', {
