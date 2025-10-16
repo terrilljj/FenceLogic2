@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, Plus } from "lucide-react";
 
 export default function FenceLogic() {
   const { toast } = useToast();
@@ -160,6 +160,63 @@ export default function FenceLogic() {
       ),
     }));
   }, []);
+
+  const handleAddSection = useCallback(() => {
+    setDesign((prev) => {
+      // Generate next span ID (A, B, C... Z, AA, AB, etc.)
+      const existingIds = prev.spans.map(s => s.spanId);
+      let nextId = String.fromCharCode(65); // Start with 'A'
+      let counter = 0;
+      
+      while (existingIds.includes(nextId)) {
+        counter++;
+        if (counter < 26) {
+          nextId = String.fromCharCode(65 + counter);
+        } else {
+          // After Z, use AA, AB, AC, etc.
+          const firstChar = String.fromCharCode(65 + Math.floor((counter - 26) / 26));
+          const secondChar = String.fromCharCode(65 + ((counter - 26) % 26));
+          nextId = firstChar + secondChar;
+        }
+      }
+
+      // Create new span based on last span or default
+      const lastSpan = prev.spans[prev.spans.length - 1];
+      const newSpan: SpanConfig = {
+        spanId: nextId,
+        length: lastSpan?.length || 5000,
+        maxPanelWidth: lastSpan?.maxPanelWidth || (design.productVariant === "custom-frameless" ? 1500 : 2000),
+        desiredGap: lastSpan?.desiredGap || 50,
+        spigotMounting: lastSpan?.spigotMounting || "base-plate",
+        spigotColor: lastSpan?.spigotColor || "polished",
+        layoutMode: lastSpan?.layoutMode || (design.productVariant === "custom-frameless" ? "auto-calc" : "auto-equalize"),
+        leftGap: lastSpan?.leftGap || {
+          enabled: true,
+          position: "inside",
+          size: 25,
+        },
+        rightGap: lastSpan?.rightGap || {
+          enabled: true,
+          position: "inside",
+          size: 25,
+        },
+        // Copy autoCalcConfig if present in last span
+        ...(lastSpan?.autoCalcConfig && {
+          autoCalcConfig: { ...lastSpan.autoCalcConfig }
+        }),
+      };
+
+      return {
+        ...prev,
+        spans: [...prev.spans, newSpan],
+      };
+    });
+
+    toast({
+      title: "Section Added",
+      description: "A new section has been added to your fence design.",
+    });
+  }, [design.productVariant, toast]);
 
   const handleSave = () => {
     saveDesignMutation.mutate(design);
@@ -361,11 +418,22 @@ export default function FenceLogic() {
 
             {/* Section Configuration */}
             <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Section Configuration</h2>
-                <p className="text-sm text-muted-foreground">
-                  Configure each section of your fence
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">Section Configuration</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Configure each section of your fence
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddSection}
+                  data-testid="button-add-section"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Section
+                </Button>
               </div>
 
               {design.spans.map((span, index) => (
