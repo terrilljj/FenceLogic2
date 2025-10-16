@@ -12,6 +12,8 @@ import {
   type GateConfig as AccountingGateConfig,
 } from './lengthAccounting';
 
+export type EndGapPolicy = 'LOCKED_STRICT' | 'LOCKED_OR_RESIDUAL';
+
 export interface CompositionInput {
   runLengthMm: number;
   startGapMm: number;
@@ -19,6 +21,7 @@ export interface CompositionInput {
   betweenGapMm: number;
   maxPanelMm: number;
   minPanelMm: number;
+  endGapPolicy?: EndGapPolicy; // Default: LOCKED_OR_RESIDUAL
   gateConfig?: {
     required: boolean;
     gateWidthMm: number;

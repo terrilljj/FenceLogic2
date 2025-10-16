@@ -1,0 +1,45 @@
+Goal:
+Ship with a sane default that always produces a layout when possible (LOCKED_OR_RESIDUAL), keep strict mode for QA, and help the user pick a feasible end gap before failing.
+
+Tasks
+
+1) Switch default policy
+- Resolver: set default EndGapPolicy to 'LOCKED_OR_RESIDUAL' for frameless variant.
+- Keep 'LOCKED_STRICT' behind env flag STRICT_END_GAP=1 or via Admin UI toggle.
+- Trace: always include {source:'end-gap-policy', policy, lockedTried:true/false, varianceEndGap:mm}.
+
+2) Feasibility Advisor (no-auto-change)
+- Add pure helper: shared/calc/endgapAdvisor.ts
+  export function nearestFeasibleEndGaps({sectionMm, startGapMm, betweenGapMm, F, minPanelMm, maxPanelMm, stepMm=50}): 
+    { requestedFeasible: boolean, candidates: Array<{endGapMm:number, deltaMm:number, N:number}> }
+  Logic:
+    - For a sweep of endGapMm in [max(0, requested-50) … requested+50] try findFeasibleN(targetPanels=section-F-endGapMm).
+    - Return up to 3 nearest feasible end gaps with their deltas and panel count N.
+    - Mark requestedFeasible=true if exact requested works.
+
+- New debug endpoint: GET /api/debug/endgap-advice?variant=pool_fence/frameless&run=5000&start=25&between=50&end=25&gate=900&hinge=1200&mode=G2G
+  → returns { requestedFeasible, candidates:[{endGapMm, deltaMm, N}] }
+
+3) UI nudge (non-blocking)
+- If policy=LOCKED_OR_RESIDUAL and requestedFeasible=false:
+   - Show a small inline hint: “Nearest feasible end gaps: 15 mm (+/−10), 25 mm (+0), 35 mm (+10).”
+   - Keep current behavior: if user doesn’t change, we compute residual and display the variance.
+
+4) Tests
+- Create server/tests/endgap-policy.spec.ts (or update existing):
+  A) LOCKED_STRICT success case → variance=0, sum conserved ±1 mm.
+  B) LOCKED_STRICT impossible → 400 UNREACHABLE with reason 'no_50mm_solution_for_locked_end_gap'.
+  C) LOCKED_OR_RESIDUAL same scenario → success; residual end gap ≥0; variance reported; sum conserved; panels %50==0.
+  D) Advisor returns feasible candidates around the requested gap and flags requestedFeasible correctly.
+
+5) QA run
+- Run npm test (all) and npx tsx server/scripts/qa-gate.ts
+- Ensure QA logs include end-gap-policy trace and any variance when residual was used.
+
+Done checklist (print exactly):
+- Default policy set to LOCKED_OR_RESIDUAL: <yes/no>
+- Strict mode behind flag: <yes/no>
+- Advisor endpoint available: <yes/no>
+- Tests pass (policy + advisor): <yes/no> (totals)
+- QA report written: <filenames>
+- Files changed: (list)
