@@ -60,21 +60,34 @@ export function renderA4LandscapePdf(
       // Draw section content
       if (section.imageDataUrl) {
         try {
+          console.log('[PDF] Rendering image for section:', section.id, 'Data URL length:', section.imageDataUrl.length);
           // Remove data URL prefix if present
           const base64Data = section.imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
           const imgBuffer = Buffer.from(base64Data, 'base64');
+          console.log('[PDF] Image buffer size:', imgBuffer.length, 'bytes');
           
           doc.image(imgBuffer, placement.x, placement.y, {
             width: placement.w,
             height: placement.h,
             fit: [placement.w, placement.h],
           });
+          console.log('[PDF] Image rendered successfully');
         } catch (error) {
-          console.error('Error rendering image:', error);
+          console.error('[PDF] Error rendering image:', error);
           // Draw placeholder rectangle
           doc.rect(placement.x, placement.y, placement.w, placement.h)
             .stroke('#ddd');
+          
+          // Add error text
+          doc.fontSize(8)
+            .fillColor('#999')
+            .text('Image failed to load', placement.x + 4, placement.y + placement.h / 2);
         }
+      } else {
+        console.log('[PDF] No imageDataUrl for section:', section.id);
+        // Draw placeholder rectangle when no image
+        doc.rect(placement.x, placement.y, placement.w, placement.h)
+          .stroke('#ddd');
       }
 
       // Draw scale percentage if debug mode
