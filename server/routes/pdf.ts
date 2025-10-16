@@ -18,11 +18,35 @@ pdfRouter.post('/designs/pdf', async (req: Request, res: Response) => {
     
     console.log('[PDF] Design:', design.name, 'Sections:', sections.length);
 
-    // Convert sections to SectionBox format (assume images are ~800x400px at 96dpi)
-    const sectionBoxes: SectionBox[] = sections.map((section, index) => ({
-      id: section.id || `section-${index}`,
-      intrinsicW: 600,  // points (800px * 72/96)
-      intrinsicH: 300,  // points (400px * 72/96)
+    // Detect actual image dimensions from base64 data
+    const sectionBoxes: SectionBox[] = await Promise.all(sections.map(async (section, index) => {
+      // Default dimensions (wide landscape)
+      let intrinsicW = 800;
+      let intrinsicH = 400;
+      
+      if (section.imageDataUrl) {
+        try {
+          // Extract base64 data
+          const base64Data = section.imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
+          const imgBuffer = Buffer.from(base64Data, 'base64');
+          
+          // Try to detect PNG dimensions (quick and dirty)
+          if (imgBuffer[0] === 0x89 && imgBuffer[1] === 0x50) { // PNG signature
+            // PNG width and height are at bytes 16-23 (big-endian)
+            intrinsicW = imgBuffer.readUInt32BE(16);
+            intrinsicH = imgBuffer.readUInt32BE(20);
+            console.log('[PDF] Detected PNG dimensions:', intrinsicW, 'x', intrinsicH);
+          }
+        } catch (err) {
+          console.log('[PDF] Could not detect image dimensions, using defaults');
+        }
+      }
+      
+      return {
+        id: section.id || `section-${index}`,
+        intrinsicW,
+        intrinsicH,
+      };
     }));
 
     // Pack sections using layout algorithm

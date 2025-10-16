@@ -198,26 +198,25 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
   };
 
   const handleDownloadPDF = async () => {
-    let imageDataUrl: string | null = null;
-
-    // Capture canvas based on current view mode
-    if (viewMode === "3d" && rendererRef.current) {
-      // For 3D view, capture from WebGL renderer
-      imageDataUrl = rendererRef.current.domElement.toDataURL('image/png');
-    } else if (canvasRef.current) {
-      // For 2D/elevation view, capture from canvas
-      imageDataUrl = canvasRef.current.toDataURL('image/png');
-    }
-
-    if (!imageDataUrl) return;
-
     try {
-      // Prepare sections data for PDF generation
-      // Send one section with the complete fence visualization
+      let imageDataUrl: string | null = null;
+      
+      if (viewMode === "3d" && rendererRef.current) {
+        imageDataUrl = rendererRef.current.domElement.toDataURL('image/png');
+      } else if (canvasRef.current) {
+        imageDataUrl = canvasRef.current.toDataURL('image/png');
+      }
+      
+      if (!imageDataUrl) return;
+      
+      // The canvas/3D view shows all sections together
+      // Send as a single PDF section for proper layout
       const sections = [{
-        id: 'fence-design',
+        id: 'complete-design',
         title: design.name || 'Fence Design',
-        subtitle: `${design.spans.length} ${design.spans.length === 1 ? 'Section' : 'Sections'} - ${design.productVariant}`,
+        subtitle: design.spans.length > 1 
+          ? `${design.spans.map(s => s.spanId).join(' + ')} (${design.spans.length} sections)` 
+          : design.productVariant,
         imageDataUrl: imageDataUrl,
       }];
 
