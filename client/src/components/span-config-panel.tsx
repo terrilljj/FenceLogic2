@@ -50,6 +50,62 @@ export function SpanConfigPanel({
       updates.leftRakedPanel = undefined;
       updates.rightRakedPanel = undefined;
     }
+    
+    // For custom-frameless in auto mode, recalculate panels when length changes
+    if (productVariant === "custom-frameless" && 
+        updates.length !== undefined && 
+        span.autoCalcConfig?.layoutMode === "auto") {
+      const newLength = updates.length;
+      const maxPanelWidth = span.autoCalcConfig.maxPanelWidth;
+      const gapSize = span.autoCalcConfig.interPanelGaps[0] || 50;
+      const leftGapSize = span.leftGap?.size || 0;
+      const rightGapSize = span.rightGap?.size || 0;
+      const availableLength = newLength - leftGapSize - rightGapSize;
+      
+      // Calculate new panel count
+      let numPanels = 1;
+      while (numPanels <= 20) {
+        const totalGaps = (numPanels - 1) * gapSize;
+        const totalPanelWidth = numPanels * maxPanelWidth;
+        if (totalPanelWidth + totalGaps <= availableLength) {
+          numPanels++;
+        } else {
+          break;
+        }
+      }
+      const autoPanelCount = Math.max(1, numPanels - 1);
+      
+      // Calculate panel widths
+      const numGaps = Math.max(0, autoPanelCount - 1);
+      const totalGaps = numGaps * gapSize;
+      const availableForPanels = newLength - leftGapSize - rightGapSize - totalGaps;
+      const baseWidth = autoPanelCount > 0 ? Math.floor(availableForPanels / autoPanelCount) : 0;
+      const remainder = availableForPanels - (baseWidth * autoPanelCount);
+      
+      const panelWidths: number[] = [];
+      for (let i = 0; i < autoPanelCount; i++) {
+        const extraMm = i < remainder ? 1 : 0;
+        panelWidths.push(baseWidth + extraMm);
+      }
+      
+      const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
+      
+      // Update autoCalcConfig and panelLayout
+      updates.autoCalcConfig = {
+        ...span.autoCalcConfig,
+        panelTypes: Array(autoPanelCount).fill("standard"),
+        interPanelGaps: Array(numGaps).fill(gapSize),
+      };
+      updates.panelLayout = {
+        panels: panelWidths,
+        gaps: Array(numGaps).fill(gapSize),
+        totalPanelWidth,
+        totalGapWidth: totalGaps,
+        averageGap: gapSize,
+        panelTypes: Array(autoPanelCount).fill("standard"),
+      };
+    }
+    
     onUpdate({ ...span, ...updates });
   };
 
