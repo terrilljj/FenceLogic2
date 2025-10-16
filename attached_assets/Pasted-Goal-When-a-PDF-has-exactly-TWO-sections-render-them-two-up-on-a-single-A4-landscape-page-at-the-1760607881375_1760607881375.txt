@@ -1,0 +1,75 @@
+Goal:
+When a PDF has exactly TWO sections, render them “two-up” on a single A4 landscape page at the largest possible scale (no wasted space). Keep existing infra; just add a dedicated strategy + guardrails to prevent overflow.
+
+Tasks
+
+1) Add a dedicated strategy: twoRowMax
+File: shared/pdf/layout.ts
+
+- Export new strategy 'two-row-max' and add to packer.
+- Algorithm (A4 landscape; page W=842, H=595):
+  const content = inset(A4, marginPt) then subtract headerPt (top) and footerPt (bottom).
+  Split content height into two rows with 1 gutter:
+    rowH = (content.h - gutterPt) / 2
+    rowW = content.w
+  For each section i (0..1) with intrinsic (w_i, h_i):
+    scale_i = min(rowW / w_i, rowH / h_i)
+    clamp to [minScale, maxScale] BUT NEVER let clamp increase dimensions beyond row (i.e., if scale_i < minScale, use minScale only if it still fits; otherwise use the true fit scale)
+    placed w_i' = w_i * scale_i_fit, h_i' = h_i * scale_i_fit
+    x_i = content.x + (rowW - w_i') / 2
+    y_0 = content.y
+    y_1 = content.y + rowH + gutterPt
+  Return one page with two placements. If either section cannot fit at any scale ≤ maxScale, fall back to single-column (fit-to-width) on one page each.
+
+Guardrails:
+- Never exceed content rect: after computing placements, assert x ≥ content.x, x+w ≤ content.x+content.w, y ≥ content.y, y+h ≤ content.y+content.h. If a bound would be exceeded due to float math, shrink scale_i by 0.5pt margin and recompute.
+- Record per-placement scale in result.
+
+2) Strategy selection tweaks
+- In packSectionsA4Landscape(), before scoring generic strategies, short-circuit:
+  if (sections.length === 2) use 'two-row-max'.
+- Also add query override: if opts?.strategy === 'two-row-max', force it (for debug endpoint).
+
+3) Fix scale clamping bug
+- In ALL strategies, do not “clamp up” to minScale if that would overflow slot. Use:
+  const sFit = min(slotW / w, slotH / h);
+  const s = Math.min(maxScale, sFit); // never exceed fit
+  if (s < minScale) mark placement as belowMinScale=true in trace (but still use s); do NOT overflow.
+
+4) Fix row-wrap bookkeeping (width/height accumulators)
+- Ensure row width accumulates as sum(placedW) + gutters between items only.
+- Row height = max placedH within the row.
+- When adding a new item would exceed content.w, wrap to next row.
+- When adding a new row would exceed content.h, start a new page.
+
+5) Strategy scoring
+- Score by minimum placement scale across page (higher is better).
+- Tie-break by total unused area (contentArea - sum(placedAreas)).
+
+6) PDF compositor wiring
+File: server/pdf/render.ts
+- Recognize 'two-row-max' in the placements from packer.
+- Titles live INSIDE each section box at top-left (10pt, 4pt padding); do not steal global header space.
+- Reduce overall header/footer defaults slightly for 2-up:
+  if two-row-max: headerPt=16, footerPt=12, marginPt=16, gutterPt=12.
+- Add scale% text in debug mode (PDF_LAYOUT_DEBUG=1) inside each section box.
+
+7) Debug endpoint
+File: server/routes/pdf.ts
+- Accept query params: strategy=auto|two-row-max, debug=0/1
+- When two sections and strategy=auto, return which strategy was chosen in JSON header (X-PDF-Strategy).
+
+8) Tests (logic only)
+File: server/tests/pdf-layout.spec.ts (or shared/tests/pdf-layout.spec.ts)
+Add tests:
+- Two sections (2200x900 each): expect 'two-row-max', scales equal, no overflow, placements within content bounds.
+- Two sections with very tall aspect: still fits both; scales computed via rowH limit; no overflow.
+- MinScale guard: if minScale > sFit, assert we do NOT exceed bounds and we flag belowMinScale in trace.
+
+9) Acceptance output (print exactly):
+- TS compile: ✅/❌
+- Two-up strategy implemented and auto-selected for 2 sections: ✅/❌
+- No-overflow guard (bounds assertions) active: ✅/❌
+- Strategy override via query param (?strategy=two-row-max): ✅/❌
+- Tests for two-up pass: <yes/no> (X/Y)
+- Files changed: (list)

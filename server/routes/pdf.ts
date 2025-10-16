@@ -64,7 +64,8 @@ pdfRouter.post('/designs/:id/pdf', async (req: Request, res: Response) => {
 // Debug route for testing PDF layout
 pdfRouter.get('/debug/pdf/a4-landscape', async (req: Request, res: Response) => {
   try {
-    const strategy = req.query.strategy as string || 'auto';
+    const strategyParam = req.query.strategy as string || 'auto';
+    const debug = req.query.debug === '1';
     const minColumn = parseInt(req.query.minColumn as string) || 1;
     const maxColumn = parseInt(req.query.maxColumn as string) || 2;
 
@@ -92,12 +93,13 @@ pdfRouter.get('/debug/pdf/a4-landscape', async (req: Request, res: Response) => 
 
     // Pack sections
     const packResult = packSectionsA4Landscape(sectionBoxes, {
-      marginPt: 18,
+      marginPt: strategyParam === 'two-row-max' ? 16 : 18,
       gutterPt: 12,
-      headerPt: 22,
-      footerPt: 14,
+      headerPt: strategyParam === 'two-row-max' ? 16 : 22,
+      footerPt: strategyParam === 'two-row-max' ? 12 : 14,
       minScale: 0.6,
       maxScale: 1.2,
+      strategy: strategyParam === 'auto' ? undefined : strategyParam,
     });
 
     // Create PDF
@@ -105,6 +107,12 @@ pdfRouter.get('/debug/pdf/a4-landscape', async (req: Request, res: Response) => 
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="debug-fence-layout.pdf"');
+    res.setHeader('X-PDF-Strategy', packResult.usedStrategy);
+
+    // Set debug mode if requested
+    if (debug) {
+      process.env.PDF_LAYOUT_DEBUG = '1';
+    }
 
     doc.pipe(res);
 
@@ -120,6 +128,11 @@ pdfRouter.get('/debug/pdf/a4-landscape', async (req: Request, res: Response) => 
     });
 
     doc.end();
+
+    // Reset debug mode
+    if (debug) {
+      delete process.env.PDF_LAYOUT_DEBUG;
+    }
   } catch (error) {
     console.error('Debug PDF error:', error);
     res.status(500).json({ error: 'Failed to generate debug PDF' });

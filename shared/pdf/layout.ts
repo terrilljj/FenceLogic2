@@ -32,14 +32,14 @@ export type PackResult = {
   }>;
   pageSize: { w: number; h: number };
   contentRect: { x: number; y: number; w: number; h: number };
-  usedStrategy: 'single-column' | 'two-column' | 'row-wrap';
+  usedStrategy: 'single-column' | 'two-column' | 'row-wrap' | 'two-row-max';
 };
 
 const A4_LANDSCAPE = { w: 842, h: 595 };
 
 export function packSectionsA4Landscape(
   sections: SectionBox[],
-  opts?: PdfLayoutOptions
+  opts?: PdfLayoutOptions & { strategy?: string }
 ): PackResult {
   const {
     marginPt = 18,
@@ -48,6 +48,7 @@ export function packSectionsA4Landscape(
     footerPt = 14,
     minScale = 0.6,
     maxScale = 1.2,
+    strategy: forceStrategy,
   } = opts || {};
 
   const pageSize = A4_LANDSCAPE;
@@ -60,6 +61,16 @@ export function packSectionsA4Landscape(
     h: pageSize.h - 2 * marginPt - headerPt - footerPt,
   };
 
+  // Short-circuit: if exactly 2 sections, use two-row-max
+  if (sections.length === 2 && forceStrategy !== 'single-column') {
+    return packTwoRowMax(sections, contentRect, gutterPt, minScale, maxScale);
+  }
+
+  // Force specific strategy if requested
+  if (forceStrategy === 'two-row-max' && sections.length === 2) {
+    return packTwoRowMax(sections, contentRect, gutterPt, minScale, maxScale);
+  }
+
   // Try different strategies and pick the best
   const strategies = [
     () => packSingleColumn(sections, contentRect, gutterPt, minScale, maxScale),
@@ -68,14 +79,14 @@ export function packSectionsA4Landscape(
   ];
 
   let bestResult: PackResult | null = null;
-  let bestAvgScale = 0;
+  let bestMinScale = 0;
 
   for (const strategy of strategies) {
     const result = strategy();
-    const avgScale = calculateAverageScale(result);
+    const minScale = calculateMinimumScale(result);
     
-    if (avgScale > bestAvgScale) {
-      bestAvgScale = avgScale;
+    if (minScale > bestMinScale) {
+      bestMinScale = minScale;
       bestResult = result;
     }
   }
@@ -92,6 +103,98 @@ function calculateAverageScale(result: PackResult): number {
   const allScales = result.pages.map(p => p.scale);
   if (allScales.length === 0) return 0;
   return allScales.reduce((sum, s) => sum + s, 0) / allScales.length;
+}
+
+function calculateMinimumScale(result: PackResult): number {
+  const allScales = result.pages.map(p => p.scale);
+  if (allScales.length === 0) return 0;
+  return Math.min(...allScales);
+}
+
+function packTwoRowMax(
+  sections: SectionBox[],
+  contentRect: { x: number; y: number; w: number; h: number },
+  gutterPt: number,
+  minScale: number,
+  maxScale: number
+): PackResult {
+  if (sections.length !== 2) {
+    // Fallback to single column if not exactly 2 sections
+    return packSingleColumn(sections, contentRect, gutterPt, minScale, maxScale);
+  }
+
+  // Split content height into two equal rows with gutter between
+  const rowH = (contentRect.h - gutterPt) / 2;
+  const rowW = contentRect.w;
+
+  const placements: PagePlacement[] = [];
+  const scales: number[] = [];
+
+  for (let i = 0; i < 2; i++) {
+    const section = sections[i];
+    
+    // Calculate scale to fit row dimensions
+    const sFit = Math.min(rowW / section.intrinsicW, rowH / section.intrinsicH);
+    
+    // Never exceed maxScale, and never exceed fit
+    let scale = Math.min(maxScale, sFit);
+    
+    // If scale is below minScale, use the fit scale anyway (don't overflow)
+    // Note: We're NOT clamping up to minScale if it would cause overflow
+    if (scale < minScale) {
+      scale = sFit; // Use actual fit, even if below minScale
+    }
+    
+    const placedW = section.intrinsicW * scale;
+    const placedH = section.intrinsicH * scale;
+    
+    // Center horizontally in the row
+    const x = contentRect.x + (rowW - placedW) / 2;
+    const y = i === 0 
+      ? contentRect.y 
+      : contentRect.y + rowH + gutterPt;
+    
+    // Guardrails: ensure no overflow (with 0.5pt safety margin)
+    const safetyMargin = 0.5;
+    if (x + placedW > contentRect.x + contentRect.w + safetyMargin ||
+        y + placedH > contentRect.y + contentRect.h + safetyMargin) {
+      // Shrink slightly to fit
+      scale = scale * 0.99;
+      const newPlacedW = section.intrinsicW * scale;
+      const newPlacedH = section.intrinsicH * scale;
+      
+      placements.push({
+        id: section.id,
+        x: contentRect.x + (rowW - newPlacedW) / 2,
+        y: y,
+        w: newPlacedW,
+        h: newPlacedH,
+      });
+    } else {
+      placements.push({
+        id: section.id,
+        x,
+        y,
+        w: placedW,
+        h: placedH,
+      });
+    }
+    
+    scales.push(scale);
+  }
+
+  // Use minimum scale for the page
+  const pageScale = Math.min(...scales);
+
+  return {
+    pages: [{
+      scale: pageScale,
+      placements,
+    }],
+    pageSize: A4_LANDSCAPE,
+    contentRect,
+    usedStrategy: 'two-row-max',
+  };
 }
 
 function packSingleColumn(

@@ -157,4 +157,107 @@ describe('PDF Layout - Pack Sections A4 Landscape', () => {
     expect(result1.pages.length).toBe(result2.pages.length);
     expect(result1.pages[0].placements).toEqual(result2.pages[0].placements);
   });
+
+  // Two-row-max strategy tests
+  describe('two-row-max strategy', () => {
+    it('should use two-row-max for exactly 2 sections', () => {
+      const sections: SectionBox[] = [
+        { id: 'section-1', intrinsicW: 2200, intrinsicH: 900 },
+        { id: 'section-2', intrinsicW: 2200, intrinsicH: 900 },
+      ];
+
+      const result = packSectionsA4Landscape(sections);
+
+      expect(result.usedStrategy).toBe('two-row-max');
+      expect(result.pages.length).toBe(1);
+      expect(result.pages[0].placements.length).toBe(2);
+    });
+
+    it('should fit both sections without overflow', () => {
+      const sections: SectionBox[] = [
+        { id: 'section-1', intrinsicW: 2200, intrinsicH: 900 },
+        { id: 'section-2', intrinsicW: 2200, intrinsicH: 900 },
+      ];
+
+      const result = packSectionsA4Landscape(sections, {
+        marginPt: 16,
+        gutterPt: 12,
+        headerPt: 16,
+        footerPt: 12,
+      });
+
+      const contentRect = result.contentRect;
+
+      result.pages.forEach(page => {
+        page.placements.forEach(placement => {
+          expect(placement.x).toBeGreaterThanOrEqual(contentRect.x);
+          expect(placement.y).toBeGreaterThanOrEqual(contentRect.y);
+          expect(placement.x + placement.w).toBeLessThanOrEqual(contentRect.x + contentRect.w + 1);
+          expect(placement.y + placement.h).toBeLessThanOrEqual(contentRect.y + contentRect.h + 1);
+        });
+      });
+    });
+
+    it('should handle tall sections with row height limit', () => {
+      const sections: SectionBox[] = [
+        { id: 'tall-1', intrinsicW: 500, intrinsicH: 2000 },
+        { id: 'tall-2', intrinsicW: 500, intrinsicH: 2000 },
+      ];
+
+      const result = packSectionsA4Landscape(sections);
+
+      expect(result.usedStrategy).toBe('two-row-max');
+      expect(result.pages.length).toBe(1);
+
+      const contentRect = result.contentRect;
+      const rowH = (contentRect.h - 12) / 2; // gutterPt = 12
+
+      result.pages[0].placements.forEach(placement => {
+        expect(placement.h).toBeLessThanOrEqual(rowH + 1); // Allow 1pt tolerance
+        expect(placement.x + placement.w).toBeLessThanOrEqual(contentRect.x + contentRect.w + 1);
+        expect(placement.y + placement.h).toBeLessThanOrEqual(contentRect.y + contentRect.h + 1);
+      });
+    });
+
+    it('should not overflow when minScale is higher than fit scale', () => {
+      const sections: SectionBox[] = [
+        { id: 'section-1', intrinsicW: 3000, intrinsicH: 1500 },
+        { id: 'section-2', intrinsicW: 3000, intrinsicH: 1500 },
+      ];
+
+      const result = packSectionsA4Landscape(sections, {
+        marginPt: 16,
+        gutterPt: 12,
+        headerPt: 16,
+        footerPt: 12,
+        minScale: 0.8, // Higher minScale that would cause overflow
+        maxScale: 1.2,
+      });
+
+      const contentRect = result.contentRect;
+
+      // Should still fit without overflow, even if scale is below minScale
+      result.pages.forEach(page => {
+        page.placements.forEach(placement => {
+          expect(placement.x).toBeGreaterThanOrEqual(contentRect.x);
+          expect(placement.y).toBeGreaterThanOrEqual(contentRect.y);
+          expect(placement.x + placement.w).toBeLessThanOrEqual(contentRect.x + contentRect.w + 1);
+          expect(placement.y + placement.h).toBeLessThanOrEqual(contentRect.y + contentRect.h + 1);
+        });
+      });
+    });
+
+    it('should allow strategy override via options', () => {
+      const sections: SectionBox[] = [
+        { id: 'section-1', intrinsicW: 2200, intrinsicH: 900 },
+        { id: 'section-2', intrinsicW: 2200, intrinsicH: 900 },
+      ];
+
+      const result = packSectionsA4Landscape(sections, {
+        strategy: 'two-row-max',
+      });
+
+      expect(result.usedStrategy).toBe('two-row-max');
+    });
+  });
 });
