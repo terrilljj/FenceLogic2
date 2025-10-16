@@ -32,6 +32,7 @@ const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string 
   { variant: "pvc-hamptons-vertical-paling", label: "Hamptons PVC - Vertical Paling", group: "Hamptons PVC" },
   { variant: "pvc-hamptons-semi-privacy", label: "Hamptons PVC - Semi Privacy", group: "Hamptons PVC" },
   { variant: "pvc-hamptons-3rail", label: "Hamptons PVC - 3 Rail", group: "Hamptons PVC" },
+  { variant: "custom-panel-designer", label: "Custom Panel Designer (BETA)", group: "Advanced Options" },
 ];
 
 type FieldType = "numeric" | "slider" | "dropdown" | "toggle";
@@ -100,6 +101,9 @@ const VARIANT_FIELDS: Record<ProductVariant, UIInputField[]> = {
   "general-zeus": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
   "general-blade": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
   "general-barr": ["section-length", "left-gap", "right-gap", "panel-height", "finish", "layout-mode", "post-type", "gate-config"],
+  
+  // Custom Panel Designer (Advanced)
+  "custom-panel-designer": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "custom-panel", "glass-thickness"],
 };
 
 // Type guard for numeric fields
