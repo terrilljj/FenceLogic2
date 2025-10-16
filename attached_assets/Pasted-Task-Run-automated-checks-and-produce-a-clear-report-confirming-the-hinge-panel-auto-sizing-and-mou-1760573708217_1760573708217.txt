@@ -1,0 +1,64 @@
+Task: Run automated checks and produce a clear report confirming the hinge-panel auto-sizing and mount-mode (GLASS_TO_GLASS vs POST/WALL) orientation fixes. Do not modify code unless a test fails; if something fails, summarize the failure and propose a minimal patch, but stop before applying it.
+
+Steps:
+
+1) Unit tests
+- Run: npm test
+- Capture results of:
+  - server/tests/hinge.spec.ts
+  - server/tests/gate-orientation.spec.ts
+  - server/tests/resolve.spec.ts
+- Report: total passed/failed, and any failing test names with error messages.
+
+2) Debug API sanity checks (no DB writes)
+- Execute (read-only) requests and include trimmed JSON summaries:
+  a) GET /api/debug/ui-config/pool_fence/frameless/coverage
+     - Summarize: selectedPaths count, selectedSubcategories count, deadPaths, deadSubcategories (names only).
+  b) POST /api/debug/resolve-trace
+     Body:
+     {
+       "variant":"pool_fence/frameless",
+       "selection":{
+         "mount_mode":"GLASS_TO_GLASS",
+         "hinge_side":"LEFT",
+         "gate_system":"Master Range",
+         "gate_width_mm":1000,
+         "glass_thickness":"12mm",
+         "top_rail": false
+       }
+     }
+     - Summarize: presence of hinge-panel in trace (subcategory key), chosen hinge SKU code (if any), total finalCodes.
+  c) POST /api/debug/resolve-trace
+     Body:
+     {
+       "variant":"pool_fence/frameless",
+       "selection":{
+         "mount_mode":"POST",
+         "hinge_side":"RIGHT",
+         "gate_system":"Master Range",
+         "gate_width_mm":1000,
+         "glass_thickness":"12mm",
+         "top_rail": false
+       }
+     }
+     - Summarize: confirms NO hinge-panel in trace, presence of post-anchor trace entry, total finalCodes.
+
+3) Orientation assertions (programmatic)
+- For the two resolve-trace responses above, assert:
+  - GLASS_TO_GLASS (hinge_side LEFT): a trace entry exists for the hinge-panel subcategory (e.g., "Hinge Panels Master") and NOT for post-anchor.
+  - POST (hinge_side RIGHT): a trace entry exists for 'post-anchor' (or equivalent key you used) and NOT for hinge-panel subcategory.
+- If the keys differ in implementation, print the actual keys found.
+
+4) Done checklist (print exactly):
+- TS compile: ✅/❌
+- Server start: ✅/❌
+- Tests: pass/fail summary by file
+- Coverage endpoint: deadPaths=N, deadSubcategories=[...]
+- Resolve-trace (G2G LEFT): hinge-panel in trace? yes/no; chosen SKU: <code or none>; finalCodes: <n>
+- Resolve-trace (POST RIGHT): post-anchor in trace? yes/no; hinge-panel present? yes/no; finalCodes: <n>
+- Unified diff: list of files changed in this task (should be none)
+- Next actions: only if failures detected (1–3 lines)
+
+Constraints:
+- Do not change code or data unless a failing test requires it; in that case, stop and print a proposed minimal diff, do not apply it.
+- Keep output concise and structured.
