@@ -250,7 +250,7 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
               display: flex;
               flex-direction: row;
               page-break-inside: avoid;
-              padding: 0.2in;
+              padding: 0.06in 0.2in 0.2in 0.06in;
             }
             
             .main-content {
@@ -258,7 +258,7 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
               display: flex;
               flex-direction: column;
               min-width: 0;
-              padding-right: 0.3in;
+              padding-right: 0.1in;
             }
             
             .header-info {
@@ -302,7 +302,7 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
             }
             
             .branding-sidebar {
-              width: 1.25in;
+              width: 0.25in;
               display: flex;
               align-items: center;
               justify-content: center;
@@ -313,7 +313,7 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
               writing-mode: vertical-rl;
               transform: rotate(180deg);
               font-weight: bold;
-              font-size: 14px;
+              font-size: 10px;
               color: #000;
               white-space: nowrap;
               text-align: center;
