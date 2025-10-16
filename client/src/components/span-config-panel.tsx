@@ -308,32 +308,45 @@ export function SpanConfigPanel({
     
     const effectiveLength = span.length - endGaps;
     const gateSize = span.gateConfig.gateSize;
+    const hingeGap = span.gateConfig.hingeGap || 20;
+    const latchGap = span.gateConfig.latchGap || 20;
+    const desiredGap = span.desiredGap;
     
-    // Account for hardware gaps (hinge gap between gate and hinge panel)
-    const hingeGap = span.gateConfig.hingeGap || 8;
+    // Fixed components: gate + hinge gap + latch gap
+    const fixedGateAssembly = gateSize + hingeGap + latchGap;
+    const remainingSpace = effectiveLength - fixedGateAssembly;
     
-    // For gate at position 0: [Gate | hinge gap | Hinge | regular gaps | panels...]
-    // Effective space = effectiveLength - gate - hingeGap
-    const spaceAfterGateAndHingeGap = effectiveLength - gateSize - hingeGap;
+    // Calculate how many standard panels will fit with max panel width
+    const maxPanelWidth = span.maxPanelWidth || 1400;
+    const minPanelWidth = 300;
     
-    // Calculate hinge size for balanced layout
-    // Assume: gate (fixed) + hinge + 3 standard panels = 5 panels total
-    // The hinge gap is already subtracted, so we have: hinge + 3 standards with 3 regular gaps
+    // Try different hinge sizes and find the one that gives best balanced layout
+    let bestHingeSize = 1200; // default
+    let bestScore = Infinity;
     
-    const numStandardPanels = 3;
-    const numRegularGaps = numStandardPanels; // gaps between hinge and standards, and between standards
-    const totalRegularGapWidth = numRegularGaps * span.desiredGap;
-    
-    // Space for hinge + standards after subtracting regular gaps
-    const spaceForPanels = spaceAfterGateAndHingeGap - totalRegularGapWidth;
-    
-    // If all 4 panels (hinge + 3 standards) were equal, each would be:
-    const idealPanelSize = spaceForPanels / (numStandardPanels + 1);
-    
-    // Round to nearest valid hinge size
-    const bestHingeSize = validHingeSizes.reduce((prev, curr) => {
-      return Math.abs(curr - idealPanelSize) < Math.abs(prev - idealPanelSize) ? curr : prev;
-    });
+    for (const hingeSize of validHingeSizes) {
+      // Space after hinge panel and its gap
+      const spaceAfterHinge = remainingSpace - hingeSize - desiredGap;
+      
+      // Calculate number of standard panels needed (ensure no panel exceeds max)
+      const numStandardPanels = Math.max(1, Math.ceil(spaceAfterHinge / (maxPanelWidth + desiredGap)));
+      
+      // Calculate average standard panel size
+      const totalGapsBetweenStandards = (numStandardPanels - 1) * desiredGap;
+      const spaceForStandards = spaceAfterHinge - totalGapsBetweenStandards;
+      const avgStandardSize = spaceForStandards / numStandardPanels;
+      
+      // Check if configuration is valid
+      if (avgStandardSize >= minPanelWidth && avgStandardSize <= maxPanelWidth) {
+        // Score: prefer panels closer to each other in size (balanced layout)
+        const sizeDiff = Math.abs(hingeSize - avgStandardSize);
+        
+        if (sizeDiff < bestScore) {
+          bestScore = sizeDiff;
+          bestHingeSize = hingeSize;
+        }
+      }
+    }
     
     return bestHingeSize;
   };
