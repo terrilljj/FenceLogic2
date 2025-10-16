@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,24 @@ export function AutoCalcPanelControls({
   const totalUsed = leftGapSize + totalPanelWidth + totalGapWidth + rightGapSize;
   const remaining = spanLength - totalUsed;
   const isValid = Math.abs(remaining) <= 2;
+
+  // Trigger initial calculation and recalculate when key inputs change
+  useEffect(() => {
+    if (layoutMode === "auto") {
+      // Recalculate panel count when in auto mode
+      const autoPanelCount = autoCalculatePanelCount();
+      if (autoPanelCount !== panelTypes.length) {
+        const newTypes = Array(autoPanelCount).fill("standard") as PanelType[];
+        const newGaps = Array(autoPanelCount - 1).fill(gapSize);
+        onUpdate({
+          ...config,
+          panelTypes: newTypes,
+          interPanelGaps: newGaps,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spanLength, leftGapSize, rightGapSize, maxPanelWidth, gapSize, layoutMode]);
 
   const updateLayoutMode = (mode: LayoutMode) => {
     if (mode === "auto") {
