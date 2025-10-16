@@ -211,6 +211,13 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
 
     if (!imageDataUrl) return;
 
+    // Format current date
+    const currentDate = new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+
     // Create a printable HTML page with the image
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -219,18 +226,19 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Fence Design - ${design.name}</title>
+          <title>${design.name} - FenceLogic</title>
           <style>
             @media print {
               body {
                 margin: 0;
-                padding: 0;
+                padding: 20px;
               }
               img {
                 max-width: 100%;
                 height: auto;
                 display: block;
-                margin: 0 auto;
+                margin: 20px auto;
+                page-break-inside: avoid;
               }
               .no-print {
                 display: none;
@@ -239,22 +247,53 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
             body {
               margin: 20px;
               font-family: Arial, sans-serif;
+              color: #333;
+            }
+            .header {
+              border-bottom: 3px solid #000;
+              padding-bottom: 15px;
+              margin-bottom: 20px;
+            }
+            .branding {
+              font-size: 24px;
+              font-weight: bold;
+              color: #000;
+              margin-bottom: 5px;
+            }
+            .tagline {
+              font-size: 14px;
+              color: #666;
+              font-style: italic;
             }
             h1 {
-              text-align: center;
+              margin: 20px 0 10px 0;
+              font-size: 28px;
+              color: #000;
+            }
+            .date {
+              color: #666;
+              font-size: 14px;
               margin-bottom: 10px;
             }
             .info {
-              text-align: center;
               color: #666;
               margin-bottom: 20px;
+              font-size: 14px;
             }
             img {
               max-width: 100%;
               height: auto;
               display: block;
-              margin: 0 auto;
+              margin: 20px auto;
               border: 1px solid #ddd;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 15px;
+              border-top: 1px solid #ddd;
+              text-align: center;
+              color: #999;
+              font-size: 12px;
             }
             .no-print {
               text-align: center;
@@ -275,12 +314,23 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
           </style>
         </head>
         <body>
-          <h1>${design.name}</h1>
-          <div class="info">
-            <p>${design.productVariant} • ${design.shape} configuration</p>
-            <p>${design.spans.length} section${design.spans.length > 1 ? 's' : ''}</p>
+          <div class="header">
+            <div class="branding">FenceLogic</div>
+            <div class="tagline">By Barrier Dynamics</div>
           </div>
+          
+          <h1>${design.name}</h1>
+          <div class="date">${currentDate}</div>
+          <div class="info">
+            <strong>Product:</strong> ${design.productVariant} • <strong>Configuration:</strong> ${design.shape} • <strong>Sections:</strong> ${design.spans.length}
+          </div>
+          
           <img src="${imageDataUrl}" alt="Fence Design Visualization" />
+          
+          <div class="footer">
+            <p>FenceLogic By Barrier Dynamics &copy; ${new Date().getFullYear()}</p>
+          </div>
+          
           <div class="no-print">
             <button onclick="window.print()">Print / Save as PDF</button>
             <button onclick="window.close()" style="background: #666; margin-left: 10px;">Close</button>
