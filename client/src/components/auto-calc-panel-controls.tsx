@@ -195,7 +195,34 @@ export function AutoCalcPanelControls({
   };
 
   const updateMaxPanelWidth = (value: number) => {
-    onUpdate({ ...config, maxPanelWidth: value });
+    // If in auto mode, recalculate panel count with new max width
+    if (layoutMode === "auto") {
+      const availableLength = spanLength - leftGapSize - rightGapSize;
+      let numPanels = 1;
+      
+      while (numPanels <= 20) {
+        const totalGaps = (numPanels - 1) * gapSize;
+        const totalPanelWidth = numPanels * value;
+        if (totalPanelWidth + totalGaps <= availableLength) {
+          numPanels++;
+        } else {
+          break;
+        }
+      }
+      const autoPanelCount = Math.max(1, numPanels - 1);
+      const newTypes = Array(autoPanelCount).fill("standard");
+      const newGaps = Array(autoPanelCount - 1).fill(gapSize);
+      
+      onUpdate({
+        ...config,
+        maxPanelWidth: value,
+        panelTypes: newTypes,
+        interPanelGaps: newGaps,
+        panelWidthOverrides: undefined,
+      });
+    } else {
+      onUpdate({ ...config, maxPanelWidth: value });
+    }
   };
 
   const updatePanelHeight = (value: number) => {

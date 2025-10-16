@@ -45,7 +45,7 @@ export default function FenceLogic() {
       {
         spanId: "A",
         length: 5000,
-        maxPanelWidth: 2000,
+        maxPanelWidth: (urlVariant === "custom-frameless") ? 1500 : 2000,
         desiredGap: 50,
         spigotMounting: "base-plate",
         spigotColor: "polished",
@@ -501,11 +501,22 @@ export default function FenceLogic() {
           <ProductSelector 
             currentVariant={design.productVariant}
             onSelectVariant={(type, variant) => {
-              setDesign((prev) => ({
-                ...prev,
-                productType: type,
-                productVariant: variant,
-              }));
+              setDesign((prev) => {
+                // Update maxPanelWidth for custom-frameless variant
+                const updatedSpans = variant === "custom-frameless"
+                  ? prev.spans.map(span => ({
+                      ...span,
+                      maxPanelWidth: 1500,
+                    }))
+                  : prev.spans;
+
+                return {
+                  ...prev,
+                  productType: type,
+                  productVariant: variant,
+                  spans: updatedSpans,
+                };
+              });
               setShowProductMockup(false);
               
               // Inform user if switching to balustrade (gates will be hidden but preserved)
