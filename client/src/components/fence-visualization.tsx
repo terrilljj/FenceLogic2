@@ -310,16 +310,16 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
       )}
 
       {/* Download PDF Button */}
-      <div className="absolute top-4 right-4 flex gap-2">
+      <div className="absolute top-4 right-4 flex gap-2 z-50">
         <Button
           size="sm"
-          variant="outline"
+          variant="default"
           onClick={handleDownloadPDF}
           data-testid="button-download-pdf"
-          className="gap-2"
+          className="gap-2 shadow-lg bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Download className="w-4 h-4" />
-          <span className="hidden sm:inline">Download PDF</span>
+          <span>Download PDF</span>
         </Button>
       </div>
 
