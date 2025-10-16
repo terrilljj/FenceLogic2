@@ -9,6 +9,7 @@ import { buildSegmentSequence, validateSegmentComposition, Segment } from './gap
 import { equalizePanels, findFeasibleN, equalizePanelsExact } from './equalize';
 import {
   computeFixedLeftRight,
+  computeFixedCustomPanel,
   type GateConfig as AccountingGateConfig,
 } from './lengthAccounting';
 
@@ -88,6 +89,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     maxPanelMm,
     minPanelMm,
     gateConfig,
+    customPanelConfig,
   } = input;
   
   trace.push({
@@ -396,27 +398,243 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     };
     
   } else {
-    // NO GATE PATH - use existing panel calculation
-    const effectiveLengthMm = runLengthMm - startGapMm - endGapMm;
+    // NO GATE PATH - with optional custom panel support
+    const defaultHeightMm = 1200; // Default height for custom panels
+    const customPanel = computeFixedCustomPanel(customPanelConfig, defaultHeightMm);
+    
+    const policy: EndGapPolicy = process.env.STRICT_END_GAP === '1' 
+      ? 'LOCKED_STRICT' 
+      : (input.endGapPolicy ?? 'LOCKED_OR_RESIDUAL');
+    
+    let lockedTried = false;
+    let residualUsed = false;
+    let varianceEndGapMm = 0;
     
     trace.push({
       step: 'no-gate-path',
-      data: { effectiveLengthMm },
+      data: { 
+        customPanelRequired: customPanelConfig?.required ?? false,
+        customPanelMm: customPanel.customPanelMm,
+        customGapsMm: customPanel.customGapsMm,
+        policy,
+      },
     });
     
-    panelLayout = calculatePanelLayout(
-      runLengthMm,
-      startGapMm + endGapMm,
-      betweenGapMm,
-      maxPanelMm,
-      false, // hasLeftRaked
-      false, // hasRightRaked
-      undefined, // no gate config
-      undefined  // no custom panel
-    );
+    // Compute fixed components: start + end + custom panel + custom gaps
+    const F = startGapMm + endGapMm + customPanel.customPanelMm + customPanel.customGapsMm;
     
-    // All panels go to "right" side for consistency
-    rightPanels = panelLayout.panels;
+    // Try LOCKED mode first
+    const targetPanels = runLengthMm - F;
+    
+    if (targetPanels < 0) {
+      return {
+        success: false,
+        segments: [],
+        panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
+        validation: {
+          sumMm: F,
+          expectedMm: runLengthMm,
+          deltaMm: runLengthMm - F,
+          gatePresent: false,
+          lengthConserved: false,
+        },
+        errors: [{
+          code: 'UNREACHABLE',
+          message: `Fixed components exceed section length`,
+          details: { reason: 'fixed_exceeds_section', F, runLengthMm, targetPanels },
+        }],
+        trace,
+      };
+    }
+    
+    lockedTried = true;
+    
+    const feasibleResult = findFeasibleN(targetPanels, minPanelMm, maxPanelMm, 50);
+    
+    let panelWidths: number[] | null = null;
+    let N = 0;
+    
+    trace.push({
+      step: 'locked-attempt',
+      data: { targetPanels, feasibleResult },
+    });
+    
+    if ('N' in feasibleResult && feasibleResult.N) {
+      // Try equalization with between gaps
+      const N_try = feasibleResult.N;
+      const panelsTarget = targetPanels - (N_try - 1) * betweenGapMm;
+      
+      const result = equalizePanelsExact(panelsTarget, N_try, 50, minPanelMm, maxPanelMm);
+      
+      if ('widthsMm' in result) {
+        panelWidths = result.widthsMm;
+        N = N_try;
+        actualEndGapMm = endGapMm;
+        varianceEndGapMm = 0;
+        
+        trace.push({
+          step: 'locked-success',
+          data: { N, panelSum: panelWidths.reduce((a,b) => a+b, 0) },
+        });
+      }
+    }
+    
+    // If LOCKED failed, try RESIDUAL mode (if policy allows)
+    if (!panelWidths && policy === 'LOCKED_OR_RESIDUAL') {
+      residualUsed = true;
+      
+      // Use provisional target (round down to 50mm grid)
+      const provisionalTarget = Math.floor(targetPanels / 50) * 50;
+      
+      const N_min_residual = Math.ceil(provisionalTarget / maxPanelMm);
+      const N_max_residual = Math.floor(provisionalTarget / minPanelMm);
+      
+      trace.push({
+        step: 'residual-attempt',
+        data: { provisionalTarget, N_min_residual, N_max_residual },
+      });
+      
+      let residualSolution: { N: number; panelWidths: number[]; residualEndGap: number } | null = null;
+      
+      for (let N_try = N_min_residual; N_try <= N_max_residual; N_try++) {
+        const panelsTargetResidual = provisionalTarget - (N_try - 1) * betweenGapMm;
+        
+        if (panelsTargetResidual < N_try * minPanelMm) continue;
+        
+        const resultResidual = equalizePanelsExact(panelsTargetResidual, N_try, 50, minPanelMm, maxPanelMm);
+        
+        if ('widthsMm' in resultResidual) {
+          const panelSum = resultResidual.widthsMm.reduce((a, b) => a + b, 0);
+          const betweenGapsTotal = (N_try - 1) * betweenGapMm;
+          const residualEndGap = runLengthMm - startGapMm - customPanel.customPanelMm - customPanel.customGapsMm - panelSum - betweenGapsTotal;
+          
+          trace.push({
+            step: `residual-try-N-${N_try}`,
+            data: { N_try, panelsTargetResidual, panelSum, betweenGapsTotal, residualEndGap },
+          });
+          
+          if (residualEndGap >= 0) {
+            residualSolution = { N: N_try, panelWidths: resultResidual.widthsMm, residualEndGap };
+            break;
+          }
+        }
+      }
+      
+      if (!residualSolution) {
+        return {
+          success: false,
+          segments: [],
+          panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
+          validation: {
+            sumMm: 0,
+            expectedMm: runLengthMm,
+            deltaMm: runLengthMm,
+            gatePresent: false,
+            lengthConserved: false,
+          },
+          errors: [{
+            code: 'UNREACHABLE',
+            message: `Cannot achieve non-negative residual end gap`,
+            details: { reason: 'residual_negative', provisionalTarget },
+          }],
+          trace,
+        };
+      }
+      
+      panelWidths = residualSolution.panelWidths;
+      N = residualSolution.N;
+      actualEndGapMm = residualSolution.residualEndGap;
+      varianceEndGapMm = residualSolution.residualEndGap - endGapMm;
+      
+      trace.push({
+        step: 'residual-success',
+        data: { N, panelSum: panelWidths.reduce((a,b) => a+b, 0), residualEndGap: residualSolution.residualEndGap, varianceEndGapMm },
+      });
+    }
+    
+    // If still no solution and STRICT mode, fail
+    if (!panelWidths) {
+      return {
+        success: false,
+        segments: [],
+        panelLayout: { panels: [], gaps: [], totalPanelWidth: 0, totalGapWidth: 0, averageGap: 0 },
+        validation: {
+          sumMm: 0,
+          expectedMm: runLengthMm,
+          deltaMm: runLengthMm,
+          gatePresent: false,
+          lengthConserved: false,
+        },
+        errors: [{
+          code: 'UNREACHABLE',
+          message: `No 50mm grid solution exists for locked end gap ${endGapMm}mm`,
+          details: { reason: 'locked_strict_failed', policy },
+        }],
+        trace,
+      };
+    }
+    
+    // Insert custom panel if required
+    if (customPanelConfig?.required) {
+      const position = customPanelConfig.position ?? 0.5;
+      const panelSum = panelWidths.reduce((a, b) => a + b, 0);
+      const betweenGapsTotal = (N - 1) * betweenGapMm;
+      const totalVariableSpace = panelSum + betweenGapsTotal;
+      
+      // Calculate split point
+      const leftShare = Math.round(position * totalVariableSpace);
+      
+      // Find split index by accumulating panels + gaps
+      let accumulated = 0;
+      let splitIndex = 0;
+      
+      for (let i = 0; i < panelWidths.length; i++) {
+        if (accumulated + panelWidths[i] / 2 >= leftShare) {
+          splitIndex = i;
+          break;
+        }
+        accumulated += panelWidths[i];
+        if (i < panelWidths.length - 1) {
+          accumulated += betweenGapMm;
+        }
+      }
+      
+      leftPanels = panelWidths.slice(0, splitIndex);
+      rightPanels = panelWidths.slice(splitIndex);
+      
+      trace.push({
+        step: 'custom-panel-insertion',
+        data: { 
+          position, 
+          leftShare, 
+          splitIndex, 
+          leftPanelCount: leftPanels.length, 
+          rightPanelCount: rightPanels.length,
+          customPanelMm: customPanel.customPanelMm,
+          customGapsMm: customPanel.customGapsMm,
+        },
+      });
+    } else {
+      // No custom panel, all panels go to right
+      rightPanels = panelWidths;
+    }
+    
+    // Create panel layout for compatibility
+    const panelSum = panelWidths.reduce((sum, w) => sum + w, 0);
+    const totalGapWidth = (N - 1) * betweenGapMm;
+    
+    panelLayout = {
+      panels: panelWidths,
+      gaps: Array(N - 1).fill(betweenGapMm),
+      totalPanelWidth: panelSum,
+      totalGapWidth,
+      averageGap: betweenGapMm,
+    };
+    
+    trace.push({
+      step: 'end-gap-policy',
+      data: { policy, lockedTried, residualUsed, actualEndGapMm, varianceEndGapMm },
+    });
   }
   
   // Build segment sequence (use actualEndGapMm which is the requested end gap)
@@ -427,6 +645,7 @@ export function composeFenceSegments(input: CompositionInput): CompositionResult
     leftPanels,
     rightPanels,
     gateConfig,
+    customPanelConfig,
   });
   
   trace.push({
