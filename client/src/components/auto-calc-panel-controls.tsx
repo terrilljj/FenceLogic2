@@ -93,11 +93,14 @@ export function AutoCalcPanelControls({
     }
     
     // For auto and manual-qty modes, distribute evenly to fill available space
-    const calculatedWidth = numPanels > 0 ? Math.floor(availableForPanels / numPanels) : 0;
+    const baseWidth = numPanels > 0 ? Math.floor(availableForPanels / numPanels) : 0;
+    const remainder = availableForPanels - (baseWidth * numPanels);
     
     const panelWidths: number[] = [];
     for (let i = 0; i < numPanels; i++) {
-      panelWidths.push(calculatedWidth);
+      // Distribute remainder across first panels to fill exactly
+      const extraMm = i < remainder ? 1 : 0;
+      panelWidths.push(baseWidth + extraMm);
     }
     
     return panelWidths;
