@@ -66,10 +66,14 @@ export function calculatePanelLayout(
   const numRakedPanels = (hasLeftRaked ? 1 : 0) + (hasRightRaked ? 1 : 0);
   const rakedPanelSpace = numRakedPanels * RAKED_PANEL_WIDTH;
   
-  // If gate is required, reserve space for gate (and hinge panel if glass-to-glass)
+  // If gate is required, reserve space for gate (and hinge panel if glass-to-glass) INCLUDING hardware gaps
   const hasGate = gateConfig?.required === true;
   const isWallMounted = gateConfig?.hingeFrom === "wall";
-  const gateSpace = hasGate ? (isWallMounted ? gateConfig.gateSize : gateConfig.gateSize + gateConfig.hingePanelSize) : 0;
+  const gateSpace = hasGate ? (
+    isWallMounted 
+      ? gateConfig.gateSize + (gateConfig.latchGap || 0)
+      : gateConfig.gateSize + gateConfig.hingePanelSize + (gateConfig.hingeGap || 0) + (gateConfig.latchGap || 0)
+  ) : 0;
   
   // If custom panel is required, reserve space for it
   const hasCustomPanel = customPanelConfig?.enabled === true;
