@@ -49,17 +49,17 @@ export function AutoCalcPanelControls({
   // Initialize with default config if not exists
   const config = autoCalcConfig || {
     layoutMode: "auto" as const,
-    maxPanelWidth: 1200,
+    maxPanelWidth: 1500,
     panelHeight: 1500,
     glassType: "12mm" as const,
     gapMode: "auto" as const,
-    interPanelGaps: [10],
+    interPanelGaps: [50],
     panelTypes: ["standard", "standard"],
   };
 
   const { layoutMode = "auto", maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides } = config;
   const numPanels = panelTypes.length;
-  const gapSize = interPanelGaps[0] || 10;
+  const gapSize = interPanelGaps[0] || 50;
 
   // Auto-calculate number of panels that fit with max panel width
   const autoCalculatePanelCount = (): number => {

@@ -1397,10 +1397,10 @@ export function SpanConfigPanel({
                           updateSpan({
                             autoCalcConfig: {
                               ...(span.autoCalcConfig || {
-                                maxPanelWidth: span.maxPanelWidth || 1200,
+                                maxPanelWidth: span.maxPanelWidth || 1500,
                                 panelHeight: 1500,
                                 glassType: "12mm",
-                                interPanelGaps: [10],
+                                interPanelGaps: [50],
                                 panelTypes: ["standard", "standard"],
                               }),
                               gapMode: checked ? "auto" : "manual",
@@ -1413,13 +1413,13 @@ export function SpanConfigPanel({
                   </div>
                   <GapSlider
                     label=""
-                    value={span.autoCalcConfig?.interPanelGaps?.[0] || 10}
+                    value={span.autoCalcConfig?.interPanelGaps?.[0] || 50}
                     onChange={(value) => {
-                      const newGaps = (span.autoCalcConfig?.interPanelGaps || [10]).map(() => value);
+                      const newGaps = (span.autoCalcConfig?.interPanelGaps || [50]).map(() => value);
                       updateSpan({
                         autoCalcConfig: {
                           ...(span.autoCalcConfig || {
-                            maxPanelWidth: span.maxPanelWidth || 1200,
+                            maxPanelWidth: span.maxPanelWidth || 1500,
                             panelHeight: 1500,
                             glassType: "12mm",
                             gapMode: "auto",
@@ -1449,11 +1449,11 @@ export function SpanConfigPanel({
               <AutoCalcPanelControls
                 autoCalcConfig={span.autoCalcConfig || {
                   layoutMode: "auto" as const,
-                  maxPanelWidth: span.maxPanelWidth || 1200,
+                  maxPanelWidth: span.maxPanelWidth || 1500,
                   panelHeight: 1500,
                   glassType: "12mm" as const,
                   gapMode: "auto" as const,
-                  interPanelGaps: [10],
+                  interPanelGaps: [50],
                   panelTypes: ["standard" as const, "standard" as const],
                 }}
                 spanLength={span.length}
