@@ -775,10 +775,124 @@ export default function UIConfigPage() {
                                 {/* Product mapping for dropdown options */}
                                 {fc.enabled && fc.options && fc.options.length > 0 && (
                                   <div className="col-span-12 mt-2 pt-2 border-t">
-                                    <Label className="text-xs font-medium mb-2 block">Product Mappings</Label>
-                                    <div className="text-xs text-muted-foreground mb-2">
-                                      Map each option to categories, subcategories, or specific products
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div>
+                                        <Label className="text-xs font-medium block">Product Mappings</Label>
+                                        <div className="text-xs text-muted-foreground">
+                                          Map each option to subcategories or specific products
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Apply to All Toggle */}
+                                      <div className="flex items-center gap-2">
+                                        <Label htmlFor={`enforce-subcat-${fc.field}`} className="text-xs cursor-pointer">
+                                          Apply subcategory to all options
+                                        </Label>
+                                        <Switch
+                                          id={`enforce-subcat-${fc.field}`}
+                                          checked={(fc as any).enforceSubcategory || false}
+                                          onCheckedChange={(checked) => {
+                                            setFieldConfigs(prev =>
+                                              prev.map(field => {
+                                                if (field.field === fc.field) {
+                                                  if (checked) {
+                                                    // Deep clone current per-option selections before enforcing global
+                                                    const currentSubcats = (field as any).optionSubcategories || {};
+                                                    const backup = JSON.parse(JSON.stringify(currentSubcats));
+                                                    return {
+                                                      ...field,
+                                                      enforceSubcategory: true,
+                                                      backupSubcategories: backup
+                                                    } as any;
+                                                  } else {
+                                                    // Restore backed up selections when disabling
+                                                    const restored = (field as any).backupSubcategories || {};
+                                                    return {
+                                                      ...field,
+                                                      enforceSubcategory: false,
+                                                      globalSubcategories: [],
+                                                      optionSubcategories: JSON.parse(JSON.stringify(restored)),
+                                                      backupSubcategories: undefined
+                                                    } as any;
+                                                  }
+                                                }
+                                                return field;
+                                              })
+                                            );
+                                          }}
+                                          data-testid={`switch-enforce-subcat-${fc.field}`}
+                                        />
+                                      </div>
                                     </div>
+
+                                    {/* Global Subcategory Selector (when enforced) */}
+                                    {(fc as any).enforceSubcategory && (
+                                      <div className="mb-4 p-3 border rounded-md bg-primary/5">
+                                        <Label className="text-xs font-medium mb-2 block">Subcategories (applied to all options)</Label>
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-8 w-full justify-start text-left font-normal"
+                                            >
+                                              {((fc as any).globalSubcategories?.length || 0) > 0
+                                                ? `${(fc as any).globalSubcategories.length} selected`
+                                                : "Select subcategories for all options..."}
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-[300px] p-2" align="start">
+                                            <div className="max-h-[200px] overflow-y-auto space-y-1">
+                                              {subcategories.map(subcat => (
+                                                <div key={subcat.id} className="flex items-center gap-2 p-1 hover:bg-muted rounded">
+                                                  <Checkbox
+                                                    checked={((fc as any).globalSubcategories || []).includes(subcat.name)}
+                                                    onCheckedChange={(checked) => {
+                                                      const currentGlobal = (fc as any).globalSubcategories || [];
+                                                      const newGlobal = checked
+                                                        ? [...currentGlobal, subcat.name]
+                                                        : currentGlobal.filter((s: string) => s !== subcat.name);
+                                                      
+                                                      setFieldConfigs(prev =>
+                                                        prev.map(field => {
+                                                          if (field.field === fc.field) {
+                                                            // Apply to all options
+                                                            const optionSubcategories: Record<string, string[]> = {};
+                                                            fc.options?.forEach(opt => {
+                                                              optionSubcategories[opt] = newGlobal;
+                                                            });
+                                                            
+                                                            return {
+                                                              ...field,
+                                                              globalSubcategories: newGlobal,
+                                                              optionSubcategories
+                                                            } as any;
+                                                          }
+                                                          return field;
+                                                        })
+                                                      );
+                                                    }}
+                                                  />
+                                                  <label className="text-sm flex-1 cursor-pointer">
+                                                    {subcat.name}
+                                                  </label>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </PopoverContent>
+                                        </Popover>
+                                        {((fc as any).globalSubcategories?.length || 0) > 0 && (
+                                          <div className="flex flex-wrap gap-1 mt-2">
+                                            {(fc as any).globalSubcategories.map((subcat: string) => (
+                                              <Badge key={subcat} variant="secondary" className="text-xs">
+                                                {subcat}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
                                     <div className="space-y-4">
                                       {fc.options.map((option) => {
                                         const paths = fc.optionPaths?.[option] || [];
