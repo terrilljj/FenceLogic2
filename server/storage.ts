@@ -1,6 +1,6 @@
-import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, fenceDesigns, products, productUIConfigs, categories, subcategories } from "@shared/schema";
+import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type ProductSlot, type InsertProductSlot, fenceDesigns, products, productUIConfigs, categories, subcategories, productSlots } from "@shared/schema";
 import { db } from "./db";
-import { eq, asc, sql as sqlOp } from "drizzle-orm";
+import { eq, asc, sql as sqlOp, and } from "drizzle-orm";
 
 export interface IStorage {
   // Fence Design operations
@@ -36,6 +36,15 @@ export interface IStorage {
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
   updateSubcategory(id: string, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
   deleteSubcategory(id: string): Promise<boolean>;
+  
+  // Product Slot operations
+  getSlotsByVariantAndField(productVariant: string, fieldName: string): Promise<ProductSlot[]>;
+  getAllSlotsByVariant(productVariant: string): Promise<ProductSlot[]>;
+  createProductSlot(slot: InsertProductSlot): Promise<ProductSlot>;
+  createProductSlots(slots: InsertProductSlot[]): Promise<ProductSlot[]>;
+  updateProductSlot(id: string, slot: Partial<InsertProductSlot>): Promise<ProductSlot | undefined>;
+  deleteProductSlot(id: string): Promise<boolean>;
+  deleteSlotsByVariantAndField(productVariant: string, fieldName: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -257,6 +266,61 @@ export class DatabaseStorage implements IStorage {
     });
     
     return result;
+  }
+  
+  // Product Slot operations
+  async getSlotsByVariantAndField(productVariant: string, fieldName: string): Promise<ProductSlot[]> {
+    return await db.select().from(productSlots)
+      .where(and(
+        eq(productSlots.productVariant, productVariant),
+        eq(productSlots.fieldName, fieldName)
+      ))
+      .orderBy(asc(productSlots.sequence));
+  }
+  
+  async getAllSlotsByVariant(productVariant: string): Promise<ProductSlot[]> {
+    return await db.select().from(productSlots)
+      .where(eq(productSlots.productVariant, productVariant))
+      .orderBy(asc(productSlots.fieldName), asc(productSlots.sequence));
+  }
+  
+  async createProductSlot(insertSlot: InsertProductSlot): Promise<ProductSlot> {
+    const [slot] = await db
+      .insert(productSlots)
+      .values(insertSlot)
+      .returning();
+    return slot;
+  }
+  
+  async createProductSlots(slots: InsertProductSlot[]): Promise<ProductSlot[]> {
+    const createdSlots = await db
+      .insert(productSlots)
+      .values(slots)
+      .returning();
+    return createdSlots;
+  }
+  
+  async updateProductSlot(id: string, updateData: Partial<InsertProductSlot>): Promise<ProductSlot | undefined> {
+    const [slot] = await db
+      .update(productSlots)
+      .set({ ...updateData, updatedAt: new Date().toISOString() })
+      .where(eq(productSlots.id, id))
+      .returning();
+    return slot || undefined;
+  }
+  
+  async deleteProductSlot(id: string): Promise<boolean> {
+    const result = await db.delete(productSlots).where(eq(productSlots.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  async deleteSlotsByVariantAndField(productVariant: string, fieldName: string): Promise<boolean> {
+    const result = await db.delete(productSlots)
+      .where(and(
+        eq(productSlots.productVariant, productVariant),
+        eq(productSlots.fieldName, fieldName)
+      ));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 
