@@ -597,6 +597,29 @@ export const insertProductSchema = createInsertSchema(products).omit({
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 
+// Product Slots table for slot-based product configuration
+export const productSlots = pgTable("product_slots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  internalId: varchar("internal_id", { length: 50 }).notNull(), // e.g., "0001", "0002", "0003"
+  productVariant: varchar("product_variant", { length: 100 }).notNull(), // e.g., "glass-pool-spigots"
+  fieldName: varchar("field_name", { length: 100 }).notNull(), // e.g., "glass-panels", "spigots"
+  sequence: integer("sequence").notNull(), // Display order (1, 2, 3...)
+  productId: varchar("product_id", { length: 100 }), // Foreign key to products table (nullable)
+  label: varchar("label", { length: 200 }), // Display name (e.g., "1300mm Raked Panel")
+  isActive: integer("is_active").notNull().default(1), // 1 = active, 0 = inactive
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertProductSlotSchema = createInsertSchema(productSlots).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertProductSlot = z.infer<typeof insertProductSlotSchema>;
+export type ProductSlot = typeof productSlots.$inferSelect;
+
 // Helper function to get gate gaps based on hardware and mounting type
 export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall"): { hingeGap: number; latchGap: number } {
   if (hardware === "master") {
