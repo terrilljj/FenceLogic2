@@ -435,9 +435,25 @@ export default function UIConfigPage() {
             },
           },
         };
+      } else if (fieldMeta.type === "number") {
+        // Ensure type is set for number fields
+        return {
+          ...fc,
+          type: "number" as const,
+        };
+      } else if (fieldMeta.type === "slider") {
+        // Ensure type is set for slider fields
+        return {
+          ...fc,
+          type: "slider" as const,
+        };
       }
       
-      return fc;
+      // Fallback: preserve existing type or use field metadata
+      return {
+        ...fc,
+        type: fieldMeta.type,
+      };
     });
     
     saveMutation.mutate({
