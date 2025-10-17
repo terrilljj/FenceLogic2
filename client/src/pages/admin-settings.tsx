@@ -42,11 +42,7 @@ export default function AdminSettings() {
   // Save config mutation
   const saveConfigMutation = useMutation({
     mutationFn: async (data: GoogleConfigForm) => {
-      return apiRequest('/api/admin/config/google', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', '/api/admin/config/google', data);
     },
     onSuccess: () => {
       toast({
