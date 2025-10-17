@@ -56,7 +56,7 @@ router.get('/google/status', async (req, res) => {
  * GET /api/admin/google/oauth/start
  * Starts OAuth flow
  */
-router.get('/google/oauth/start', async (req, res) => {
+router.get('/oauth/start', async (req, res) => {
   try {
     const authUrl = await getAuthUrl('admin-sheets-sync');
     res.redirect(authUrl);
@@ -72,7 +72,7 @@ router.get('/google/oauth/start', async (req, res) => {
  * GET /api/admin/google/oauth/callback
  * OAuth callback handler
  */
-router.get('/google/oauth/callback', async (req, res) => {
+router.get('/oauth/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
     
