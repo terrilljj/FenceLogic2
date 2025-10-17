@@ -44,10 +44,8 @@ export function SheetsSyncDialog() {
   // Dry run mutation
   const dryRunMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest<SyncResult>('/api/admin/sheets/pull?dryRun=1', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const res = await apiRequest('POST', '/api/admin/sheets/pull?dryRun=1');
+      return res.json();
     },
     onSuccess: (data) => {
       setDiffResult(data);
@@ -64,10 +62,8 @@ export function SheetsSyncDialog() {
   // Apply mutation
   const applyMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest<SyncResult>('/api/admin/sheets/pull?dryRun=0', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const res = await apiRequest('POST', '/api/admin/sheets/pull?dryRun=0');
+      return res.json();
     },
     onSuccess: () => {
       toast({
