@@ -766,6 +766,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product Slot routes (admin only)
+  app.get("/api/admin/product-slots/:variant", requireAdmin, async (req, res) => {
+    try {
+      const slots = await storage.getAllSlotsByVariant(req.params.variant);
+      res.json(slots);
+    } catch (error) {
+      console.error("Error fetching product slots:", error);
+      res.status(500).json({ error: "Failed to fetch product slots" });
+    }
+  });
+
+  app.get("/api/admin/product-slots/:variant/:fieldName", requireAdmin, async (req, res) => {
+    try {
+      const slots = await storage.getSlotsByVariantAndField(req.params.variant, req.params.fieldName);
+      res.json(slots);
+    } catch (error) {
+      console.error("Error fetching product slots:", error);
+      res.status(500).json({ error: "Failed to fetch product slots" });
+    }
+  });
+
+  app.post("/api/admin/product-slots/generate", requireAdmin, async (req, res) => {
+    try {
+      const { productVariant, fieldName, slotCount } = req.body;
+      
+      if (!productVariant || !fieldName || !slotCount || slotCount < 1) {
+        return res.status(400).json({ error: "Missing required fields: productVariant, fieldName, slotCount" });
+      }
+
+      // Delete existing slots for this variant+field
+      await storage.deleteSlotsByVariantAndField(productVariant, fieldName);
+
+      // Generate new slots with numeric IDs
+      const slots = [];
+      for (let i = 1; i <= slotCount; i++) {
+        const internalId = String(i).padStart(4, '0'); // e.g., "0001", "0002"
+        slots.push({
+          internalId,
+          productVariant,
+          fieldName,
+          sequence: i,
+          productId: null,
+          label: null,
+          isActive: 1,
+        });
+      }
+
+      const createdSlots = await storage.createProductSlots(slots);
+      res.json(createdSlots);
+    } catch (error) {
+      console.error("Error generating product slots:", error);
+      res.status(500).json({ error: "Failed to generate product slots" });
+    }
+  });
+
+  app.put("/api/admin/product-slots/:id", requireAdmin, async (req, res) => {
+    try {
+      const { productId, label, isActive } = req.body;
+      const updated = await storage.updateProductSlot(req.params.id, {
+        productId,
+        label,
+        isActive,
+      });
+      if (!updated) {
+        return res.status(404).json({ error: "Product slot not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating product slot:", error);
+      res.status(500).json({ error: "Failed to update product slot" });
+    }
+  });
+
+  app.delete("/api/admin/product-slots/:variant/:fieldName", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteSlotsByVariantAndField(req.params.variant, req.params.fieldName);
+      if (!deleted) {
+        return res.status(404).json({ error: "Product slots not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product slots:", error);
+      res.status(500).json({ error: "Failed to delete product slots" });
+    }
+  });
+
   // Category routes (admin only)
   app.get("/api/admin/categories", requireAdmin, async (req, res) => {
     try {
