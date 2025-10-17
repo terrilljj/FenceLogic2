@@ -45,6 +45,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function CategoryManager() {
   const { toast } = useToast();
@@ -85,6 +92,7 @@ export default function CategoryManager() {
   const subcategoryForm = useForm<InsertSubcategory>({
     resolver: zodResolver(insertSubcategorySchema),
     defaultValues: {
+      categoryId: "",
       name: "",
       displayOrder: 0,
     },
@@ -243,12 +251,14 @@ export default function CategoryManager() {
     if (subcategory) {
       setEditingSubcategory(subcategory);
       subcategoryForm.reset({
+        categoryId: subcategory.categoryId || "",
         name: subcategory.name,
         displayOrder: subcategory.displayOrder,
       });
     } else {
       setEditingSubcategory(null);
       subcategoryForm.reset({
+        categoryId: categories.length > 0 ? categories[0].id : "",
         name: "",
         displayOrder: subcategories.length,
       });
@@ -410,14 +420,20 @@ export default function CategoryManager() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Category (Fence Style)</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead className="w-32">Display Order</TableHead>
                         <TableHead className="w-32 text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {subcategories.map((subcategory) => (
+                      {subcategories.map((subcategory) => {
+                        const category = categories.find(c => c.id === subcategory.categoryId);
+                        return (
                         <TableRow key={subcategory.id} data-testid={`row-subcategory-${subcategory.id}`}>
+                          <TableCell data-testid={`text-subcategory-category-${subcategory.id}`}>
+                            {category?.name || "-"}
+                          </TableCell>
                           <TableCell data-testid={`text-subcategory-name-${subcategory.id}`}>
                             {subcategory.name}
                           </TableCell>
@@ -445,7 +461,8 @@ export default function CategoryManager() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}
@@ -532,12 +549,36 @@ export default function CategoryManager() {
             <form onSubmit={subcategoryForm.handleSubmit(onSubcategorySubmit)} className="space-y-4">
               <FormField
                 control={subcategoryForm.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category (Fence Style)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-subcategory-category">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={subcategoryForm.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="e.g. Spigots" data-testid="input-subcategory-name" />
+                      <Input {...field} placeholder="e.g. Raked Panels" data-testid="input-subcategory-name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
