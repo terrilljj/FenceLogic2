@@ -21,27 +21,31 @@ Use these exact values in the **`category`** column of your CSV:
 
 ---
 
-## Product Subcategories (17 Types)
+## Product Subcategories (21 Types)
 
 Use these exact values in the **`subcategory`** column of your CSV:
 
 1. `Spigots`
-2. `Channel`
-3. `Standoffs`
-4. `BARR`
-5. `Blade`
-6. `Tubular`
-7. `PIK`
-8. `Visor`
-9. `Zeus`
-10. `Full Privacy`
-11. `Combo`
-12. `Vertical Paling`
-13. `Semi Privacy`
-14. `3 Rail`
-15. `NanoRail`
-16. `NonoRail`
-17. `Series 35`
+2. `Spigot Glass Panels`
+3. `Master Hinge & Gate`
+4. `Soft Hinge and Gate`
+5. `Raked Panels`
+6. `Channel`
+7. `Standoffs`
+8. `BARR`
+9. `Blade`
+10. `Tubular`
+11. `PIK`
+12. `Visor`
+13. `Zeus`
+14. `Full Privacy`
+15. `Combo`
+16. `Vertical Paling`
+17. `Semi Privacy`
+18. `3 Rail`
+19. `NanoRail`
+20. `NonoRail`
+21. `Series 35`
 
 ---
 
@@ -103,7 +107,7 @@ HAMPTONS-FP,Hamptons Full Privacy Panel,Hamptons Full Privacy,Full Privacy,320.0
 
 | Category | Common Subcategories |
 |----------|---------------------|
-| Frameless Pool Fence | Spigots |
+| Frameless Pool Fence | Spigots, Spigot Glass Panels, Master Hinge & Gate, Soft Hinge and Gate, Raked Panels |
 | Channel Pool Fence | Channel |
 | Frameless Balustrade | Spigots, Standoffs |
 | Channel Balustrade | Channel |
