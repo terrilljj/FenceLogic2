@@ -103,23 +103,66 @@ HAMPTONS-FP,Hamptons Full Privacy Panel,Hamptons Full Privacy,Full Privacy,320.0
 
 ---
 
-## Common Category + Subcategory Combinations
+## Fence Styles with Available Subcategories (Components)
 
-| Category | Common Subcategories |
-|----------|---------------------|
-| Frameless Pool Fence | Spigots, Spigot Glass Panels, Master Hinge & Gate, Soft Hinge and Gate, Raked Panels |
-| Channel Pool Fence | Channel |
-| Frameless Balustrade | Spigots, Standoffs |
-| Channel Balustrade | Channel |
-| Standoff Balustrade | Standoffs |
-| BARR Pool Fence | BARR |
-| Blade Pool Fence | Blade |
-| Aluminium Balustrade | BARR, Blade, Visor |
-| Hamptons Full Privacy | Full Privacy |
-| Hamptons Combo | Combo |
-| Hamptons Vertical Paling | Vertical Paling |
-| Hamptons Semi Privacy | Semi Privacy |
-| Hamptons 3 Rail | 3 Rail |
+### Glass Pool Fencing Styles
+
+**1. Frameless Pool Fence (Pool Fence with Spigots)**
+- `Spigots` - Spigot mounting posts
+- `Spigot Glass Panels` - Glass panels for spigot system
+- `Master Hinge & Gate` - Master hinge gate hardware
+- `Soft Hinge and Gate` - Soft close hinge gate hardware
+- `Raked Panels` - Panels for sloped/raked installations
+
+**2. Channel Pool Fence**
+- `Channel` - Channel mounting system components
+
+**3. Flat Top Pool Fence**
+- `Channel` - Channel mounting system components
+
+**4. BARR Pool Fence**
+- `BARR` - BARR system components
+
+**5. Blade Pool Fence**
+- `Blade` - Blade system components
+
+### Glass Balustrade Styles
+
+**6. Frameless Balustrade**
+- `Spigots` - Spigot mounting posts
+- `Spigot Glass Panels` - Glass panels for spigot system
+- `Standoffs` - Standoff mounting hardware
+
+**7. Channel Balustrade**
+- `Channel` - Channel mounting system components
+
+**8. Standoff Balustrade**
+- `Standoffs` - Standoff mounting hardware
+
+### Aluminium Fencing Styles
+
+**9. Hamptons Full Privacy**
+- `Full Privacy` - Full privacy panels and components
+
+**10. Hamptons Combo**
+- `Combo` - Combination style panels and components
+
+**11. Hamptons Vertical Paling**
+- `Vertical Paling` - Vertical paling panels and components
+
+**12. Hamptons Semi Privacy**
+- `Semi Privacy` - Semi privacy panels and components
+
+**13. Hamptons 3 Rail**
+- `3 Rail` - 3 rail panels and components
+
+**14. Aluminium Balustrade**
+- `BARR` - BARR aluminium components
+- `Blade` - Blade aluminium components
+- `Visor` - Visor aluminium components
+- `NanoRail` - NanoRail components
+- `NonoRail` - NonoRail components
+- `Series 35` - Series 35 components
 
 ---
 
