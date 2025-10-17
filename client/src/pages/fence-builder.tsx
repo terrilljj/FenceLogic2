@@ -45,7 +45,7 @@ export default function FenceLogic() {
       {
         spanId: "A",
         length: 5000,
-        maxPanelWidth: (urlVariant === "custom-frameless") ? 1500 : 2000,
+        maxPanelWidth: (urlVariant === "custom-frameless") ? 1500 : 1200,
         desiredGap: 50,
         spigotMounting: "base-plate",
         spigotColor: "polished",
@@ -81,6 +81,20 @@ export default function FenceLogic() {
       return response.json();
     },
   });
+
+  // Helper function to get default max panel width from UI config
+  const getDefaultMaxPanelWidth = () => {
+    if (design.productVariant === "custom-frameless") return 1500;
+    
+    // Get from UI config if available
+    const maxPanelField = uiConfig?.fieldConfigs?.find((f: any) => f.field === "max-panel-width");
+    if (maxPanelField?.defaultConfig?.defaultValue) {
+      return parseInt(maxPanelField.defaultConfig.defaultValue);
+    }
+    
+    // Fallback to 1200 (UI config default)
+    return 1200;
+  };
 
   // Save design mutation
   const saveDesignMutation = useMutation({
@@ -185,7 +199,7 @@ export default function FenceLogic() {
       const newSpan: SpanConfig = {
         spanId: nextId,
         length: lastSpan?.length || 5000,
-        maxPanelWidth: lastSpan?.maxPanelWidth || (design.productVariant === "custom-frameless" ? 1500 : 2000),
+        maxPanelWidth: lastSpan?.maxPanelWidth || getDefaultMaxPanelWidth(),
         desiredGap: lastSpan?.desiredGap || 50,
         spigotMounting: lastSpan?.spigotMounting || "base-plate",
         spigotColor: lastSpan?.spigotColor || "polished",
@@ -266,7 +280,7 @@ export default function FenceLogic() {
         {
           spanId: "A",
           length: 5000,
-          maxPanelWidth: 2000,
+          maxPanelWidth: 1200,
           desiredGap: 50,
           spigotMounting: "base-plate",
           spigotColor: "polished",
@@ -620,7 +634,7 @@ export default function FenceLogic() {
 function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[] {
   const defaultSpan: Omit<SpanConfig, "spanId"> = {
     length: 5000,
-    maxPanelWidth: 2000,
+    maxPanelWidth: 1200,
     desiredGap: 50,
     spigotMounting: "base-plate",
     spigotColor: "polished",
