@@ -273,141 +273,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const csvHeader = "code,description,category,subcategory,price,weight,dimensions,units,tags,notes,imageUrl,active\n";
       
-      // 1. Frameless Pool Fence (Spigots)
-      const framelessPoolProducts = [
-        'GP-1200-1200-12,"Glass Panel 1200mm x 1200mm (12mm thick)",Frameless Pool Fence,,$450.00,,,,,,1',
-        'GP-1500-1200-12,"Glass Panel 1500mm x 1200mm (12mm thick)",Frameless Pool Fence,,$520.00,,,,,,1',
-        'GP-1200-1200-15,"Glass Panel 1200mm x 1200mm (15mm thick)",Frameless Pool Fence,,$580.00,,,,,,1',
-        'RP-LEFT-1200-1400,"Left Raked Panel 1200mm x 1400mm",Frameless Pool Fence,,$520.00,,,,,,1',
-        'RP-RIGHT-1200-1400,"Right Raked Panel 1200mm x 1400mm",Frameless Pool Fence,,$520.00,,,,,,1',
-        'GP-CUSTOM-1200-1500-12,"Custom Glass Panel 1200mm x 1500mm (12mm thick)",Frameless Pool Fence,,$550.00,,,,,,1',
-        'SPIGOT-BASE_PLATE-POLISHED,"Spigot Base Plate Mount (Polished)",Frameless Pool Fence,,$85.00,,,,,,1',
-        'SPIGOT-CORE_DRILLED-SATIN,"Spigot Core Drilled (Satin)",Frameless Pool Fence,,$85.00,,,,,,1',
-        'SPIGOT-SIDE_MOUNTED-BLACK,"Spigot Side Mounted (Black)",Frameless Pool Fence,,$90.00,,,,,,1',
-        'HINGE-MASTER-G2G,"Master Range Glass-to-Glass Hinge Set",Frameless Pool Fence,,$320.00,,,,,,1',
-        'HINGE-POLARIS-G2G,"Polaris/Atlantic Glass-to-Glass Hinge Set",Frameless Pool Fence,,$380.00,,,,,,1',
-        'LATCH-G2G,"Glass-to-Glass Latch",Frameless Pool Fence,,$180.00,,,,,,1',
+      const templateProducts = [
+        // 1. Frameless Pool Fence (spigots)
+        'FPF-GP-12,"12mm Glass Panel",Frameless Pool Fence,Glass Panels,$250.00,,,,,,1',
+        'FPF-SPIG-100,"Spigot Post 100mm",Frameless Pool Fence,Spigots,$45.00,,,,,,1',
+        'FPF-MHP-900,"Master Hinge Panel 900mm",Frameless Pool Fence,Master Hinge Panels,$320.00,,,,,,1',
+        'FPF-MGP-900,"Master Gate Panel 900mm",Frameless Pool Fence,Master Gate Panels,$340.00,,,,,,1',
+        'FPF-SCHP-1200,"Soft Close Hinge Panel 1200mm",Frameless Pool Fence,Soft Close Hinge Panels,$335.00,,,,,,1',
+        'FPF-SCG-900,"Soft Close Gate 900mm",Frameless Pool Fence,Soft Close Gates,$380.00,,,,,,1',
+        'FPF-RP-2400,"Raked Panel 2400mm",Frameless Pool Fence,Raked Panels,$290.00,,,,,,1',
+        'FPF-GHM,"Gate Hinge Master",Frameless Pool Fence,Gate Hinges Master,$85.00,,,,,,1',
+        'FPF-GHSC,"Gate Hinge Soft Close",Frameless Pool Fence,Gate Hinges Soft Close,$125.00,,,,,,1',
+        'FPF-GGL,"Glass Gate Latch",Frameless Pool Fence,Glass Gate Latches,$95.00,,,,,,1',
+        
+        // 2. Channel Pool Fence
+        'CPF-GP-12,"12mm Glass Panel",Channel Pool Fence,Glass Panels,$240.00,,,,,,1',
+        'CPF-CHAN-3M,"Aluminium Channel 3m",Channel Pool Fence,Channel,$89.00,,,,,,1',
+        'CPF-CLAMP,"Channel Clamp",Channel Pool Fence,Channel Clamps,$12.50,,,,,,1',
+        'CPF-CHACC,"Channel End Cap",Channel Pool Fence,Channel Accessories,$8.00,,,,,,1',
+        'CPF-MHP-900,"Master Hinge Panel 900mm",Channel Pool Fence,Master Hinge Panels,$315.00,,,,,,1',
+        'CPF-MGP-900,"Master Gate Panel 900mm",Channel Pool Fence,Master Gate Panels,$335.00,,,,,,1',
+        'CPF-SCHP-1200,"Soft Close Hinge Panel 1200mm",Channel Pool Fence,Soft Close Hinge Panels,$330.00,,,,,,1',
+        'CPF-SCG-900,"Soft Close Gate 900mm",Channel Pool Fence,Soft Close Gates,$375.00,,,,,,1',
+        'CPF-RP-2400,"Raked Panel 2400mm",Channel Pool Fence,Raked Panels,$285.00,,,,,,1',
+        'CPF-GHM,"Gate Hinge Master",Channel Pool Fence,Gate Hinges Master,$85.00,,,,,,1',
+        'CPF-GHSC,"Gate Hinge Soft Close",Channel Pool Fence,Gate Hinges Soft Close,$125.00,,,,,,1',
+        'CPF-GGL,"Glass Gate Latch",Channel Pool Fence,Glass Gate Latches,$95.00,,,,,,1',
+        
+        // 3. Flat Top Pool Fence
+        'FTP-PANEL-2400,"Flat Top Panel 2400mm",Flat Top Pool Fence,Flat Top Panels,$280.00,,,,,,1',
+        'FTP-POST-2100,"Flat Top Post 2100mm",Flat Top Pool Fence,Flat Top Posts,$125.00,,,,,,1',
+        'FTP-GATE-900,"Flat Top Gate 900mm",Flat Top Pool Fence,Flat Top Gates,$395.00,,,,,,1',
+        'FTP-SHROUD,"Post Shroud",Flat Top Pool Fence,Post Shrouds,$45.00,,,,,,1',
+        'FTP-ACC-CAP,"Flat Top End Cap",Flat Top Pool Fence,Flat Top Accessories,$15.00,,,,,,1',
+        'FTP-HINGE,"Flat Top Hinge Set",Flat Top Pool Fence,Flat Top Hinges,$95.00,,,,,,1',
+        'FTP-LATCH,"Flat Top Gate Latch",Flat Top Pool Fence,Flat Top Latches,$110.00,,,,,,1',
+        
+        // 4. BARR Pool Fence
+        'BPF-P1200,"BARR Panel 1200mm High",BARR Pool Fence,Barr Panels 1200,$195.00,,,,,,1',
+        'BPF-POST,"BARR Post 2100mm",BARR Pool Fence,Barr Posts,$98.00,,,,,,1',
+        'BPF-GATE,"BARR Gate 1000mm",BARR Pool Fence,Barr Gates,$345.00,,,,,,1',
+        'BPF-SHROUD,"BARR Post Shroud",BARR Pool Fence,Barr Shrouds,$42.00,,,,,,1',
+        'BPF-ACC,"BARR Mounting Bracket",BARR Pool Fence,Barr Accessories,$28.00,,,,,,1',
+        'BPF-HINGE,"BARR Gate Hinge",BARR Pool Fence,Barr Hinges,$75.00,,,,,,1',
+        'BPF-LATCH,"BARR Gate Latch",BARR Pool Fence,Barr Latches,$95.00,,,,,,1',
+        
+        // 5. Blade Pool Fence
+        'BLPF-P1200,"Blade Panel 1200mm High",Blade Pool Fence,Blade Panels 1200,$210.00,,,,,,1',
+        'BLPF-POST,"Blade Post 2100mm",Blade Pool Fence,Blade Posts,$105.00,,,,,,1',
+        'BLPF-GATE,"Blade Gate 1000mm",Blade Pool Fence,Blade Gates,$365.00,,,,,,1',
+        'BLPF-SHROUD,"Blade Post Shroud",Blade Pool Fence,Blade Shrouds,$45.00,,,,,,1',
+        'BLPF-ACC,"Blade Mounting Bracket",Blade Pool Fence,Blade Accessories,$32.00,,,,,,1',
+        'BLPF-HINGE,"Blade Gate Hinge",Blade Pool Fence,Blade Hinges,$85.00,,,,,,1',
+        'BLPF-LATCH,"Blade Gate Latch",Blade Pool Fence,Blade Latches,$105.00,,,,,,1',
+        
+        // 6. Frameless Balustrade (spigots)
+        'FBL-GP12-970,"Glass Panel 12mm 970mm High",Frameless Balustrade,Glass Panels 12mm 970,$220.00,,,,,,1',
+        'FBL-GP15-1000,"Glass Panel 15mm 1000mm High",Frameless Balustrade,Glass Panels 15mm 1000,$280.00,,,,,,1',
+        'FBL-SPIG12,"Spigot 12mm",Frameless Balustrade,Spigots 12mm,$38.00,,,,,,1',
+        'FBL-SPIG15,"Spigot 15mm",Frameless Balustrade,Spigots 15mm,$42.00,,,,,,1',
+        'FBL-HR25,"Handrail 25x21mm 3m",Frameless Balustrade,Handrail 25x21,$95.00,,,,,,1',
+        'FBL-HR35,"Handrail 35 Series 3m",Frameless Balustrade,Handrail 35 Series,$125.00,,,,,,1',
+        'FBL-HRACC,"Handrail End Cap",Frameless Balustrade,Handrail Accessories,$18.00,,,,,,1',
+        
+        // 7. Channel Balustrade
+        'CBL-GP,"Glass Panel Standard",Channel Balustrade,Glass Panels,$215.00,,,,,,1',
+        'CBL-GP12-970,"Glass Panel 12mm 970mm High",Channel Balustrade,Glass Panels 12mm 970,$220.00,,,,,,1',
+        'CBL-GP15-1000,"Glass Panel 15mm 1000mm High",Channel Balustrade,Glass Panels 15mm 1000,$280.00,,,,,,1',
+        'CBL-CHAN,"Channel 3m",Channel Balustrade,Channel,$78.00,,,,,,1',
+        'CBL-CLAMP,"Channel Clamp",Channel Balustrade,Channel Clamps,$11.00,,,,,,1',
+        'CBL-CHACC,"Channel Connector",Channel Balustrade,Channel Accessories,$15.00,,,,,,1',
+        'CBL-HR25,"Handrail 25x21mm 3m",Channel Balustrade,Handrail 25x21,$95.00,,,,,,1',
+        'CBL-HR35,"Handrail 35 Series 3m",Channel Balustrade,Handrail 35 Series,$125.00,,,,,,1',
+        'CBL-HRACC,"Handrail Bracket",Channel Balustrade,Handrail Accessories,$22.00,,,,,,1',
+        
+        // 8. Standoff Balustrade
+        'SBL-GP15-1280,"Glass Panel 15mm 1280mm High",Standoff Balustrade,Glass Panels 15mm 1280,$295.00,,,,,,1',
+        'SBL-STOFF,"Standoff 50mm",Standoff Balustrade,Standoffs,$32.00,,,,,,1',
+        'SBL-STACC,"Standoff Base Plate",Standoff Balustrade,Standoff Accessories,$18.00,,,,,,1',
+        'SBL-HR25,"Handrail 25x21mm 3m",Standoff Balustrade,Handrail 25x21,$95.00,,,,,,1',
+        'SBL-HR35,"Handrail 35 Series 3m",Standoff Balustrade,Handrail 35 Series,$125.00,,,,,,1',
+        'SBL-HRACC,"Handrail Elbow",Standoff Balustrade,Handrail Accessories,$35.00,,,,,,1',
+        
+        // 9. BARR Fencing 1800
+        'BF18-P1800,"BARR Panel 1800mm High",BARR Fencing 1800,Barr Panels 1800,$275.00,,,,,,1',
+        'BF18-POST,"BARR Post 2400mm",BARR Fencing 1800,Barr Posts,$135.00,,,,,,1',
+        'BF18-GATE,"BARR Gate 1800mm High",BARR Fencing 1800,Barr Gates 1800,$485.00,,,,,,1',
+        'BF18-SHROUD,"BARR Post Shroud",BARR Fencing 1800,Barr Shrouds,$48.00,,,,,,1',
+        'BF18-ACC,"BARR Top Rail",BARR Fencing 1800,Barr Accessories,$65.00,,,,,,1',
+        'BF18-HINGE,"BARR Heavy Duty Hinge",BARR Fencing 1800,Barr Hinges,$95.00,,,,,,1',
+        'BF18-LATCH,"BARR Security Latch",BARR Fencing 1800,Barr Latches,$125.00,,,,,,1',
+        
+        // 10. Blade Fencing 1800
+        'BLF18-P1800,"Blade Panel 1800mm High",Blade Fencing 1800,Blade Panels 1800,$295.00,,,,,,1',
+        'BLF18-POST,"Blade Post 2400mm",Blade Fencing 1800,Blade Posts,$145.00,,,,,,1',
+        'BLF18-GATE,"Blade Gate 1800mm High",Blade Fencing 1800,Blade Gates,$515.00,,,,,,1',
+        'BLF18-SHROUD,"Blade Post Shroud",Blade Fencing 1800,Blade Shrouds,$52.00,,,,,,1',
+        'BLF18-ACC,"Blade Top Rail",Blade Fencing 1800,Blade Accessories,$72.00,,,,,,1',
+        'BLF18-HINGE,"Blade Heavy Duty Hinge",Blade Fencing 1800,Blade Hinges,$105.00,,,,,,1',
+        'BLF18-LATCH,"Blade Security Latch",Blade Fencing 1800,Blade Latches,$135.00,,,,,,1',
+        
+        // 11. Zeus Steel Fencing
+        'ZSF-PANEL,"Zeus Steel Panel 1800mm",Zeus Steel Fencing,Zeus Steel Panels,$425.00,,,,,,1',
+        'ZSF-POST,"Zeus Steel Post 2400mm",Zeus Steel Fencing,Zeus Steel Posts,$185.00,,,,,,1',
+        'ZSF-GATE,"Zeus Steel Gate 1000mm",Zeus Steel Fencing,Zeus Steel Gates,$565.00,,,,,,1',
+        'ZSF-SHROUD,"Zeus Steel Post Shroud",Zeus Steel Fencing,Zeus Steel Shrouds,$58.00,,,,,,1',
+        'ZSF-HINGE,"Zeus Gate Hinge",Zeus Steel Fencing,Zeus Hinges,$115.00,,,,,,1',
+        'ZSF-LATCH,"Zeus Gate Latch",Zeus Steel Fencing,Zeus Latches,$145.00,,,,,,1',
+        'ZSF-ACC,"Zeus Mounting Plate",Zeus Steel Fencing,Zeus Accessories,$45.00,,,,,,1',
+        
+        // 12. Zeus Aluminium Fencing
+        'ZAF-PANEL,"Zeus Aluminium Panel 1800mm",Zeus Aluminium Fencing,Zeus Aluminium Panels,$385.00,,,,,,1',
+        'ZAF-POST,"Zeus Aluminium Post 2400mm",Zeus Aluminium Fencing,Zeus Aluminium Posts,$165.00,,,,,,1',
+        'ZAF-GATE,"Zeus Aluminium Gate 1000mm",Zeus Aluminium Fencing,Zeus Aluminium Gates,$525.00,,,,,,1',
+        'ZAF-SHROUD,"Zeus Aluminium Post Shroud",Zeus Aluminium Fencing,Zeus Aluminium Shrouds,$55.00,,,,,,1',
+        'ZAF-HINGE,"Zeus Gate Hinge",Zeus Aluminium Fencing,Zeus Hinges,$115.00,,,,,,1',
+        'ZAF-LATCH,"Zeus Gate Latch",Zeus Aluminium Fencing,Zeus Latches,$145.00,,,,,,1',
+        'ZAF-ACC,"Zeus Corner Bracket",Zeus Aluminium Fencing,Zeus Accessories,$42.00,,,,,,1',
       ];
       
-      // 2. Channel Pool Fence
-      const channelPoolProducts = [
-        'GP-CHANNEL-1200-12,"Channel Glass Panel 1200mm (12mm thick)",Channel Pool Fence,,$420.00,,,,,,1',
-        'GP-CHANNEL-1500-12,"Channel Glass Panel 1500mm (12mm thick)",Channel Pool Fence,,$490.00,,,,,,1',
-        'CHANNEL-AL-BASE,"Aluminium Base Channel (per meter)",Channel Pool Fence,,$65.00,,,,,,1',
-        'HINGE-MASTER-G2W,"Master Range Glass-to-Wall Hinge Set",Channel Pool Fence,,$310.00,,,,,,1',
-        'LATCH-G2W,"Glass-to-Wall Latch",Channel Pool Fence,,$175.00,,,,,,1',
-      ];
-      
-      // 3. Flat Top Pool Fence (Tubular)
-      const flatTopPoolProducts = [
-        'TUBULAR-1200-2450-BLACK,"Tubular Panel 1200mm x 2450mm (Black)",Flat Top Pool Fence,,$395.00,,,,,,1',
-        'TUBULAR-1200-3000-BLACK,"Tubular Panel 1200mm x 3000mm (Black)",Flat Top Pool Fence,,$465.00,,,,,,1',
-        'TUBULAR-GATE-1200-975-BLACK,"Tubular Gate 1200mm x 975mm (Black)",Flat Top Pool Fence,,$385.00,,,,,,1',
-        'TUBULAR-POST-STD-1200-BLACK,"Tubular Standard Post 1200mm (Black)",Flat Top Pool Fence,,$75.00,,,,,,1',
-      ];
-      
-      // 4. BARR Pool Fence
-      const barrPoolProducts = [
-        'BARR-1000-1733-CN150A,"BARR Panel 1000mm x 1733mm (Satin Black)",BARR Pool Fence,,$385.00,,,,,,1',
-        'BARR-1200-2205-CN150A,"BARR Panel 1200mm x 2205mm (Satin Black)",BARR Pool Fence,,$485.00,,,,,,1',
-        'BARR-1000-1733-CNPW,"BARR Panel 1000mm x 1733mm (Pearl White)",BARR Pool Fence,,$385.00,,,,,,1',
-        'BARR-GATE-1200-975-CN150A,"BARR Gate 1200mm x 975mm (Satin Black)",BARR Pool Fence,,$420.00,,,,,,1',
-        'BARR-POST-STD-1200-CN150A,"BARR Standard Post 1200mm (Satin Black)",BARR Pool Fence,,$85.00,,,,,,1',
-        'BARR-POST-WBP-1200-CN150A,"BARR Welded Base Plate Post 1200mm (Satin Black)",BARR Pool Fence,,$125.00,,,,,,1',
-      ];
-      
-      // 5. Blade Pool Fence
-      const bladePoolProducts = [
-        'BLADE-1000-1700-CN150A,"Blade Panel 1000mm x 1700mm (Satin Black)",Blade Pool Fence,,$425.00,,,,,,1',
-        'BLADE-1200-2200-CN150A,"Blade Panel 1200mm x 2200mm (Satin Black)",Blade Pool Fence,,$545.00,,,,,,1',
-        'BLADE-1000-1700-CNPW,"Blade Panel 1000mm x 1700mm (Pearl White)",Blade Pool Fence,,$425.00,,,,,,1',
-        'BLADE-GATE-1200-975-CN150A,"Blade Gate 1200mm x 975mm (Satin Black)",Blade Pool Fence,,$460.00,,,,,,1',
-        'BLADE-POST-STD-1200-CN150A,"Blade Standard Post 1200mm (Satin Black)",Blade Pool Fence,,$95.00,,,,,,1',
-        'BLADE-POST-WBP-1200-CN150A,"Blade Welded Base Plate Post 1200mm (Satin Black)",Blade Pool Fence,,$135.00,,,,,,1',
-      ];
-      
-      // 6. Hamptons Full Privacy
-      const hamptonsFullProducts = [
-        'HAMPTONS-FULL_PRIVACY-2388,"Hamptons Full Privacy Panel 2388mm (1800mm high)",Hamptons Full Privacy,,$485.00,,,,,,1',
-        'HAMPTONS-GATE-FULL_PRIVACY-1000,"Hamptons Full Privacy Gate 1000mm",Hamptons Full Privacy,,$425.00,,,,,,1',
-        'HAMPTONS-POST-1WAY,"Hamptons 1-Way Post 127mm",Hamptons Full Privacy,,$95.00,,,,,,1',
-        'HAMPTONS-POST-GATE,"Hamptons Gate Post 127mm",Hamptons Full Privacy,,$125.00,,,,,,1',
-      ];
-      
-      // 7. Hamptons Combo
-      const hamptonsComboProducts = [
-        'HAMPTONS-COMBO-2388,"Hamptons Combo Panel 2388mm (1800mm high)",Hamptons Combo,,$465.00,,,,,,1',
-        'HAMPTONS-GATE-COMBO-1000,"Hamptons Combo Gate 1000mm",Hamptons Combo,,$410.00,,,,,,1',
-        'HAMPTONS-POST-2WAY,"Hamptons 2-Way Post 127mm",Hamptons Combo,,$105.00,,,,,,1',
-      ];
-      
-      // 8. Hamptons Vertical Paling
-      const hamptonsVerticalProducts = [
-        'HAMPTONS-VERTICAL_PALING-2388,"Hamptons Vertical Paling Panel 2388mm (1800mm high)",Hamptons Vertical Paling,,$445.00,,,,,,1',
-        'HAMPTONS-GATE-VERTICAL-1000,"Hamptons Vertical Paling Gate 1000mm",Hamptons Vertical Paling,,$395.00,,,,,,1',
-      ];
-      
-      // 9. Hamptons Semi Privacy
-      const hamptonsSemiProducts = [
-        'HAMPTONS-SEMI_PRIVACY-2388,"Hamptons Semi Privacy Panel 2388mm (1000mm high)",Hamptons Semi Privacy,,$325.00,,,,,,1',
-        'HAMPTONS-GATE-SEMI-1000,"Hamptons Semi Privacy Gate 1000mm",Hamptons Semi Privacy,,$295.00,,,,,,1',
-      ];
-      
-      // 10. Hamptons 3 Rail
-      const hamptons3RailProducts = [
-        'HAMPTONS-3RAIL-2388,"Hamptons 3 Rail Panel 2388mm (1525mm high)",Hamptons 3 Rail,,$385.00,,,,,,1',
-        'HAMPTONS-GATE-3RAIL-1000,"Hamptons 3 Rail Gate 1000mm",Hamptons 3 Rail,,$345.00,,,,,,1',
-        'HAMPTONS-POST-90DEG,"Hamptons 90-Degree Post 127mm",Hamptons 3 Rail,,$110.00,,,,,,1',
-      ];
-      
-      // 11. Frameless Balustrade (Spigots)
-      const framelessBalProducts = [
-        'GP-BAL-1200-1000-12,"Glass Panel 1200mm x 1000mm (12mm thick)",Frameless Balustrade,,$420.00,,,,,,1',
-        'GP-BAL-1200-1000-15,"Glass Panel 1200mm x 1000mm (15mm thick)",Frameless Balustrade,,$550.00,,,,,,1',
-        'SPIGOT-BASE_PLATE-POLISHED,"Spigot Base Plate Mount (Polished)",Frameless Balustrade,,$85.00,,,,,,1',
-        'HANDRAIL-NONORAIL-25X21-SS,"Handrail Nonorail 25x21mm Stainless Steel",Frameless Balustrade,,$120.00,,,,,,1',
-      ];
-      
-      // 12. Channel Balustrade
-      const channelBalProducts = [
-        'GP-BAL-CHANNEL-1200-12,"Channel Glass Panel 1200mm (12mm thick)",Channel Balustrade,,$390.00,,,,,,1',
-        'CHANNEL-AL-TOP,"Aluminium Top Channel (per meter)",Channel Balustrade,,$75.00,,,,,,1',
-        'HANDRAIL-NANORAIL-30X21-AL,"Handrail Nanorail 30x21mm Anodised Aluminium",Channel Balustrade,,$110.00,,,,,,1',
-      ];
-      
-      // 13. Standoff Balustrade
-      const standoffBalProducts = [
-        'GP-STANDOFF-800-1000-15,"Standoff Glass Panel 800mm x 1000mm (15mm thick)",Standoff Balustrade,,$480.00,,,,,,1',
-        'GP-STANDOFF-1200-1000-15,"Standoff Glass Panel 1200mm x 1000mm (15mm thick)",Standoff Balustrade,,$580.00,,,,,,1',
-        'STANDOFF-50-POLISHED,"Standoff Pin 50mm (Polished)",Standoff Balustrade,,$45.00,,,,,,1',
-        'STANDOFF-50-SATIN,"Standoff Pin 50mm (Satin)",Standoff Balustrade,,$45.00,,,,,,1',
-      ];
-      
-      // 14. Aluminium Balustrade
-      const aluBalProducts = [
-        'BARR-1800-1969-CN150A,"BARR Panel 1800mm x 1969mm (Satin Black)",Aluminium Balustrade,,$520.00,,,,,,1',
-        'BARR-POST-BAL-1800-CN150A,"BARR Balustrade Post 1800mm (Satin Black)",Aluminium Balustrade,,$95.00,,,,,,1',
-        'TUBULAR-900-2450-WHITE,"Tubular Panel 900mm x 2450mm (White)",Aluminium Balustrade,,$365.00,,,,,,1',
-      ];
-      
-      const allProducts = [
-        ...framelessPoolProducts,
-        ...channelPoolProducts,
-        ...flatTopPoolProducts,
-        ...barrPoolProducts,
-        ...bladePoolProducts,
-        ...hamptonsFullProducts,
-        ...hamptonsComboProducts,
-        ...hamptonsVerticalProducts,
-        ...hamptonsSemiProducts,
-        ...hamptons3RailProducts,
-        ...framelessBalProducts,
-        ...channelBalProducts,
-        ...standoffBalProducts,
-        ...aluBalProducts,
-      ];
-      
-      const csvTemplate = csvHeader + allProducts.join("\n") + "\n";
+      const csvTemplate = csvHeader + templateProducts.join("\n") + "\n";
       
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=product_template.csv");
