@@ -435,8 +435,8 @@ export default function UIConfigPage() {
             },
           },
         };
-      } else if (fieldMeta.type === "number") {
-        // Ensure type is set for number fields
+      } else if (fieldMeta.type === "numeric") {
+        // Ensure type is set for numeric fields (backend expects "number")
         return {
           ...fc,
           type: "number" as const,
@@ -452,7 +452,7 @@ export default function UIConfigPage() {
       // Fallback: preserve existing type or use field metadata
       return {
         ...fc,
-        type: fieldMeta.type,
+        type: fieldMeta.type === "numeric" ? "number" : fieldMeta.type,
       };
     });
     
