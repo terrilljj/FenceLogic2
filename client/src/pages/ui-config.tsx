@@ -194,6 +194,22 @@ export default function UIConfigPage() {
       setAllowedCategories(config?.allowedCategories || []);
       setAllowedSubcategories(config?.allowedSubcategories || []);
       
+      // Normalize fieldConfigs: convert array to object lookup for UI consumption
+      const fieldConfigsLookup: Record<string, any> = {};
+      if (config?.fieldConfigs) {
+        if (Array.isArray(config.fieldConfigs)) {
+          // New format: array
+          config.fieldConfigs.forEach((fc: any) => {
+            if (fc.field) {
+              fieldConfigsLookup[fc.field] = fc;
+            }
+          });
+        } else {
+          // Old format: object (backwards compatibility)
+          Object.assign(fieldConfigsLookup, config.fieldConfigs);
+        }
+      }
+      
       // Safety fallback: if no mapping exists, use all available fields
       if (!relevantFields || relevantFields.length === 0) {
         console.warn(`No field mapping found for variant: ${selectedVariant}`);
@@ -213,8 +229,7 @@ export default function UIConfigPage() {
         .filter(field => relevantFields.includes(field.field))
         .map((field, index) => {
           // Check if this field exists in saved config
-          // Backend sends fieldConfigs as object, need to look it up by key
-          const savedBackendConfig = config?.fieldConfigs?.[field.field];
+          const savedBackendConfig = fieldConfigsLookup[field.field];
           
           if (savedBackendConfig) {
             // Transform from backend format to frontend format
@@ -383,12 +398,10 @@ export default function UIConfigPage() {
   };
 
   const handleSave = () => {
-    // Transform field configs to match backend schema (mapping structure)
-    const transformedFieldConfigs: Record<string, any> = {};
-    
-    fieldConfigs.forEach(fc => {
+    // Keep fieldConfigs as array but transform the mapping structure
+    const transformedFieldConfigs = fieldConfigs.map(fc => {
       const fieldMeta = AVAILABLE_FIELDS.find(f => f.field === fc.field);
-      if (!fieldMeta) return;
+      if (!fieldMeta) return fc;
       
       if (fieldMeta.type === "dropdown" && fc.options) {
         // Build mapping object for dropdown fields
@@ -401,17 +414,19 @@ export default function UIConfigPage() {
           };
         });
         
-        transformedFieldConfigs[fc.field] = {
-          type: "dropdown",
-          label: fc.label || fieldMeta.label,
-          options: fc.options,
+        return {
+          ...fc,
+          type: "dropdown" as const,
           mapping,
+          // Include new toggle properties
+          enforceSubcategory: (fc as any).enforceSubcategory,
+          globalSubcategories: (fc as any).globalSubcategories,
         };
       } else if (fieldMeta.type === "toggle") {
         // Build mapping object for toggle fields
-        transformedFieldConfigs[fc.field] = {
-          type: "toggle",
-          label: fc.label || fieldMeta.label,
+        return {
+          ...fc,
+          type: "toggle" as const,
           mapping: {
             on: {
               categoryPaths: fc.categoryPaths || [],
@@ -421,6 +436,8 @@ export default function UIConfigPage() {
           },
         };
       }
+      
+      return fc;
     });
     
     saveMutation.mutate({
