@@ -55,7 +55,14 @@ Preferred communication style: Simple, everyday language.
 - Login, verify, and logout endpoints.
 - Session configured for Replit iframe support (`trust proxy: 1`, `sameSite: "none"`, `secure: true`, `httpOnly: true`).
 - Admin panel accessible at `/admin-login`.
-- **Product Catalog Management** at `/products` and **Category Manager** at `/categories` (CRUD operations for categories/subcategories with display order control and transactional deletion).
+- **Product Catalog Management** at `/products` and **Category Manager** at `/categories`:
+  - Hierarchical structure: Categories represent fence styles (e.g., "Glass Pool Fence", "Aluminium Slat Fence")
+  - Subcategories represent components/variants within each fence style (e.g., "Raked Panels", "Gate Master", "Hinge Panels Soft")
+  - Each subcategory belongs to one category via `categoryId` foreign key
+  - CRUD operations for both categories and subcategories with display order control
+  - Transactional deletion prevents orphaned data
+  - Category selector in subcategory forms for linking to parent category
+  - Table view shows category association for each subcategory
 - **UI Configuration portal** at `/ui-config` for defining product groups, field visibility, order, labels, tooltips, and SKU selection behavior.
 
 **Google Sheets OAuth Sync:**
