@@ -208,6 +208,12 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(subcategories).orderBy(asc(subcategories.displayOrder), asc(subcategories.name));
   }
 
+  async getSubcategoriesByCategory(categoryId: string): Promise<Subcategory[]> {
+    return await db.select().from(subcategories)
+      .where(eq(subcategories.categoryId, categoryId))
+      .orderBy(asc(subcategories.displayOrder), asc(subcategories.name));
+  }
+
   async createSubcategory(insertSubcategory: InsertSubcategory): Promise<Subcategory> {
     const [subcategory] = await db
       .insert(subcategories)
