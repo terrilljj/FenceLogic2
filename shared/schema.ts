@@ -860,7 +860,7 @@ export type Category = typeof categories.$inferSelect;
 // Subcategories table for dynamic subcategory management (linked to categories)
 export const subcategories = pgTable("subcategories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  categoryId: varchar("category_id").notNull().references(() => categories.id, { onDelete: 'cascade' }),
+  categoryId: varchar("category_id").references(() => categories.id, { onDelete: 'cascade' }),
   name: varchar("name", { length: 200 }).notNull(),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: varchar("created_at").notNull().default(sql`now()::text`),
