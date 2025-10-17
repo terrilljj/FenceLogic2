@@ -847,6 +847,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/categories/:categoryId/subcategories", requireAdmin, async (req, res) => {
+    try {
+      const { categoryId } = req.params;
+      const subcategories = await storage.getSubcategoriesByCategory(categoryId);
+      res.json(subcategories);
+    } catch (error) {
+      console.error("Error fetching subcategories by category:", error);
+      res.status(500).json({ error: "Failed to fetch subcategories" });
+    }
+  });
+
   app.post("/api/admin/subcategories", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertSubcategorySchema.parse(req.body);
