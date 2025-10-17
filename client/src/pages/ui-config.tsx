@@ -213,11 +213,43 @@ export default function UIConfigPage() {
         .filter(field => relevantFields.includes(field.field))
         .map((field, index) => {
           // Check if this field exists in saved config
-          const savedConfig = config?.fieldConfigs?.find((fc: UIFieldConfig) => fc.field === field.field);
+          // Backend sends fieldConfigs as object, need to look it up by key
+          const savedBackendConfig = config?.fieldConfigs?.[field.field];
           
-          if (savedConfig) {
-            // Use saved configuration
-            return savedConfig;
+          if (savedBackendConfig) {
+            // Transform from backend format to frontend format
+            const transformedConfig: any = {
+              field: field.field,
+              enabled: true,
+              position: index,
+              label: savedBackendConfig.label || field.label,
+              tooltip: savedBackendConfig.tooltip || field.defaultTooltip,
+            };
+            
+            // Handle dropdown fields with mapping
+            if (savedBackendConfig.type === "dropdown" && savedBackendConfig.mapping) {
+              transformedConfig.options = savedBackendConfig.options || [];
+              transformedConfig.optionPaths = {};
+              transformedConfig.optionSubcategories = {};
+              transformedConfig.optionCodes = {};
+              
+              // Transform mapping structure to separated fields
+              Object.keys(savedBackendConfig.mapping).forEach(option => {
+                const mapping = savedBackendConfig.mapping[option];
+                transformedConfig.optionPaths[option] = mapping.categoryPaths || [];
+                transformedConfig.optionSubcategories[option] = mapping.subcategories || [];
+                transformedConfig.optionCodes[option] = mapping.codes || [];
+              });
+            }
+            
+            // Handle toggle fields with mapping
+            if (savedBackendConfig.type === "toggle" && savedBackendConfig.mapping?.on) {
+              transformedConfig.categoryPaths = savedBackendConfig.mapping.on.categoryPaths || [];
+              transformedConfig.subcategories = savedBackendConfig.mapping.on.subcategories || [];
+              transformedConfig.codes = savedBackendConfig.mapping.on.codes || [];
+            }
+            
+            return transformedConfig;
           } else {
             // Use default configuration
             return {
@@ -351,9 +383,49 @@ export default function UIConfigPage() {
   };
 
   const handleSave = () => {
+    // Transform field configs to match backend schema (mapping structure)
+    const transformedFieldConfigs: Record<string, any> = {};
+    
+    fieldConfigs.forEach(fc => {
+      const fieldMeta = AVAILABLE_FIELDS.find(f => f.field === fc.field);
+      if (!fieldMeta) return;
+      
+      if (fieldMeta.type === "dropdown" && fc.options) {
+        // Build mapping object for dropdown fields
+        const mapping: Record<string, any> = {};
+        fc.options.forEach(option => {
+          mapping[option] = {
+            categoryPaths: fc.optionPaths?.[option] || [],
+            subcategories: (fc as any).optionSubcategories?.[option] || [],
+            codes: (fc as any).optionCodes?.[option] || [],
+          };
+        });
+        
+        transformedFieldConfigs[fc.field] = {
+          type: "dropdown",
+          label: fc.label || fieldMeta.label,
+          options: fc.options,
+          mapping,
+        };
+      } else if (fieldMeta.type === "toggle") {
+        // Build mapping object for toggle fields
+        transformedFieldConfigs[fc.field] = {
+          type: "toggle",
+          label: fc.label || fieldMeta.label,
+          mapping: {
+            on: {
+              categoryPaths: fc.categoryPaths || [],
+              subcategories: (fc as any).subcategories || [],
+              codes: (fc as any).codes || [],
+            },
+          },
+        };
+      }
+    });
+    
     saveMutation.mutate({
       productVariant: selectedVariant,
-      fieldConfigs,
+      fieldConfigs: transformedFieldConfigs,
       allowedCategories,
       allowedSubcategories,
     });
@@ -700,43 +772,175 @@ export default function UIConfigPage() {
                                   />
                                 </div>
                                 
-                                {/* Category path mapping for dropdown options */}
+                                {/* Product mapping for dropdown options */}
                                 {fc.enabled && fc.options && fc.options.length > 0 && (
                                   <div className="col-span-12 mt-2 pt-2 border-t">
-                                    <Label className="text-xs font-medium mb-2 block">Category Path Mappings</Label>
+                                    <Label className="text-xs font-medium mb-2 block">Product Mappings</Label>
                                     <div className="text-xs text-muted-foreground mb-2">
-                                      Map each option to category paths (e.g., pool_fence/frameless/glass_panels)
+                                      Map each option to categories, subcategories, or specific products
                                     </div>
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                       {fc.options.map((option) => {
                                         const paths = fc.optionPaths?.[option] || [];
+                                        const optionSubcats = (fc as any).optionSubcategories?.[option] || [];
+                                        const optionCodes = (fc as any).optionCodes?.[option] || [];
+                                        
                                         return (
-                                          <div key={option} className="space-y-1">
-                                            <div className="text-sm font-medium">{option}</div>
-                                            <div className="flex items-start gap-2">
-                                              <div className="flex-1">
-                                                <PathMultiSelect
-                                                  value={paths}
-                                                  onChange={(newPaths) => handleOptionPathsChange(fc.field, option, newPaths)}
-                                                  availablePaths={availablePaths}
-                                                  placeholder="Select category paths..."
-                                                  disabled={!fc.enabled}
-                                                />
+                                          <div key={option} className="space-y-2 p-3 border rounded-md bg-muted/30">
+                                            <div className="text-sm font-semibold">{option}</div>
+                                            
+                                            {/* Category Paths */}
+                                            <div className="space-y-1">
+                                              <Label className="text-xs">Category Paths</Label>
+                                              <div className="flex items-start gap-2">
+                                                <div className="flex-1">
+                                                  <PathMultiSelect
+                                                    value={paths}
+                                                    onChange={(newPaths) => handleOptionPathsChange(fc.field, option, newPaths)}
+                                                    availablePaths={availablePaths}
+                                                    placeholder="Select category paths..."
+                                                    disabled={!fc.enabled}
+                                                  />
+                                                </div>
+                                                <div className="flex gap-1 pt-1">
+                                                  {paths.map(path => {
+                                                    const count = pathCountByPath[path] ?? 0;
+                                                    return (
+                                                      <Badge
+                                                        key={path}
+                                                        variant={count > 0 ? "default" : "destructive"}
+                                                        className="text-xs"
+                                                      >
+                                                        {count}
+                                                      </Badge>
+                                                    );
+                                                  })}
+                                                </div>
                                               </div>
-                                              <div className="flex gap-1 pt-1">
-                                                {paths.map(path => {
-                                                  const count = pathCountByPath[path] ?? 0;
-                                                  return (
-                                                    <Badge
-                                                      key={path}
-                                                      variant={count > 0 ? "default" : "destructive"}
-                                                      className="text-xs"
-                                                    >
-                                                      {count}
+                                            </div>
+
+                                            {/* Subcategories */}
+                                            <div className="space-y-1">
+                                              <Label className="text-xs">Subcategories</Label>
+                                              <Popover>
+                                                <PopoverTrigger asChild>
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 w-full justify-start text-left font-normal"
+                                                    disabled={!fc.enabled}
+                                                  >
+                                                    {optionSubcats.length > 0 
+                                                      ? `${optionSubcats.length} selected`
+                                                      : "Select subcategories..."}
+                                                  </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-2" align="start">
+                                                  <div className="max-h-[200px] overflow-y-auto space-y-1">
+                                                    {subcategories.map(subcat => (
+                                                      <div key={subcat.id} className="flex items-center gap-2 p-1 hover:bg-muted rounded">
+                                                        <Checkbox
+                                                          checked={optionSubcats.includes(subcat.name)}
+                                                          onCheckedChange={(checked) => {
+                                                            const newSubcats = checked
+                                                              ? [...optionSubcats, subcat.name]
+                                                              : optionSubcats.filter(s => s !== subcat.name);
+                                                            setFieldConfigs(prev => 
+                                                              prev.map(field => {
+                                                                if (field.field === fc.field) {
+                                                                  const optionSubcategories = (field as any).optionSubcategories || {};
+                                                                  return {
+                                                                    ...field,
+                                                                    optionSubcategories: {
+                                                                      ...optionSubcategories,
+                                                                      [option]: newSubcats
+                                                                    }
+                                                                  };
+                                                                }
+                                                                return field;
+                                                              })
+                                                            );
+                                                          }}
+                                                        />
+                                                        <label className="text-sm flex-1 cursor-pointer">
+                                                          {subcat.name}
+                                                        </label>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </PopoverContent>
+                                              </Popover>
+                                              {optionSubcats.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {optionSubcats.map(subcat => (
+                                                    <Badge key={subcat} variant="secondary" className="text-xs">
+                                                      {subcat}
                                                     </Badge>
-                                                  );
-                                                })}
-                                              </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Product Codes */}
+                                            <div className="space-y-1">
+                                              <Label className="text-xs">Specific Products (SKU)</Label>
+                                              <Popover>
+                                                <PopoverTrigger asChild>
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 w-full justify-start text-left font-normal"
+                                                    disabled={!fc.enabled}
+                                                  >
+                                                    {optionCodes.length > 0 
+                                                      ? `${optionCodes.length} selected`
+                                                      : "Select product codes..."}
+                                                  </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[400px] p-2" align="start">
+                                                  <div className="max-h-[250px] overflow-y-auto space-y-1">
+                                                    {(products || []).map((prod: any) => (
+                                                      <div key={prod.id} className="flex items-center gap-2 p-1 hover:bg-muted rounded">
+                                                        <Checkbox
+                                                          checked={optionCodes.includes(prod.code)}
+                                                          onCheckedChange={(checked) => {
+                                                            const newCodes = checked
+                                                              ? [...optionCodes, prod.code]
+                                                              : optionCodes.filter(c => c !== prod.code);
+                                                            setFieldConfigs(prev => 
+                                                              prev.map(field => {
+                                                                if (field.field === fc.field) {
+                                                                  const optionCodes = (field as any).optionCodes || {};
+                                                                  return {
+                                                                    ...field,
+                                                                    optionCodes: {
+                                                                      ...optionCodes,
+                                                                      [option]: newCodes
+                                                                    }
+                                                                  };
+                                                                }
+                                                                return field;
+                                                              })
+                                                            );
+                                                          }}
+                                                        />
+                                                        <label className="text-xs flex-1 cursor-pointer">
+                                                          <span className="font-medium">{prod.code}</span> - {prod.description}
+                                                        </label>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </PopoverContent>
+                                              </Popover>
+                                              {optionCodes.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {optionCodes.map(code => (
+                                                    <Badge key={code} variant="secondary" className="text-xs">
+                                                      {code}
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         );
