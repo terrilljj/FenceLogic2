@@ -899,36 +899,65 @@ export default function UIConfigPage() {
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-[400px] p-2" align="start">
                                                   <div className="max-h-[250px] overflow-y-auto space-y-1">
-                                                    {(products || []).map((prod: any) => (
-                                                      <div key={prod.id} className="flex items-center gap-2 p-1 hover:bg-muted rounded">
-                                                        <Checkbox
-                                                          checked={optionCodes.includes(prod.code)}
-                                                          onCheckedChange={(checked) => {
-                                                            const newCodes = checked
-                                                              ? [...optionCodes, prod.code]
-                                                              : optionCodes.filter(c => c !== prod.code);
-                                                            setFieldConfigs(prev => 
-                                                              prev.map(field => {
-                                                                if (field.field === fc.field) {
-                                                                  const optionCodes = (field as any).optionCodes || {};
-                                                                  return {
-                                                                    ...field,
-                                                                    optionCodes: {
-                                                                      ...optionCodes,
-                                                                      [option]: newCodes
-                                                                    }
-                                                                  };
-                                                                }
-                                                                return field;
-                                                              })
-                                                            );
-                                                          }}
-                                                        />
-                                                        <label className="text-xs flex-1 cursor-pointer">
-                                                          <span className="font-medium">{prod.code}</span> - {prod.description}
-                                                        </label>
-                                                      </div>
-                                                    ))}
+                                                    {(() => {
+                                                      // Filter products based on selected category paths and subcategories
+                                                      const filteredProducts = (products || []).filter((prod: any) => {
+                                                        // If no filters selected, show all products
+                                                        if (paths.length === 0 && optionSubcats.length === 0) {
+                                                          return true;
+                                                        }
+                                                        
+                                                        // Check category paths - must match if any paths are selected
+                                                        const matchesPath = paths.length === 0 || 
+                                                          paths.some(path => prod.categoryPaths?.includes(path));
+                                                        
+                                                        // Check subcategories - must match if any subcategories are selected
+                                                        const matchesSubcat = optionSubcats.length === 0 || 
+                                                          optionSubcats.includes(prod.subcategory);
+                                                        
+                                                        // Product must match ALL active filters (AND logic)
+                                                        return matchesPath && matchesSubcat;
+                                                      });
+                                                      
+                                                      if (filteredProducts.length === 0) {
+                                                        return (
+                                                          <div className="text-xs text-muted-foreground p-2 text-center">
+                                                            No products match selected category paths or subcategories
+                                                          </div>
+                                                        );
+                                                      }
+                                                      
+                                                      return filteredProducts.map((prod: any) => (
+                                                        <div key={prod.id} className="flex items-center gap-2 p-1 hover:bg-muted rounded">
+                                                          <Checkbox
+                                                            checked={optionCodes.includes(prod.code)}
+                                                            onCheckedChange={(checked) => {
+                                                              const newCodes = checked
+                                                                ? [...optionCodes, prod.code]
+                                                                : optionCodes.filter(c => c !== prod.code);
+                                                              setFieldConfigs(prev => 
+                                                                prev.map(field => {
+                                                                  if (field.field === fc.field) {
+                                                                    const optionCodes = (field as any).optionCodes || {};
+                                                                    return {
+                                                                      ...field,
+                                                                      optionCodes: {
+                                                                        ...optionCodes,
+                                                                        [option]: newCodes
+                                                                      }
+                                                                    };
+                                                                  }
+                                                                  return field;
+                                                                })
+                                                              );
+                                                            }}
+                                                          />
+                                                          <label className="text-xs flex-1 cursor-pointer">
+                                                            <span className="font-medium">{prod.code}</span> - {prod.description}
+                                                          </label>
+                                                        </div>
+                                                      ));
+                                                    })()}
                                                   </div>
                                                 </PopoverContent>
                                               </Popover>
