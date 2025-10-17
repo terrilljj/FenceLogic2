@@ -789,35 +789,37 @@ export default function UIConfigPage() {
                                           <div key={option} className="space-y-2 p-3 border rounded-md bg-muted/30">
                                             <div className="text-sm font-semibold">{option}</div>
                                             
-                                            {/* Category Paths */}
-                                            <div className="space-y-1">
-                                              <Label className="text-xs">Category Paths</Label>
-                                              <div className="flex items-start gap-2">
-                                                <div className="flex-1">
-                                                  <PathMultiSelect
-                                                    value={paths}
-                                                    onChange={(newPaths) => handleOptionPathsChange(fc.field, option, newPaths)}
-                                                    availablePaths={availablePaths}
-                                                    placeholder="Select category paths..."
-                                                    disabled={!fc.enabled}
-                                                  />
-                                                </div>
-                                                <div className="flex gap-1 pt-1">
-                                                  {paths.map(path => {
-                                                    const count = pathCountByPath[path] ?? 0;
-                                                    return (
-                                                      <Badge
-                                                        key={path}
-                                                        variant={count > 0 ? "default" : "destructive"}
-                                                        className="text-xs"
-                                                      >
-                                                        {count}
-                                                      </Badge>
-                                                    );
-                                                  })}
+                                            {/* Category Paths - HIDDEN: Using subcategory-only mapping */}
+                                            {false && (
+                                              <div className="space-y-1">
+                                                <Label className="text-xs">Category Paths</Label>
+                                                <div className="flex items-start gap-2">
+                                                  <div className="flex-1">
+                                                    <PathMultiSelect
+                                                      value={paths}
+                                                      onChange={(newPaths) => handleOptionPathsChange(fc.field, option, newPaths)}
+                                                      availablePaths={availablePaths}
+                                                      placeholder="Select category paths..."
+                                                      disabled={!fc.enabled}
+                                                    />
+                                                  </div>
+                                                  <div className="flex gap-1 pt-1">
+                                                    {paths.map(path => {
+                                                      const count = pathCountByPath[path] ?? 0;
+                                                      return (
+                                                        <Badge
+                                                          key={path}
+                                                          variant={count > 0 ? "default" : "destructive"}
+                                                          className="text-xs"
+                                                        >
+                                                          {count}
+                                                        </Badge>
+                                                      );
+                                                    })}
+                                                  </div>
                                                 </div>
                                               </div>
-                                            </div>
+                                            )}
 
                                             {/* Subcategories */}
                                             <div className="space-y-1">
@@ -900,29 +902,21 @@ export default function UIConfigPage() {
                                                 <PopoverContent className="w-[400px] p-2" align="start">
                                                   <div className="max-h-[250px] overflow-y-auto space-y-1">
                                                     {(() => {
-                                                      // Filter products based on selected category paths and subcategories
+                                                      // Filter products based on selected subcategories only
                                                       const filteredProducts = (products || []).filter((prod: any) => {
-                                                        // If no filters selected, show all products
-                                                        if (paths.length === 0 && optionSubcats.length === 0) {
+                                                        // If no subcategories selected, show all products
+                                                        if (optionSubcats.length === 0) {
                                                           return true;
                                                         }
                                                         
-                                                        // Check category paths - must match if any paths are selected
-                                                        const matchesPath = paths.length === 0 || 
-                                                          paths.some(path => prod.categoryPaths?.includes(path));
-                                                        
-                                                        // Check subcategories - must match if any subcategories are selected
-                                                        const matchesSubcat = optionSubcats.length === 0 || 
-                                                          optionSubcats.includes(prod.subcategory);
-                                                        
-                                                        // Product must match ALL active filters (AND logic)
-                                                        return matchesPath && matchesSubcat;
+                                                        // Show only products in selected subcategories
+                                                        return optionSubcats.includes(prod.subcategory);
                                                       });
                                                       
                                                       if (filteredProducts.length === 0) {
                                                         return (
                                                           <div className="text-xs text-muted-foreground p-2 text-center">
-                                                            No products match selected category paths or subcategories
+                                                            No products match selected subcategories. Select subcategories first.
                                                           </div>
                                                         );
                                                       }
