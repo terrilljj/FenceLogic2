@@ -862,6 +862,8 @@ export type UIInputField =
   | "panel-height"
   | "finish"
   | "layout-mode"
+  | "hinge-panel-width"
+  | "gate-panel-width"
   | "post-type"
   | "gate-width-mm"
   | "hinge-panel-width-mm";

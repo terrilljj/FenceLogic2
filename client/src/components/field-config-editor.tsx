@@ -9,7 +9,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2, ChevronDown, ChevronRight, GripVertical } from "lucide-react";
-import type { UIFieldConfigWithRules } from "@shared/schema";
+import type { UIFieldConfigWithRules, UIInputField } from "@shared/schema";
+
+// Valid field names from schema
+const VALID_FIELD_NAMES: UIInputField[] = [
+  "section-length",
+  "left-gap",
+  "right-gap",
+  "max-panel-width",
+  "desired-gap",
+  "gate-config",
+  "raked-panels",
+  "custom-panel",
+  "glass-thickness",
+  "top-rail",
+  "spigot-hardware",
+  "channel-hardware",
+  "panel-height",
+  "finish",
+  "layout-mode",
+  "hinge-panel-width",
+  "gate-panel-width",
+  "post-type",
+  "gate-width-mm",
+  "hinge-panel-width-mm",
+];
 
 interface FieldConfigEditorProps {
   fields: UIFieldConfigWithRules[];
@@ -33,11 +57,11 @@ export function FieldConfigEditor({ fields, onChange, variantLabel }: FieldConfi
 
   const addField = () => {
     const newField: UIFieldConfigWithRules = {
-      field: `new-field-${Date.now()}` as any, // Will be updated by user to valid field name
+      field: "section-length", // Default to first valid field
       enabled: true,
       position: fields.length,
-      label: "New Field",
-      type: "standard",
+      label: "Section Length",
+      type: "number",
     };
     onChange([...fields, newField]);
     setExpandedFields(new Set([...Array.from(expandedFields), fields.length]));
@@ -101,7 +125,7 @@ export function FieldConfigEditor({ fields, onChange, variantLabel }: FieldConfi
         </Card>
       ) : (
         <div className="space-y-3">
-          {fields
+          {[...fields]
             .sort((a, b) => a.position - b.position)
             .map((field, index) => (
               <Card key={index} className="relative">
@@ -171,13 +195,21 @@ export function FieldConfigEditor({ fields, onChange, variantLabel }: FieldConfi
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor={`field-name-${index}`}>Field Name *</Label>
-                        <Input
-                          id={`field-name-${index}`}
+                        <Select
                           value={field.field}
-                          onChange={(e) => updateField(index, { field: e.target.value as any })}
-                          placeholder="e.g., glass-thickness"
-                          data-testid={`input-field-name-${index}`}
-                        />
+                          onValueChange={(value: UIInputField) => updateField(index, { field: value })}
+                        >
+                          <SelectTrigger id={`field-name-${index}`} data-testid={`select-field-name-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {VALID_FIELD_NAMES.map((fieldName) => (
+                              <SelectItem key={fieldName} value={fieldName}>
+                                {fieldName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`field-label-${index}`}>Display Label</Label>
