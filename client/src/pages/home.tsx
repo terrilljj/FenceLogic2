@@ -58,7 +58,7 @@ const productOptions: ProductOption[] = [
     id: "glass-bal-standoffs",
     type: "glass-balustrade",
     name: "Standoff Balustrade",
-    description: "Glass with standoff pins",
+    description: "15mm glass, 1280mm height, 50mm standoffs",
     visual: "standoff-glass"
   },
   {
