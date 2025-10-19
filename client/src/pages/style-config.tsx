@@ -257,42 +257,56 @@ export default function StyleConfig() {
                     <p className="text-sm mt-2">Import a CSV template to populate product mappings.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {productSlots.map((slot) => (
-                      <div
-                        key={slot.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover-elevate"
-                        data-testid={`slot-${slot.id}`}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{slot.productCode}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {slot.fieldKey}
-                            </Badge>
-                            {slot.selectorKey && (
-                              <Badge variant="secondary" className="text-xs">
-                                {slot.selectorKey}mm
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {slot.label || slot.product?.description || "No description"}
-                          </p>
+                  <div className="space-y-6">
+                    {Object.entries(
+                      productSlots.reduce((groups, slot) => {
+                        const key = slot.fieldKey;
+                        if (!groups[key]) groups[key] = [];
+                        groups[key].push(slot);
+                        return groups;
+                      }, {} as Record<string, typeof productSlots>)
+                    ).map(([fieldKey, slots]) => (
+                      <div key={fieldKey}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <h3 className="font-semibold text-lg">{fieldKey}</h3>
+                          <Badge variant="secondary">{slots.length} products</Badge>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {slot.product && (
-                            <Badge variant="outline" className="text-xs">
-                              ${slot.product.price}
-                            </Badge>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            data-testid={`button-delete-slot-${slot.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
-                          </Button>
+                        <div className="space-y-2">
+                          {slots.map((slot) => (
+                            <div
+                              key={slot.id}
+                              className="flex items-center justify-between p-3 border rounded-lg hover-elevate"
+                              data-testid={`slot-${slot.id}`}
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{slot.productCode}</span>
+                                  {slot.selectorKey && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {slot.selectorKey}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {slot.label || slot.product?.description || "No description"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {slot.product && (
+                                  <Badge variant="outline" className="text-xs">
+                                    ${slot.product.price}
+                                  </Badge>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  data-testid={`button-delete-slot-${slot.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))}
