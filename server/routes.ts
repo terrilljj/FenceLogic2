@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFenceDesignSchema, insertProductSchema, insertProductUIConfigSchema, insertCategorySchema, insertSubcategorySchema } from "@shared/schema";
+import { insertFenceDesignSchema, insertProductSchema, insertProductUIConfigSchema, insertCategorySchema, insertSubcategorySchema, PANEL_SIZE_REGISTRY, getAvailablePanelSizes, type ProductVariant } from "@shared/schema";
 import { z } from "zod";
 import { requireAdmin } from "./middleware/auth";
 import { createDebugUIConfigRouter } from "./routes/debug-ui-config";
@@ -67,6 +67,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting design:", error);
       res.status(500).json({ error: "Failed to delete design" });
+    }
+  });
+
+  // Public endpoint for fetching panel size configurations
+  app.get("/api/panel-sizes/:variant", async (req, res) => {
+    try {
+      const { variant } = req.params;
+      const configs = PANEL_SIZE_REGISTRY[variant as ProductVariant] || [];
+      res.json(configs);
+    } catch (error) {
+      console.error("Error fetching panel size configs:", error);
+      res.status(500).json({ error: "Failed to fetch panel size configs" });
+    }
+  });
+
+  // Public endpoint for fetching available panel sizes (flattened list)
+  app.get("/api/panel-sizes/:variant/:fieldName/sizes", async (req, res) => {
+    try {
+      const { variant, fieldName } = req.params;
+      const sizes = getAvailablePanelSizes(variant as ProductVariant, fieldName);
+      res.json(sizes);
+    } catch (error) {
+      console.error("Error fetching available sizes:", error);
+      res.status(500).json({ error: "Failed to fetch available sizes" });
     }
   });
 
