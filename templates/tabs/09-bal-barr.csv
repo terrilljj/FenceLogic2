@@ -1,0 +1,11 @@
+fence_style_id,section_id,section_label,section_order,variant_group_id,variant_group_label,variant_group_order,variant_id,variant_label,field_name,field_type,label,tooltip,unit,min,max,step,default_value,options,enabled,required,position,slot_prefix,slot_id,product_sku,product_description,product_price,lookup_rule
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,section-length,number,Section Length,Total length of fence section,mm,500,10000,50,3000,,TRUE,TRUE,1,,,,,,,none
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,left-gap,number,Left End Gap,Gap at left end of section,mm,0,150,5,50,,TRUE,TRUE,2,,,,,,,none
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,right-gap,number,Right End Gap,Gap at right end of section,mm,0,150,5,50,,TRUE,TRUE,3,,,,,,,none
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,desired-gap,number,Panel Gap,Desired gap between panels,mm,30,99,5,50,,TRUE,TRUE,4,,,,,,,none
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,max-panel-width,number,Max Panel Width,Maximum panel width constraint,mm,500,2000,50,2400,,TRUE,TRUE,5,,,,,,,none
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,min-panel-width,number,Min Panel Width,Minimum panel width constraint,mm,200,1000,50,250,,TRUE,FALSE,6,,,,,,,none
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,panel-height,select,Panel Height,Select panel height,,,,1000mm,1000mm,"1000mm,1200mm",TRUE,TRUE,7,BBARR,BBARR-1000-SB,BBARR-1000-SB,BARR Balustrade Panel 1000H Satin Black,265.00,exact_match
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,finish,select,Panel Finish,Select panel finish,,,,Satin Black,Satin Black,"Satin Black,Pearl White",TRUE,TRUE,8,,,,,,,none
+alu-bal-barr,panels,Panels,1,barr,BARR Panels,1,barr-panels,BARR Panels,layout-mode,select,Layout Mode,Panel layout strategy,,,,full-panels-cut-end,full-panels-cut-end,"full-panels-cut-end,equally-spaced",TRUE,TRUE,9,,,,,,,none
+alu-bal-barr,hardware,Posts,2,posts,Post Hardware,1,post-config,Post Configuration,post-type,select,Post Type,Select post type,,,,intermediate,intermediate,"start,end,intermediate",TRUE,TRUE,1,BBARRPOST,BBARRPOST-INTER,BBARRPOST-INTER-SB,BARR Balustrade Post Intermediate Satin Black,115.00,exact_match

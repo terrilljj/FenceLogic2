@@ -1,0 +1,7 @@
+fence_style_id,section_id,section_label,section_order,variant_group_id,variant_group_label,variant_group_order,variant_id,variant_label,field_name,field_type,label,tooltip,unit,min,max,step,default_value,options,enabled,required,position,slot_prefix,slot_id,product_sku,product_description,product_price,lookup_rule
+custom-frameless,calculator,Calculator Inputs,1,custom,Custom Layout,1,custom-config,Custom Configuration,section-length,number,Section Length,Total length of fence section,mm,500,10000,50,3000,,TRUE,TRUE,1,,,,,,,none
+custom-frameless,calculator,Calculator Inputs,1,custom,Custom Layout,1,custom-config,Custom Configuration,left-gap,number,Left End Gap,Gap at left end of section,mm,0,150,5,50,,TRUE,TRUE,2,,,,,,,none
+custom-frameless,calculator,Calculator Inputs,1,custom,Custom Layout,1,custom-config,Custom Configuration,right-gap,number,Right End Gap,Gap at right end of section,mm,0,150,5,50,,TRUE,TRUE,3,,,,,,,none
+custom-frameless,calculator,Calculator Inputs,1,custom,Custom Layout,1,custom-config,Custom Configuration,desired-gap,number,Panel Gap,Desired gap between panels,mm,30,99,5,50,,TRUE,TRUE,4,,,,,,,none
+custom-frameless,calculator,Calculator Inputs,1,custom,Custom Layout,1,custom-config,Custom Configuration,max-panel-width,number,Max Panel Width,Maximum panel width constraint,mm,500,2000,50,1200,,TRUE,TRUE,5,,,,,,,none
+custom-frameless,calculator,Calculator Inputs,1,custom,Custom Layout,1,custom-config,Custom Configuration,min-panel-width,number,Min Panel Width,Minimum panel width constraint,mm,200,1000,50,250,,TRUE,FALSE,6,,,,,,,none
