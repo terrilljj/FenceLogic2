@@ -41,10 +41,17 @@ const productOptions: ProductOption[] = [
     visual: "frameless-glass"
   },
   {
-    id: "glass-bal-channel",
+    id: "glass-bal-channel-std",
     type: "glass-balustrade",
-    name: "Channel Balustrade",
-    description: "Glass in aluminum channel",
+    name: "VersaTilt Channel Standard",
+    description: "12mm/15mm glass, 4200mm channel",
+    visual: "channel-glass"
+  },
+  {
+    id: "glass-bal-channel-hd",
+    type: "glass-balustrade",
+    name: "VersaTilt Channel Heavy Duty",
+    description: "17.52mm SGP glass, 3600mm channel",
     visual: "channel-glass"
   },
   {
