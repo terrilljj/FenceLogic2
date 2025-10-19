@@ -298,10 +298,11 @@ export default function SlotManager() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-24">Internal ID</TableHead>
-                        <TableHead className="w-64">Type/Label</TableHead>
-                        <TableHead>Product (SKU)</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead className="w-24">Status</TableHead>
+                        <TableHead className="w-48">Type/Label</TableHead>
+                        <TableHead className="w-32">SKU</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="w-24">Price</TableHead>
+                        <TableHead className="w-32">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -329,7 +330,7 @@ export default function SlotManager() {
                                   });
                                 }}
                               >
-                                <SelectTrigger data-testid={`select-label-${slot.internalId}`}>
+                                <SelectTrigger data-testid={`select-label-${slot.internalId}`} className="h-8 text-xs">
                                   <SelectValue placeholder="Select type..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -341,33 +342,32 @@ export default function SlotManager() {
                                 </SelectContent>
                               </Select>
                             </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {mappedProduct?.code || "—"}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {mappedProduct?.description || "—"}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {mappedProduct?.price || "—"}
+                            </TableCell>
                             <TableCell>
                               <Select
                                 value={slot.productId || ""}
                                 onValueChange={(value) => handleProductChange(slot.id, value)}
                                 disabled={!slot.label}
                               >
-                                <SelectTrigger data-testid={`select-product-${slot.internalId}`}>
-                                  <SelectValue placeholder={slot.label ? "Select product..." : "Select type first..."} />
+                                <SelectTrigger data-testid={`select-product-${slot.internalId}`} className="h-8 text-xs">
+                                  <SelectValue placeholder={slot.label ? (mappedProduct ? "Change..." : "Select...") : "Type first..."} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {filteredProducts.map((product: Product) => (
                                     <SelectItem key={product.id} value={product.id}>
-                                      {product.code}
+                                      {product.code} - {product.description}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {mappedProduct?.price || "—"}
-                            </TableCell>
-                            <TableCell>
-                              {slot.productId ? (
-                                <Badge variant="default">Mapped</Badge>
-                              ) : (
-                                <Badge variant="outline">Unmapped</Badge>
-                              )}
                             </TableCell>
                           </TableRow>
                         );
