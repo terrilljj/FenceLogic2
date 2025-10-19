@@ -90,7 +90,7 @@ export default function SlotManager() {
 
   // Generate slots mutation
   const generateSlotsMutation = useMutation({
-    mutationFn: async (params: { productVariant: string; fieldName: string; slotCount: number; prefix: string }) => {
+    mutationFn: async (params: { productVariant: string; fieldName: string }) => {
       const response = await fetch("/api/admin/product-slots/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -144,19 +144,13 @@ export default function SlotManager() {
 
   const handleFieldSelect = (fieldName: string) => {
     setSelectedField(fieldName);
-    const fieldDef = FIELD_DEFINITIONS[selectedVariant]?.find(f => f.fieldName === fieldName);
-    if (fieldDef) {
-      setSlotCount(fieldDef.defaultSlotCount);
-    }
-    // Set default prefix for this field
-    setSlotPrefix(DEFAULT_PREFIXES[fieldName] || fieldName.substring(0, 3).toUpperCase());
   };
 
   const handleGenerateSlots = () => {
-    if (!selectedField || slotCount < 1 || !slotPrefix) {
+    if (!selectedField) {
       toast({
         title: "Invalid Input",
-        description: "Please select a field and enter a valid slot count",
+        description: "Please select a field type",
         variant: "destructive",
       });
       return;
@@ -165,8 +159,6 @@ export default function SlotManager() {
     generateSlotsMutation.mutate({
       productVariant: selectedVariant,
       fieldName: selectedField,
-      slotCount,
-      prefix: slotPrefix,
     });
   };
 
@@ -217,15 +209,15 @@ export default function SlotManager() {
         {/* Field Configuration */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Field Configuration</CardTitle>
+            <CardTitle>Auto-Generate Slots</CardTitle>
             <CardDescription>
-              Configure slot count for each field type. 
+              Slots are auto-generated from panel size registry (250-2000mm in 50mm increments). 
               <span className="text-destructive font-medium"> Warning: Regenerating slots will delete all existing product mappings for this field.</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Field Type</Label>
                   <Select value={selectedField} onValueChange={handleFieldSelect}>
@@ -240,36 +232,15 @@ export default function SlotManager() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label>Unique Prefix</Label>
-                  <Input
-                    type="text"
-                    value={slotPrefix}
-                    onChange={(e) => setSlotPrefix(e.target.value.toUpperCase())}
-                    placeholder="GP"
-                    maxLength={10}
-                    data-testid="input-slot-prefix"
-                  />
-                </div>
-
-                <div>
-                  <Label>Number of Slots</Label>
-                  <Input
-                    type="number"
-                    value={slotCount || ""}
-                    onChange={(e) => setSlotCount(parseInt(e.target.value) || 0)}
-                    min={1}
-                    placeholder="36"
-                    data-testid="input-slot-count"
-                  />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {selectedField && "Panel sizes will be auto-generated from the shared registry"}
+                  </p>
                 </div>
 
                 <div className="flex items-end">
                   <Button
                     onClick={handleGenerateSlots}
-                    disabled={!selectedField || slotCount < 1 || generateSlotsMutation.isPending}
+                    disabled={!selectedField || generateSlotsMutation.isPending}
                     className="w-full"
                     data-testid="button-generate-slots"
                   >
@@ -281,7 +252,7 @@ export default function SlotManager() {
                     ) : (
                       <>
                         <Plus className="mr-2 h-4 w-4" />
-                        Generate Slots
+                        Auto-Generate Slots from Registry
                       </>
                     )}
                   </Button>
