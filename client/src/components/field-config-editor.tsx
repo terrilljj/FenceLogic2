@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,18 @@ interface FieldConfigEditorProps {
 export function FieldConfigEditor({ fields, onChange, variantLabel }: FieldConfigEditorProps) {
   const [expandedFields, setExpandedFields] = useState<Set<number>>(new Set([0]));
   const [editingField, setEditingField] = useState<number | null>(null);
+  const [optionsText, setOptionsText] = useState<Record<number, string>>({});
+
+  // Initialize options text from fields
+  useEffect(() => {
+    const initialOptionsText: Record<number, string> = {};
+    fields.forEach((field, index) => {
+      if (field.options) {
+        initialOptionsText[index] = field.options.join(", ");
+      }
+    });
+    setOptionsText(initialOptionsText);
+  }, [fields.length]); // Only reset when fields array changes size
 
   const toggleField = (index: number) => {
     const newExpanded = new Set(expandedFields);
@@ -360,12 +372,15 @@ export function FieldConfigEditor({ fields, onChange, variantLabel }: FieldConfi
                           <Label htmlFor={`field-options-${index}`}>Options (comma-separated)</Label>
                           <Input
                             id={`field-options-${index}`}
-                            value={field.options?.join(", ") || ""}
-                            onChange={(e) => 
+                            value={optionsText[index] || ""}
+                            onChange={(e) => {
+                              setOptionsText({ ...optionsText, [index]: e.target.value });
+                            }}
+                            onBlur={(e) => {
                               updateField(index, { 
                                 options: e.target.value.split(",").map(s => s.trim()).filter(Boolean) 
-                              })
-                            }
+                              });
+                            }}
                             placeholder="e.g., 12mm, 15mm"
                             data-testid={`input-options-${index}`}
                           />
