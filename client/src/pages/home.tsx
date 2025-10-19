@@ -27,10 +27,17 @@ const productOptions: ProductOption[] = [
     visual: "channel-glass"
   },
   {
-    id: "glass-bal-spigots",
+    id: "glass-bal-spigots-12mm",
     type: "glass-balustrade",
-    name: "Frameless Balustrade",
-    description: "Glass balustrade with spigots",
+    name: "Frameless Balustrade 12mm",
+    description: "970mm high, 12mm glass with spigots",
+    visual: "frameless-glass"
+  },
+  {
+    id: "glass-bal-spigots-15mm",
+    type: "glass-balustrade",
+    name: "Frameless Balustrade 15mm",
+    description: "1000mm high, 15mm glass with spigots",
     visual: "frameless-glass"
   },
   {

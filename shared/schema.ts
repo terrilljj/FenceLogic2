@@ -11,6 +11,8 @@ export type ProductVariant =
   | "glass-pool-spigots" 
   | "glass-pool-channel"
   | "glass-bal-spigots"
+  | "glass-bal-spigots-12mm"
+  | "glass-bal-spigots-15mm"
   | "glass-bal-channel"
   | "glass-bal-standoffs"
   | "alu-pool-tubular"
