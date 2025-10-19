@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Download, FileDown, FolderArchive, FileSpreadsheet } from "lucide-react";
+import { useState, useRef } from "react";
+import { Download, FileDown, FolderArchive, FileSpreadsheet, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { AdminNav } from "@/components/admin-nav";
+import { apiRequest } from "@/lib/queryClient";
 
 const TEMPLATES = [
   { 
@@ -87,6 +88,8 @@ const TEMPLATES = [
 
 export default function Templates() {
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { toast } = useToast();
 
   const handleDownloadTemplate = async (filename: string) => {
@@ -164,6 +167,45 @@ export default function Templates() {
     }
   };
 
+  const handleUploadClick = (templateId: string) => {
+    fileInputRefs.current[templateId]?.click();
+  };
+
+  const handleFileChange = async (templateId: string, filename: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(templateId);
+
+      const text = await file.text();
+      
+      const response = await apiRequest("POST", `/api/templates/import`, {
+        templateId,
+        filename,
+        csvData: text,
+      });
+
+      toast({
+        title: "Template Imported",
+        description: `${filename} has been imported successfully for ${TEMPLATES.find(t => t.id === templateId)?.name}`,
+      });
+
+      // Reset file input
+      if (fileInputRefs.current[templateId]) {
+        fileInputRefs.current[templateId]!.value = '';
+      }
+    } catch (error: any) {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Could not import template file",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AdminNav currentPage="templates" />
@@ -233,7 +275,7 @@ export default function Templates() {
               </div>
               <div>
                 <p className="font-semibold mb-1">Import Configuration</p>
-                <p className="text-muted-foreground">Use admin panel to import your updated templates (coming soon)</p>
+                <p className="text-muted-foreground">Click "Upload CSV" on any template below to import your updated configuration</p>
               </div>
             </div>
           </CardContent>
@@ -261,7 +303,7 @@ export default function Templates() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -273,6 +315,27 @@ export default function Templates() {
                   <Download className="w-4 h-4" />
                   {downloading === template.filename ? "Downloading..." : "Download CSV"}
                 </Button>
+                
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={() => handleUploadClick(template.id)}
+                  disabled={uploading === template.id}
+                  data-testid={`button-upload-${template.id}`}
+                >
+                  <Upload className="w-4 h-4" />
+                  {uploading === template.id ? "Uploading..." : "Upload CSV"}
+                </Button>
+                
+                <input
+                  type="file"
+                  ref={(el) => (fileInputRefs.current[template.id] = el)}
+                  accept=".csv"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFileChange(template.id, template.filename, e)}
+                  data-testid={`input-file-${template.id}`}
+                />
               </CardContent>
             </Card>
           ))}

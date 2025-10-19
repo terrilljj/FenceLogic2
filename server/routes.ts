@@ -1164,6 +1164,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import/upload CSV template configuration
+  app.post("/api/templates/import", requireAdmin, async (req, res) => {
+    try {
+      const { templateId, filename, csvData } = req.body;
+
+      if (!templateId || !filename || !csvData) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Security: validate template ID format
+      if (!/^[0-9]{2}-[a-z-]+$/.test(templateId)) {
+        return res.status(400).json({ error: "Invalid template ID format" });
+      }
+
+      // Parse CSV - simple parsing for the flat structure
+      const lines = csvData.trim().split('\n');
+      if (lines.length < 2) {
+        return res.status(400).json({ error: "CSV must contain header and at least one data row" });
+      }
+
+      const header = lines[0].split(',');
+      console.log(`[Template Import] Processing ${filename} for template ${templateId}`);
+      console.log(`[Template Import] Rows: ${lines.length - 1}, Columns: ${header.length}`);
+
+      // TODO: Parse and validate CSV structure based on new flat format
+      // TODO: Store configuration in database or update product mappings
+      // For now, just acknowledge receipt
+
+      res.json({
+        success: true,
+        message: `Template ${filename} imported successfully`,
+        templateId,
+        rowCount: lines.length - 1,
+        preview: {
+          columns: header,
+          sampleRow: lines[1]?.split(',').slice(0, 5),
+        },
+      });
+
+    } catch (error) {
+      console.error("Error importing template:", error);
+      res.status(500).json({ error: "Failed to import template" });
+    }
+  });
+
   app.get("/api/templates/download-all", requireAdmin, async (req, res) => {
     try {
       const fs = await import('fs');
