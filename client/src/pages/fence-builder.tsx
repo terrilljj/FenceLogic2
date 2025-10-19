@@ -35,6 +35,7 @@ export default function FenceLogic() {
   const urlType = urlParams.get("type") as ProductType | null;
   const urlVariant = urlParams.get("variant") as ProductVariant | null;
 
+  // Initialize design with defaults (will be updated when calculatorConfig loads)
   const [design, setDesign] = useState<FenceDesign>({
     name: "Untitled Design",
     productType: urlType || "glass-pool",
@@ -45,7 +46,7 @@ export default function FenceLogic() {
       {
         spanId: "A",
         length: 5000,
-        maxPanelWidth: (urlVariant === "custom-frameless") ? 1500 : 1200,
+        maxPanelWidth: 1200, // Will be updated from calculator config
         desiredGap: 50,
         spigotMounting: "base-plate",
         spigotColor: "polished",
@@ -108,15 +109,13 @@ export default function FenceLogic() {
 
   // Helper function to get default max panel width from calculator config
   const getDefaultMaxPanelWidth = () => {
-    if (design.productVariant === "custom-frameless") return 1500;
-    
-    // Get from calculator config if available
-    if (calculatorConfig?.maxPanelWidth) {
-      return calculatorConfig.maxPanelWidth;
+    // Get from calculator config field default if available
+    if (calculatorConfig?.fields?.maxPanelMm?.defaultValue) {
+      return calculatorConfig.fields.maxPanelMm.defaultValue;
     }
     
-    // Fallback to 1200 (default)
-    return 1200;
+    // Fallback to 1800 (database default)
+    return 1800;
   };
 
   // Save design mutation
@@ -177,17 +176,19 @@ export default function FenceLogic() {
 
   const handleShapeChange = useCallback((shape: FenceShape) => {
     setDesign((prev) => {
-      const newSpans = getSpansForShape(shape, prev.customSides);
+      const defaultMaxPanel = calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800;
+      const newSpans = getSpansForShape(shape, prev.customSides, defaultMaxPanel);
       return { ...prev, shape, spans: newSpans };
     });
-  }, []);
+  }, [calculatorConfig]);
 
   const handleCustomSidesChange = useCallback((customSides: number) => {
     setDesign((prev) => {
-      const newSpans = getSpansForShape(prev.shape, customSides);
+      const defaultMaxPanel = calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800;
+      const newSpans = getSpansForShape(prev.shape, customSides, defaultMaxPanel);
       return { ...prev, customSides, spans: newSpans };
     });
-  }, []);
+  }, [calculatorConfig]);
 
   const handleSpanUpdate = useCallback((spanId: string, updatedSpan: SpanConfig) => {
     setDesign((prev) => ({
@@ -293,6 +294,7 @@ export default function FenceLogic() {
   };
 
   const handleReset = () => {
+    const defaultMaxPanel = calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800;
     setDesign({
       name: "Untitled Design",
       productType: "glass-pool",
@@ -303,7 +305,7 @@ export default function FenceLogic() {
         {
           spanId: "A",
           length: 5000,
-          maxPanelWidth: 1200,
+          maxPanelWidth: defaultMaxPanel,
           desiredGap: 50,
           spigotMounting: "base-plate",
           spigotColor: "polished",
@@ -620,22 +622,11 @@ export default function FenceLogic() {
           <ProductSelector 
             currentVariant={design.productVariant}
             onSelectVariant={(type, variant) => {
-              setDesign((prev) => {
-                // Update maxPanelWidth for custom-frameless variant
-                const updatedSpans = variant === "custom-frameless"
-                  ? prev.spans.map(span => ({
-                      ...span,
-                      maxPanelWidth: 1500,
-                    }))
-                  : prev.spans;
-
-                return {
-                  ...prev,
-                  productType: type,
-                  productVariant: variant,
-                  spans: updatedSpans,
-                };
-              });
+              setDesign((prev) => ({
+                ...prev,
+                productType: type,
+                productVariant: variant,
+              }));
               setShowProductMockup(false);
               
               // Inform user if switching to balustrade (gates will be hidden but preserved)
@@ -654,10 +645,10 @@ export default function FenceLogic() {
   );
 }
 
-function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[] {
+function getSpansForShape(shape: FenceShape, customSides?: number, defaultMaxPanel = 1800): SpanConfig[] {
   const defaultSpan: Omit<SpanConfig, "spanId"> = {
     length: 5000,
-    maxPanelWidth: 1200,
+    maxPanelWidth: defaultMaxPanel,
     desiredGap: 50,
     spigotMounting: "base-plate",
     spigotColor: "polished",

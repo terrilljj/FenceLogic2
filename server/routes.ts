@@ -145,6 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           options: field.options,
           tooltip: field.tooltip,
           section: field.section,
+          productMapping: field.productMapping,
         };
       });
       
