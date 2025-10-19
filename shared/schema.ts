@@ -102,6 +102,107 @@ export function getGlassConstraints(variant: ProductVariant, thickness?: GlassTh
   return GLASS_CONSTRAINTS["12mm"];
 }
 
+// Panel Size Registry - Single source of truth for available panel sizes
+export interface PanelSizeConfig {
+  minWidth: number;
+  maxWidth: number;
+  increment: number;
+  fieldName: string;
+  prefix: string;
+  label: string;
+}
+
+export const PANEL_SIZE_REGISTRY: Partial<Record<ProductVariant, PanelSizeConfig[]>> = {
+  "glass-pool-spigots": [
+    {
+      minWidth: 250,
+      maxWidth: 2000,
+      increment: 50,
+      fieldName: "glass-panels",
+      prefix: "GP",
+      label: "Glass Panels"
+    }
+  ],
+  "glass-pool-channel": [
+    {
+      minWidth: 250,
+      maxWidth: 2000,
+      increment: 50,
+      fieldName: "glass-panels",
+      prefix: "GP",
+      label: "Glass Panels"
+    }
+  ],
+  "glass-bal-spigots": [
+    {
+      minWidth: 250,
+      maxWidth: 1400,
+      increment: 50,
+      fieldName: "glass-panels",
+      prefix: "GP",
+      label: "Glass Panels"
+    }
+  ],
+  "glass-bal-channel": [
+    {
+      minWidth: 250,
+      maxWidth: 1400,
+      increment: 50,
+      fieldName: "glass-panels",
+      prefix: "GP",
+      label: "Glass Panels"
+    }
+  ],
+  "glass-bal-standoffs": [
+    {
+      minWidth: 400,
+      maxWidth: 1200,
+      increment: 50,
+      fieldName: "glass-panels",
+      prefix: "GP",
+      label: "Glass Panels"
+    }
+  ],
+  "custom-frameless": [
+    {
+      minWidth: 250,
+      maxWidth: 2000,
+      increment: 50,
+      fieldName: "glass-panels",
+      prefix: "GP",
+      label: "Glass Panels"
+    }
+  ],
+};
+
+// Helper function to get available panel sizes for a product variant
+export function getAvailablePanelSizes(variant: ProductVariant, fieldName?: string): number[] {
+  const configs = PANEL_SIZE_REGISTRY[variant] || [];
+  
+  // Filter by field name if provided
+  const relevantConfigs = fieldName 
+    ? configs.filter(c => c.fieldName === fieldName)
+    : configs;
+  
+  // Generate all sizes from all matching configurations
+  const sizes: number[] = [];
+  for (const config of relevantConfigs) {
+    for (let width = config.minWidth; width <= config.maxWidth; width += config.increment) {
+      if (!sizes.includes(width)) {
+        sizes.push(width);
+      }
+    }
+  }
+  
+  return sizes.sort((a, b) => a - b);
+}
+
+// Helper function to get panel size configuration for a field
+export function getPanelSizeConfig(variant: ProductVariant, fieldName: string): PanelSizeConfig | null {
+  const configs = PANEL_SIZE_REGISTRY[variant] || [];
+  return configs.find(c => c.fieldName === fieldName) || null;
+}
+
 // Standoff diameter options
 export type StandoffDiameter = "50mm";
 
