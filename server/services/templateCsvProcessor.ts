@@ -89,6 +89,12 @@ export async function parseTemplateCSV(csvData: string): Promise<{
     const errors: string[] = [];
 
     for (let i = 0; i < records.length; i++) {
+      // Skip duplicate header rows
+      if (records[i].variable_type === 'variable_type' && records[i].label === 'label') {
+        console.log(`[CSV Parser] Skipping duplicate header row at line ${i + 2}`);
+        continue;
+      }
+
       try {
         const validated = CsvRowSchema.parse(records[i]);
         validatedRows.push(validated);
@@ -141,14 +147,22 @@ export function processTemplateRows(
         const sizeMm = row.size_mm ? parseInt(row.size_mm) : 0;
         const price = row.product_price ? parseFloat(row.product_price) : 0;
 
+        // Validate numeric fields
+        if (isNaN(sizeMm)) {
+          validationErrors.push(`Invalid size_mm for ${row.product_sku}: "${row.size_mm}"`);
+        }
+        if (isNaN(price)) {
+          validationErrors.push(`Invalid product_price for ${row.product_sku}: "${row.product_price}"`);
+        }
+
         productMappings.push({
           variableType: row.variable_type,
           label: row.label,
           slotPrefix: row.slot_prefix,
-          sizeMm,
+          sizeMm: isNaN(sizeMm) ? 0 : sizeMm,
           productSku: row.product_sku,
           productDescription: row.product_description || '',
-          productPrice: price,
+          productPrice: isNaN(price) ? 0 : price,
         });
       }
 
@@ -179,6 +193,12 @@ export function processTemplateRows(
 
       // Select fields (spigot colors, etc.)
       if (row.field_type === 'select' && row.product_sku) {
+        const price = row.product_price ? parseFloat(row.product_price) : 0;
+        
+        if (isNaN(price) && row.product_price) {
+          validationErrors.push(`Invalid product_price for ${row.product_sku}: "${row.product_price}"`);
+        }
+
         productMappings.push({
           variableType: row.variable_type,
           label: row.label,
@@ -186,7 +206,7 @@ export function processTemplateRows(
           sizeMm: 0, // Select fields don't have size
           productSku: row.product_sku,
           productDescription: row.product_description || '',
-          productPrice: row.product_price ? parseFloat(row.product_price) : 0,
+          productPrice: isNaN(price) ? 0 : price,
         });
       }
 

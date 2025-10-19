@@ -184,11 +184,23 @@ export default function Templates() {
         templateId,
         filename,
         csvData: text,
-      });
+      }) as any;
+
+      const created = response.summary?.productsCreated || 0;
+      const updated = response.summary?.productsUpdated || 0;
+      const errors = response.summary?.databaseErrors || 0;
+
+      let description = `${filename} imported: `;
+      const parts = [];
+      if (created > 0) parts.push(`${created} products created`);
+      if (updated > 0) parts.push(`${updated} products updated`);
+      if (errors > 0) parts.push(`${errors} errors`);
+      description += parts.join(', ');
 
       toast({
         title: "Template Imported",
-        description: `${filename} has been imported successfully for ${TEMPLATES.find(t => t.id === templateId)?.name}`,
+        description,
+        variant: errors > 0 ? "destructive" : "default",
       });
 
       // Reset file input
