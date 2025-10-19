@@ -343,10 +343,15 @@ export default function Products() {
     
     try {
       // Build full InsertProduct payload from existing product
+      // Only include valid category if it's in the allowed list, otherwise empty string
+      const validCategory = product.category && PRODUCT_CATEGORIES.includes(product.category as any) 
+        ? product.category 
+        : "";
+      
       const fullPayload: InsertProduct = {
         code: product.code,
         description: product.description,
-        category: product.category || "",
+        category: validCategory as any,
         subcategory: product.subcategory || "",
         price: product.price || "",
         weight: product.weight || "",
