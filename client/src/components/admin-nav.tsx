@@ -1,11 +1,11 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Package, Settings, Layers, LogOut, Sliders, Eye } from "lucide-react";
+import { Package, Settings, Layers, LogOut, Sliders, Eye, Fence } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminNavProps {
-  currentPage?: "products" | "categories" | "ui-config" | "ui-config-mockup" | "slot-manager" | "admin-settings";
+  currentPage?: "products" | "categories" | "ui-config" | "ui-config-mockup" | "slot-manager" | "admin-settings" | "fence-styles";
 }
 
 export function AdminNav({ currentPage }: AdminNavProps) {
@@ -61,14 +61,14 @@ export function AdminNav({ currentPage }: AdminNavProps) {
           UI Config
         </Button>
       </Link>
-      <Link href="/ui-config-mockup">
+      <Link href="/fence-styles">
         <Button
-          variant={currentPage === "ui-config-mockup" ? "default" : "outline"}
+          variant={currentPage === "fence-styles" ? "default" : "outline"}
           size="sm"
-          data-testid="nav-ui-config-mockup"
+          data-testid="nav-fence-styles"
         >
-          <Eye className="h-4 w-4 mr-2" />
-          Mockup
+          <Fence className="h-4 w-4 mr-2" />
+          Fence Styles
         </Button>
       </Link>
       <Link href="/slot-manager">

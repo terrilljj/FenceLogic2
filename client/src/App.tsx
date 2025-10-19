@@ -11,6 +11,7 @@ import AdminLogin from "@/pages/admin-login";
 import AdminSettings from "@/pages/admin-settings";
 import UIConfig from "@/pages/ui-config";
 import UIConfigMockup from "@/pages/ui-config-mockup";
+import FenceStyles from "@/pages/fence-styles";
 import CategoryManager from "@/pages/category-manager";
 import SlotManager from "@/pages/slot-manager";
 import NotFound from "@/pages/not-found";
@@ -57,6 +58,9 @@ function Router() {
       </Route>
       <Route path="/ui-config-mockup">
         {() => <ProtectedRoute component={UIConfigMockup} />}
+      </Route>
+      <Route path="/fence-styles">
+        {() => <ProtectedRoute component={FenceStyles} />}
       </Route>
       <Route path="/categories">
         {() => <ProtectedRoute component={CategoryManager} />}
