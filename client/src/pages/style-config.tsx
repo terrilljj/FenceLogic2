@@ -394,6 +394,11 @@ export default function StyleConfig() {
                                       <Badge variant="outline" className="text-xs">
                                         {field.fieldType}
                                       </Badge>
+                                      {field.productMapping && (
+                                        <Badge variant="secondary" className="text-xs font-mono">
+                                          DB: {field.productMapping}
+                                        </Badge>
+                                      )}
                                       <Badge variant={field.isVisible ? "default" : "secondary"} className="text-xs">
                                         {field.isVisible ? "Visible" : "Hidden"}
                                       </Badge>

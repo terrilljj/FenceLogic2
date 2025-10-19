@@ -783,6 +783,9 @@ export const styleCalculatorFields = pgTable("style_calculator_fields", {
   // Validation rules
   validationRules: jsonb("validation_rules"), // Custom validation logic
   
+  // Product mapping - links field to product category (e.g., "glass_panels", "gate_hardware")
+  productMapping: varchar("product_mapping", { length: 100 }), // DB field name for product lookup
+  
   // UI configuration
   displayOrder: integer("display_order").notNull().default(0),
   section: varchar("section", { length: 100 }), // Group fields into sections
