@@ -128,7 +128,7 @@ export function FieldConfigEditor({ fields, onChange, variantLabel }: FieldConfi
           {[...fields]
             .sort((a, b) => a.position - b.position)
             .map((field, index) => (
-              <Card key={index} className="relative">
+              <Card key={`${field.field}-${field.position}`} className="relative">
                 <CardHeader className="pb-3">
                   <div className="flex items-start gap-3">
                     <div className="flex flex-col gap-1 mt-1">
