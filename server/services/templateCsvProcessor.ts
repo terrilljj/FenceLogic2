@@ -145,7 +145,9 @@ export function processTemplateRows(
       // Product mappings (product type with SKU)
       if (row.field_type === 'product' && row.product_sku && row.slot_prefix) {
         const sizeMm = row.size_mm ? parseInt(row.size_mm) : 0;
-        const price = row.product_price ? parseFloat(row.product_price) : 0;
+        // Strip currency symbols and whitespace before parsing price
+        const cleanPrice = row.product_price ? row.product_price.replace(/[$,\s]/g, '') : '0';
+        const price = parseFloat(cleanPrice);
 
         // Validate numeric fields
         if (isNaN(sizeMm)) {
@@ -193,7 +195,9 @@ export function processTemplateRows(
 
       // Select fields (spigot colors, etc.)
       if (row.field_type === 'select' && row.product_sku) {
-        const price = row.product_price ? parseFloat(row.product_price) : 0;
+        // Strip currency symbols and whitespace before parsing price
+        const cleanPrice = row.product_price ? row.product_price.replace(/[$,\s]/g, '') : '0';
+        const price = parseFloat(cleanPrice);
         
         if (isNaN(price) && row.product_price) {
           validationErrors.push(`Invalid product_price for ${row.product_sku}: "${row.product_price}"`);
