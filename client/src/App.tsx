@@ -11,6 +11,7 @@ import AdminLogin from "@/pages/admin-login";
 import AdminSettings from "@/pages/admin-settings";
 import UIConfig from "@/pages/ui-config";
 import CategoryManager from "@/pages/category-manager";
+import SlotManager from "@/pages/slot-manager";
 import NotFound from "@/pages/not-found";
 
 // Protected route wrapper for admin pages
@@ -55,6 +56,9 @@ function Router() {
       </Route>
       <Route path="/categories">
         {() => <ProtectedRoute component={CategoryManager} />}
+      </Route>
+      <Route path="/slot-manager">
+        {() => <ProtectedRoute component={SlotManager} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

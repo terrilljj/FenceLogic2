@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet, LogOut, Settings } from "lucide-react";
+import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet, LogOut, Settings, Layers } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -332,6 +332,15 @@ export default function Products() {
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   UI Config
+                </Button>
+              </Link>
+              <Link href="/slot-manager">
+                <Button
+                  variant="outline"
+                  data-testid="button-slot-manager"
+                >
+                  <Layers className="w-4 h-4 mr-2" />
+                  Slot Manager
                 </Button>
               </Link>
               <Link href="/admin-settings">
