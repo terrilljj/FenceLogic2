@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Settings, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import type { FenceStyle } from "@shared/schema";
+import { AdminNav } from "@/components/admin-nav";
 
 export default function StylesList() {
   const { data: styles, isLoading } = useQuery<FenceStyle[]>({
@@ -22,11 +23,14 @@ export default function StylesList() {
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold">Fence Styles</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Configure calculator settings and product mappings for each fence style
-          </p>
+        <div className="container mx-auto px-4 py-4 space-y-4">
+          <AdminNav />
+          <div>
+            <h1 className="text-2xl font-bold">Fence Styles</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Configure calculator settings and product mappings for each fence style
+            </p>
+          </div>
         </div>
       </div>
 

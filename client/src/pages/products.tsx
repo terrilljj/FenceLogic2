@@ -138,12 +138,12 @@ export default function Products() {
   
   // Get unique categories and subcategories from products for filter dropdowns
   const uniqueCategories = useMemo(() => {
-    const cats = new Set(products.map(p => p.category).filter(Boolean));
+    const cats = new Set(products.map(p => p.category).filter((c): c is string => Boolean(c)));
     return Array.from(cats).sort();
   }, [products]);
   
   const uniqueSubcategories = useMemo(() => {
-    const subcats = new Set(products.map(p => p.subcategory).filter(Boolean));
+    const subcats = new Set(products.map(p => p.subcategory).filter((s): s is string => Boolean(s)));
     return Array.from(subcats).sort();
   }, [products]);
 

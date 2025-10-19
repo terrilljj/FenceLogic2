@@ -1203,6 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let productsCreated = 0;
       let productsUpdated = 0;
       let slotsCreated = 0;
+      let fieldsCreated = 0;
       const dbErrors: string[] = [];
       const productIdMap = new Map<string, string>(); // SKU -> product ID
 
@@ -1262,6 +1263,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         console.log(`[Template Import] Created ${slotsCreated} product slots for ${matchingStyle.label}`);
+        
+        // Create calculator fields for this style
+        console.log(`[Template Import] Creating calculator fields for ${matchingStyle.label}`);
+        
+        // Clear existing fields for this style
+        await storage.deleteStyleFields(matchingStyle.id);
+        
+        // Create new fields from calculator inputs
+        for (const input of processed.calculatorInputs) {
+          try {
+            await storage.createStyleField({
+              fenceStyleId: matchingStyle.id,
+              fieldKey: input.variableType,
+              label: input.label,
+              fieldType: 'number',
+              min: input.min?.toString() || null,
+              max: input.max?.toString() || null,
+              step: input.step?.toString() || null,
+              defaultValue: input.defaultValue?.toString() || null,
+              unit: input.unit || null,
+              displayOrder: fieldsCreated,
+              isVisible: 1,
+            });
+            fieldsCreated++;
+          } catch (error) {
+            console.error(`[Template Import] Failed to create field ${input.variableType}:`, error);
+          }
+        }
+        
+        console.log(`[Template Import] Created ${fieldsCreated} calculator fields for ${matchingStyle.label}`);
       } else {
         console.warn(`[Template Import] No fence style found with templateId: ${templateId}`);
       }
@@ -1273,10 +1304,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`  - Database Errors: ${dbErrors.length}`);
       }
 
+      const fieldsCreatedCount = matchingStyle ? fieldsCreated : 0;
+
       res.json({
         success: true,
         message: matchingStyle 
-          ? `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated, ${slotsCreated} slots linked to ${matchingStyle.label}`
+          ? `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated, ${slotsCreated} slots linked, ${fieldsCreatedCount} calculator fields created for ${matchingStyle.label}`
           : `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated (no matching fence style)`,
         templateId,
         fenceStyle: matchingStyle ? { id: matchingStyle.id, code: matchingStyle.code, label: matchingStyle.label } : null,
@@ -1286,6 +1319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           productsCreated,
           productsUpdated,
           slotsCreated: matchingStyle ? slotsCreated : 0,
+          fieldsCreated: fieldsCreatedCount,
           featureToggles: processed.featureToggles.length,
           gateConfigs: processed.gateConfigs.length,
           validationErrors: processed.validationErrors.length,

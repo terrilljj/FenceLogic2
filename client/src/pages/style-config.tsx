@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { FenceStyle, StyleProductSlot, StyleCalculatorField } from "@shared/schema";
 import { Link } from "wouter";
+import { AdminNav } from "@/components/admin-nav";
 
 interface StyleConfig {
   style: FenceStyle;
