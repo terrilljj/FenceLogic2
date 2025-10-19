@@ -68,6 +68,31 @@ export default function FenceLogic() {
     queryKey: ["/api/designs"],
   });
 
+  // Fetch slot mappings for current product variant
+  const { data: slotMappings = [] } = useQuery<Array<{
+    id: string;
+    internalId: string;
+    productVariant: string;
+    fieldName: string;
+    productId: string | null;
+    label: string | null;
+    product?: { code: string; description: string; price: string };
+  }>>({
+    queryKey: ["/api/admin/product-slots", design.productVariant],
+    enabled: !!design.productVariant,
+  });
+
+  // Fetch all products for slot lookups
+  const { data: products = [] } = useQuery<Array<{
+    id: string;
+    code: string;
+    description: string;
+    price: string;
+    subcategory: string;
+  }>>({
+    queryKey: ["/api/admin/products"],
+  });
+
   // Fetch UI config for current product variant
   const { data: uiConfig } = useQuery({
     queryKey: ["/api/ui-configs", design.productVariant],
@@ -342,8 +367,8 @@ export default function FenceLogic() {
   };
 
   const components = useMemo(() => {
-    return calculateComponents(design);
-  }, [design]);
+    return calculateComponents(design, slotMappings, products);
+  }, [design, slotMappings, products]);
 
   const progress = useMemo(() => {
     let completed = 0;
@@ -682,7 +707,32 @@ function getSpansForShape(shape: FenceShape, customSides?: number): SpanConfig[]
   }
 }
 
-function calculateComponents(design: FenceDesign): Component[] {
+function calculateComponents(
+  design: FenceDesign, 
+  slotMappings: Array<{ internalId: string; fieldName: string; productId: string | null; label: string | null }> = [],
+  products: Array<{ id: string; code: string; description: string; price: string }> = []
+): Component[] {
+  // Helper function to lookup product from slot mappings
+  const lookupProductFromSlot = (panelWidth: number, fieldName: string = "glass-panels"): { sku: string; description: string } | null => {
+    // Find slot that matches this panel width (internalId is formatted as width, e.g., "1400" for 1400mm)
+    const slot = slotMappings.find(s => 
+      s.fieldName === fieldName && 
+      s.internalId === String(panelWidth).padStart(4, '0')
+    );
+    
+    if (slot && slot.productId) {
+      const product = products.find(p => p.id === slot.productId);
+      if (product) {
+        return {
+          sku: product.code,
+          description: product.description
+        };
+      }
+    }
+    
+    return null; // No mapping found - will use fallback
+  };
+
   const components: Component[] = [];
   const isChannelSystem = design.productVariant === "glass-pool-channel";
   const isBladeFencing = design.productVariant === "alu-pool-blade";
@@ -966,11 +1016,24 @@ function calculateComponents(design: FenceDesign): Component[] {
         const panelType = panelTypes[index] || "standard";
         
         if (panelType === "standard") {
-          components.push({
-            qty: 1,
-            description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-            sku: `GP-${panelWidth}-1200-12`,
-          });
+          // Try to lookup product from slot mappings first
+          const mappedProduct = lookupProductFromSlot(panelWidth, "glass-panels");
+          
+          if (mappedProduct) {
+            // Use actual product from slot mapping
+            components.push({
+              qty: 1,
+              description: mappedProduct.description,
+              sku: mappedProduct.sku,
+            });
+          } else {
+            // Fallback to generated SKU
+            components.push({
+              qty: 1,
+              description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
+              sku: `GP-${panelWidth}-1200-12`,
+            });
+          }
         } else if (panelType === "raked") {
           // Determine if left or right raked
           const isLeftRaked = index === 0 && span.leftRakedPanel?.enabled;
