@@ -244,7 +244,14 @@ export default function StyleConfig() {
                       Products linked to this fence style via CSV import
                     </CardDescription>
                   </div>
-                  <Button size="sm" data-testid="button-add-product">
+                  <Button 
+                    size="sm" 
+                    data-testid="button-add-product"
+                    onClick={() => toast({
+                      title: "Add Product",
+                      description: "Use CSV template import to add products in bulk, or contact support for manual product mapping.",
+                    })}
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Product
                   </Button>
