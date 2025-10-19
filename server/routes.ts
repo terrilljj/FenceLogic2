@@ -822,6 +822,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fence UI Configuration routes - Hierarchical fence style configs
+  // Public endpoints for reading fence configs (used by fence-builder)
+  app.get("/api/fence-ui-configs", async (req, res) => {
+    try {
+      const configs = await storage.getAllFenceUIConfigs();
+      res.json(configs);
+    } catch (error) {
+      console.error("Error fetching fence UI configs:", error);
+      res.status(500).json({ error: "Failed to fetch fence UI configurations" });
+    }
+  });
+
+  app.get("/api/fence-ui-configs/:styleId", async (req, res) => {
+    try {
+      const config = await storage.getFenceUIConfig(req.params.styleId);
+      if (!config) {
+        return res.status(404).json({ error: "Fence style configuration not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching fence UI config:", error);
+      res.status(500).json({ error: "Failed to fetch fence UI configuration" });
+    }
+  });
+
+  // Admin-only endpoints for managing fence UI configs
+  app.get("/api/admin/fence-ui-configs", requireAdmin, async (req, res) => {
+    try {
+      const configs = await storage.getAllFenceUIConfigs();
+      res.json(configs);
+    } catch (error) {
+      console.error("Error fetching fence UI configs:", error);
+      res.status(500).json({ error: "Failed to fetch fence UI configurations" });
+    }
+  });
+
+  app.get("/api/admin/fence-ui-configs/:styleId", requireAdmin, async (req, res) => {
+    try {
+      const config = await storage.getFenceUIConfig(req.params.styleId);
+      if (!config) {
+        return res.status(404).json({ error: "Fence style configuration not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching fence UI config:", error);
+      res.status(500).json({ error: "Failed to fetch fence UI configuration" });
+    }
+  });
+
+  app.post("/api/admin/fence-ui-configs", requireAdmin, async (req, res) => {
+    try {
+      // TODO: Add validation with FenceStyleConfigSchema
+      const config = await storage.createOrUpdateFenceUIConfig(req.body);
+      res.json(config);
+    } catch (error) {
+      console.error("Error creating fence UI config:", error);
+      res.status(500).json({ error: "Failed to create fence UI configuration" });
+    }
+  });
+
+  app.put("/api/admin/fence-ui-configs/:styleId", requireAdmin, async (req, res) => {
+    try {
+      // TODO: Add validation with FenceStyleConfigSchema
+      const config = await storage.createOrUpdateFenceUIConfig({
+        ...req.body,
+        fenceStyleId: req.params.styleId,
+      });
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating fence UI config:", error);
+      res.status(500).json({ error: "Failed to update fence UI configuration" });
+    }
+  });
+
+  app.delete("/api/admin/fence-ui-configs/:styleId", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteFenceUIConfig(req.params.styleId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Fence style configuration not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting fence UI config:", error);
+      res.status(500).json({ error: "Failed to delete fence UI configuration" });
+    }
+  });
+
   // Product Slot routes (admin only)
   app.get("/api/admin/product-slots/:variant", requireAdmin, async (req, res) => {
     try {

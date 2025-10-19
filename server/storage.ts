@@ -1,4 +1,4 @@
-import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type ProductSlot, type InsertProductSlot, fenceDesigns, products, productUIConfigs, categories, subcategories, productSlots } from "@shared/schema";
+import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, type FenceUIConfig, type InsertFenceUIConfig, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type ProductSlot, type InsertProductSlot, fenceDesigns, products, productUIConfigs, fenceUIConfigs, categories, subcategories, productSlots } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, sql as sqlOp, and } from "drizzle-orm";
 
@@ -22,6 +22,12 @@ export interface IStorage {
   getAllUIConfigs(): Promise<ProductUIConfig[]>;
   createOrUpdateUIConfig(config: InsertProductUIConfig): Promise<ProductUIConfig>;
   deleteUIConfig(productVariant: string): Promise<boolean>;
+  
+  // Fence UI Configuration operations
+  getFenceUIConfig(fenceStyleId: string): Promise<FenceUIConfig | undefined>;
+  getAllFenceUIConfigs(): Promise<FenceUIConfig[]>;
+  createOrUpdateFenceUIConfig(config: InsertFenceUIConfig): Promise<FenceUIConfig>;
+  deleteFenceUIConfig(fenceStyleId: string): Promise<boolean>;
   
   // Category operations
   getCategory(id: string): Promise<Category | undefined>;
@@ -149,6 +155,52 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUIConfig(productVariant: string): Promise<boolean> {
     const result = await db.delete(productUIConfigs).where(eq(productUIConfigs.productVariant, productVariant));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Fence UI Configuration operations
+  async getFenceUIConfig(fenceStyleId: string): Promise<FenceUIConfig | undefined> {
+    const [config] = await db.select().from(fenceUIConfigs).where(eq(fenceUIConfigs.fenceStyleId, fenceStyleId));
+    return config || undefined;
+  }
+
+  async getAllFenceUIConfigs(): Promise<FenceUIConfig[]> {
+    return await db.select().from(fenceUIConfigs).orderBy(asc(fenceUIConfigs.displayName));
+  }
+
+  async createOrUpdateFenceUIConfig(insertConfig: InsertFenceUIConfig): Promise<FenceUIConfig> {
+    const existing = await this.getFenceUIConfig(insertConfig.fenceStyleId);
+    
+    if (existing) {
+      const [config] = await db
+        .update(fenceUIConfigs)
+        .set({ 
+          displayName: insertConfig.displayName,
+          productVariantRefs: insertConfig.productVariantRefs as any,
+          status: insertConfig.status,
+          config: insertConfig.config as any,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(fenceUIConfigs.fenceStyleId, insertConfig.fenceStyleId))
+        .returning();
+      return config;
+    } else {
+      const [config] = await db
+        .insert(fenceUIConfigs)
+        .values({
+          fenceStyleId: insertConfig.fenceStyleId,
+          displayName: insertConfig.displayName,
+          productVariantRefs: insertConfig.productVariantRefs as any,
+          status: insertConfig.status || 'active',
+          config: insertConfig.config as any,
+        })
+        .returning();
+      return config;
+    }
+  }
+
+  async deleteFenceUIConfig(fenceStyleId: string): Promise<boolean> {
+    const result = await db.delete(fenceUIConfigs).where(eq(fenceUIConfigs.fenceStyleId, fenceStyleId));
     return result.rowCount ? result.rowCount > 0 : false;
   }
   
