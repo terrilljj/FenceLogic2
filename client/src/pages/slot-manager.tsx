@@ -71,8 +71,6 @@ export default function SlotManager() {
   const { toast } = useToast();
   const [selectedVariant, setSelectedVariant] = useState<string>("glass-pool-spigots");
   const [selectedField, setSelectedField] = useState<string>("");
-  const [slotCount, setSlotCount] = useState<number>(0);
-  const [slotPrefix, setSlotPrefix] = useState<string>("");
 
   // Fetch all products for mapping
   const { data: products = [] } = useQuery<Product[]>({
@@ -99,11 +97,11 @@ export default function SlotManager() {
       if (!response.ok) throw new Error("Failed to generate slots");
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: { count: number }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/product-slots"] });
       toast({
         title: "Slots Generated",
-        description: `Successfully generated ${slotCount} slots for ${selectedField}`,
+        description: `Successfully auto-generated ${data.count} slots from panel size registry`,
       });
     },
     onError: (error: Error) => {
