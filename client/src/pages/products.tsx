@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation, Link } from "wouter";
@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet, LogOut, Settings, Layers } from "lucide-react";
+import { Pencil, Trash2, Plus, Package, Download, Upload, FileSpreadsheet, LogOut, Settings, Layers, Search, Filter, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +62,16 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [subcategoryFilter, setSubcategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState<{productId: string, field: string} | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   const handleLogout = async () => {
     try {
@@ -102,6 +112,40 @@ export default function Products() {
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
+  
+  // Filtered products
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      // Search filter (code or description)
+      const matchesSearch = searchQuery === "" || 
+        product.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Category filter
+      const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+      
+      // Subcategory filter
+      const matchesSubcategory = subcategoryFilter === "all" || product.subcategory === subcategoryFilter;
+      
+      // Status filter
+      const matchesStatus = statusFilter === "all" ||
+        (statusFilter === "active" && product.active === 1) ||
+        (statusFilter === "inactive" && product.active === 0);
+      
+      return matchesSearch && matchesCategory && matchesSubcategory && matchesStatus;
+    });
+  }, [products, searchQuery, categoryFilter, subcategoryFilter, statusFilter]);
+  
+  // Get unique categories and subcategories from products for filter dropdowns
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set(products.map(p => p.category).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [products]);
+  
+  const uniqueSubcategories = useMemo(() => {
+    const subcats = new Set(products.map(p => p.subcategory).filter(Boolean));
+    return Array.from(subcats).sort();
+  }, [products]);
 
   const createMutation = useMutation({
     mutationFn: (data: InsertProduct) => apiRequest("POST", "/api/products", data),
@@ -266,6 +310,75 @@ export default function Products() {
       deleteMutation.mutate(deleteProduct.id);
     }
   };
+  
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter("all");
+    setSubcategoryFilter("all");
+    setStatusFilter("all");
+  };
+  
+  // Inline editing handlers
+  const startEditing = (productId: string, field: string, currentValue: any) => {
+    setEditingCell({ productId, field });
+    setEditValue(currentValue?.toString() || "");
+  };
+  
+  const cancelEditing = () => {
+    setEditingCell(null);
+    setEditValue("");
+  };
+  
+  const saveInlineEdit = async (product: Product) => {
+    if (!editingCell) return;
+    
+    const field = editingCell.field;
+    let value: any = editValue;
+    
+    // Convert to appropriate type
+    if (field === "active") {
+      value = editValue === "Active" ? 1 : 0;
+    }
+    
+    try {
+      // Build full InsertProduct payload from existing product
+      const fullPayload: InsertProduct = {
+        code: product.code,
+        description: product.description,
+        category: product.category || "",
+        subcategory: product.subcategory || "",
+        price: product.price || "",
+        weight: product.weight || "",
+        dimensions: product.dimensions || "",
+        units: product.units || "",
+        tags: product.tags || [],
+        notes: product.notes || "",
+        imageUrl: product.imageUrl || "",
+        active: product.active,
+        // Override with the edited field
+        [field]: value,
+      };
+      
+      await updateMutation.mutateAsync({
+        id: product.id,
+        data: fullPayload,
+      });
+      
+      toast({
+        title: "Updated",
+        description: `${field} updated successfully`,
+      });
+      
+      cancelEditing();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update product",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -343,10 +456,75 @@ export default function Products() {
           <CardHeader>
             <CardTitle>All Products</CardTitle>
             <CardDescription>
-              {products.length} product{products.length !== 1 ? "s" : ""} in catalog
+              Showing {filteredProducts.length} of {products.length} product{products.length !== 1 ? "s" : ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Filters */}
+            {products.length > 0 && (
+              <div className="mb-6 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by code or description..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                      data-testid="input-search-products"
+                    />
+                  </div>
+                  
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-[180px]" data-testid="select-filter-category">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {uniqueCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
+                    <SelectTrigger className="w-[180px]" data-testid="select-filter-subcategory">
+                      <SelectValue placeholder="All Subcategories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Subcategories</SelectItem>
+                      {uniqueSubcategories.map((subcat) => (
+                        <SelectItem key={subcat} value={subcat}>{subcat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[140px]" data-testid="select-filter-status">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {(searchQuery || categoryFilter !== "all" || subcategoryFilter !== "all" || statusFilter !== "all") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearFilters}
+                      data-testid="button-clear-filters"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading products...</div>
             ) : products.length === 0 ? (
@@ -375,13 +553,55 @@ export default function Products() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((product) => (
+                    {filteredProducts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          No products match your filters
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredProducts.map((product) => (
                       <TableRow key={product.id} data-testid={`row-product-${product.id}`}>
                         <TableCell className="font-medium" data-testid={`text-code-${product.id}`}>
                           {product.code}
                         </TableCell>
-                        <TableCell data-testid={`text-description-${product.id}`}>
-                          {product.description}
+                        <TableCell 
+                          data-testid={`text-description-${product.id}`}
+                          onDoubleClick={() => startEditing(product.id, "description", product.description)}
+                          className="cursor-pointer hover:bg-muted/50 max-w-md"
+                        >
+                          {editingCell?.productId === product.id && editingCell?.field === "description" ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveInlineEdit(product);
+                                  if (e.key === "Escape") cancelEditing();
+                                }}
+                                autoFocus
+                                className="h-7"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2"
+                                onClick={() => saveInlineEdit(product)}
+                              >
+                                ✓
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2"
+                                onClick={cancelEditing}
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="block truncate">{product.description}</span>
+                          )}
                         </TableCell>
                         <TableCell data-testid={`text-category-${product.id}`}>
                           {product.category || "-"}
@@ -389,8 +609,43 @@ export default function Products() {
                         <TableCell data-testid={`text-subcategory-${product.id}`}>
                           {product.subcategory || "-"}
                         </TableCell>
-                        <TableCell data-testid={`text-price-${product.id}`}>
-                          {product.price || "-"}
+                        <TableCell 
+                          data-testid={`text-price-${product.id}`}
+                          onDoubleClick={() => startEditing(product.id, "price", product.price)}
+                          className="cursor-pointer hover:bg-muted/50"
+                        >
+                          {editingCell?.productId === product.id && editingCell?.field === "price" ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveInlineEdit(product);
+                                  if (e.key === "Escape") cancelEditing();
+                                }}
+                                autoFocus
+                                className="h-7 w-24"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2"
+                                onClick={() => saveInlineEdit(product)}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2"
+                                onClick={cancelEditing}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="block">{product.price || "-"}</span>
+                          )}
                         </TableCell>
                         <TableCell data-testid={`text-weight-${product.id}`}>
                           {product.weight || "-"}
@@ -430,7 +685,7 @@ export default function Products() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )))}
                   </TableBody>
                 </Table>
               </div>
