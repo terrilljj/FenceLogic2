@@ -1178,34 +1178,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid template ID format" });
       }
 
-      // Parse CSV - simple parsing for the flat structure
-      const lines = csvData.trim().split('\n');
-      if (lines.length < 2) {
-        return res.status(400).json({ error: "CSV must contain header and at least one data row" });
+      console.log(`[Template Import] Processing ${filename} for template ${templateId}`);
+
+      // Import and process CSV using dedicated service
+      const { importTemplateCSV } = await import('./services/templateCsvProcessor');
+      const processed = await importTemplateCSV(templateId, filename, csvData);
+
+      // Log processing results
+      console.log(`[Template Import] Processed successfully:`);
+      console.log(`  - Calculator Inputs: ${processed.calculatorInputs.length}`);
+      console.log(`  - Product Mappings: ${processed.productMappings.length}`);
+      console.log(`  - Feature Toggles: ${processed.featureToggles.length}`);
+      console.log(`  - Gate Configs: ${processed.gateConfigs.length}`);
+
+      if (processed.validationErrors.length > 0) {
+        console.warn(`[Template Import] Validation warnings:`, processed.validationErrors);
       }
 
-      const header = lines[0].split(',');
-      console.log(`[Template Import] Processing ${filename} for template ${templateId}`);
-      console.log(`[Template Import] Rows: ${lines.length - 1}, Columns: ${header.length}`);
-
-      // TODO: Parse and validate CSV structure based on new flat format
-      // TODO: Store configuration in database or update product mappings
-      // For now, just acknowledge receipt
+      // TODO: Store processed data in database
+      // For now, return detailed breakdown of what was parsed
 
       res.json({
         success: true,
-        message: `Template ${filename} imported successfully`,
+        message: `Template ${filename} imported and processed successfully`,
         templateId,
-        rowCount: lines.length - 1,
-        preview: {
-          columns: header,
-          sampleRow: lines[1]?.split(',').slice(0, 5),
+        summary: {
+          calculatorInputs: processed.calculatorInputs.length,
+          productMappings: processed.productMappings.length,
+          featureToggles: processed.featureToggles.length,
+          gateConfigs: processed.gateConfigs.length,
+          validationErrors: processed.validationErrors.length,
         },
+        data: {
+          calculatorInputs: processed.calculatorInputs,
+          productMappings: processed.productMappings.slice(0, 5), // Preview first 5
+          featureToggles: processed.featureToggles,
+          gateConfigs: processed.gateConfigs.slice(0, 3), // Preview first 3
+        },
+        validationErrors: processed.validationErrors,
       });
 
     } catch (error) {
       console.error("Error importing template:", error);
-      res.status(500).json({ error: "Failed to import template" });
+      const errorMessage = error instanceof Error ? error.message : "Failed to import template";
+      res.status(500).json({ error: errorMessage });
     }
   });
 
