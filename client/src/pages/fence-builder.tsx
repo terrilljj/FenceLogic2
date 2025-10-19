@@ -68,7 +68,7 @@ export default function FenceLogic() {
     queryKey: ["/api/designs"],
   });
 
-  // Fetch slot mappings for current product variant
+  // Fetch slot mappings for current product variant (public endpoint)
   const { data: slotMappings = [] } = useQuery<Array<{
     id: string;
     internalId: string;
@@ -78,19 +78,18 @@ export default function FenceLogic() {
     label: string | null;
     product?: { code: string; description: string; price: string };
   }>>({
-    queryKey: ["/api/admin/product-slots", design.productVariant],
+    queryKey: ["/api/product-slots", design.productVariant],
     enabled: !!design.productVariant,
   });
 
-  // Fetch all products for slot lookups
+  // Fetch all products for slot lookups (public endpoint)
   const { data: products = [] } = useQuery<Array<{
     id: string;
     code: string;
     description: string;
     price: string;
-    subcategory: string;
   }>>({
-    queryKey: ["/api/admin/products"],
+    queryKey: ["/api/products/lookup"],
   });
 
   // Fetch UI config for current product variant
@@ -714,20 +713,20 @@ function calculateComponents(
 ): Component[] {
   // Helper function to lookup product from slot mappings
   const lookupProductFromSlot = (panelWidth: number, fieldName: string = "glass-panels"): { sku: string; description: string } | null => {
-    // Find slot that matches this panel width (internalId is formatted as width, e.g., "1400" for 1400mm)
-    const slot = slotMappings.find(s => 
-      s.fieldName === fieldName && 
-      s.internalId === String(panelWidth).padStart(4, '0')
-    );
+    // Find products that match this panel width by checking the description or code
+    // Panel widths are typically mentioned in product descriptions like "1200mm" or "1200W"
+    const widthPattern = new RegExp(`\\b${panelWidth}(mm|W)\\b`, 'i');
     
-    if (slot && slot.productId) {
-      const product = products.find(p => p.id === slot.productId);
-      if (product) {
-        return {
-          sku: product.code,
-          description: product.description
-        };
-      }
+    const matchingProduct = products.find(p => {
+      // Check if product description or code contains the width
+      return widthPattern.test(p.description) || widthPattern.test(p.code);
+    });
+    
+    if (matchingProduct) {
+      return {
+        sku: matchingProduct.code,
+        description: matchingProduct.description
+      };
     }
     
     return null; // No mapping found - will use fallback

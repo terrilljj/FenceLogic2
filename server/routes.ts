@@ -70,6 +70,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint for fetching product slots (used by fence builder)
+  app.get("/api/product-slots/:variant", async (req, res) => {
+    try {
+      const slots = await storage.getAllSlotsByVariant(req.params.variant);
+      // Only return slots with mapped products (where productId is not null)
+      const mappedSlots = slots.filter(slot => slot.productId !== null);
+      res.json(mappedSlots);
+    } catch (error) {
+      console.error("Error fetching product slots:", error);
+      res.status(500).json({ error: "Failed to fetch product slots" });
+    }
+  });
+
   // Email quote endpoint
   app.post("/api/email-quote", async (req, res) => {
     try {
@@ -176,6 +189,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error calculating components:", error);
       res.status(500).json({ error: "Failed to calculate components" });
+    }
+  });
+
+  // Public endpoint for fetching products (used by fence builder)
+  // MUST be defined before /api/products/:id to avoid route collision
+  app.get("/api/products/lookup", async (req, res) => {
+    try {
+      const products = await storage.getAllProducts();
+      // Only return essential fields for public consumption
+      const publicProducts = products.map(p => ({
+        id: p.id,
+        code: p.code,
+        description: p.description,
+        price: p.price,
+      }));
+      res.json(publicProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
     }
   });
 
@@ -798,10 +830,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete existing slots for this variant+field
       await storage.deleteSlotsByVariantAndField(productVariant, fieldName);
 
-      // Generate new slots with numeric IDs
+      // Generate field prefix for unique internal IDs
+      const fieldPrefixes: Record<string, string> = {
+        "glass-panels": "GP",
+        "spigots": "SP",
+        "master-hinge-panels": "MHP",
+        "master-gate-panels": "MGP",
+        "soft-close-hinge-panels": "SCHP",
+        "soft-close-gates": "SCG",
+        "raked-panels": "RP",
+        "gate-hinges-master": "GHM",
+        "gate-hinges-soft-close": "GHSC",
+        "glass-gate-latches": "GGL",
+      };
+      
+      const prefix = fieldPrefixes[fieldName] || fieldName.substring(0, 3).toUpperCase();
+
+      // Generate new slots with prefixed numeric IDs
       const slots = [];
       for (let i = 1; i <= slotCount; i++) {
-        const internalId = String(i).padStart(4, '0'); // e.g., "0001", "0002"
+        const internalId = `${prefix}-${String(i).padStart(4, '0')}`; // e.g., "GP-0001", "RP-0002"
         slots.push({
           internalId,
           productVariant,
