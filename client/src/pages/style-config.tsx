@@ -8,12 +8,28 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Plus, Trash2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { FenceStyle, StyleProductSlot, StyleCalculatorField } from "@shared/schema";
 import { Link } from "wouter";
 import { AdminNav } from "@/components/admin-nav";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface StyleConfig {
   style: FenceStyle;
@@ -25,6 +41,8 @@ export default function StyleConfig() {
   const { styleCode } = useParams<{ styleCode: string }>();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("products");
+  const [editingField, setEditingField] = useState<StyleCalculatorField | null>(null);
+  const [fieldFormData, setFieldFormData] = useState<Partial<StyleCalculatorField>>({});
 
   // Fetch style configuration
   const { data: config, isLoading } = useQuery<StyleConfig>({
@@ -54,6 +72,30 @@ export default function StyleConfig() {
     },
   });
 
+  // Update calculator field mutation
+  const updateFieldMutation = useMutation({
+    mutationFn: async (updates: { fieldId: string; data: Partial<StyleCalculatorField> }) => {
+      if (!config?.style.id) return;
+      return apiRequest("PATCH", `/api/admin/styles/${config.style.id}/fields/${updates.fieldId}`, updates.data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/styles/${styleCode}/config`] });
+      toast({
+        title: "Success",
+        description: "Calculator field updated successfully",
+      });
+      setEditingField(null);
+      setFieldFormData({});
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update calculator field",
+      });
+    },
+  });
+
   const handleFeatureToggle = (feature: string, value: boolean) => {
     const updates: any = {};
     
@@ -73,6 +115,29 @@ export default function StyleConfig() {
     }
     
     updateStyleMutation.mutate(updates);
+  };
+
+  const handleEditField = (field: StyleCalculatorField) => {
+    setEditingField(field);
+    setFieldFormData({
+      label: field.label,
+      fieldType: field.fieldType,
+      min: field.min || undefined,
+      max: field.max || undefined,
+      step: field.step || undefined,
+      defaultValue: field.defaultValue || undefined,
+      unit: field.unit || undefined,
+      section: field.section || undefined,
+      tooltip: field.tooltip || undefined,
+    });
+  };
+
+  const handleSaveField = () => {
+    if (!editingField) return;
+    updateFieldMutation.mutate({
+      fieldId: editingField.id,
+      data: fieldFormData,
+    });
   };
 
   if (isLoading) {
@@ -259,6 +324,11 @@ export default function StyleConfig() {
                             <Badge variant="outline" className="text-xs">
                               {field.fieldType}
                             </Badge>
+                            {field.section && (
+                              <Badge variant="secondary" className="text-xs">
+                                {field.section}
+                              </Badge>
+                            )}
                           </div>
                           {(field.min || field.max || field.defaultValue) && (
                             <p className="text-sm text-muted-foreground mt-1">
@@ -268,13 +338,23 @@ export default function StyleConfig() {
                             </p>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          data-testid={`button-delete-field-${field.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditField(field)}
+                            data-testid={`button-edit-field-${field.id}`}
+                          >
+                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`button-delete-field-${field.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -359,6 +439,163 @@ export default function StyleConfig() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Calculator Field Dialog */}
+      <Dialog open={!!editingField} onOpenChange={(open) => !open && setEditingField(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Calculator Field</DialogTitle>
+            <DialogDescription>
+              Modify the field properties, constraints, and defaults
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Field Key (read-only) */}
+            <div>
+              <Label>Field Key</Label>
+              <Input
+                value={editingField?.fieldKey || ''}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+
+            {/* Label */}
+            <div>
+              <Label htmlFor="field-label">Label</Label>
+              <Input
+                id="field-label"
+                value={fieldFormData.label || ''}
+                onChange={(e) => setFieldFormData({ ...fieldFormData, label: e.target.value })}
+                placeholder="Section Length"
+              />
+            </div>
+
+            {/* Field Type */}
+            <div>
+              <Label htmlFor="field-type">Field Type</Label>
+              <Select
+                value={fieldFormData.fieldType || 'number'}
+                onValueChange={(value) => setFieldFormData({ ...fieldFormData, fieldType: value as 'number' | 'select' })}
+              >
+                <SelectTrigger id="field-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="select">Select</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Section */}
+            <div>
+              <Label htmlFor="field-section">Section</Label>
+              <Select
+                value={fieldFormData.section || 'Core'}
+                onValueChange={(value) => setFieldFormData({ ...fieldFormData, section: value })}
+              >
+                <SelectTrigger id="field-section">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Core">Core</SelectItem>
+                  <SelectItem value="Gate">Gate</SelectItem>
+                  <SelectItem value="Custom Panel">Custom Panel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Number field constraints */}
+            {fieldFormData.fieldType === 'number' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="field-min">Minimum</Label>
+                  <Input
+                    id="field-min"
+                    type="number"
+                    value={fieldFormData.min || ''}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, min: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="field-max">Maximum</Label>
+                  <Input
+                    id="field-max"
+                    type="number"
+                    value={fieldFormData.max || ''}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, max: e.target.value })}
+                    placeholder="10000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="field-step">Step</Label>
+                  <Input
+                    id="field-step"
+                    type="number"
+                    value={fieldFormData.step || ''}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, step: e.target.value })}
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="field-default">Default Value</Label>
+                  <Input
+                    id="field-default"
+                    type="number"
+                    value={fieldFormData.defaultValue || ''}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, defaultValue: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Unit */}
+            <div>
+              <Label htmlFor="field-unit">Unit</Label>
+              <Input
+                id="field-unit"
+                value={fieldFormData.unit || ''}
+                onChange={(e) => setFieldFormData({ ...fieldFormData, unit: e.target.value })}
+                placeholder="mm"
+              />
+            </div>
+
+            {/* Tooltip */}
+            <div>
+              <Label htmlFor="field-tooltip">Tooltip</Label>
+              <Textarea
+                id="field-tooltip"
+                value={fieldFormData.tooltip || ''}
+                onChange={(e) => setFieldFormData({ ...fieldFormData, tooltip: e.target.value })}
+                placeholder="Enter helpful tooltip text..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingField(null)}
+              data-testid="button-cancel-edit"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveField}
+              disabled={updateFieldMutation.isPending}
+              data-testid="button-save-field"
+            >
+              {updateFieldMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
