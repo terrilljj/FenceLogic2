@@ -1,0 +1,61 @@
+fence_style_id,section_id,section_label,section_order,variant_group_id,variant_group_label,variant_group_order,variant_id,variant_label,sku_prefix,field_name,field_type,label,tooltip,unit,min,max,step,default_value,options,enabled,required,position,slot_prefix,slot_count,lookup_rule
+# INSTRUCTIONS: Fill in one row per field for each variant in your fence style
+# fence_style_id: Must match ProductVariant enum (e.g., glass-pool-spigots)
+# section_id: panels, hardware, gates, etc.
+# variant_group_id: standard, raked, premium, etc.
+# variant_id: Unique ID for this specific product variant
+# field_name: Must use standard field names (see FIELD_NAMES below)
+# field_type: number, select, boolean
+# lookup_rule: width_match (matches panel width), exact_match (matches exact value), none
+
+# ===========================================
+# REQUIRED CALCULATOR FIELDS (Copy these 6 rows for EVERY variant)
+# ===========================================
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,section-length,number,Section Length,Total length of fence section,mm,500,10000,50,3000,,true,true,1,,,
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,left-gap,number,Left End Gap,Gap at left end of section,mm,0,150,5,50,,true,true,2,,,
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,right-gap,number,Right End Gap,Gap at right end of section,mm,0,150,5,50,,true,true,3,,,
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,desired-gap,number,Panel Gap,Desired gap between panels,mm,30,99,5,50,,true,true,4,,,
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,max-panel-width,number,Max Panel Width,Maximum panel width constraint,mm,500,2000,50,1200,,true,true,5,,,
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,min-panel-width,number,Min Panel Width,Minimum panel width constraint,mm,200,1000,50,250,,true,false,6,,,
+
+# ===========================================
+# PRODUCT SELECTION FIELDS (Add as needed for your fence type)
+# ===========================================
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,glass-thickness,select,Glass Thickness,Select glass panel thickness,,,,,12mm,"12mm,15mm,18mm",true,true,7,GP,40,width_match
+YOUR-FENCE-ID,panels,Panels,1,standard,Standard,1,standard-panels,Standard Panels,GP,panel-height,number,Panel Height,Glass panel height,mm,900,1500,50,1200,,true,true,8,,,
+YOUR-FENCE-ID,hardware,Hardware,2,spigots,Spigots,1,spigot-config,Spigot Hardware,SP,spigot-hardware,select,Spigot Finish,Select spigot finish,,,,,Satin,"Polished,Satin,Black",true,true,1,SP,3,exact_match
+
+# ===========================================
+# GATE FIELDS (Optional - add if fence supports gates)
+# ===========================================
+YOUR-FENCE-ID,gates,Gates,3,gate-master,Gate Master,1,gate-panels,Gate Panels,GM,gate-enabled,boolean,Enable Gate,Add a gate to this section,,,,,false,,true,false,1,,,
+YOUR-FENCE-ID,gates,Gates,3,gate-master,Gate Master,1,gate-panels,Gate Panels,GM,gate-width,number,Gate Width,Width of gate panel,mm,600,1200,50,900,,true,false,2,,,
+YOUR-FENCE-ID,gates,Gates,3,gate-master,Gate Master,1,gate-panels,Gate Panels,GM,hinge-panel-width,number,Hinge Panel Width,Width of hinge panel (glass-to-glass only),mm,900,1200,50,1200,,true,false,3,,,
+YOUR-FENCE-ID,gates,Gates,3,gate-master,Gate Master,1,gate-panels,Gate Panels,GM,hinge-gap,number,Hinge Gap,Gap at hinge side,mm,6,15,1,8,,true,false,4,,,
+YOUR-FENCE-ID,gates,Gates,3,gate-master,Gate Master,1,gate-panels,Gate Panels,GM,latch-gap,number,Latch Gap,Gap at latch side,mm,6,15,1,8,,true,false,5,,,
+YOUR-FENCE-ID,gates,Gates,3,gate-master,Gate Master,1,gate-panels,Gate Panels,GM,gate-mount-mode,select,Mount Mode,How gate is mounted,,,,,GLASS_TO_GLASS,"GLASS_TO_GLASS,POST,WALL",true,false,6,,,
+YOUR-FENCE-ID,gates,Gates,3,gate-master,Gate Master,1,gate-panels,Gate Panels,GM,gate-hinge-side,select,Hinge Side,Which side has the hinge,,,,,LEFT,"LEFT,RIGHT",true,false,7,,,
+
+# ===========================================
+# STANDARD FIELD NAMES REFERENCE
+# ===========================================
+# Calculator Inputs (Required):
+#   section-length, left-gap, right-gap, desired-gap, max-panel-width, min-panel-width
+# 
+# Gate Configuration (Optional):
+#   gate-enabled, gate-width, hinge-panel-width, hinge-gap, latch-gap, gate-mount-mode, gate-hinge-side, gate-position
+#
+# Custom Panel (Optional):
+#   custom-panel-enabled, custom-panel-width, custom-panel-height, custom-panel-position
+#
+# Glass Products:
+#   glass-thickness, panel-height
+#
+# Hardware:
+#   spigot-hardware, channel-hardware, standoff-hardware, finish
+#
+# Aluminium:
+#   panel-height, finish, slat-spacing
+#
+# PVC:
+#   panel-height, finish, rail-count
