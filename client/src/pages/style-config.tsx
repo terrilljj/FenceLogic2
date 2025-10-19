@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, ArrowLeft, Save, Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Plus, Trash2, Pencil, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { FenceStyle, StyleProductSlot, StyleCalculatorField } from "@shared/schema";
@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface StyleConfig {
   style: FenceStyle;
@@ -43,6 +44,7 @@ export default function StyleConfig() {
   const [activeTab, setActiveTab] = useState("products");
   const [editingField, setEditingField] = useState<StyleCalculatorField | null>(null);
   const [fieldFormData, setFieldFormData] = useState<Partial<StyleCalculatorField>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   // Fetch style configuration
   const { data: config, isLoading } = useQuery<StyleConfig>({
@@ -111,6 +113,9 @@ export default function StyleConfig() {
         break;
       case "customWidth":
         updates.enableCustomWidth = value ? 1 : 0;
+        break;
+      case "rakedPanel":
+        updates.enableRakedPanel = value ? 1 : 0;
         break;
     }
     
@@ -347,51 +352,90 @@ export default function StyleConfig() {
                     <p className="text-sm mt-2">Add fields to define calculator inputs and constraints.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {fields.map((field) => (
-                      <div
-                        key={field.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover-elevate"
-                        data-testid={`field-${field.id}`}
+                  <div className="space-y-4">
+                    {Object.entries(
+                      fields.reduce((groups, field) => {
+                        const section = field.section || "Other";
+                        if (!groups[section]) groups[section] = [];
+                        groups[section].push(field);
+                        return groups;
+                      }, {} as Record<string, typeof fields>)
+                    ).map(([section, sectionFields]) => (
+                      <Collapsible
+                        key={section}
+                        open={expandedSections[section] ?? true}
+                        onOpenChange={(open) => setExpandedSections({ ...expandedSections, [section]: open })}
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{field.label}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {field.fieldType}
-                            </Badge>
-                            {field.section && (
-                              <Badge variant="secondary" className="text-xs">
-                                {field.section}
-                              </Badge>
-                            )}
-                          </div>
-                          {(field.min || field.max || field.defaultValue) && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {field.min && `Min: ${field.min}${field.unit || ''}`}
-                              {field.max && ` • Max: ${field.max}${field.unit || ''}`}
-                              {field.defaultValue && ` • Default: ${field.defaultValue}${field.unit || ''}`}
-                            </p>
-                          )}
+                        <div className="border rounded-lg">
+                          <CollapsibleTrigger className="w-full">
+                            <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <ChevronDown
+                                  className={`h-4 w-4 transition-transform ${
+                                    expandedSections[section] === false ? '-rotate-90' : ''
+                                  }`}
+                                />
+                                <h3 className="font-semibold text-lg">{section}</h3>
+                                <Badge variant="secondary">{sectionFields.length} fields</Badge>
+                              </div>
+                            </div>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="border-t">
+                              {sectionFields.map((field) => (
+                                <div
+                                  key={field.id}
+                                  className="flex items-center justify-between p-3 border-b last:border-b-0 hover-elevate"
+                                  data-testid={`field-${field.id}`}
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{field.label}</span>
+                                      <Badge variant="outline" className="text-xs">
+                                        {field.fieldType}
+                                      </Badge>
+                                      <Badge variant={field.isVisible ? "default" : "secondary"} className="text-xs">
+                                        {field.isVisible ? "Visible" : "Hidden"}
+                                      </Badge>
+                                    </div>
+                                    {(field.min || field.max || field.defaultValue) && (
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        {field.min && `Min: ${field.min}${field.unit || ''}`}
+                                        {field.max && ` • Max: ${field.max}${field.unit || ''}`}
+                                        {field.defaultValue && ` • Default: ${field.defaultValue}${field.unit || ''}`}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                      <Label htmlFor={`enable-${field.id}`} className="text-sm">Enable</Label>
+                                      <Switch
+                                        id={`enable-${field.id}`}
+                                        checked={field.isVisible === 1}
+                                        onCheckedChange={(checked) => {
+                                          updateFieldMutation.mutate({
+                                            fieldId: field.id,
+                                            data: { isVisible: checked ? 1 : 0 },
+                                          });
+                                        }}
+                                        data-testid={`switch-field-${field.id}`}
+                                      />
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEditField(field)}
+                                      data-testid={`button-edit-field-${field.id}`}
+                                    >
+                                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditField(field)}
-                            data-testid={`button-edit-field-${field.id}`}
-                          >
-                            <Pencil className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            data-testid={`button-delete-field-${field.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </div>
-                      </div>
+                      </Collapsible>
                     ))}
                   </div>
                 )}
@@ -467,6 +511,21 @@ export default function StyleConfig() {
                       checked={style.enableCustomWidth === 1}
                       onCheckedChange={(checked) => handleFeatureToggle("customWidth", checked)}
                       data-testid="switch-custom-width"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="enable-raked-panel">Enable Raked Panels</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Allow raked panel configuration (1200mm width, 1400-1800mm heights)
+                      </p>
+                    </div>
+                    <Switch
+                      id="enable-raked-panel"
+                      checked={style.enableRakedPanel === 1}
+                      onCheckedChange={(checked) => handleFeatureToggle("rakedPanel", checked)}
+                      data-testid="switch-raked-panel"
                     />
                   </div>
                 </div>

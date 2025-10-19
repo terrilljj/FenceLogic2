@@ -739,6 +739,7 @@ export const fenceStyles = pgTable("fence_styles", {
   enableTopRail: integer("enable_top_rail").notNull().default(0), // 1 = top rail enabled
   enableHingePanel: integer("enable_hinge_panel").notNull().default(0), // 1 = hinge panels enabled
   enableCustomWidth: integer("enable_custom_width").notNull().default(0), // 1 = custom width panels enabled
+  enableRakedPanel: integer("enable_raked_panel").notNull().default(0), // 1 = raked panels enabled
   
   // Additional features stored as JSON for flexibility
   features: jsonb("features"), // e.g., { "enableRaked": true, "enableStandoffs": false }

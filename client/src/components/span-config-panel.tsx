@@ -39,11 +39,17 @@ export function SpanConfigPanel({
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
 
   // Helper function to check if a field is enabled in calculator config
-  const isFieldEnabled = (fieldName: string): boolean => {
+  const isFieldEnabled = (fieldKey: string): boolean => {
     // If no config, default to enabled
     if (!calculatorConfig?.fields) return true;
     // Check if field exists in config - if it exists, it's enabled
-    return fieldName in calculatorConfig.fields;
+    return fieldKey in calculatorConfig.fields;
+  };
+  
+  // Helper to check if a section is enabled (checks if any field from that section exists)
+  const isSectionEnabled = (section: string): boolean => {
+    if (!calculatorConfig?.fields) return true;
+    return Object.values(calculatorConfig.fields).some((field: any) => field.section === section);
   };
 
   const updateSpan = (updates: Partial<SpanConfig>) => {
@@ -1371,7 +1377,7 @@ export function SpanConfigPanel({
           {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
-                {showLeftGap && isFieldEnabled("left-gap") && (
+                {showLeftGap && isFieldEnabled("startGapMm") && (
                   <div className="space-y-1">
                     <GapSlider
                       label="Left Gap"
@@ -1388,7 +1394,7 @@ export function SpanConfigPanel({
                   </div>
                 )}
 
-                {showRightGap && isFieldEnabled("right-gap") && (
+                {showRightGap && isFieldEnabled("endGapMm") && (
                   <div className="space-y-1">
                     <GapSlider
                       label="Right Gap"
@@ -1551,7 +1557,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, and custom-frameless */}
-          {(isFieldEnabled("max-panel-width") || isFieldEnabled("desired-gap")) && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && productVariant !== "custom-frameless" && (
+          {(isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Panel Configuration</h4>
@@ -1559,7 +1565,7 @@ export function SpanConfigPanel({
               </div>
               
               <div className="grid grid-cols-3 gap-4">
-                {isFieldEnabled("max-panel-width") ? (
+                {isFieldEnabled("maxPanelMm") ? (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Max Panel Width</Label>
                     <Select
@@ -1603,7 +1609,7 @@ export function SpanConfigPanel({
               </div>
 
               {/* Gap Slider - Adjusts panel widths */}
-              {isFieldEnabled("desired-gap") && (
+              {isFieldEnabled("betweenGapMm") && (
                 <GapSlider
                   label="Desired Gap Between Panels"
                   value={span.desiredGap}
@@ -1693,7 +1699,7 @@ export function SpanConfigPanel({
           ) : null}
 
           {/* Gate Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
-          {isFieldEnabled("gate-config") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1748,7 +1754,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Raked Panels Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
-          {isFieldEnabled("raked-panels") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
@@ -1883,7 +1889,7 @@ export function SpanConfigPanel({
 
 
           {/* Custom Panel - Hide for BARR, Blade, and Tubular */}
-          {isFieldEnabled("custom-panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {isSectionEnabled("Custom Panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-3 pt-4 border-t border-card-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1994,7 +2000,7 @@ export function SpanConfigPanel({
           ) : null}
 
           {/* Gate Configuration - Moved to bottom */}
-          {isFieldEnabled("gate-config") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && (
+          {isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2049,7 +2055,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Raked Panels - Moved to bottom */}
-          {isFieldEnabled("raked-panels") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && (
+          {isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>

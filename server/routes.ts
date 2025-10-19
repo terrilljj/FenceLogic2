@@ -164,6 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           enableTopRail: Boolean(style.enableTopRail),
           enableHingePanel: Boolean(style.enableHingePanel),
           enableCustomWidth: Boolean(style.enableCustomWidth),
+          enableRakedPanel: Boolean(style.enableRakedPanel),
         },
         
         // Field configurations
