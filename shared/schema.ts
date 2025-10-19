@@ -842,6 +842,34 @@ export const insertStyleProductSlotSchema = createInsertSchema(styleProductSlots
 export type InsertStyleProductSlot = z.infer<typeof insertStyleProductSlotSchema>;
 export type StyleProductSlot = typeof styleProductSlots.$inferSelect;
 
+// Style Field Constraints - Conditional constraints based on other field values
+// Example: maxPanelMm depends on glassThickness (12mm→1500mm, 15mm→1400mm)
+export const styleFieldConstraints = pgTable("style_field_constraints", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fenceStyleId: varchar("fence_style_id", { length: 100 }).notNull(), // FK to fence_styles
+  targetFieldKey: varchar("target_field_key", { length: 100 }).notNull(), // Field to constrain (e.g., "maxPanelMm")
+  controllingFieldKey: varchar("controlling_field_key", { length: 100 }).notNull(), // Field that controls constraint (e.g., "glassThickness")
+  controllingValue: text("controlling_value").notNull(), // Value that triggers constraint (e.g., "12mm")
+  
+  // Constraint overrides - apply when condition matches
+  constraintOverrides: jsonb("constraint_overrides").notNull(), // { "max": "1500", "min": "300", "glassSpec": "12x970" }
+  
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: integer("is_active").notNull().default(1),
+  
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStyleFieldConstraintSchema = createInsertSchema(styleFieldConstraints).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertStyleFieldConstraint = z.infer<typeof insertStyleFieldConstraintSchema>;
+export type StyleFieldConstraint = typeof styleFieldConstraints.$inferSelect;
+
 // Helper function to get gate gaps based on hardware and mounting type
 export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall"): { hingeGap: number; latchGap: number } {
   if (hardware === "master") {
