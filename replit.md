@@ -5,9 +5,11 @@
 Fence Logic is a web-based configurator tool for designing custom fencing and balustrade systems. It offers interactive visualization and precise configuration controls, allowing users to create fence layouts, specify spans and gates, and generate automatic component lists. The tool supports various product types, including Glass Pool Fencing, Glass Balustrade, Aluminium Fencing, and PVC Fencing, with product-specific options and multiple fence shapes. Its primary goal is to streamline the design process and provide accurate material calculations.
 
 **New Centralized Configuration System (Oct 2025):**
-- Fence styles managed via database (`fence_styles` table) with feature toggles (gates, top rail, hinge panels, custom width)
+- Fence styles managed via database (`fence_styles` table) with feature toggles (gates, top rail, hinge panels, custom width) and panel width constraints (minPanelWidth, maxPanelWidth)
 - Product mappings use slot-based system (`style_product_slots`) allowing products to be reused across multiple styles
-- Calculator fields configured per style (`style_calculator_fields`) with min/max/defaults
+- **Calculator fields are database entries** (`style_calculator_fields`) that determine what calculations each style can perform - NOT from CSV imports
+- Each calculator field includes: type (number/select), label, min/max/step/default, unit, tooltip, and section grouping (Core/Gate/Custom Panel)
+- Calculator UI reads directly from fence style system via `/api/styles/:code/calculator-config` endpoint
 - CSV template imports auto-link products to fence styles via `templateId` matching
 - Admin UI at `/styles` lists all styles, `/config/:styleCode` provides tabbed interface for Products, Calculator Settings, and Features
 
@@ -58,7 +60,10 @@ Preferred communication style: Simple, everyday language.
 **Data Models:**
 - `FenceDesign`, `SpanConfig`, `Component`, `PanelLayout`.
 - `Product`: Stores product catalog information (code, description, price, category paths, physical specs, metadata).
-- `ProductUIConfig`: Defines UI configuration for product variants (field visibility, position, labels, tooltips), field mapping to product codes, and numeric field SKU snapping.
+- `FenceStyle`: Central configuration table with feature toggles and panel width constraints (minPanelWidth: 250mm, maxPanelWidth: 2000mm).
+- `StyleCalculatorField`: Database entries defining calculator inputs for each fence style (16 fields for pool spigots: 6 core, 7 gate, 3 custom panel).
+- `StyleProductSlot`: Slot-based product mappings allowing product reuse across multiple fence styles.
+- `ProductUIConfig`: Legacy UI configuration (being migrated to fence style system).
 - Supports complex gate configurations and custom glass panels.
 
 **Admin Authentication:**
@@ -106,6 +111,10 @@ Preferred communication style: Simple, everyday language.
 **Panel Calculation System:**
 - Algorithm for mixed panel widths and precise gap spacing.
 - Supports raked panels and integrates gates with hardware-specific gap calculations.
+- **Calculator Dependencies** (from `style_calculator_fields` database entries):
+  - Core (6): runLengthMm, startGapMm, endGapMm, betweenGapMm, minPanelMm, maxPanelMm
+  - Gate (7): gateWidthMm, hingePanelWidthMm, hingeGapMm, latchGapMm, mountMode, hingeSide, gatePosition
+  - Custom Panel (3): customPanelWidthMm, gapBeforeMm, gapAfterMm
 - **End Gap Policy System** (`shared/calc/compose.ts`):
   - Default: `LOCKED_OR_RESIDUAL` - tries exact requested end gap first, falls back to computed residual if impossible on 50mm grid
   - Strict mode: `LOCKED_STRICT` via env flag `STRICT_END_GAP=1` - fails with UNREACHABLE if exact end gap impossible
