@@ -141,11 +141,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           max: field.max ? parseFloat(field.max) : undefined,
           step: field.step ? parseFloat(field.step) : undefined,
           defaultValue: field.defaultValue ? parseFloat(field.defaultValue) : undefined,
-          unit: field.unit,
-          options: field.options,
-          tooltip: field.tooltip,
-          section: field.section,
-          productMapping: field.productMapping,
+          unit: field.unit || undefined,
+          options: field.options || undefined,
+          tooltip: field.tooltip || undefined,
+          section: field.section || undefined,
+          productMapping: field.productMapping || undefined,
         };
       });
       
@@ -1371,8 +1371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (minPanelField || maxPanelField) {
           const updates: any = {};
-          if (minPanelField?.min) updates.minPanelWidth = parseInt(minPanelField.min);
-          if (maxPanelField?.max) updates.maxPanelWidth = parseInt(maxPanelField.max);
+          if (minPanelField?.min) updates.minPanelWidth = minPanelField.min;
+          if (maxPanelField?.max) updates.maxPanelWidth = maxPanelField.max;
           
           if (Object.keys(updates).length > 0) {
             await storage.updateFenceStyle(matchingStyle.id, updates);

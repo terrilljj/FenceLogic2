@@ -107,6 +107,21 @@ export default function FenceLogic() {
     },
   });
 
+  // Update maxPanelWidth when calculator config loads
+  useEffect(() => {
+    if (calculatorConfig?.fields?.maxPanelMm?.defaultValue) {
+      const defaultMaxPanel = calculatorConfig.fields.maxPanelMm.defaultValue;
+      setDesign(prev => ({
+        ...prev,
+        spans: prev.spans.map(span => ({
+          ...span,
+          // Only update if still at initial hardcoded value
+          maxPanelWidth: span.maxPanelWidth === 1200 ? defaultMaxPanel : span.maxPanelWidth,
+        })),
+      }));
+    }
+  }, [calculatorConfig]);
+
   // Helper function to get default max panel width from calculator config
   const getDefaultMaxPanelWidth = () => {
     // Get from calculator config field default if available
