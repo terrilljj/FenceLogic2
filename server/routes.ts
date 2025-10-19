@@ -106,6 +106,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch product slots" });
     }
   });
+  
+  // Public endpoint for fetching calculator configuration by fence style code
+  app.get("/api/styles/:code/calculator-config", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const config = await storage.getStyleWithCalculatorConfig(code);
+      
+      if (!config) {
+        return res.status(404).json({ error: "Fence style not found" });
+      }
+      
+      // Transform to calculator-friendly format
+      const { style, fields } = config;
+      
+      // Build field configurations organized by field key
+      const fieldConfigs: Record<string, any> = {};
+      fields.forEach(field => {
+        fieldConfigs[field.fieldKey] = {
+          type: field.fieldType,
+          label: field.label,
+          min: field.min ? parseFloat(field.min) : undefined,
+          max: field.max ? parseFloat(field.max) : undefined,
+          step: field.step ? parseFloat(field.step) : undefined,
+          defaultValue: field.defaultValue ? parseFloat(field.defaultValue) : undefined,
+          unit: field.unit,
+          options: field.options,
+          tooltip: field.tooltip,
+          section: field.section,
+        };
+      });
+      
+      // Return complete calculator configuration
+      res.json({
+        styleCode: style.code,
+        styleLabel: style.label,
+        description: style.description,
+        
+        // Panel constraints (required for CompositionInput)
+        minPanelWidth: style.minPanelWidth || 250,
+        maxPanelWidth: style.maxPanelWidth || 2000,
+        
+        // Feature toggles
+        features: {
+          enableGates: Boolean(style.enableGates),
+          enableTopRail: Boolean(style.enableTopRail),
+          enableHingePanel: Boolean(style.enableHingePanel),
+          enableCustomWidth: Boolean(style.enableCustomWidth),
+        },
+        
+        // Field configurations
+        fields: fieldConfigs,
+      });
+    } catch (error) {
+      console.error("Error fetching calculator config:", error);
+      res.status(500).json({ error: "Failed to fetch calculator config" });
+    }
+  });
 
   // Email quote endpoint
   app.post("/api/email-quote", async (req, res) => {

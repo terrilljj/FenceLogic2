@@ -730,6 +730,10 @@ export const fenceStyles = pgTable("fence_styles", {
   productVariant: varchar("product_variant", { length: 100 }), // Legacy link to ProductVariant type
   templateId: varchar("template_id", { length: 100 }), // Link to CSV template (e.g., "01-pool-spigots")
   
+  // Panel width constraints for calculator (CompositionInput requirements)
+  minPanelWidth: integer("min_panel_width").default(250), // Minimum panel width in mm
+  maxPanelWidth: integer("max_panel_width").default(2000), // Maximum panel width in mm
+  
   // Feature toggles - control what features are available for this style
   enableGates: integer("enable_gates").notNull().default(0), // 1 = gates enabled, 0 = disabled
   enableTopRail: integer("enable_top_rail").notNull().default(0), // 1 = top rail enabled

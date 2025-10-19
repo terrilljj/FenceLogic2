@@ -74,6 +74,7 @@ export interface IStorage {
   createFenceStyle(style: InsertFenceStyle): Promise<FenceStyle>;
   updateFenceStyle(id: string, style: Partial<InsertFenceStyle>): Promise<FenceStyle | undefined>;
   deleteFenceStyle(id: string): Promise<boolean>;
+  getStyleWithCalculatorConfig(code: string): Promise<{ style: FenceStyle; fields: StyleCalculatorField[] } | undefined>;
   
   // Style Calculator Field operations
   getStyleFields(fenceStyleId: string): Promise<StyleCalculatorField[]>;
@@ -456,6 +457,14 @@ export class DatabaseStorage implements IStorage {
   async getFenceStyleByCode(code: string): Promise<FenceStyle | undefined> {
     const [style] = await db.select().from(fenceStyles).where(eq(fenceStyles.code, code));
     return style || undefined;
+  }
+  
+  async getStyleWithCalculatorConfig(code: string): Promise<{ style: FenceStyle; fields: StyleCalculatorField[] } | undefined> {
+    const style = await this.getFenceStyleByCode(code);
+    if (!style) return undefined;
+    
+    const fields = await this.getStyleFields(style.id);
+    return { style, fields };
   }
   
   async getAllFenceStyles(): Promise<FenceStyle[]> {
