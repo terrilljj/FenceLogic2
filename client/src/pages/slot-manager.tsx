@@ -53,11 +53,26 @@ interface Product {
   subcategory: string;
 }
 
+// Default prefixes for each field type
+const DEFAULT_PREFIXES: Record<string, string> = {
+  "glass-panels": "GP",
+  "spigots": "SP",
+  "master-hinge-panels": "MHP",
+  "master-gate-panels": "MGP",
+  "soft-close-hinge-panels": "SCHP",
+  "soft-close-gates": "SCG",
+  "raked-panels": "RP",
+  "gate-hinges-master": "GHM",
+  "gate-hinges-soft-close": "GHSC",
+  "glass-gate-latches": "GGL",
+};
+
 export default function SlotManager() {
   const { toast } = useToast();
   const [selectedVariant, setSelectedVariant] = useState<string>("glass-pool-spigots");
   const [selectedField, setSelectedField] = useState<string>("");
   const [slotCount, setSlotCount] = useState<number>(0);
+  const [slotPrefix, setSlotPrefix] = useState<string>("");
 
   // Fetch all products for mapping
   const { data: products = [] } = useQuery<Product[]>({
@@ -75,7 +90,7 @@ export default function SlotManager() {
 
   // Generate slots mutation
   const generateSlotsMutation = useMutation({
-    mutationFn: async (params: { productVariant: string; fieldName: string; slotCount: number }) => {
+    mutationFn: async (params: { productVariant: string; fieldName: string; slotCount: number; prefix: string }) => {
       const response = await fetch("/api/admin/product-slots/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -133,10 +148,12 @@ export default function SlotManager() {
     if (fieldDef) {
       setSlotCount(fieldDef.defaultSlotCount);
     }
+    // Set default prefix for this field
+    setSlotPrefix(DEFAULT_PREFIXES[fieldName] || fieldName.substring(0, 3).toUpperCase());
   };
 
   const handleGenerateSlots = () => {
-    if (!selectedField || slotCount < 1) {
+    if (!selectedField || slotCount < 1 || !slotPrefix) {
       toast({
         title: "Invalid Input",
         description: "Please select a field and enter a valid slot count",
@@ -149,6 +166,7 @@ export default function SlotManager() {
       productVariant: selectedVariant,
       fieldName: selectedField,
       slotCount,
+      prefix: slotPrefix,
     });
   };
 
@@ -200,11 +218,14 @@ export default function SlotManager() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Field Configuration</CardTitle>
-            <CardDescription>Configure slot count for each field type</CardDescription>
+            <CardDescription>
+              Configure slot count for each field type. 
+              <span className="text-destructive font-medium"> Warning: Regenerating slots will delete all existing product mappings for this field.</span>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <Label>Field Type</Label>
                   <Select value={selectedField} onValueChange={handleFieldSelect}>
@@ -219,6 +240,18 @@ export default function SlotManager() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <Label>Unique Prefix</Label>
+                  <Input
+                    type="text"
+                    value={slotPrefix}
+                    onChange={(e) => setSlotPrefix(e.target.value.toUpperCase())}
+                    placeholder="GP"
+                    maxLength={10}
+                    data-testid="input-slot-prefix"
+                  />
                 </div>
 
                 <div>

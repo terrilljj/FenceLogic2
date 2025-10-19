@@ -821,35 +821,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/product-slots/generate", requireAdmin, async (req, res) => {
     try {
-      const { productVariant, fieldName, slotCount } = req.body;
+      const { productVariant, fieldName, slotCount, prefix } = req.body;
       
       if (!productVariant || !fieldName || !slotCount || slotCount < 1) {
         return res.status(400).json({ error: "Missing required fields: productVariant, fieldName, slotCount" });
+      }
+      
+      if (!prefix || prefix.trim() === "") {
+        return res.status(400).json({ error: "Prefix is required for unique slot IDs" });
+      }
+      
+      // Validate prefix length (max 10 chars to match UI limit)
+      if (prefix.length > 10) {
+        return res.status(400).json({ error: "Prefix must be 10 characters or less" });
       }
 
       // Delete existing slots for this variant+field
       await storage.deleteSlotsByVariantAndField(productVariant, fieldName);
 
-      // Generate field prefix for unique internal IDs
-      const fieldPrefixes: Record<string, string> = {
-        "glass-panels": "GP",
-        "spigots": "SP",
-        "master-hinge-panels": "MHP",
-        "master-gate-panels": "MGP",
-        "soft-close-hinge-panels": "SCHP",
-        "soft-close-gates": "SCG",
-        "raked-panels": "RP",
-        "gate-hinges-master": "GHM",
-        "gate-hinges-soft-close": "GHSC",
-        "glass-gate-latches": "GGL",
-      };
-      
-      const prefix = fieldPrefixes[fieldName] || fieldName.substring(0, 3).toUpperCase();
+      // Use the provided prefix (converted to uppercase)
+      const slotPrefix = prefix.toUpperCase().trim();
 
       // Generate new slots with prefixed numeric IDs
       const slots = [];
       for (let i = 1; i <= slotCount; i++) {
-        const internalId = `${prefix}-${String(i).padStart(4, '0')}`; // e.g., "GP-0001", "RP-0002"
+        const internalId = `${slotPrefix}-${String(i).padStart(4, '0')}`; // e.g., "GP-0001", "RP-0002"
         slots.push({
           internalId,
           productVariant,
