@@ -713,23 +713,33 @@ function calculateComponents(
 ): Component[] {
   // Helper function to lookup product from slot mappings
   const lookupProductFromSlot = (panelWidth: number, fieldName: string = "glass-panels"): { sku: string; description: string } | null => {
-    // Find products that match this panel width by checking the description or code
-    // Panel widths are typically mentioned in product descriptions like "1200mm" or "1200W"
-    const widthPattern = new RegExp(`\\b${panelWidth}(mm|W)\\b`, 'i');
+    // Step 1: Find slot mappings for this field type that have products mapped
+    const fieldSlots = slotMappings.filter(slot => 
+      slot.fieldName === fieldName && slot.productId
+    );
     
-    const matchingProduct = products.find(p => {
-      // Check if product description or code contains the width
-      return widthPattern.test(p.description) || widthPattern.test(p.code);
-    });
-    
-    if (matchingProduct) {
-      return {
-        sku: matchingProduct.code,
-        description: matchingProduct.description
-      };
+    if (fieldSlots.length === 0) {
+      return null; // No slot mappings configured for this field
     }
     
-    return null; // No mapping found - will use fallback
+    // Step 2: For each mapped slot, check if its product matches the panel width
+    for (const slot of fieldSlots) {
+      const product = products.find(p => p.id === slot.productId);
+      if (!product) continue;
+      
+      // Check if product description or code contains the width
+      // Panel widths are typically mentioned like "1200mm" or "1200W"
+      const widthPattern = new RegExp(`\\b${panelWidth}(mm|W)\\b`, 'i');
+      
+      if (widthPattern.test(product.description) || widthPattern.test(product.code)) {
+        return {
+          sku: product.code,
+          description: product.description
+        };
+      }
+    }
+    
+    return null; // No matching product found in slot mappings
   };
 
   const components: Component[] = [];
