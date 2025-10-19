@@ -134,9 +134,24 @@ export default function StyleConfig() {
 
   const handleSaveField = () => {
     if (!editingField) return;
+    
+    // Coerce numeric fields to proper types
+    const updates: Partial<StyleCalculatorField> = {
+      ...fieldFormData,
+    };
+    
+    // Convert empty strings to null for optional fields
+    if (updates.min === '') updates.min = null;
+    if (updates.max === '') updates.max = null;
+    if (updates.step === '') updates.step = null;
+    if (updates.defaultValue === '') updates.defaultValue = null;
+    if (updates.unit === '') updates.unit = null;
+    if (updates.section === '') updates.section = null;
+    if (updates.tooltip === '') updates.tooltip = null;
+    
     updateFieldMutation.mutate({
       fieldId: editingField.id,
-      data: fieldFormData,
+      data: updates,
     });
   };
 
