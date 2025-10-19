@@ -64,6 +64,16 @@ Preferred communication style: Simple, everyday language.
   - Category selector in subcategory forms for linking to parent category
   - Table view shows category association for each subcategory
 - **UI Configuration portal** at `/ui-config` for defining product groups, field visibility, order, labels, tooltips, and SKU selection behavior.
+- **Slot Manager** at `/slot-manager` for self-service product catalog management:
+  - Slot-based system with auto-generated internal numeric IDs (0001, 0002, 0003, etc.)
+  - Define slot counts per field type for each product variant (e.g., 36 Glass Panels, 20 Spigots)
+  - Manual product mapping via dropdown selection for each slot
+  - Real-time status tracking: Mapped vs Unmapped badges
+  - Bulk slot generation and individual slot deletion
+  - Isolated from main UI Config to prevent accidental production changes
+  - Backend: `product_slots` table with variant, fieldName, internalId, and productId columns
+  - API endpoints: Generate slots (POST), list slots (GET), update mapping (PUT), delete slots (DELETE)
+  - Supports multi-style product reuse (same product can map to multiple fence styles)
 
 **Google Sheets OAuth Sync:**
 - **Secure credential storage**: AES-256-GCM encryption with auto-generated 32-byte keys, ENV-first fallback to encrypted file storage.
