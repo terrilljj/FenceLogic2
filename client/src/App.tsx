@@ -15,6 +15,8 @@ import FenceStyles from "@/pages/fence-styles";
 import CategoryManager from "@/pages/category-manager";
 import SlotManager from "@/pages/slot-manager";
 import Templates from "@/pages/templates";
+import StylesList from "@/pages/styles";
+import StyleConfig from "@/pages/style-config";
 import NotFound from "@/pages/not-found";
 
 // Protected route wrapper for admin pages
@@ -71,6 +73,12 @@ function Router() {
       </Route>
       <Route path="/templates">
         {() => <ProtectedRoute component={Templates} />}
+      </Route>
+      <Route path="/styles">
+        {() => <ProtectedRoute component={StylesList} />}
+      </Route>
+      <Route path="/config/:styleCode">
+        {(params) => <ProtectedRoute component={StyleConfig} />}
       </Route>
       <Route component={NotFound} />
     </Switch>
