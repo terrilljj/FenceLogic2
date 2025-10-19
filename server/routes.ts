@@ -1195,14 +1195,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`[Template Import] Validation warnings:`, processed.validationErrors);
       }
 
+      // Find fence style by template ID (if it exists)
+      const styles = await storage.getAllFenceStyles();
+      const matchingStyle = styles.find(s => s.templateId === templateId);
+      
       // Save product mappings to database (upsert: create or update)
       let productsCreated = 0;
       let productsUpdated = 0;
+      let slotsCreated = 0;
       const dbErrors: string[] = [];
+      const productIdMap = new Map<string, string>(); // SKU -> product ID
 
       for (const mapping of processed.productMappings) {
         try {
-          const { created } = await storage.upsertProduct({
+          const { product, created } = await storage.upsertProduct({
             code: mapping.productSku,
             description: mapping.productDescription,
             category: '', // Leave empty - category not specified in CSV templates
@@ -1210,6 +1216,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price: mapping.productPrice.toString(),
             active: 1,
           });
+          
+          // Store product ID for slot creation
+          productIdMap.set(mapping.productSku, product.id);
           
           if (created) {
             productsCreated++;
@@ -1222,6 +1231,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`[Template Import] ${errorMsg}`);
         }
       }
+      
+      // If matching style found, create style_product_slots
+      if (matchingStyle) {
+        console.log(`[Template Import] Linking products to style: ${matchingStyle.label}`);
+        
+        // Clear existing slots for this style
+        await storage.deleteStyleProductSlots(matchingStyle.id);
+        
+        // Create new slots
+        for (const mapping of processed.productMappings) {
+          const productId = productIdMap.get(mapping.productSku);
+          if (!productId) continue;
+          
+          try {
+            await storage.createStyleProductSlot({
+              fenceStyleId: matchingStyle.id,
+              fieldKey: mapping.variableType,
+              selectorKey: mapping.sizeMm ? mapping.sizeMm.toString() : mapping.slotPrefix || '',
+              productId,
+              productCode: mapping.productSku,
+              label: mapping.label || mapping.productDescription,
+              displayOrder: 0,
+              isActive: 1,
+            });
+            slotsCreated++;
+          } catch (error) {
+            console.error(`[Template Import] Failed to create slot for ${mapping.productSku}:`, error);
+          }
+        }
+        
+        console.log(`[Template Import] Created ${slotsCreated} product slots for ${matchingStyle.label}`);
+      } else {
+        console.warn(`[Template Import] No fence style found with templateId: ${templateId}`);
+      }
 
       console.log(`[Template Import] Database operations:`);
       console.log(`  - Products Created: ${productsCreated}`);
@@ -1232,13 +1275,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated`,
+        message: matchingStyle 
+          ? `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated, ${slotsCreated} slots linked to ${matchingStyle.label}`
+          : `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated (no matching fence style)`,
         templateId,
+        fenceStyle: matchingStyle ? { id: matchingStyle.id, code: matchingStyle.code, label: matchingStyle.label } : null,
         summary: {
           calculatorInputs: processed.calculatorInputs.length,
           productMappings: processed.productMappings.length,
           productsCreated,
           productsUpdated,
+          slotsCreated: matchingStyle ? slotsCreated : 0,
           featureToggles: processed.featureToggles.length,
           gateConfigs: processed.gateConfigs.length,
           validationErrors: processed.validationErrors.length,
@@ -1299,6 +1346,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!res.headersSent) {
         res.status(500).json({ error: "Failed to create ZIP file" });
       }
+    }
+  });
+
+  // ============================================
+  // Fence Styles API Routes
+  // ============================================
+  
+  // Public: Get all active fence styles
+  app.get("/api/styles", async (req, res) => {
+    try {
+      const styles = await storage.getActiveFenceStyles();
+      res.json(styles);
+    } catch (error) {
+      console.error("Error fetching styles:", error);
+      res.status(500).json({ error: "Failed to fetch styles" });
+    }
+  });
+  
+  // Public: Get full configuration for a specific style
+  app.get("/api/styles/:code/config", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const style = await storage.getFenceStyleByCode(code);
+      
+      if (!style) {
+        return res.status(404).json({ error: "Style not found" });
+      }
+      
+      // Fetch related data
+      const [fields, productSlots] = await Promise.all([
+        storage.getStyleFields(style.id),
+        storage.getStyleProductSlots(style.id)
+      ]);
+      
+      // Fetch product details for slots that have productId
+      const productIds = productSlots
+        .filter(slot => slot.productId)
+        .map(slot => slot.productId!);
+      
+      const productsMap = new Map();
+      if (productIds.length > 0) {
+        const products = await Promise.all(
+          productIds.map(id => storage.getProduct(id))
+        );
+        products.forEach(p => {
+          if (p) productsMap.set(p.id, p);
+        });
+      }
+      
+      // Enrich slots with product data
+      const enrichedSlots = productSlots.map(slot => ({
+        ...slot,
+        product: slot.productId ? productsMap.get(slot.productId) : null
+      }));
+      
+      res.json({
+        style,
+        fields,
+        productSlots: enrichedSlots,
+      });
+    } catch (error) {
+      console.error("Error fetching style config:", error);
+      res.status(500).json({ error: "Failed to fetch style configuration" });
+    }
+  });
+  
+  // Admin: Get all fence styles (including inactive)
+  app.get("/api/admin/styles", requireAdmin, async (req, res) => {
+    try {
+      const styles = await storage.getAllFenceStyles();
+      res.json(styles);
+    } catch (error) {
+      console.error("Error fetching all styles:", error);
+      res.status(500).json({ error: "Failed to fetch styles" });
+    }
+  });
+  
+  // Admin: Create new fence style
+  app.post("/api/admin/styles", requireAdmin, async (req, res) => {
+    try {
+      const style = await storage.createFenceStyle(req.body);
+      res.status(201).json(style);
+    } catch (error) {
+      console.error("Error creating style:", error);
+      res.status(500).json({ error: "Failed to create style" });
+    }
+  });
+  
+  // Admin: Update fence style
+  app.patch("/api/admin/styles/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const style = await storage.updateFenceStyle(id, req.body);
+      
+      if (!style) {
+        return res.status(404).json({ error: "Style not found" });
+      }
+      
+      res.json(style);
+    } catch (error) {
+      console.error("Error updating style:", error);
+      res.status(500).json({ error: "Failed to update style" });
+    }
+  });
+  
+  // Admin: Delete fence style
+  app.delete("/api/admin/styles/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteFenceStyle(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Style not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting style:", error);
+      res.status(500).json({ error: "Failed to delete style" });
+    }
+  });
+  
+  // Admin: Get calculator fields for a style
+  app.get("/api/admin/styles/:styleId/fields", requireAdmin, async (req, res) => {
+    try {
+      const { styleId } = req.params;
+      const fields = await storage.getStyleFields(styleId);
+      res.json(fields);
+    } catch (error) {
+      console.error("Error fetching style fields:", error);
+      res.status(500).json({ error: "Failed to fetch style fields" });
+    }
+  });
+  
+  // Admin: Create calculator field
+  app.post("/api/admin/styles/:styleId/fields", requireAdmin, async (req, res) => {
+    try {
+      const { styleId } = req.params;
+      const field = await storage.createStyleField({
+        ...req.body,
+        fenceStyleId: styleId
+      });
+      res.status(201).json(field);
+    } catch (error) {
+      console.error("Error creating field:", error);
+      res.status(500).json({ error: "Failed to create field" });
+    }
+  });
+  
+  // Admin: Update calculator field
+  app.patch("/api/admin/styles/:styleId/fields/:fieldId", requireAdmin, async (req, res) => {
+    try {
+      const { fieldId } = req.params;
+      const field = await storage.updateStyleField(fieldId, req.body);
+      
+      if (!field) {
+        return res.status(404).json({ error: "Field not found" });
+      }
+      
+      res.json(field);
+    } catch (error) {
+      console.error("Error updating field:", error);
+      res.status(500).json({ error: "Failed to update field" });
+    }
+  });
+  
+  // Admin: Delete calculator field
+  app.delete("/api/admin/styles/:styleId/fields/:fieldId", requireAdmin, async (req, res) => {
+    try {
+      const { fieldId } = req.params;
+      const success = await storage.deleteStyleField(fieldId);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Field not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting field:", error);
+      res.status(500).json({ error: "Failed to delete field" });
+    }
+  });
+  
+  // Admin: Get product slots for a style
+  app.get("/api/admin/styles/:styleId/slots", requireAdmin, async (req, res) => {
+    try {
+      const { styleId } = req.params;
+      const slots = await storage.getStyleProductSlots(styleId);
+      res.json(slots);
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+      res.status(500).json({ error: "Failed to fetch slots" });
+    }
+  });
+  
+  // Admin: Create product slot
+  app.post("/api/admin/styles/:styleId/slots", requireAdmin, async (req, res) => {
+    try {
+      const { styleId } = req.params;
+      const slot = await storage.createStyleProductSlot({
+        ...req.body,
+        fenceStyleId: styleId
+      });
+      res.status(201).json(slot);
+    } catch (error) {
+      console.error("Error creating slot:", error);
+      res.status(500).json({ error: "Failed to create slot" });
+    }
+  });
+  
+  // Admin: Update product slot
+  app.patch("/api/admin/styles/:styleId/slots/:slotId", requireAdmin, async (req, res) => {
+    try {
+      const { slotId } = req.params;
+      const slot = await storage.updateStyleProductSlot(slotId, req.body);
+      
+      if (!slot) {
+        return res.status(404).json({ error: "Slot not found" });
+      }
+      
+      res.json(slot);
+    } catch (error) {
+      console.error("Error updating slot:", error);
+      res.status(500).json({ error: "Failed to update slot" });
+    }
+  });
+  
+  // Admin: Delete product slot
+  app.delete("/api/admin/styles/:styleId/slots/:slotId", requireAdmin, async (req, res) => {
+    try {
+      const { slotId } = req.params;
+      const success = await storage.deleteStyleProductSlot(slotId);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Slot not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting slot:", error);
+      res.status(500).json({ error: "Failed to delete slot" });
     }
   });
 

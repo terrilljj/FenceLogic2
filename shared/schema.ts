@@ -721,6 +721,114 @@ export const insertProductSlotSchema = createInsertSchema(productSlots).omit({
 export type InsertProductSlot = z.infer<typeof insertProductSlotSchema>;
 export type ProductSlot = typeof productSlots.$inferSelect;
 
+// Fence Styles - Master configuration for each fence calculator style
+export const fenceStyles = pgTable("fence_styles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 100 }).notNull().unique(), // e.g., "frameless-pool", "channel-pool"
+  label: varchar("label", { length: 200 }).notNull(), // e.g., "Frameless Pool Fence"
+  description: text("description"), // Optional description
+  productVariant: varchar("product_variant", { length: 100 }), // Legacy link to ProductVariant type
+  templateId: varchar("template_id", { length: 100 }), // Link to CSV template (e.g., "01-pool-spigots")
+  
+  // Feature toggles - control what features are available for this style
+  enableGates: integer("enable_gates").notNull().default(0), // 1 = gates enabled, 0 = disabled
+  enableTopRail: integer("enable_top_rail").notNull().default(0), // 1 = top rail enabled
+  enableHingePanel: integer("enable_hinge_panel").notNull().default(0), // 1 = hinge panels enabled
+  enableCustomWidth: integer("enable_custom_width").notNull().default(0), // 1 = custom width panels enabled
+  
+  // Additional features stored as JSON for flexibility
+  features: jsonb("features"), // e.g., { "enableRaked": true, "enableStandoffs": false }
+  
+  // Status
+  isActive: integer("is_active").notNull().default(1), // 1 = active, 0 = inactive
+  displayOrder: integer("display_order").notNull().default(0), // Sort order for UI
+  
+  // Metadata
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertFenceStyleSchema = createInsertSchema(fenceStyles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertFenceStyle = z.infer<typeof insertFenceStyleSchema>;
+export type FenceStyle = typeof fenceStyles.$inferSelect;
+
+// Style Calculator Fields - Define input fields and their constraints per style
+export const styleCalculatorFields = pgTable("style_calculator_fields", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fenceStyleId: varchar("fence_style_id", { length: 100 }).notNull(), // FK to fence_styles
+  fieldKey: varchar("field_key", { length: 100 }).notNull(), // e.g., "span_length", "end_gap"
+  fieldType: varchar("field_type", { length: 50 }).notNull(), // "number", "select", "boolean", "product"
+  label: varchar("label", { length: 200 }).notNull(), // Display label
+  
+  // Numeric field constraints
+  min: text("min"), // Minimum value (stored as text for flexibility)
+  max: text("max"), // Maximum value
+  step: text("step"), // Step increment
+  defaultValue: text("default_value"), // Default value
+  unit: varchar("unit", { length: 50 }), // e.g., "mm", "degrees"
+  
+  // Select field options
+  options: jsonb("options"), // e.g., ["option1", "option2"] or [{value: "1", label: "Option 1"}]
+  
+  // Validation rules
+  validationRules: jsonb("validation_rules"), // Custom validation logic
+  
+  // UI configuration
+  displayOrder: integer("display_order").notNull().default(0),
+  section: varchar("section", { length: 100 }), // Group fields into sections
+  tooltip: text("tooltip"), // Help text
+  isRequired: integer("is_required").notNull().default(0), // 1 = required field
+  isVisible: integer("is_visible").notNull().default(1), // 1 = visible, 0 = hidden
+  
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStyleCalculatorFieldSchema = createInsertSchema(styleCalculatorFields).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertStyleCalculatorField = z.infer<typeof insertStyleCalculatorFieldSchema>;
+export type StyleCalculatorField = typeof styleCalculatorFields.$inferSelect;
+
+// Style Product Slots - Links products to specific styles and field selectors
+export const styleProductSlots = pgTable("style_product_slots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fenceStyleId: varchar("fence_style_id", { length: 100 }).notNull(), // FK to fence_styles
+  fieldKey: varchar("field_key", { length: 100 }).notNull(), // e.g., "glass-panels", "spigots"
+  selectorKey: varchar("selector_key", { length: 100 }).notNull(), // e.g., "1200" (panel width), "polished" (color)
+  productId: varchar("product_id", { length: 100 }), // FK to products table (nullable until mapped)
+  
+  // Product metadata (denormalized for performance)
+  productCode: varchar("product_code", { length: 100 }), // SKU from products table
+  label: varchar("label", { length: 200 }), // Display label (e.g., "1200mm Panel")
+  
+  // Quantity/calculation rules
+  quantityRules: jsonb("quantity_rules"), // e.g., { "perPanel": 4, "perMeter": 2 }
+  
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: integer("is_active").notNull().default(1),
+  
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStyleProductSlotSchema = createInsertSchema(styleProductSlots).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertStyleProductSlot = z.infer<typeof insertStyleProductSlotSchema>;
+export type StyleProductSlot = typeof styleProductSlots.$inferSelect;
+
 // Helper function to get gate gaps based on hardware and mounting type
 export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall"): { hingeGap: number; latchGap: number } {
   if (hardware === "master") {

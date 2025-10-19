@@ -1,4 +1,17 @@
-import { type SavedFenceDesign, type InsertFenceDesign, type Product, type InsertProduct, type ProductUIConfig, type InsertProductUIConfig, type FenceUIConfig, type InsertFenceUIConfig, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type ProductSlot, type InsertProductSlot, fenceDesigns, products, productUIConfigs, fenceUIConfigs, categories, subcategories, productSlots } from "@shared/schema";
+import { 
+  type SavedFenceDesign, type InsertFenceDesign, 
+  type Product, type InsertProduct, 
+  type ProductUIConfig, type InsertProductUIConfig, 
+  type FenceUIConfig, type InsertFenceUIConfig, 
+  type Category, type InsertCategory, 
+  type Subcategory, type InsertSubcategory, 
+  type ProductSlot, type InsertProductSlot,
+  type FenceStyle, type InsertFenceStyle,
+  type StyleCalculatorField, type InsertStyleCalculatorField,
+  type StyleProductSlot, type InsertStyleProductSlot,
+  fenceDesigns, products, productUIConfigs, fenceUIConfigs, categories, subcategories, productSlots,
+  fenceStyles, styleCalculatorFields, styleProductSlots
+} from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, sql as sqlOp, and } from "drizzle-orm";
 
@@ -52,6 +65,31 @@ export interface IStorage {
   updateProductSlot(id: string, slot: Partial<InsertProductSlot>): Promise<ProductSlot | undefined>;
   deleteProductSlot(id: string): Promise<boolean>;
   deleteSlotsByVariantAndField(productVariant: string, fieldName: string): Promise<boolean>;
+  
+  // Fence Style operations
+  getFenceStyle(id: string): Promise<FenceStyle | undefined>;
+  getFenceStyleByCode(code: string): Promise<FenceStyle | undefined>;
+  getAllFenceStyles(): Promise<FenceStyle[]>;
+  getActiveFenceStyles(): Promise<FenceStyle[]>;
+  createFenceStyle(style: InsertFenceStyle): Promise<FenceStyle>;
+  updateFenceStyle(id: string, style: Partial<InsertFenceStyle>): Promise<FenceStyle | undefined>;
+  deleteFenceStyle(id: string): Promise<boolean>;
+  
+  // Style Calculator Field operations
+  getStyleFields(fenceStyleId: string): Promise<StyleCalculatorField[]>;
+  createStyleField(field: InsertStyleCalculatorField): Promise<StyleCalculatorField>;
+  updateStyleField(id: string, field: Partial<InsertStyleCalculatorField>): Promise<StyleCalculatorField | undefined>;
+  deleteStyleField(id: string): Promise<boolean>;
+  deleteStyleFields(fenceStyleId: string): Promise<boolean>;
+  
+  // Style Product Slot operations
+  getStyleProductSlots(fenceStyleId: string): Promise<StyleProductSlot[]>;
+  getStyleProductSlotsByField(fenceStyleId: string, fieldKey: string): Promise<StyleProductSlot[]>;
+  createStyleProductSlot(slot: InsertStyleProductSlot): Promise<StyleProductSlot>;
+  createStyleProductSlots(slots: InsertStyleProductSlot[]): Promise<StyleProductSlot[]>;
+  updateStyleProductSlot(id: string, slot: Partial<InsertStyleProductSlot>): Promise<StyleProductSlot | undefined>;
+  deleteStyleProductSlot(id: string): Promise<boolean>;
+  deleteStyleProductSlots(fenceStyleId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -406,6 +444,136 @@ export class DatabaseStorage implements IStorage {
         eq(productSlots.productVariant, productVariant),
         eq(productSlots.fieldName, fieldName)
       ));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Fence Style operations
+  async getFenceStyle(id: string): Promise<FenceStyle | undefined> {
+    const [style] = await db.select().from(fenceStyles).where(eq(fenceStyles.id, id));
+    return style || undefined;
+  }
+  
+  async getFenceStyleByCode(code: string): Promise<FenceStyle | undefined> {
+    const [style] = await db.select().from(fenceStyles).where(eq(fenceStyles.code, code));
+    return style || undefined;
+  }
+  
+  async getAllFenceStyles(): Promise<FenceStyle[]> {
+    return await db.select().from(fenceStyles).orderBy(asc(fenceStyles.displayOrder));
+  }
+  
+  async getActiveFenceStyles(): Promise<FenceStyle[]> {
+    return await db.select().from(fenceStyles)
+      .where(eq(fenceStyles.isActive, 1))
+      .orderBy(asc(fenceStyles.displayOrder));
+  }
+  
+  async createFenceStyle(insertStyle: InsertFenceStyle): Promise<FenceStyle> {
+    const [style] = await db
+      .insert(fenceStyles)
+      .values(insertStyle)
+      .returning();
+    return style;
+  }
+  
+  async updateFenceStyle(id: string, updateData: Partial<InsertFenceStyle>): Promise<FenceStyle | undefined> {
+    const [style] = await db
+      .update(fenceStyles)
+      .set({ ...updateData, updatedAt: new Date().toISOString() })
+      .where(eq(fenceStyles.id, id))
+      .returning();
+    return style || undefined;
+  }
+  
+  async deleteFenceStyle(id: string): Promise<boolean> {
+    const result = await db.delete(fenceStyles).where(eq(fenceStyles.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Style Calculator Field operations
+  async getStyleFields(fenceStyleId: string): Promise<StyleCalculatorField[]> {
+    return await db.select().from(styleCalculatorFields)
+      .where(eq(styleCalculatorFields.fenceStyleId, fenceStyleId))
+      .orderBy(asc(styleCalculatorFields.displayOrder));
+  }
+  
+  async createStyleField(insertField: InsertStyleCalculatorField): Promise<StyleCalculatorField> {
+    const [field] = await db
+      .insert(styleCalculatorFields)
+      .values(insertField)
+      .returning();
+    return field;
+  }
+  
+  async updateStyleField(id: string, updateData: Partial<InsertStyleCalculatorField>): Promise<StyleCalculatorField | undefined> {
+    const [field] = await db
+      .update(styleCalculatorFields)
+      .set({ ...updateData, updatedAt: new Date().toISOString() })
+      .where(eq(styleCalculatorFields.id, id))
+      .returning();
+    return field || undefined;
+  }
+  
+  async deleteStyleField(id: string): Promise<boolean> {
+    const result = await db.delete(styleCalculatorFields).where(eq(styleCalculatorFields.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  async deleteStyleFields(fenceStyleId: string): Promise<boolean> {
+    const result = await db.delete(styleCalculatorFields)
+      .where(eq(styleCalculatorFields.fenceStyleId, fenceStyleId));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Style Product Slot operations
+  async getStyleProductSlots(fenceStyleId: string): Promise<StyleProductSlot[]> {
+    return await db.select().from(styleProductSlots)
+      .where(eq(styleProductSlots.fenceStyleId, fenceStyleId))
+      .orderBy(asc(styleProductSlots.fieldKey), asc(styleProductSlots.displayOrder));
+  }
+  
+  async getStyleProductSlotsByField(fenceStyleId: string, fieldKey: string): Promise<StyleProductSlot[]> {
+    return await db.select().from(styleProductSlots)
+      .where(and(
+        eq(styleProductSlots.fenceStyleId, fenceStyleId),
+        eq(styleProductSlots.fieldKey, fieldKey)
+      ))
+      .orderBy(asc(styleProductSlots.displayOrder));
+  }
+  
+  async createStyleProductSlot(insertSlot: InsertStyleProductSlot): Promise<StyleProductSlot> {
+    const [slot] = await db
+      .insert(styleProductSlots)
+      .values(insertSlot)
+      .returning();
+    return slot;
+  }
+  
+  async createStyleProductSlots(slots: InsertStyleProductSlot[]): Promise<StyleProductSlot[]> {
+    const createdSlots = await db
+      .insert(styleProductSlots)
+      .values(slots)
+      .returning();
+    return createdSlots;
+  }
+  
+  async updateStyleProductSlot(id: string, updateData: Partial<InsertStyleProductSlot>): Promise<StyleProductSlot | undefined> {
+    const [slot] = await db
+      .update(styleProductSlots)
+      .set({ ...updateData, updatedAt: new Date().toISOString() })
+      .where(eq(styleProductSlots.id, id))
+      .returning();
+    return slot || undefined;
+  }
+  
+  async deleteStyleProductSlot(id: string): Promise<boolean> {
+    const result = await db.delete(styleProductSlots).where(eq(styleProductSlots.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  async deleteStyleProductSlots(fenceStyleId: string): Promise<boolean> {
+    const result = await db.delete(styleProductSlots)
+      .where(eq(styleProductSlots.fenceStyleId, fenceStyleId));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }

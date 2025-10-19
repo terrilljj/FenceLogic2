@@ -89,14 +89,15 @@ export async function parseTemplateCSV(csvData: string): Promise<{
     const errors: string[] = [];
 
     for (let i = 0; i < records.length; i++) {
+      const record = records[i] as Record<string, string>;
       // Skip duplicate header rows
-      if (records[i].variable_type === 'variable_type' && records[i].label === 'label') {
+      if (record.variable_type === 'variable_type' && record.label === 'label') {
         console.log(`[CSV Parser] Skipping duplicate header row at line ${i + 2}`);
         continue;
       }
 
       try {
-        const validated = CsvRowSchema.parse(records[i]);
+        const validated = CsvRowSchema.parse(record);
         validatedRows.push(validated);
       } catch (error) {
         if (error instanceof z.ZodError) {
