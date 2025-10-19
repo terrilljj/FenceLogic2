@@ -27,7 +27,7 @@ export default function StyleConfig() {
 
   // Fetch style configuration
   const { data: config, isLoading } = useQuery<StyleConfig>({
-    queryKey: ["/api/styles", styleCode, "config"],
+    queryKey: [`/api/styles/${styleCode}/config`],
     enabled: !!styleCode,
   });
 
@@ -38,7 +38,7 @@ export default function StyleConfig() {
       return apiRequest("PATCH", `/api/admin/styles/${config.style.id}`, updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/styles", styleCode, "config"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/styles/${styleCode}/config`] });
       toast({
         title: "Success",
         description: "Style updated successfully",
