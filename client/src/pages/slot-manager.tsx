@@ -300,6 +300,7 @@ export default function SlotManager() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-24">Internal ID</TableHead>
+                        <TableHead className="w-24">Panel Size</TableHead>
                         <TableHead className="w-48">Type/Label</TableHead>
                         <TableHead className="w-32">SKU</TableHead>
                         <TableHead>Description</TableHead>
@@ -315,10 +316,17 @@ export default function SlotManager() {
                           ? products.filter(p => p.subcategory === slot.label)
                           : products;
                         
+                        // Extract panel size from internal ID (e.g., "GP-0250" -> "250mm")
+                        const sizeMatch = slot.internalId.match(/-(\d+)$/);
+                        const panelSize = sizeMatch ? `${parseInt(sizeMatch[1])}mm` : "—";
+                        
                         return (
                           <TableRow key={slot.id}>
                             <TableCell className="font-mono font-bold">
                               {slot.internalId}
+                            </TableCell>
+                            <TableCell className="font-semibold text-primary">
+                              {panelSize}
                             </TableCell>
                             <TableCell>
                               <Select
