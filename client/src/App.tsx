@@ -14,6 +14,7 @@ import UIConfigMockup from "@/pages/ui-config-mockup";
 import FenceStyles from "@/pages/fence-styles";
 import CategoryManager from "@/pages/category-manager";
 import SlotManager from "@/pages/slot-manager";
+import Templates from "@/pages/templates";
 import NotFound from "@/pages/not-found";
 
 // Protected route wrapper for admin pages
@@ -67,6 +68,9 @@ function Router() {
       </Route>
       <Route path="/slot-manager">
         {() => <ProtectedRoute component={SlotManager} />}
+      </Route>
+      <Route path="/templates">
+        {() => <ProtectedRoute component={Templates} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

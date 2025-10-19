@@ -1135,6 +1135,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Template download endpoints
+  app.get("/api/templates/:filename", requireAdmin, async (req, res) => {
+    try {
+      const { filename } = req.params;
+      
+      // Security: only allow CSV files from templates/tabs directory
+      if (!filename.endsWith('.csv') || filename.includes('..') || filename.includes('/')) {
+        return res.status(400).json({ error: "Invalid filename" });
+      }
+      
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.join(process.cwd(), 'templates', 'tabs', filename);
+      
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      // Send file
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.sendFile(filePath);
+    } catch (error) {
+      console.error("Error serving template:", error);
+      res.status(500).json({ error: "Failed to serve template" });
+    }
+  });
+
+  app.get("/api/templates/download-all", requireAdmin, async (req, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const archiver = await import('archiver');
+      
+      const templatesDir = path.join(process.cwd(), 'templates', 'tabs');
+      
+      // Check if directory exists
+      if (!fs.existsSync(templatesDir)) {
+        return res.status(404).json({ error: "Templates directory not found" });
+      }
+      
+      // Set headers for ZIP download
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="fencelogic-templates.zip"');
+      
+      // Create ZIP archive
+      const archive = archiver.default('zip', { zlib: { level: 9 } });
+      
+      archive.on('error', (err: Error) => {
+        console.error("Archive error:", err);
+        throw err;
+      });
+      
+      // Pipe archive to response
+      archive.pipe(res);
+      
+      // Add all CSV files from templates/tabs
+      archive.directory(templatesDir, false);
+      
+      // Finalize archive
+      await archive.finalize();
+    } catch (error) {
+      console.error("Error creating ZIP:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to create ZIP file" });
+      }
+    }
+  });
+
   // Admin config routes (Google Sheets OAuth & config)
   app.use("/api/admin/config", requireAdmin, adminConfigRouter);
   app.use("/api/admin/google", requireAdmin, adminConfigRouter);

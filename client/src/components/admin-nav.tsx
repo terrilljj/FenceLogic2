@@ -1,11 +1,11 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Package, Settings, Layers, LogOut, Sliders, Eye, Fence } from "lucide-react";
+import { Package, Settings, Layers, LogOut, Sliders, Eye, Fence, FileSpreadsheet } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminNavProps {
-  currentPage?: "products" | "categories" | "ui-config" | "ui-config-mockup" | "slot-manager" | "admin-settings" | "fence-styles";
+  currentPage?: "products" | "categories" | "ui-config" | "ui-config-mockup" | "slot-manager" | "admin-settings" | "fence-styles" | "templates";
 }
 
 export function AdminNav({ currentPage }: AdminNavProps) {
@@ -79,6 +79,16 @@ export function AdminNav({ currentPage }: AdminNavProps) {
         >
           <Sliders className="h-4 w-4 mr-2" />
           Slot Manager
+        </Button>
+      </Link>
+      <Link href="/templates">
+        <Button
+          variant={currentPage === "templates" ? "default" : "outline"}
+          size="sm"
+          data-testid="nav-templates"
+        >
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Templates
         </Button>
       </Link>
       <Link href="/admin-settings">
