@@ -10,6 +10,7 @@ export type ProductType = "glass-pool" | "glass-balustrade" | "aluminium-pool" |
 export type ProductVariant = 
   | "glass-pool-spigots" 
   | "glass-pool-channel"
+  | "glass-pool-channel-std"
   | "glass-bal-spigots"
   | "glass-bal-spigots-12mm"
   | "glass-bal-spigots-15mm"

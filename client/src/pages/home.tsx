@@ -20,10 +20,10 @@ const productOptions: ProductOption[] = [
     visual: "frameless-glass"
   },
   {
-    id: "glass-pool-channel",
+    id: "glass-pool-channel-std",
     type: "glass-pool",
-    name: "Channel Pool Fence",
-    description: "Glass in aluminum channel",
+    name: "VersaTilt Channel Pool Fence",
+    description: "12mm/15mm glass with gates, 4200mm channel",
     visual: "channel-glass"
   },
   {
