@@ -8,6 +8,10 @@ Fence Logic is a web-based configurator tool for designing custom fencing and ba
 
 Preferred communication style: Simple, everyday language.
 
+**Admin Credentials:**
+- Username: fence logic
+- Password: 7677fencelogic.
+
 ## System Architecture
 
 ### Frontend Architecture

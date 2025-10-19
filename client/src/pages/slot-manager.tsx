@@ -64,6 +64,9 @@ export default function SlotManager() {
     queryKey: ["/api/admin/products"],
   });
 
+  // Get unique subcategories for filtering
+  const availableSubcategories = Array.from(new Set(products.map(p => p.subcategory).filter(Boolean)));
+
   // Fetch slots for selected variant and field
   const { data: slots = [], isLoading: slotsLoading } = useQuery<ProductSlot[]>({
     queryKey: ["/api/admin/product-slots", selectedVariant, selectedField],
@@ -295,8 +298,8 @@ export default function SlotManager() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-24">Internal ID</TableHead>
-                        <TableHead>Product</TableHead>
-                        <TableHead>SKU</TableHead>
+                        <TableHead className="w-64">Type/Label</TableHead>
+                        <TableHead>Product (SKU)</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead className="w-24">Status</TableHead>
                       </TableRow>
@@ -304,6 +307,11 @@ export default function SlotManager() {
                     <TableBody>
                       {slots.map((slot) => {
                         const mappedProduct = products.find(p => p.id === slot.productId);
+                        // Filter products based on slot label (subcategory)
+                        const filteredProducts = slot.label 
+                          ? products.filter(p => p.subcategory === slot.label)
+                          : products;
+                        
                         return (
                           <TableRow key={slot.id}>
                             <TableCell className="font-mono font-bold">
@@ -311,23 +319,45 @@ export default function SlotManager() {
                             </TableCell>
                             <TableCell>
                               <Select
-                                value={slot.productId || ""}
-                                onValueChange={(value) => handleProductChange(slot.id, value)}
+                                value={slot.label || ""}
+                                onValueChange={(value) => {
+                                  // Update slot label and clear productId when changing type
+                                  updateSlotMutation.mutate({ 
+                                    id: slot.id, 
+                                    productId: null, 
+                                    label: value 
+                                  });
+                                }}
                               >
-                                <SelectTrigger data-testid={`select-product-${slot.internalId}`}>
-                                  <SelectValue placeholder="Select product..." />
+                                <SelectTrigger data-testid={`select-label-${slot.internalId}`}>
+                                  <SelectValue placeholder="Select type..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {products.map((product: Product) => (
-                                    <SelectItem key={product.id} value={product.id}>
-                                      {product.description}
+                                  {availableSubcategories.map((subcat) => (
+                                    <SelectItem key={subcat} value={subcat}>
+                                      {subcat}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                             </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {mappedProduct?.code || "—"}
+                            <TableCell>
+                              <Select
+                                value={slot.productId || ""}
+                                onValueChange={(value) => handleProductChange(slot.id, value)}
+                                disabled={!slot.label}
+                              >
+                                <SelectTrigger data-testid={`select-product-${slot.internalId}`}>
+                                  <SelectValue placeholder={slot.label ? "Select product..." : "Select type first..."} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {filteredProducts.map((product: Product) => (
+                                    <SelectItem key={product.id} value={product.id}>
+                                      {product.code}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {mappedProduct?.price || "—"}
