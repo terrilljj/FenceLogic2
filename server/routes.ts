@@ -1361,6 +1361,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         console.log(`[Template Import] Created ${fieldsCreated} calculator fields for ${matchingStyle.label}`);
+        
+        // Also update min/max panel widths from first calculator input (if available)
+        const runLengthField = processed.calculatorInputs.find(f => f.variableType === 'runLengthMm');
+        const minPanelField = processed.calculatorInputs.find(f => f.variableType === 'minPanelMm');
+        const maxPanelField = processed.calculatorInputs.find(f => f.variableType === 'maxPanelMm');
+        
+        if (minPanelField || maxPanelField) {
+          const updates: any = {};
+          if (minPanelField?.min) updates.minPanelWidth = parseInt(minPanelField.min);
+          if (maxPanelField?.max) updates.maxPanelWidth = parseInt(maxPanelField.max);
+          
+          if (Object.keys(updates).length > 0) {
+            await storage.updateFenceStyle(matchingStyle.id, updates);
+            console.log(`[Template Import] Updated panel width constraints: min=${updates.minPanelWidth}, max=${updates.maxPanelWidth}`);
+          }
+        }
       } else {
         console.warn(`[Template Import] No fence style found with templateId: ${templateId}`);
       }
