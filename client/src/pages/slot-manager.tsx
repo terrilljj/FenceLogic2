@@ -280,7 +280,7 @@ export default function SlotManager() {
                 {availableFields.find(f => f.fieldName === selectedField)?.label || selectedField} Slots
               </CardTitle>
               <CardDescription>
-                Map internal IDs to products. Add products via CSV upload or select manually.
+                Map internal IDs to products. Select Type/Label first, then choose product from Actions dropdown. Changes save automatically.
               </CardDescription>
             </CardHeader>
             <CardContent>
