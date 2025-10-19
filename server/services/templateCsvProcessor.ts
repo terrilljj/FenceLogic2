@@ -70,8 +70,12 @@ export interface GateConfig {
 
 /**
  * Parses and validates CSV template data
+ * Returns both validated rows and any validation errors (doesn't throw)
  */
-export async function parseTemplateCSV(csvData: string): Promise<CsvRow[]> {
+export async function parseTemplateCSV(csvData: string): Promise<{
+  rows: CsvRow[];
+  parseErrors: string[];
+}> {
   try {
     const records = parse(csvData, {
       columns: true,
@@ -95,11 +99,7 @@ export async function parseTemplateCSV(csvData: string): Promise<CsvRow[]> {
       }
     }
 
-    if (errors.length > 0) {
-      throw new Error(`CSV validation errors:\n${errors.join('\n')}`);
-    }
-
-    return validatedRows;
+    return { rows: validatedRows, parseErrors: errors };
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Failed to parse CSV: ${error.message}`);
@@ -215,10 +215,13 @@ export async function importTemplateCSV(
   csvData: string
 ): Promise<ProcessedTemplate> {
   // Step 1: Parse and validate CSV structure
-  const rows = await parseTemplateCSV(csvData);
+  const { rows, parseErrors } = await parseTemplateCSV(csvData);
 
   // Step 2: Categorize rows into template configuration
   const processed = processTemplateRows(templateId, filename, rows);
+  
+  // Add parse errors to validation errors
+  processed.validationErrors.push(...parseErrors);
 
   return processed;
 }

@@ -1195,19 +1195,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`[Template Import] Validation warnings:`, processed.validationErrors);
       }
 
-      // TODO: Store processed data in database
-      // For now, return detailed breakdown of what was parsed
+      // Save product mappings to database (upsert: create or update)
+      let productsCreated = 0;
+      let productsUpdated = 0;
+      const dbErrors: string[] = [];
+
+      for (const mapping of processed.productMappings) {
+        try {
+          const { created } = await storage.upsertProduct({
+            code: mapping.productSku,
+            description: mapping.productDescription,
+            category: templateId.split('-')[1] || '', // Extract category from template ID
+            subcategory: mapping.variableType,
+            price: mapping.productPrice.toString(),
+            active: 1,
+          });
+          
+          if (created) {
+            productsCreated++;
+          } else {
+            productsUpdated++;
+          }
+        } catch (error) {
+          const errorMsg = `Failed to upsert ${mapping.productSku}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          dbErrors.push(errorMsg);
+          console.error(`[Template Import] ${errorMsg}`);
+        }
+      }
+
+      console.log(`[Template Import] Database operations:`);
+      console.log(`  - Products Created: ${productsCreated}`);
+      console.log(`  - Products Updated: ${productsUpdated}`);
+      if (dbErrors.length > 0) {
+        console.error(`  - Database Errors: ${dbErrors.length}`);
+      }
 
       res.json({
         success: true,
-        message: `Template ${filename} imported and processed successfully`,
+        message: `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated`,
         templateId,
         summary: {
           calculatorInputs: processed.calculatorInputs.length,
           productMappings: processed.productMappings.length,
+          productsCreated,
+          productsUpdated,
           featureToggles: processed.featureToggles.length,
           gateConfigs: processed.gateConfigs.length,
           validationErrors: processed.validationErrors.length,
+          databaseErrors: dbErrors.length,
         },
         data: {
           calculatorInputs: processed.calculatorInputs,
@@ -1216,6 +1251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gateConfigs: processed.gateConfigs.slice(0, 3), // Preview first 3
         },
         validationErrors: processed.validationErrors,
+        databaseErrors: dbErrors,
       });
 
     } catch (error) {

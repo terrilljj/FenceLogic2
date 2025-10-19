@@ -15,6 +15,7 @@ export interface IStorage {
   getAllProducts(): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  upsertProduct(product: InsertProduct): Promise<{ product: Product; created: boolean }>;
   deleteProduct(id: string): Promise<boolean>;
   
   // Product UI Configuration operations
@@ -107,6 +108,39 @@ export class DatabaseStorage implements IStorage {
       .where(eq(products.id, id))
       .returning();
     return product || undefined;
+  }
+
+  async upsertProduct(insertProduct: InsertProduct): Promise<{ product: Product; created: boolean }> {
+    const existing = await this.getProductByCode(insertProduct.code);
+    
+    if (existing) {
+      const [product] = await db
+        .update(products)
+        .set({
+          description: insertProduct.description,
+          category: insertProduct.category,
+          subcategory: insertProduct.subcategory,
+          price: insertProduct.price,
+          weight: insertProduct.weight,
+          dimensions: insertProduct.dimensions,
+          units: insertProduct.units,
+          tags: insertProduct.tags as any,
+          notes: insertProduct.notes,
+          imageUrl: insertProduct.imageUrl,
+          active: insertProduct.active,
+          categoryPaths: insertProduct.categoryPaths as any,
+          selectionId: insertProduct.selectionId,
+        })
+        .where(eq(products.code, insertProduct.code))
+        .returning();
+      return { product, created: false };
+    } else {
+      const [product] = await db
+        .insert(products)
+        .values(insertProduct)
+        .returning();
+      return { product, created: true };
+    }
   }
 
   async deleteProduct(id: string): Promise<boolean> {
