@@ -20,7 +20,7 @@ interface SpanConfigPanelProps {
   span: SpanConfig;
   onUpdate: (span: SpanConfig) => void;
   productVariant?: ProductVariant;
-  uiConfig?: any;
+  calculatorConfig?: any;
   showLeftGap?: boolean;
   showRightGap?: boolean;
 }
@@ -29,20 +29,21 @@ export function SpanConfigPanel({
   span,
   onUpdate,
   productVariant = "glass-pool-spigots",
-  uiConfig,
+  calculatorConfig,
   showLeftGap,
   showRightGap,
 }: SpanConfigPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
-  // Determine if gates are allowed for this product variant
-  const gatesAllowed = !productVariant.includes("bal-");
+  // Determine if gates are allowed based on calculator config features
+  const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
 
-  // Helper function to check if a field is enabled in UI config
+  // Helper function to check if a field is enabled in calculator config
   const isFieldEnabled = (fieldName: string): boolean => {
-    if (!uiConfig || !uiConfig.fieldConfigs) return true; // Default to enabled if no config
-    const fieldConfig = uiConfig.fieldConfigs.find((fc: any) => fc.field === fieldName);
-    return fieldConfig?.enabled !== false; // Default to enabled if not found
+    // If no config, default to enabled
+    if (!calculatorConfig?.fields) return true;
+    // Check if field exists in config - if it exists, it's enabled
+    return fieldName in calculatorConfig.fields;
   };
 
   const updateSpan = (updates: Partial<SpanConfig>) => {

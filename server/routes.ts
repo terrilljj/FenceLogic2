@@ -107,11 +107,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Public endpoint for fetching calculator configuration by fence style code
-  app.get("/api/styles/:code/calculator-config", async (req, res) => {
+  // Public endpoint for fetching calculator configuration by fence style code or product variant
+  app.get("/api/styles/:codeOrVariant/calculator-config", async (req, res) => {
     try {
-      const { code } = req.params;
-      const config = await storage.getStyleWithCalculatorConfig(code);
+      const { codeOrVariant } = req.params;
+      
+      // Try to find by code first, then by product variant
+      let config = await storage.getStyleWithCalculatorConfig(codeOrVariant);
+      
+      if (!config) {
+        // Try finding by product variant instead
+        const allStyles = await storage.getAllFenceStyles();
+        const styleByVariant = allStyles.find(s => s.productVariant === codeOrVariant);
+        if (styleByVariant) {
+          config = await storage.getStyleWithCalculatorConfig(styleByVariant.code);
+        }
+      }
       
       if (!config) {
         return res.status(404).json({ error: "Fence style not found" });

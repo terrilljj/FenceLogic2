@@ -92,31 +92,30 @@ export default function FenceLogic() {
     queryKey: ["/api/products/lookup"],
   });
 
-  // Fetch UI config for current product variant
-  const { data: uiConfig } = useQuery({
-    queryKey: ["/api/ui-configs", design.productVariant],
+  // Fetch calculator config for current product variant (from fence styles)
+  const { data: calculatorConfig } = useQuery({
+    queryKey: ["/api/styles", design.productVariant, "calculator-config"],
     queryFn: async () => {
-      const response = await fetch(`/api/ui-configs/${design.productVariant}`);
+      const response = await fetch(`/api/styles/${design.productVariant}/calculator-config`);
       if (!response.ok) {
-        // If config doesn't exist, return null (fallback to all fields enabled)
+        // If config doesn't exist, return null (fallback to defaults)
         if (response.status === 404) return null;
-        throw new Error("Failed to fetch UI config");
+        throw new Error("Failed to fetch calculator config");
       }
       return response.json();
     },
   });
 
-  // Helper function to get default max panel width from UI config
+  // Helper function to get default max panel width from calculator config
   const getDefaultMaxPanelWidth = () => {
     if (design.productVariant === "custom-frameless") return 1500;
     
-    // Get from UI config if available
-    const maxPanelField = uiConfig?.fieldConfigs?.find((f: any) => f.field === "max-panel-width");
-    if (maxPanelField?.defaultConfig?.defaultValue) {
-      return parseInt(maxPanelField.defaultConfig.defaultValue);
+    // Get from calculator config if available
+    if (calculatorConfig?.maxPanelWidth) {
+      return calculatorConfig.maxPanelWidth;
     }
     
-    // Fallback to 1200 (UI config default)
+    // Fallback to 1200 (default)
     return 1200;
   };
 
@@ -497,7 +496,7 @@ export default function FenceLogic() {
                     span={span}
                     onUpdate={(updatedSpan) => handleSpanUpdate(span.spanId, updatedSpan)}
                     productVariant={design.productVariant}
-                    uiConfig={uiConfig}
+                    calculatorConfig={calculatorConfig}
                     showLeftGap={true}
                     showRightGap={true}
                   />
