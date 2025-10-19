@@ -338,14 +338,14 @@ export function FieldConfigEditor({ fields, onChange, variantLabel }: FieldConfi
                           <div className="space-y-2">
                             <Label htmlFor={`field-context-${index}`}>Context</Label>
                             <Select
-                              value={field.context || ""}
-                              onValueChange={(value: "gate" | "hinge" | "") => updateField(index, { context: value || undefined })}
+                              value={field.context || "none"}
+                              onValueChange={(value: "gate" | "hinge" | "none") => updateField(index, { context: value === "none" ? undefined : value })}
                             >
                               <SelectTrigger id={`field-context-${index}`} data-testid={`select-context-${index}`}>
                                 <SelectValue placeholder="None" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">None</SelectItem>
+                                <SelectItem value="none">None</SelectItem>
                                 <SelectItem value="gate">Gate</SelectItem>
                                 <SelectItem value="hinge">Hinge</SelectItem>
                               </SelectContent>
