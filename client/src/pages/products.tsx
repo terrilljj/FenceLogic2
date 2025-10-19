@@ -53,6 +53,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SheetsSyncDialog } from "@/components/sheets-sync-dialog";
+import { AdminNav } from "@/components/admin-nav";
 
 export default function Products() {
   const { toast } = useToast();
@@ -270,20 +271,21 @@ export default function Products() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-bold mb-2 flex items-center gap-3" data-testid="text-products-title">
+              <h1 className="text-3xl font-bold mb-2 flex items-center gap-3" data-testid="text-products-title">
                 <Package className="w-8 h-8" />
                 Product Catalog
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-muted-foreground">
                 Manage your product codes, descriptions, and pricing
               </p>
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleDownloadTemplate}
                 data-testid="button-download-template"
               >
@@ -292,6 +294,7 @@ export default function Products() {
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleExport}
                 disabled={products.length === 0}
                 data-testid="button-export-csv"
@@ -301,6 +304,7 @@ export default function Products() {
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={importMutation.isPending}
                 data-testid="button-import-csv"
@@ -310,58 +314,16 @@ export default function Products() {
               </Button>
               <SheetsSyncDialog />
               <Button
+                size="sm"
                 onClick={() => handleOpenDialog()}
                 data-testid="button-add-product"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
               </Button>
-              <Link href="/categories">
-                <Button
-                  variant="outline"
-                  data-testid="button-categories"
-                >
-                  <Package className="w-4 h-4 mr-2" />
-                  Categories
-                </Button>
-              </Link>
-              <Link href="/ui-config">
-                <Button
-                  variant="outline"
-                  data-testid="button-ui-config"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  UI Config
-                </Button>
-              </Link>
-              <Link href="/slot-manager">
-                <Button
-                  variant="outline"
-                  data-testid="button-slot-manager"
-                >
-                  <Layers className="w-4 h-4 mr-2" />
-                  Slot Manager
-                </Button>
-              </Link>
-              <Link href="/admin-settings">
-                <Button
-                  variant="outline"
-                  data-testid="button-admin-settings"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                onClick={handleLogout}
-                data-testid="button-logout"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
             </div>
           </div>
+          <AdminNav currentPage="products" />
         </div>
       </div>
 

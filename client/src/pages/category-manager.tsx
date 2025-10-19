@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Pencil, Trash2, Plus, LogOut, ArrowLeft, Package, Settings } from "lucide-react";
+import { AdminNav } from "@/components/admin-nav";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -285,34 +286,12 @@ export default function CategoryManager() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLocation("/products")}
-              data-testid="button-back-products"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Products
-            </Button>
-            <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-xl font-semibold">Category Manager</h1>
-            </div>
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Settings className="h-6 w-6 text-muted-foreground" />
+            <h1 className="text-3xl font-bold">Category Manager</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/ui-config">
-              <Button variant="outline" size="sm" data-testid="button-ui-config">
-                <Settings className="h-4 w-4 mr-2" />
-                UI Config
-              </Button>
-            </Link>
-            <Button variant="outline" size="sm" onClick={handleLogout} data-testid="button-logout">
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+          <AdminNav currentPage="categories" />
         </div>
       </header>
 

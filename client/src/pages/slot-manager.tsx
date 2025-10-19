@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { AdminNav } from "@/components/admin-nav";
 
 // Field definitions for Glass Pool Spigots (Frameless)
 type FieldDefinition = {
@@ -173,13 +174,18 @@ export default function SlotManager() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 max-w-7xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Slot Manager</h1>
-          <p className="text-muted-foreground">
-            Manage product slots with internal IDs for self-service catalog updates
-          </p>
+      <div className="border-b border-border bg-card">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="mb-4">
+            <h1 className="text-3xl font-bold mb-2">Slot Manager</h1>
+            <p className="text-muted-foreground">
+              Manage product slots with internal IDs for self-service catalog updates
+            </p>
+          </div>
+          <AdminNav currentPage="slot-manager" />
         </div>
+      </div>
+      <div className="container mx-auto p-6 max-w-7xl">
 
         {/* Variant Selector */}
         <Card className="mb-6">

@@ -965,6 +965,195 @@ export const insertProductUIConfigSchema = createInsertSchema(productUIConfigs).
 export type InsertProductUIConfig = z.infer<typeof insertProductUIConfigSchema>;
 export type ProductUIConfig = typeof productUIConfigs.$inferSelect;
 
+// ============================================================================
+// Hierarchical Fence UI Configuration System
+// ============================================================================
+
+// Conditional visibility rule
+export interface VisibilityRule {
+  when: {
+    fieldPath: string; // Path to field like "gates.soft.hardware"
+    equals?: any;
+    notEquals?: any;
+    in?: any[];
+    notIn?: any[];
+  };
+  action: "show" | "hide";
+}
+
+// Value constraint rule
+export interface ValueRule {
+  when: {
+    fieldPath: string;
+    equals?: any;
+    notEquals?: any;
+    in?: any[];
+    notIn?: any[];
+  };
+  allowedValues?: any[];
+  disallowedValues?: any[];
+}
+
+// Extended UI field config with conditional rules
+export interface UIFieldConfigWithRules extends UIFieldConfig {
+  visibility?: VisibilityRule[];
+  valueConstraints?: ValueRule[];
+}
+
+// Zod schema for conditional rules
+export const VisibilityRuleSchema = z.object({
+  when: z.object({
+    fieldPath: z.string(),
+    equals: z.any().optional(),
+    notEquals: z.any().optional(),
+    in: z.array(z.any()).optional(),
+    notIn: z.array(z.any()).optional(),
+  }),
+  action: z.enum(["show", "hide"]),
+});
+
+export const ValueRuleSchema = z.object({
+  when: z.object({
+    fieldPath: z.string(),
+    equals: z.any().optional(),
+    notEquals: z.any().optional(),
+    in: z.array(z.any()).optional(),
+    notIn: z.array(z.any()).optional(),
+  }),
+  allowedValues: z.array(z.any()).optional(),
+  disallowedValues: z.array(z.any()).optional(),
+});
+
+export const UIFieldConfigWithRulesSchema = z.object({
+  type: z.enum(["standard", "number"]).optional(),
+  field: z.string(),
+  enabled: z.boolean(),
+  position: z.number(),
+  label: z.string().optional(),
+  tooltip: z.string().optional(),
+  // Standard field properties
+  defaultValue: z.any().optional(),
+  options: z.array(z.string()).optional(),
+  optionPaths: z.record(z.array(z.string())).optional(),
+  categoryPaths: z.array(z.string()).optional(),
+  optionProducts: z.record(z.array(z.string())).optional(),
+  products: z.array(z.string()).optional(),
+  // Numeric field properties
+  unit: z.literal("mm").optional(),
+  default: z.number().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  step: z.number().positive().optional(),
+  tolerance: z.number().nonnegative().optional(),
+  context: z.enum(["gate", "hinge"]).optional(),
+  subcategory: z.string().optional(),
+  // Conditional rules (new)
+  visibility: z.array(VisibilityRuleSchema).optional(),
+  valueConstraints: z.array(ValueRuleSchema).optional(),
+}).refine(data => {
+  if (data.min !== undefined && data.max !== undefined && data.min > data.max) {
+    return false;
+  }
+  return true;
+}, {
+  message: "min must be less than or equal to max"
+}).refine(data => {
+  if (data.type === "number" && data.step !== undefined && data.step <= 0) {
+    return false;
+  }
+  return true;
+}, {
+  message: "step must be positive for numeric fields"
+}).refine(data => {
+  if (data.type === "number" && data.tolerance !== undefined && data.tolerance < 0) {
+    return false;
+  }
+  return true;
+}, {
+  message: "tolerance must be non-negative for numeric fields"
+});
+
+// Fence variant specification - the most granular level
+export interface FenceVariantSpec {
+  id: string; // e.g., "standard-1200", "soft-hinge-panels"
+  label: string; // e.g., "Standard 1200", "Soft Hinge Panels"
+  description?: string;
+  skuPrefix?: string; // e.g., "GP", "SHP"
+  fieldConfigs: UIFieldConfigWithRules[];
+}
+
+export const FenceVariantSpecSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  description: z.string().optional(),
+  skuPrefix: z.string().optional(),
+  fieldConfigs: z.array(UIFieldConfigWithRulesSchema),
+});
+
+// Fence variant group - organizes variants by brand/subcategory
+export interface FenceVariantGroup {
+  id: string; // e.g., "soft", "gate-master"
+  brand?: string; // e.g., "Soft", "Gate Master" - optional brand label
+  subcategory?: string; // Alternative to brand for non-hardware groups
+  order: number;
+  variants: FenceVariantSpec[];
+}
+
+export const FenceVariantGroupSchema = z.object({
+  id: z.string(),
+  brand: z.string().optional(),
+  subcategory: z.string().optional(),
+  order: z.number(),
+  variants: z.array(FenceVariantSpecSchema),
+});
+
+// Fence component section - groups related components (Panels, Gates, Spigots)
+export interface FenceComponentSection {
+  id: string; // e.g., "panels", "gates", "spigots"
+  label: string; // e.g., "Panels", "Gates", "Spigots"
+  icon?: string; // Optional icon name (lucide-react)
+  order: number;
+  variants: FenceVariantGroup[];
+}
+
+export const FenceComponentSectionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  icon: z.string().optional(),
+  order: z.number(),
+  variants: z.array(FenceVariantGroupSchema),
+});
+
+// Complete fence style configuration
+export interface FenceStyleConfig {
+  sections: FenceComponentSection[];
+}
+
+export const FenceStyleConfigSchema = z.object({
+  sections: z.array(FenceComponentSectionSchema),
+});
+
+// Fence UI Configuration table - stores hierarchical config per fence style
+export const fenceUIConfigs = pgTable("fence_ui_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fenceStyleId: varchar("fence_style_id").notNull().unique(), // e.g., "pool-fence-spigots"
+  displayName: varchar("display_name", { length: 200 }).notNull(), // e.g., "Pool Fence with Spigots"
+  productVariantRefs: jsonb("product_variant_refs").$type<string[]>().notNull().default([]), // Associated product variants
+  status: varchar("status", { length: 50 }).notNull().default("active"), // "active", "draft", "archived"
+  config: jsonb("config").$type<FenceStyleConfig>().notNull(),
+  updatedAt: varchar("updated_at").notNull().default(sql`now()::text`),
+  createdAt: varchar("created_at").notNull().default(sql`now()::text`),
+});
+
+export const insertFenceUIConfigSchema = createInsertSchema(fenceUIConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertFenceUIConfig = z.infer<typeof insertFenceUIConfigSchema>;
+export type FenceUIConfig = typeof fenceUIConfigs.$inferSelect;
+
 // Categories table for dynamic category management
 export const categories = pgTable("categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

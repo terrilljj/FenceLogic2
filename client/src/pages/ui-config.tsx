@@ -17,6 +17,7 @@ import { Link } from "wouter";
 import type { ProductVariant, UIFieldConfig, UIInputField, ProductCategory, ProductSubcategory, Category, Subcategory } from "@shared/schema";
 import { fetchCoverage, type CoverageResponse } from "@/lib/adminCoverage";
 import { PathMultiSelect } from "@/components/PathMultiSelect";
+import { AdminNav } from "@/components/admin-nav";
 
 const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string }[] = [
   { variant: "glass-pool-spigots", label: "Glass Pool - Spigots", group: "Glass Pool Fencing" },
@@ -484,18 +485,16 @@ export default function UIConfigPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 max-w-7xl">
-        <div className="flex items-center gap-4 mb-6">
-          <Link href="/products">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold">UI Configuration Manager</h1>
+      <div className="border-b border-border bg-card">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="mb-4">
+            <h1 className="text-3xl font-bold mb-2">UI Configuration Manager</h1>
             <p className="text-muted-foreground">Configure input fields and controls for each product variant</p>
           </div>
+          <AdminNav currentPage="ui-config" />
         </div>
+      </div>
+      <div className="container mx-auto p-6 max-w-7xl">
 
         <Tabs value={selectedVariant} onValueChange={(v) => setSelectedVariant(v as ProductVariant)}>
           <TabsList className="mb-6">

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { AdminNav } from "@/components/admin-nav";
 
 const googleConfigSchema = z.object({
   oauthClientId: z.string().min(1, "OAuth Client ID is required"),
@@ -70,13 +71,20 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Admin Settings</h1>
-        <p className="text-muted-foreground">
-          Configure Google Sheets integration for syncing product data and UI configurations.
-        </p>
+    <div className="min-h-screen bg-background">
+      <div className="border-b border-border bg-card">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="mb-4">
+            <h1 className="text-3xl font-bold mb-2">Admin Settings</h1>
+            <p className="text-muted-foreground">
+              Configure Google Sheets integration for syncing product data and UI configurations.
+            </p>
+          </div>
+          <AdminNav currentPage="admin-settings" />
+        </div>
       </div>
+
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
 
       {/* Status Card */}
       <Card className="mb-6">
@@ -241,6 +249,7 @@ export default function AdminSettings() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
