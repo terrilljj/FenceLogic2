@@ -1,32 +1,91 @@
-fence_style_id,section_id,section_label,section_order,variant_group_id,variant_group_label,variant_group_order,variant_id,variant_label,field_name,field_type,label,tooltip,unit,min,max,step,default_value,options,enabled,required,position,slot_prefix,slot_id,product_sku,product_description,product_price,lookup_rule
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,section-length,number,Section Length,Total length of fence section,mm,500,10000,50,3000,,TRUE,TRUE,1,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,left-gap,number,Left End Gap,Gap at left end of section,mm,0,150,5,50,,TRUE,TRUE,2,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,right-gap,number,Right End Gap,Gap at right end of section,mm,0,150,5,50,,TRUE,TRUE,3,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,desired-gap,number,Panel Gap,Desired gap between panels,mm,30,99,5,50,,TRUE,TRUE,4,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,max-panel-width,number,Max Panel Width,Maximum panel width constraint,mm,500,2000,50,1200,,TRUE,TRUE,5,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,min-panel-width,number,Min Panel Width,Minimum panel width constraint,mm,200,1000,50,250,,TRUE,FALSE,6,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,glass-thickness,select,Glass Thickness,Select glass panel thickness,,,,12mm,12mm,"12mm,15mm",TRUE,TRUE,7,GP,GP-12-1200,GP-12-1200-SS,Glass Panel 12mm 1200W Satin Spigots,425.00,width_match
-glass-pool-spigots,panels,Glass Panels,1,standard,Standard Panels,1,standard-1200,Standard 1200mm,panel-height,number,Panel Height,Glass panel height,mm,1200,1500,50,1200,,TRUE,TRUE,8,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,section-length,number,Section Length,Total length of fence section,mm,500,10000,50,3000,,TRUE,TRUE,1,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,left-gap,number,Left End Gap,Gap at left end of section,mm,0,150,5,50,,TRUE,TRUE,2,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,right-gap,number,Right End Gap,Gap at right end of section,mm,0,150,5,50,,TRUE,TRUE,3,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,desired-gap,number,Panel Gap,Desired gap between panels,mm,30,99,5,50,,TRUE,TRUE,4,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,max-panel-width,number,Max Panel Width,Maximum panel width constraint,mm,500,2000,50,1200,,TRUE,TRUE,5,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,min-panel-width,number,Min Panel Width,Minimum panel width constraint,mm,200,1000,50,250,,TRUE,FALSE,6,,,,,,,none
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,glass-thickness,select,Glass Thickness,Select glass panel thickness,,,,12mm,12mm,"12mm,15mm",TRUE,TRUE,7,RP,RP-12-1200,RP-12-1200-SS,Raked Panel 12mm 1200W Satin Spigots,495.00,width_match
-glass-pool-spigots,panels,Glass Panels,1,raked,Raked Panels,2,raked-panels,Raked Panels,panel-height,number,Panel Height,Glass panel height,mm,1200,1500,50,1200,,TRUE,TRUE,8,,,,,,,none
-glass-pool-spigots,hardware,Spigot Hardware,2,spigots,Spigots,1,spigot-config,Spigot Configuration,spigot-hardware,select,Spigot Finish,Select spigot finish,,,,Satin,Satin,"Polished,Satin,Black",TRUE,TRUE,1,SP,SP-SATIN,SP-316-SAT,Spigot 316 Stainless Satin,42.00,exact_match
-glass-pool-spigots,gates,Gate Hardware,3,soft,Soft Brand,1,soft-hinge-panels,Soft Hinge Panels,gate-enabled,boolean,Enable Gate,Add a gate to this section,,,,,FALSE,,TRUE,FALSE,1,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,soft,Soft Brand,1,soft-hinge-panels,Soft Hinge Panels,gate-width,number,Gate Width,Width of gate panel,mm,600,1200,50,900,,TRUE,FALSE,2,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,soft,Soft Brand,1,soft-hinge-panels,Soft Hinge Panels,hinge-panel-width,number,Hinge Panel Width,Width of hinge panel (glass-to-glass),mm,900,1200,50,1200,,TRUE,FALSE,3,SHP,SHP-12-1200,SHP-12-1200,Soft Hinge Panel 12mm 1200W,445.00,width_match
-glass-pool-spigots,gates,Gate Hardware,3,soft,Soft Brand,1,soft-hinge-panels,Soft Hinge Panels,hinge-gap,number,Hinge Gap,Gap at hinge side,mm,6,15,1,8,,TRUE,FALSE,4,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,soft,Soft Brand,1,soft-hinge-panels,Soft Hinge Panels,latch-gap,number,Latch Gap,Gap at latch side,mm,6,15,1,8,,TRUE,FALSE,5,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,soft,Soft Brand,1,soft-hinge-panels,Soft Hinge Panels,gate-mount-mode,select,Mount Mode,How gate is mounted,,,,GLASS_TO_GLASS,GLASS_TO_GLASS,"GLASS_TO_GLASS,POST,WALL",TRUE,FALSE,6,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,soft,Soft Brand,1,soft-hinge-panels,Soft Hinge Panels,gate-hinge-side,select,Hinge Side,Which side has the hinge,,,,LEFT,LEFT,"LEFT,RIGHT",TRUE,FALSE,7,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,gate-master,Gate Master,2,gm-hinge-panels,GM Hinge Panels,gate-enabled,boolean,Enable Gate,Add a gate to this section,,,,,FALSE,,TRUE,FALSE,1,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,gate-master,Gate Master,2,gm-hinge-panels,GM Hinge Panels,gate-width,number,Gate Width,Width of gate panel,mm,600,1200,50,900,,TRUE,FALSE,2,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,gate-master,Gate Master,2,gm-hinge-panels,GM Hinge Panels,hinge-panel-width,number,Hinge Panel Width,Width of hinge panel,mm,900,1200,50,1200,,TRUE,FALSE,3,GMHP,GMHP-12-1200,GMHP-12-1200,Gate Master Hinge Panel 12mm 1200W,455.00,width_match
-glass-pool-spigots,gates,Gate Hardware,3,gate-master,Gate Master,2,gm-hinge-panels,GM Hinge Panels,hinge-gap,number,Hinge Gap,Gap at hinge side,mm,6,15,1,8,,TRUE,FALSE,4,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,gate-master,Gate Master,2,gm-hinge-panels,GM Hinge Panels,latch-gap,number,Latch Gap,Gap at latch side,mm,6,15,1,8,,TRUE,FALSE,5,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,gate-master,Gate Master,2,gm-hinge-panels,GM Hinge Panels,gate-mount-mode,select,Mount Mode,How gate is mounted,,,,GLASS_TO_GLASS,GLASS_TO_GLASS,"GLASS_TO_GLASS,POST,WALL",TRUE,FALSE,6,,,,,,,none
-glass-pool-spigots,gates,Gate Hardware,3,gate-master,Gate Master,2,gm-hinge-panels,GM Hinge Panels,gate-hinge-side,select,Hinge Side,Which side has the hinge,,,,LEFT,LEFT,"LEFT,RIGHT",TRUE,FALSE,7,,,,,,,none
+variable_type,label,field_type,min,max,step,default_value,options,enabled,slot_prefix,size_mm,product_sku,product_description,product_price,notes
+Section Length,Section Length (mm),number,500,10000,50,3000,,TRUE,,,,,,"Total run length"
+LHS Gap,Left End Gap (mm),number,0,150,5,50,,TRUE,,,,,,"Gap at left end"
+RHS Gap,Right End Gap (mm),number,0,150,5,50,,TRUE,,,,,,"Gap at right end"
+Panel Gaps,Panel Gaps (mm),number,30,99,5,50,,TRUE,,,,,,"Gap between panels"
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,250,GP-12-250,Glass Panel 12mm 250W Satin Spigots,285.00,"Slot mapped by width"
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,300,GP-12-300,Glass Panel 12mm 300W Satin Spigots,295.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,350,GP-12-350,Glass Panel 12mm 350W Satin Spigots,305.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,400,GP-12-400,Glass Panel 12mm 400W Satin Spigots,315.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,450,GP-12-450,Glass Panel 12mm 450W Satin Spigots,325.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,500,GP-12-500,Glass Panel 12mm 500W Satin Spigots,335.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,550,GP-12-550,Glass Panel 12mm 550W Satin Spigots,345.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,600,GP-12-600,Glass Panel 12mm 600W Satin Spigots,355.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,650,GP-12-650,Glass Panel 12mm 650W Satin Spigots,365.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,700,GP-12-700,Glass Panel 12mm 700W Satin Spigots,375.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,750,GP-12-750,Glass Panel 12mm 750W Satin Spigots,385.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,800,GP-12-800,Glass Panel 12mm 800W Satin Spigots,395.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,850,GP-12-850,Glass Panel 12mm 850W Satin Spigots,405.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,900,GP-12-900,Glass Panel 12mm 900W Satin Spigots,415.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,950,GP-12-950,Glass Panel 12mm 950W Satin Spigots,425.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1000,GP-12-1000,Glass Panel 12mm 1000W Satin Spigots,435.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1050,GP-12-1050,Glass Panel 12mm 1050W Satin Spigots,445.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1100,GP-12-1100,Glass Panel 12mm 1100W Satin Spigots,455.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1150,GP-12-1150,Glass Panel 12mm 1150W Satin Spigots,465.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1200,GP-12-1200,Glass Panel 12mm 1200W Satin Spigots,475.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1250,GP-12-1250,Glass Panel 12mm 1250W Satin Spigots,485.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1300,GP-12-1300,Glass Panel 12mm 1300W Satin Spigots,495.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1350,GP-12-1350,Glass Panel 12mm 1350W Satin Spigots,505.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1400,GP-12-1400,Glass Panel 12mm 1400W Satin Spigots,515.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1450,GP-12-1450,Glass Panel 12mm 1450W Satin Spigots,525.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1500,GP-12-1500,Glass Panel 12mm 1500W Satin Spigots,535.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1550,GP-12-1550,Glass Panel 12mm 1550W Satin Spigots,545.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1600,GP-12-1600,Glass Panel 12mm 1600W Satin Spigots,555.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1650,GP-12-1650,Glass Panel 12mm 1650W Satin Spigots,565.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1700,GP-12-1700,Glass Panel 12mm 1700W Satin Spigots,575.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1750,GP-12-1750,Glass Panel 12mm 1750W Satin Spigots,585.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1800,GP-12-1800,Glass Panel 12mm 1800W Satin Spigots,595.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1850,GP-12-1850,Glass Panel 12mm 1850W Satin Spigots,605.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1900,GP-12-1900,Glass Panel 12mm 1900W Satin Spigots,615.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,1950,GP-12-1950,Glass Panel 12mm 1950W Satin Spigots,625.00,
+Panel Codes,Glass Panel 12mm,product,250,2000,50,1200,,TRUE,GP,2000,GP-12-2000,Glass Panel 12mm 2000W Satin Spigots,635.00,
+Soft Hinge,Soft Hinge Panel,product,900,1200,50,1200,,TRUE,SHP,900,SHP-12-900,Soft Hinge Panel 12mm 900W,395.00,"Glass-to-glass hinge panel"
+Soft Hinge,Soft Hinge Panel,product,900,1200,50,1200,,TRUE,SHP,950,SHP-12-950,Soft Hinge Panel 12mm 950W,405.00,
+Soft Hinge,Soft Hinge Panel,product,900,1200,50,1200,,TRUE,SHP,1000,SHP-12-1000,Soft Hinge Panel 12mm 1000W,415.00,
+Soft Hinge,Soft Hinge Panel,product,900,1200,50,1200,,TRUE,SHP,1050,SHP-12-1050,Soft Hinge Panel 12mm 1050W,425.00,
+Soft Hinge,Soft Hinge Panel,product,900,1200,50,1200,,TRUE,SHP,1100,SHP-12-1100,Soft Hinge Panel 12mm 1100W,435.00,
+Soft Hinge,Soft Hinge Panel,product,900,1200,50,1200,,TRUE,SHP,1150,SHP-12-1150,Soft Hinge Panel 12mm 1150W,445.00,
+Soft Hinge,Soft Hinge Panel,product,900,1200,50,1200,,TRUE,SHP,1200,SHP-12-1200,Soft Hinge Panel 12mm 1200W,455.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,600,SGP-12-600,Soft Gate Panel 12mm 600W,345.00,"Gate panel for soft close"
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,650,SGP-12-650,Soft Gate Panel 12mm 650W,355.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,700,SGP-12-700,Soft Gate Panel 12mm 700W,365.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,750,SGP-12-750,Soft Gate Panel 12mm 750W,375.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,800,SGP-12-800,Soft Gate Panel 12mm 800W,385.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,850,SGP-12-850,Soft Gate Panel 12mm 850W,395.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,900,SGP-12-900,Soft Gate Panel 12mm 900W,405.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,950,SGP-12-950,Soft Gate Panel 12mm 950W,415.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,1000,SGP-12-1000,Soft Gate Panel 12mm 1000W,425.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,1050,SGP-12-1050,Soft Gate Panel 12mm 1050W,435.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,1100,SGP-12-1100,Soft Gate Panel 12mm 1100W,445.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,1150,SGP-12-1150,Soft Gate Panel 12mm 1150W,455.00,
+Soft Gate,Soft Gate Panel,product,600,1200,50,900,,TRUE,SGP,1200,SGP-12-1200,Soft Gate Panel 12mm 1200W,465.00,
+Soft Gate Gaps,Hinge Gap (mm),number,6,15,1,8,,TRUE,,,,,,"Gap at hinge side for soft gate"
+Soft Gate Gaps,Latch Gap (mm),number,6,15,1,8,,TRUE,,,,,,"Gap at latch side for soft gate"
+Master Hinge,Gate Master Hinge Panel,product,900,1200,50,1200,,TRUE,GMHP,900,GMHP-12-900,Gate Master Hinge Panel 12mm 900W,405.00,"Glass-to-glass hinge panel"
+Master Hinge,Gate Master Hinge Panel,product,900,1200,50,1200,,TRUE,GMHP,950,GMHP-12-950,Gate Master Hinge Panel 12mm 950W,415.00,
+Master Hinge,Gate Master Hinge Panel,product,900,1200,50,1200,,TRUE,GMHP,1000,GMHP-12-1000,Gate Master Hinge Panel 12mm 1000W,425.00,
+Master Hinge,Gate Master Hinge Panel,product,900,1200,50,1200,,TRUE,GMHP,1050,GMHP-12-1050,Gate Master Hinge Panel 12mm 1050W,435.00,
+Master Hinge,Gate Master Hinge Panel,product,900,1200,50,1200,,TRUE,GMHP,1100,GMHP-12-1100,Gate Master Hinge Panel 12mm 1100W,445.00,
+Master Hinge,Gate Master Hinge Panel,product,900,1200,50,1200,,TRUE,GMHP,1150,GMHP-12-1150,Gate Master Hinge Panel 12mm 1150W,455.00,
+Master Hinge,Gate Master Hinge Panel,product,900,1200,50,1200,,TRUE,GMHP,1200,GMHP-12-1200,Gate Master Hinge Panel 12mm 1200W,465.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,600,GMGP-12-600,Gate Master Gate Panel 12mm 600W,355.00,"Gate panel for Gate Master"
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,650,GMGP-12-650,Gate Master Gate Panel 12mm 650W,365.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,700,GMGP-12-700,Gate Master Gate Panel 12mm 700W,375.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,750,GMGP-12-750,Gate Master Gate Panel 12mm 750W,385.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,800,GMGP-12-800,Gate Master Gate Panel 12mm 800W,395.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,850,GMGP-12-850,Gate Master Gate Panel 12mm 850W,405.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,900,GMGP-12-900,Gate Master Gate Panel 12mm 900W,415.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,950,GMGP-12-950,Gate Master Gate Panel 12mm 950W,425.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,1000,GMGP-12-1000,Gate Master Gate Panel 12mm 1000W,435.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,1050,GMGP-12-1050,Gate Master Gate Panel 12mm 1050W,445.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,1100,GMGP-12-1100,Gate Master Gate Panel 12mm 1100W,455.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,1150,GMGP-12-1150,Gate Master Gate Panel 12mm 1150W,465.00,
+Master Gate,Gate Master Gate Panel,product,600,1200,50,900,,TRUE,GMGP,1200,GMGP-12-1200,Gate Master Gate Panel 12mm 1200W,475.00,
+Master Gate Gaps,Hinge Gap (mm),number,6,15,1,8,,TRUE,,,,,,"Gap at hinge side for Gate Master"
+Master Gate Gaps,Latch Gap (mm),number,6,15,1,8,,TRUE,,,,,,"Gap at latch side for Gate Master"
+Raked Panel,Raked Panel 12mm,product,1200,1200,0,1200,L&R-OFF,TRUE,RP,1200,RP-12-1200,Raked Panel 12mm 1200W Satin Spigots,495.00,"Fixed 1200mm for step-ups, L&R default OFF"
+Spigot,Spigot Hardware,select,,,,,Satin,"Polished,Satin,Black",TRUE,SP,,SP-316-SAT,Spigot 316 Stainless Satin,42.00,"Mount: Core drilled"
+Spigot,Spigot Hardware,select,,,,,Satin,"Polished,Satin,Black",TRUE,SP,,SP-316-POL,Spigot 316 Stainless Polished,45.00,
+Spigot,Spigot Hardware,select,,,,,Satin,"Polished,Satin,Black",TRUE,SP,,SP-316-BLK,Spigot 316 Stainless Black,48.00,
+Gate Required,Gate Required Toggle,boolean,,,,,OFF,,TRUE,,,,,,"Default gate OFF"
+Custom Panel,Custom Panel Toggle,boolean,,,,,OFF,,TRUE,,,,,,"Default custom panel OFF"
