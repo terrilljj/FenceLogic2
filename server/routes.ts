@@ -1205,7 +1205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { created } = await storage.upsertProduct({
             code: mapping.productSku,
             description: mapping.productDescription,
-            category: templateId.split('-')[1] || '', // Extract category from template ID
+            category: '', // Leave empty - category not specified in CSV templates
             subcategory: mapping.variableType,
             price: mapping.productPrice.toString(),
             active: 1,
