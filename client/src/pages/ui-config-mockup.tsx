@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ChevronDown, ChevronRight, Plus, Edit, Trash2, Package, Wrench, DoorOpen, Sparkles } from "lucide-react";
+import { AdminNav } from "@/components/admin-nav";
 
 export default function UIConfigMockup() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -20,20 +21,26 @@ export default function UIConfigMockup() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">UI Configuration (Mockup)</h1>
-            <p className="text-muted-foreground">
-              Hierarchical, brand-based configuration preview
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border bg-card">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">UI Configuration (Mockup)</h1>
+              <p className="text-muted-foreground">
+                Hierarchical, brand-based configuration preview
+              </p>
+            </div>
+            <Badge variant="outline" className="text-lg px-4 py-2">
+              Preview Only - Not Functional
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-lg px-4 py-2">
-            Preview Only - Not Functional
-          </Badge>
+          <AdminNav currentPage="ui-config-mockup" />
         </div>
       </div>
+
+      <div className="container mx-auto p-6 max-w-6xl">
 
       {/* Product Variant Selector */}
       <Card className="mb-6">
@@ -458,6 +465,7 @@ export default function UIConfigMockup() {
         <Button size="lg" variant="outline" data-testid="button-generate-slots">
           Generate All Slots
         </Button>
+      </div>
       </div>
     </div>
   );
