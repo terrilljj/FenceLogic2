@@ -466,7 +466,7 @@ export default function UIConfigMockup() {
           Generate All Slots
         </Button>
       </div>
-      </div>
+    </div>
     </div>
   );
 }
