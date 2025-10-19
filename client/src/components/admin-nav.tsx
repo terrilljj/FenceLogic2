@@ -61,14 +61,14 @@ export function AdminNav({ currentPage }: AdminNavProps) {
           UI Config
         </Button>
       </Link>
-      <Link href="/fence-styles">
+      <Link href="/styles">
         <Button
           variant={currentPage === "fence-styles" ? "default" : "outline"}
           size="sm"
           data-testid="nav-fence-styles"
         >
           <Fence className="h-4 w-4 mr-2" />
-          Fence Styles
+          Styles
         </Button>
       </Link>
       <Link href="/slot-manager">
