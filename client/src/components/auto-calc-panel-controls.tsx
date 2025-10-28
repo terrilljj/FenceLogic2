@@ -65,13 +65,13 @@ export function AutoCalcPanelControls({
     panelHeight: 1500,
     glassType: "10mm-clear" as const,
     gapMode: "auto" as const,
-    interPanelGaps: [50],
+    interPanelGaps: [30], // Fixed 30mm gaps
     panelTypes: ["standard", "standard"],
-    panelSelectionMode: "all-stock" as const,
-    stockPanelWidth: 966,
+    panelSelectionMode: "stock-plus-custom" as const,
+    stockPanelWidth: 950, // Actual stock size (not 966)
   };
 
-  const { layoutMode = "auto", maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides, panelSelectionMode = "all-stock", stockPanelWidth = 966 } = config;
+  const { layoutMode = "auto", maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides, panelSelectionMode = "stock-plus-custom", stockPanelWidth = 950 } = config;
   const numPanels = panelTypes.length;
   const gapSize = interPanelGaps[0] || 50;
 
@@ -89,9 +89,14 @@ export function AutoCalcPanelControls({
     const wallPostVisible = POST_WIDTH_MM - SHUFFLE_PER_SIDE_MM;
     const availableSpace = spanLength - 2 * wallPostVisible;
     
-    // Find best stock width available
+    // Find best stock width available (must be actual stock size!)
     const availableStockWidths = getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth);
-    const defaultStockWidth = stockPanelWidth || availableStockWidths.find(w => w >= 900 && w <= 1000) || availableStockWidths[Math.floor(availableStockWidths.length / 2)] || 966;
+    // Use 950mm or 1000mm as default for 1800mm panels (closest to old 966mm)
+    const defaultStockWidth = stockPanelWidth && availableStockWidths.includes(stockPanelWidth) 
+      ? stockPanelWidth 
+      : availableStockWidths.find(w => w >= 900 && w <= 1000) 
+      || availableStockWidths[Math.floor(availableStockWidths.length / 2)] 
+      || 950;
     const stockOpeningWidth = defaultStockWidth - 2 * SHUFFLE_PER_SIDE_MM;
     
     // Calculate optimal panel count and custom width
@@ -382,9 +387,9 @@ export function AutoCalcPanelControls({
       const availableSpace = spanLength - 2 * wallPostVisible;
       const maxPanelWidth = config.maxPanelWidth;
       
-      // Find best stock width available
+      // Find best stock width available (must be actual stock size!)
       const availableStockWidths = getAvailableStockPanelWidths(config.panelHeight, config.glassType, maxPanelWidth);
-      const defaultStockWidth = availableStockWidths.find(w => w >= 900 && w <= 1000) || availableStockWidths[Math.floor(availableStockWidths.length / 2)] || 966;
+      const defaultStockWidth = availableStockWidths.find(w => w >= 900 && w <= 1000) || availableStockWidths[Math.floor(availableStockWidths.length / 2)] || 950;
       const stockOpeningWidth = defaultStockWidth - 2 * SHUFFLE_PER_SIDE_MM;
       
       // Calculate optimal panel count and custom width
