@@ -322,14 +322,32 @@ export function AutoCalcPanelControls({
   // Initialize autoCalcConfig on mount if it doesn't exist
   useEffect(() => {
     if (!autoCalcConfig) {
-      onUpdate(config);
+      // Initialize with proper defaults and immediately calculate best stock width
+      const initialConfig = config;
+      const bestFit = findBestStockPanelWidth({
+        sectionLengthMm: spanLength,
+        panelHeight: initialConfig.panelHeight,
+        glassType: initialConfig.glassType,
+        maxPanelWidth: initialConfig.maxPanelWidth,
+        minGapMm: 6,
+        maxGapMm: 100,
+        postWidthMm: 50,
+        shufflePerSideMm: 10,
+        lengthToleranceMm: 50,
+      });
+      
+      // Set the best stock width immediately during initialization
+      onUpdate({
+        ...initialConfig,
+        stockPanelWidth: bestFit.canFit ? bestFit.stockPanelWidth : initialConfig.stockPanelWidth,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
   // Auto-calculate best stock panel width when in "all-stock" mode
   useEffect(() => {
-    if (panelSelectionMode === "all-stock") {
+    if (panelSelectionMode === "all-stock" && autoCalcConfig) {
       const bestFit = findBestStockPanelWidth({
         sectionLengthMm: spanLength,
         panelHeight,

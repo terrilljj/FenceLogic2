@@ -1495,9 +1495,38 @@ export function SpanConfigPanel({
                 rightGapSize={span.rightGap?.size || 0}
                 spanId={span.spanId}
                 onUpdate={(autoCalcConfig) => {
+                  // For semi-frameless in all-stock mode, enforce stock panel width
+                  let finalConfig = autoCalcConfig;
+                  if (isSemiFrameless && autoCalcConfig.panelSelectionMode === "all-stock") {
+                    // Ensure stockPanelWidth is valid and within constraints
+                    const panelHeight = autoCalcConfig.panelHeight || 1800;
+                    const maxPanelWidth = autoCalcConfig.maxPanelWidth || 1500;
+                    
+                    // Get valid stock widths for this configuration
+                    const validStockWidths: number[] = [];
+                    if (panelHeight === 1800) {
+                      for (let w = 500; w <= Math.min(1150, maxPanelWidth); w += 50) {
+                        validStockWidths.push(w);
+                      }
+                    } else if (panelHeight === 1000) {
+                      for (let w = 300; w <= Math.min(1400, maxPanelWidth); w += 50) {
+                        validStockWidths.push(w);
+                      }
+                    }
+                    
+                    // If stockPanelWidth is invalid or missing, use a sensible default
+                    if (!autoCalcConfig.stockPanelWidth || 
+                        !validStockWidths.includes(autoCalcConfig.stockPanelWidth)) {
+                      const defaultStock = validStockWidths.find(w => w >= 900 && w <= 1000) || 
+                                          validStockWidths[Math.floor(validStockWidths.length / 2)] || 
+                                          950;
+                      finalConfig = { ...autoCalcConfig, stockPanelWidth: defaultStock };
+                    }
+                  }
+                  
                   // Calculate panel widths respecting gate/hinge overrides
-                  const numPanels = autoCalcConfig.panelTypes.length;
-                  const totalGaps = autoCalcConfig.interPanelGaps.reduce((sum, gap) => sum + gap, 0);
+                  const numPanels = finalConfig.panelTypes.length;
+                  const totalGaps = finalConfig.interPanelGaps.reduce((sum, gap) => sum + gap, 0);
                   const availableForPanels = span.length - (span.leftGap?.size || 0) - (span.rightGap?.size || 0) - totalGaps;
                   
                   // Identify fixed panels (gate/hinge with custom widths) and calculate remaining space
@@ -1506,12 +1535,12 @@ export function SpanConfigPanel({
                   let standardPanelCount = 0;
                   
                   for (let i = 0; i < numPanels; i++) {
-                    if (autoCalcConfig.panelTypes[i] === "gate" || 
-                        autoCalcConfig.panelTypes[i] === "hinge" || 
-                        autoCalcConfig.panelTypes[i] === "custom") {
-                      const width = autoCalcConfig.panelWidthOverrides?.[i] || 
-                        (autoCalcConfig.panelTypes[i] === "gate" ? 900 : 
-                         autoCalcConfig.panelTypes[i] === "hinge" ? 1200 : 1000);
+                    if (finalConfig.panelTypes[i] === "gate" || 
+                        finalConfig.panelTypes[i] === "hinge" || 
+                        finalConfig.panelTypes[i] === "custom") {
+                      const width = finalConfig.panelWidthOverrides?.[i] || 
+                        (finalConfig.panelTypes[i] === "gate" ? 900 : 
+                         finalConfig.panelTypes[i] === "hinge" ? 1200 : 1000);
                       fixedPanels.push({ index: i, width });
                       fixedWidth += width;
                     } else {
@@ -1521,7 +1550,13 @@ export function SpanConfigPanel({
                   
                   // Calculate width for standard panels
                   const availableForStandard = availableForPanels - fixedWidth;
-                  const baseWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
+                  
+                  // For "all-stock" mode, ALWAYS use the stock panel width (never evenly divide)
+                  // For other modes, evenly distribute the space
+                  const baseWidth = finalConfig.panelSelectionMode === "all-stock" && finalConfig.stockPanelWidth
+                    ? finalConfig.stockPanelWidth
+                    : (standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0);
+                  
                   const remainder = availableForStandard - (baseWidth * standardPanelCount);
                   
                   // Build final widths array
@@ -1533,26 +1568,30 @@ export function SpanConfigPanel({
                     if (fixedPanel) {
                       panelWidths.push(fixedPanel.width);
                     } else {
-                      const extraMm = standardIndex < remainder ? 1 : 0;
+                      // In all-stock mode, all standard panels use the exact stock width
+                      // In other modes, distribute remainder across panels
+                      const extraMm = finalConfig.panelSelectionMode === "all-stock" 
+                        ? 0 
+                        : (standardIndex < remainder ? 1 : 0);
                       panelWidths.push(baseWidth + extraMm);
                       standardIndex++;
                     }
                   }
                   
                   const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
-                  const gapSize = autoCalcConfig.interPanelGaps[0] || 50;
+                  const gapSize = finalConfig.interPanelGaps[0] || 50;
                   
                   updateSpan({ 
-                    autoCalcConfig,
+                    autoCalcConfig: finalConfig, // Use finalConfig with validated stockPanelWidth
                     layoutMode: "auto-calc",
-                    maxPanelWidth: autoCalcConfig.maxPanelWidth,
+                    maxPanelWidth: finalConfig.maxPanelWidth,
                     panelLayout: {
                       panels: panelWidths,
-                      gaps: autoCalcConfig.interPanelGaps,
+                      gaps: finalConfig.interPanelGaps,
                       totalPanelWidth,
                       totalGapWidth: totalGaps,
                       averageGap: gapSize,
-                      panelTypes: autoCalcConfig.panelTypes,
+                      panelTypes: finalConfig.panelTypes,
                     }
                   });
                 }}

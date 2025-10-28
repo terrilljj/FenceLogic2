@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 interface SemiFramelessConfig {
   postWidth?: number;
-  lhsPostMountType?: "wall" | "base-plate" | "core";
-  rhsPostMountType?: "wall" | "base-plate" | "core";
+  lhsPostType?: "wall" | "end" | "corner-in" | "corner-out";
+  rhsPostType?: "wall" | "end" | "corner-in" | "corner-out";
   intermediatePostMountType?: "base-plate" | "core";
   postColor?: "satin-black" | "custom";
   customPostColor?: string;
@@ -20,8 +20,8 @@ interface SemiFramelessPostConfigProps {
 export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostConfigProps) {
   const currentConfig: Required<SemiFramelessConfig> = {
     postWidth: config?.postWidth ?? 50,
-    lhsPostMountType: config?.lhsPostMountType ?? "base-plate",
-    rhsPostMountType: config?.rhsPostMountType ?? "base-plate",
+    lhsPostType: config?.lhsPostType ?? "end",
+    rhsPostType: config?.rhsPostType ?? "end",
     intermediatePostMountType: config?.intermediatePostMountType ?? "base-plate",
     postColor: config?.postColor ?? "satin-black",
     customPostColor: config?.customPostColor,
@@ -34,10 +34,11 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
     onUpdate({ ...currentConfig, [field]: value });
   };
 
-  const wallPostMountOptions = [
+  const postTypeOptions = [
     { value: "wall", label: "Wall" },
-    { value: "base-plate", label: "Base Plate" },
-    { value: "core", label: "Core" },
+    { value: "end", label: "End" },
+    { value: "corner-in", label: "Corner In" },
+    { value: "corner-out", label: "Corner Out" },
   ];
 
   const intermediatePostMountOptions = [
@@ -72,20 +73,20 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
           </p>
         </div>
 
-        {/* Mount Types */}
+        {/* Post Types */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* LHS Post Mount Type */}
+          {/* LHS Post Type */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">LHS Wall Post Mount</Label>
+            <Label className="text-sm font-medium mb-2 block">LHS Post Type</Label>
             <Select
-              value={currentConfig.lhsPostMountType}
-              onValueChange={(value) => updateField("lhsPostMountType", value as any)}
+              value={currentConfig.lhsPostType}
+              onValueChange={(value) => updateField("lhsPostType", value as any)}
             >
-              <SelectTrigger className="h-9" data-testid="select-lhs-mount">
+              <SelectTrigger className="h-9" data-testid="select-lhs-post-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {wallPostMountOptions.map((opt) => (
+                {postTypeOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -114,18 +115,18 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
             </Select>
           </div>
 
-          {/* RHS Post Mount Type */}
+          {/* RHS Post Type */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">RHS Wall Post Mount</Label>
+            <Label className="text-sm font-medium mb-2 block">RHS Post Type</Label>
             <Select
-              value={currentConfig.rhsPostMountType}
-              onValueChange={(value) => updateField("rhsPostMountType", value as any)}
+              value={currentConfig.rhsPostType}
+              onValueChange={(value) => updateField("rhsPostType", value as any)}
             >
-              <SelectTrigger className="h-9" data-testid="select-rhs-mount">
+              <SelectTrigger className="h-9" data-testid="select-rhs-post-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {wallPostMountOptions.map((opt) => (
+                {postTypeOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
