@@ -123,8 +123,20 @@ export function AutoCalcPanelControls({
     // Available space for panels+gaps = section length - LHS spacing - RHS spacing
     const availableSpace = spanLength - lhsSpacing - rhsSpacing;
     
+    console.log('🔍 Auto-calc params:', {
+      spanLength,
+      lhsSpacing,
+      rhsSpacing,
+      availableSpace,
+      panelHeight,
+      glassType,
+      maxPanelWidth
+    });
+    
     // Get all available stock widths
     const availableStockWidths = getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth).sort((a, b) => a - b);
+    console.log('📦 Available stock widths:', availableStockWidths);
+    
     if (availableStockWidths.length === 0) {
       return {
         stockCount: 1,
@@ -135,15 +147,28 @@ export function AutoCalcPanelControls({
     }
     
     let bestSolution: any = null;
-    let smallestVariance = Infinity;
+    let bestScore = Infinity; // Lower score is better
+    
+    // Scoring function: Prefer fewer panels and larger sizes
+    const calculateScore = (panelCount: number, variance: number, avgPanelSize: number) => {
+      // Heavy penalty for more panels (want to minimize panel count)
+      const panelCountPenalty = panelCount * 1000;
+      // Prefer larger panel sizes (inverse of size)
+      const sizePenalty = avgPanelSize > 0 ? 10000 / avgPanelSize : 1000;
+      // Small penalty for variance
+      const variancePenalty = variance * 10;
+      
+      return panelCountPenalty + sizePenalty + variancePenalty;
+    };
     
     // Try combinations of adjacent stock sizes (within 50mm)
-    for (let i = 0; i < availableStockWidths.length; i++) {
+    // Start from LARGEST sizes first (reverse order)
+    for (let i = availableStockWidths.length - 1; i >= 0; i--) {
       const width1 = availableStockWidths[i];
       const opening1 = width1 - 2 * SHUFFLE_PER_SIDE_MM;
       
-      // Try using only one stock size
-      for (let totalPanels = 2; totalPanels <= 10; totalPanels++) {
+      // Try using only one stock size (limit to reasonable panel counts: 2-7)
+      for (let totalPanels = 2; totalPanels <= 7; totalPanels++) {
         const gapCount = totalPanels + 1;
         const corePostCount = totalPanels - 1;
         const totalCorePosts = corePostCount * POST_WIDTH_MM;
@@ -157,18 +182,21 @@ export function AutoCalcPanelControls({
         const allWidth1 = totalPanels * opening1 + totalCorePosts + totalGaps;
         const variance1 = Math.abs(allWidth1 - availableSpace);
         
-        if (variance1 <= 2 && variance1 < smallestVariance) {
-          smallestVariance = variance1;
-          bestSolution = {
-            stockCount: totalPanels,
-            customWidth: 0,
-            totalPanels,
-            stockWidth: width1,
-            stock1Width: width1,
-            stock1Count: totalPanels,
-            stock2Width: undefined,
-            stock2Count: 0,
-          };
+        if (variance1 <= 2) {
+          const score = calculateScore(totalPanels, variance1, width1);
+          if (score < bestScore) {
+            bestScore = score;
+            bestSolution = {
+              stockCount: totalPanels,
+              customWidth: 0,
+              totalPanels,
+              stockWidth: width1,
+              stock1Width: width1,
+              stock1Count: totalPanels,
+              stock2Width: undefined,
+              stock2Count: 0,
+            };
+          }
         }
         
         // Try mixing with adjacent stock size (within 50mm)
@@ -185,18 +213,23 @@ export function AutoCalcPanelControls({
             const totalUsed = totalOpenings + totalCorePosts + totalGaps;
             const variance = Math.abs(totalUsed - availableSpace);
             
-            if (variance <= 2 && variance < smallestVariance) {
-              smallestVariance = variance;
-              bestSolution = {
-                stockCount: totalPanels,
-                customWidth: 0,
-                totalPanels,
-                stockWidth: width1, // Primary stock width
-                stock1Width: width1,
-                stock1Count: count1,
-                stock2Width: width2,
-                stock2Count: count2,
-              };
+            if (variance <= 2) {
+              const avgSize = (count1 * width1 + count2 * width2) / totalPanels;
+              const score = calculateScore(totalPanels, variance, avgSize);
+              console.log(`  Mixed: ${totalPanels}p (${count1}x${width1} + ${count2}x${width2}) var=${variance.toFixed(1)}mm score=${score.toFixed(0)}`);
+              if (score < bestScore) {
+                bestScore = score;
+                bestSolution = {
+                  stockCount: totalPanels,
+                  customWidth: 0,
+                  totalPanels,
+                  stockWidth: width1, // Primary stock width
+                  stock1Width: width1,
+                  stock1Count: count1,
+                  stock2Width: width2,
+                  stock2Count: count2,
+                };
+              }
             }
           }
         }
@@ -205,14 +238,12 @@ export function AutoCalcPanelControls({
     
     // If no perfect stock combination found, fall back to stock + custom
     if (!bestSolution) {
-      const defaultStockWidth = stockPanelWidth && availableStockWidths.includes(stockPanelWidth) 
-        ? stockPanelWidth 
-        : availableStockWidths.find(w => w >= 900 && w <= 1000) 
-        || availableStockWidths[Math.floor(availableStockWidths.length / 2)] 
-        || 950;
+      // Use LARGEST stock size available (within maxPanelWidth) as the primary stock
+      const defaultStockWidth = availableStockWidths[availableStockWidths.length - 1] || 950;
       const stockOpeningWidth = defaultStockWidth - 2 * SHUFFLE_PER_SIDE_MM;
       
-      for (let stockCount = 1; stockCount <= 10; stockCount++) {
+      // Limit to reasonable panel counts: 1-6 stock panels + 1 custom
+      for (let stockCount = 1; stockCount <= 6; stockCount++) {
         const totalPanels = stockCount + 1;
         const gapCount = totalPanels + 1;
         const corePostCount = totalPanels - 1;
@@ -242,9 +273,12 @@ export function AutoCalcPanelControls({
         }
         
         if (constrainedCustomWidth >= 300 && constrainedCustomWidth <= 2000) {
+          const avgSize = (stockCount * defaultStockWidth + constrainedCustomWidth) / totalPanels;
           const variance = Math.abs(customPanelWidth - constrainedCustomWidth);
-          if (!bestSolution || variance < smallestVariance) {
-            smallestVariance = variance;
+          const score = calculateScore(totalPanels, variance, avgSize);
+          
+          if (score < bestScore) {
+            bestScore = score;
             bestSolution = {
               stockCount,
               customWidth: Math.round(constrainedCustomWidth),
@@ -260,12 +294,15 @@ export function AutoCalcPanelControls({
       }
     }
     
-    return bestSolution || {
+    const finalSolution = bestSolution || {
       stockCount: 1,
       customWidth: 1000,
       totalPanels: 2,
       stockWidth: 950,
     };
+    
+    console.log('✅ Auto-calc solution:', finalSolution);
+    return finalSolution;
   };
 
   // Calculate panel widths based on mode
@@ -611,7 +648,7 @@ export function AutoCalcPanelControls({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Panel count auto-calculated based on max width. Mark panels as Gate/Hinge/Custom to set specific widths - standard panels auto-adjust to fill remaining space.
+          Auto-calculator finds the best combination of stock panels within your max panel width. Prioritizes fewer, larger panels using available stock sizes (500-1150mm in 50mm increments). Falls back to stock + 1 custom panel only if needed.
         </AlertDescription>
       </Alert>
 
@@ -635,47 +672,6 @@ export function AutoCalcPanelControls({
             </SelectContent>
           </Select>
 
-          {(panelSelectionMode === "stock-plus-custom" || panelSelectionMode === "all-stock") && (
-            <div className="flex items-center gap-2">
-              <Label className="text-sm shrink-0">Stock Panel Width:</Label>
-              {panelSelectionMode === "all-stock" ? (
-                <Select
-                  value={stockPanelWidth.toString()}
-                  onValueChange={(value) => {
-                    onUpdate({ ...config, stockPanelWidth: parseInt(value) });
-                  }}
-                >
-                  <SelectTrigger className="h-9 flex-1" data-testid={`stock-panel-width-${spanId}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth).map((width) => (
-                      <SelectItem key={width} value={width.toString()}>
-                        {width}mm panel (opening: {width - 20}mm)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <>
-                  <Input
-                    type="number"
-                    min={200}
-                    max={2000}
-                    step={50}
-                    value={stockPanelWidth}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value) || 966;
-                      onUpdate({ ...config, stockPanelWidth: value });
-                    }}
-                    className="h-9 flex-1"
-                    data-testid={`stock-panel-width-${spanId}`}
-                  />
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
-                </>
-              )}
-            </div>
-          )}
         </div>
 
         {(panelSelectionMode === "stock-plus-custom" || panelSelectionMode === "all-stock") && (
