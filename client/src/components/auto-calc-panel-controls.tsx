@@ -621,8 +621,12 @@ export function AutoCalcPanelControls({
   useEffect(() => {
     if (!autoCalcConfig || !postConfig) return;
     
+    console.log("🔄 Post config changed, recalculating:", postConfig);
+    
     // Only auto-recalculate if config already exists (not initial mount)
     const solution = autoCalculatePanelCount();
+    
+    console.log("📊 New solution from post change:", solution);
     
     // Build panel types based on solution
     const panelTypes: PanelType[] = [];
@@ -668,9 +672,9 @@ export function AutoCalcPanelControls({
       customPanelPosition: solution.customWidth > 0 ? solution.stockCount : undefined,
     };
     
+    console.log("✍️ Calling onUpdate with:", updatedConfig);
     onUpdate(updatedConfig);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postConfig?.lhsPostType, postConfig?.rhsPostType]); // Re-run when post types change
+  }, [postConfig?.lhsPostType, postConfig?.rhsPostType, spanLength, leftGapSize, rightGapSize]); // Re-run when post types OR dimensions change
 
   return (
     <div className="space-y-4">
