@@ -627,7 +627,66 @@ export function AutoCalcPanelControls({
 
       {/* Panel Selection Mode */}
       <div className="bg-card rounded-md p-4 border space-y-3">
-        <Label className="text-sm font-medium">Panel Selection Mode</Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">Panel Selection Mode</Label>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              // Re-run auto-calculation
+              const solution = autoCalculatePanelCount();
+              
+              // Build panel types based on solution
+              const panelTypes: PanelType[] = [];
+              const panelWidthOverrides: Record<number, number> = {};
+              
+              if (solution.customWidth > 0) {
+                // Solution uses stock + custom
+                for (let i = 0; i < solution.stockCount; i++) {
+                  panelTypes.push("standard");
+                }
+                panelTypes.push("custom");
+                panelWidthOverrides[solution.stockCount] = solution.customWidth;
+              } else if (solution.stock2Width && solution.stock2Count && solution.stock2Count > 0) {
+                // Solution uses mixed stock (2 different sizes)
+                for (let i = 0; i < (solution.stock1Count || 0); i++) {
+                  panelTypes.push("standard");
+                  if (solution.stock1Width) {
+                    panelWidthOverrides[i] = solution.stock1Width;
+                  }
+                }
+                for (let i = 0; i < solution.stock2Count; i++) {
+                  const index = (solution.stock1Count || 0) + i;
+                  panelTypes.push("standard");
+                  panelWidthOverrides[index] = solution.stock2Width;
+                }
+              } else {
+                // Solution uses all same stock size
+                for (let i = 0; i < solution.totalPanels; i++) {
+                  panelTypes.push("standard");
+                  if (solution.stock1Width) {
+                    panelWidthOverrides[i] = solution.stock1Width;
+                  }
+                }
+              }
+              
+              const updatedConfig = {
+                ...config,
+                panelTypes,
+                interPanelGaps: Array(solution.totalPanels - 1).fill(30),
+                panelSelectionMode: solution.customWidth > 0 ? "stock-plus-custom" as const : "all-stock" as const,
+                stockPanelWidth: solution.stockWidth,
+                panelWidthOverrides: Object.keys(panelWidthOverrides).length > 0 ? panelWidthOverrides : undefined,
+                customPanelPosition: solution.customWidth > 0 ? solution.stockCount : undefined,
+              };
+              
+              onUpdate(updatedConfig);
+            }}
+            data-testid={`recalculate-${spanId}`}
+          >
+            Re-calculate
+          </Button>
+        </div>
         <div className="grid grid-cols-1 gap-3">
           <Select
             value={panelSelectionMode}
