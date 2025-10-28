@@ -817,12 +817,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             postWidth,
             groundLevel - panelTop
           );
-          
-          // Post measurement label - 50mm
-          ctx.fillStyle = "#4b5563";
-          ctx.font = "600 10px Inter";
-          ctx.textAlign = "center";
-          ctx.fillText("50mm", currentX, groundLevel + 20);
         }
         
         // Always draw post after this panel
@@ -833,12 +827,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           postWidth,
           groundLevel - panelTop
         );
-        
-        // Post measurement label - 50mm
-        ctx.fillStyle = "#4b5563";
-        ctx.font = "600 10px Inter";
-        ctx.textAlign = "center";
-        ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
         
       } 
       // BARR panels have different rendering
@@ -966,12 +954,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             postWidth,
             groundLevel - panelTop
           );
-          
-          // Post measurement label - 50mm
-          ctx.fillStyle = "#4b5563";
-          ctx.font = "600 10px Inter";
-          ctx.textAlign = "center";
-          ctx.fillText("50mm", currentX, groundLevel + 20);
         }
         
         // Always draw post after this panel - extends from top to ground
@@ -982,12 +964,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           postWidth,
           groundLevel - panelTop
         );
-        
-        // Post measurement label - 50mm
-        ctx.fillStyle = "#4b5563";
-        ctx.font = "600 10px Inter";
-        ctx.textAlign = "center";
-        ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
         
       } 
       // Semi-Frameless panels: full-height posts with shuffle-glazed glass

@@ -110,23 +110,32 @@ export function AutoCalcPanelControls({
       }
     }
     
-    // Calculate width for standard panels
-    const availableForStandard = availableForPanels - fixedWidth;
-    const baseWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
-    const remainder = availableForStandard - (baseWidth * standardPanelCount);
+    // Calculate width for standard panels based on panel selection mode
+    let standardPanelWidth: number;
+    
+    if (panelSelectionMode === "all-stock") {
+      // All stock mode: use the selected stock panel width for all standard panels
+      standardPanelWidth = stockPanelWidth || 966;
+    } else {
+      // Stock+custom or all-custom modes: distribute remaining space
+      const availableForStandard = availableForPanels - fixedWidth;
+      standardPanelWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
+      
+      // Enforce maxPanelWidth constraint
+      if (standardPanelWidth > maxPanelWidth) {
+        standardPanelWidth = maxPanelWidth;
+      }
+    }
     
     // Build final widths array
     const panelWidths: number[] = [];
-    let standardIndex = 0;
     
     for (let i = 0; i < numPanels; i++) {
       const fixedPanel = fixedPanels.find(fp => fp.index === i);
       if (fixedPanel) {
         panelWidths.push(fixedPanel.width);
       } else {
-        const extraMm = standardIndex < remainder ? 1 : 0;
-        panelWidths.push(baseWidth + extraMm);
-        standardIndex++;
+        panelWidths.push(standardPanelWidth);
       }
     }
     
