@@ -2,6 +2,26 @@
 
 ## Overview
 
+Fence Logic is a web-based configurator tool for designing custom fencing and balustrade systems.
+
+## Pending Tasks (Oct 2025)
+
+### Handrail Configuration Modules
+**Status**: Awaiting user specifications  
+**Request**: Different handrail types need separate config modules since they don't all have the same variables.  
+**Action Required**: User needs to provide:
+- List of all handrail/top rail types offered
+- Specific variables/fields each type requires (e.g., height offset, profile type, finish, mounting specs, drilling specs, etc.)
+- Once provided, create dedicated configuration modules for each handrail type with appropriate fields
+
+### Glass-Type-Dependent Max Panel Widths
+**Status**: Schema created, implementation pending  
+**Request**: Max panel width in database should differentiate by glass type (12x970, 15x1000, 17.52x1100, 15x1280).  
+**Approach**: Created `style_field_constraints` table for conditional constraints based on glass selection.  
+**Action Required**: Implement constraint rules for each fence style that links glassThickness to maxPanelMm limits.
+
+---
+
 Fence Logic is a web-based configurator tool for designing custom fencing and balustrade systems. It offers interactive visualization and precise configuration controls, allowing users to create fence layouts, specify spans and gates, and generate automatic component lists. The tool supports various product types, including Glass Pool Fencing, Glass Balustrade, Aluminium Fencing, and PVC Fencing, with product-specific options and multiple fence shapes. Its primary goal is to streamline the design process and provide accurate material calculations.
 
 **New Centralized Configuration System (Oct 2025):**
