@@ -428,7 +428,7 @@ export function AutoCalcPanelControls({
             onClick={() => applyTypeToAll("standard")}
             data-testid={`apply-standard-all-${spanId}`}
           >
-            Reset All to Standard
+            Reset All to Auto-Sized
           </Button>
         </div>
         
@@ -448,7 +448,7 @@ export function AutoCalcPanelControls({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="standard">Standard Glass</SelectItem>
+                    <SelectItem value="standard">Auto-Sized (Custom Cut)</SelectItem>
                     <SelectItem value="gate">Gate Panel</SelectItem>
                     <SelectItem value="hinge">Hinge Panel</SelectItem>
                     <SelectItem value="custom">Custom Width</SelectItem>
