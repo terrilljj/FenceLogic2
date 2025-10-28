@@ -159,21 +159,25 @@ export function AutoCalcPanelControls({
       return panelCountPenalty + sizePenalty + variancePenalty;
     };
     
-    // Try combinations of adjacent stock sizes (within 50mm)
+    // Try combinations of adjacent stock sizes (within 100mm for flexibility)
     // Start from LARGEST sizes first (reverse order)
     for (let i = availableStockWidths.length - 1; i >= 0; i--) {
       const width1 = availableStockWidths[i];
       
-      // Try using only one stock size (limit to reasonable panel counts: 2-10)
-      for (let totalPanels = 2; totalPanels <= 10; totalPanels++) {
+      // Try using only one stock size (limit to reasonable panel counts: 2-15)
+      for (let totalPanels = 2; totalPanels <= 15; totalPanels++) {
         const intermediatePosts = (totalPanels - 1) * INTERMEDIATE_POST_MM;
         const panelSpace = availableSpace - intermediatePosts;
+        
+        // Skip if panels would be too small (below 500mm minimum)
+        const avgPanelSize = panelSpace / totalPanels;
+        if (avgPanelSize < 500) continue;
         
         // Check if we can use all of width1
         const totalPanelWidth = totalPanels * width1;
         const variance1 = Math.abs(totalPanelWidth - panelSpace);
         
-        if (variance1 <= 2) {
+        if (variance1 <= 10) { // Allow up to 10mm variance
           const score = calculateScore(totalPanels, variance1, width1);
           console.log(`  Single: ${totalPanels}x${width1} var=${variance1.toFixed(1)}mm score=${score.toFixed(0)}`);
           if (score < bestScore) {
@@ -191,10 +195,10 @@ export function AutoCalcPanelControls({
           }
         }
         
-        // Try mixing with adjacent stock size (within 50mm)
+        // Try mixing with adjacent stock size (within 100mm range for more flexibility)
         for (let j = i + 1; j < availableStockWidths.length; j++) {
           const width2 = availableStockWidths[j];
-          if (width2 - width1 > 50) break; // Only try within 50mm range
+          if (width2 - width1 > 100) break; // Try within 100mm range
           
           // Try different combinations of width1 and width2
           for (let count1 = 1; count1 < totalPanels; count1++) {
@@ -202,7 +206,7 @@ export function AutoCalcPanelControls({
             const totalPanelWidth = count1 * width1 + count2 * width2;
             const variance = Math.abs(totalPanelWidth - panelSpace);
             
-            if (variance <= 2) {
+            if (variance <= 10) { // Allow up to 10mm variance
               const avgSize = (count1 * width1 + count2 * width2) / totalPanels;
               const score = calculateScore(totalPanels, variance, avgSize);
               console.log(`  Mixed: ${totalPanels}p (${count1}x${width1} + ${count2}x${width2}) var=${variance.toFixed(1)}mm score=${score.toFixed(0)}`);
