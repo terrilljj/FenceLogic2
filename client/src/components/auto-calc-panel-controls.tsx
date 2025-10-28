@@ -486,7 +486,7 @@ export function AutoCalcPanelControls({
               size="sm"
               variant="outline"
               onClick={() => {
-                // First try to fit with ±50mm tolerance
+                // First try to fit with ±50mm tolerance across ALL available stock widths
                 const bestFit = findBestStockPanelWidth({
                   sectionLengthMm: spanLength,
                   panelHeight,
@@ -499,29 +499,29 @@ export function AutoCalcPanelControls({
                   lengthToleranceMm: 50, // ±50mm tolerance
                 });
 
-                // If stock panels can fit within ±50mm tolerance, we're good
-                if (bestFit.canFit && Math.abs(bestFit.lengthAdjustment || 0) <= 50) {
-                  // Stock panels fit! Show success message or auto-apply
-                  if (bestFit.lengthAdjustment && bestFit.lengthAdjustment !== 0) {
-                    alert(`Stock panels fit with ${bestFit.lengthAdjustment > 0 ? '+' : ''}${bestFit.lengthAdjustment}mm adjustment to section length (within ±50mm tolerance).`);
+                // If stock panels can fit within ±50mm tolerance
+                if (bestFit.canFit) {
+                  const variance = bestFit.lengthAdjustment || 0;
+                  if (variance === 0) {
+                    alert(`✓ Stock panels fit perfectly!\n\nUsing ${bestFit.panelCount} × ${bestFit.stockPanelWidth}mm stock panels\nGaps: ${bestFit.averageGap?.toFixed(1)}mm\nVariance: 0mm`);
                   } else {
-                    alert('Stock panels fit perfectly at current section length!');
+                    alert(`✓ Stock panels fit within ±50mm tolerance!\n\nUsing ${bestFit.panelCount} × ${bestFit.stockPanelWidth}mm stock panels\nAdjust section: ${variance > 0 ? '+' : ''}${variance}mm\nNew length: ${spanLength + variance}mm\nGaps: ${bestFit.averageGap?.toFixed(1)}mm`);
                   }
                   return;
                 }
 
                 // Stock panels can't fit within ±50mm tolerance
-                // Calculate solutions requiring larger adjustments
+                // Use the best stock width found to calculate alternative solutions
                 const fitResult = calculateStockPanelFit({
                   sectionLengthMm: spanLength,
-                  stockPanelWidthMm: stockPanelWidth,
+                  stockPanelWidthMm: bestFit.stockPanelWidth, // Use the best stock width found
                   minGapMm: 6,
                   maxGapMm: 100,
                   postWidthMm: 50,
                   shufflePerSideMm: 10,
                 });
 
-                // Show dialog with custom panel options
+                // Show dialog with options
                 setStockFitResult(fitResult);
                 setShowStockFitDialog(true);
               }}
