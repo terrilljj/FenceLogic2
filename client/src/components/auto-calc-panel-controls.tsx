@@ -233,30 +233,27 @@ export function AutoCalcPanelControls({
       }
     }
     
-    // If no perfect stock combination found, fall back to stock + custom
-    if (!bestSolution) {
-      // Use LARGEST stock size available (within maxPanelWidth) as the primary stock
-      const defaultStockWidth = availableStockWidths[availableStockWidths.length - 1] || 950;
-      
+    // ALWAYS try stock + custom combinations (not just as fallback!)
+    // Try with each available stock width as the base
+    for (const stockWidth of availableStockWidths) {
       // Limit to reasonable panel counts: 1-6 stock panels + 1 custom
       for (let stockCount = 1; stockCount <= 6; stockCount++) {
         const totalPanels = stockCount + 1;
         const intermediatePosts = (totalPanels - 1) * INTERMEDIATE_POST_MM;
         const panelSpace = availableSpace - intermediatePosts;
-        const totalStockWidth = stockCount * defaultStockWidth;
+        const totalStockWidth = stockCount * stockWidth;
         const customPanelWidth = panelSpace - totalStockWidth;
         
-        // CRITICAL: Custom panel MUST NOT exceed maxPanelWidth
+        // CRITICAL: Custom panel MUST NOT exceed maxPanelWidth and must be reasonable size
         if (customPanelWidth > maxPanelWidth) {
-          console.log(`  ❌ Stock+Custom rejected: custom ${customPanelWidth}mm > max ${maxPanelWidth}mm`);
           continue; // Skip this combination
         }
         
         if (customPanelWidth >= 300 && customPanelWidth <= maxPanelWidth) {
-          const avgSize = (stockCount * defaultStockWidth + customPanelWidth) / totalPanels;
+          const avgSize = (stockCount * stockWidth + customPanelWidth) / totalPanels;
           const variance = 0; // No variance since we're using exact calculation
           const score = calculateScore(totalPanels, variance, avgSize);
-          console.log(`  Stock+Custom: ${stockCount}x${defaultStockWidth} + 1x${Math.round(customPanelWidth)} score=${score.toFixed(0)}`);
+          console.log(`  Stock+Custom: ${stockCount}x${stockWidth} + 1x${Math.round(customPanelWidth)} var=0.0mm score=${score.toFixed(0)}`);
           
           if (score < bestScore) {
             bestScore = score;
@@ -264,8 +261,8 @@ export function AutoCalcPanelControls({
               stockCount,
               customWidth: Math.round(customPanelWidth),
               totalPanels,
-              stockWidth: defaultStockWidth,
-              stock1Width: defaultStockWidth,
+              stockWidth: stockWidth,
+              stock1Width: stockWidth,
               stock1Count: stockCount,
               stock2Width: undefined,
               stock2Count: 0,
