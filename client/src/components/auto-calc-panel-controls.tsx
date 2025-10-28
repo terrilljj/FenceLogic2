@@ -253,35 +253,23 @@ export function AutoCalcPanelControls({
         const remainingForCustom = availableSpace - totalStockOpenings - totalCorePosts - totalGaps;
         const customPanelWidth = remainingForCustom + 2 * SHUFFLE_PER_SIDE_MM;
         
-        // NEW RULE: If custom is within 50mm of stock size, constrain it to that range
-        let constrainedCustomWidth = customPanelWidth;
-        if (Math.abs(customPanelWidth - defaultStockWidth) <= 50) {
-          // Find adjacent stock size
-          const stockIndex = availableStockWidths.indexOf(defaultStockWidth);
-          const adjacentStock = stockIndex < availableStockWidths.length - 1 
-            ? availableStockWidths[stockIndex + 1]
-            : stockIndex > 0 
-            ? availableStockWidths[stockIndex - 1]
-            : null;
-          
-          if (adjacentStock && Math.abs(adjacentStock - defaultStockWidth) <= 50) {
-            const minStock = Math.min(defaultStockWidth, adjacentStock);
-            const maxStock = Math.max(defaultStockWidth, adjacentStock);
-            // Constrain custom to be within stock range
-            constrainedCustomWidth = Math.max(minStock, Math.min(maxStock, customPanelWidth));
-          }
+        // CRITICAL: Custom panel MUST NOT exceed maxPanelWidth
+        if (customPanelWidth > maxPanelWidth) {
+          console.log(`  ❌ Stock+Custom rejected: custom ${customPanelWidth}mm > max ${maxPanelWidth}mm`);
+          continue; // Skip this combination
         }
         
-        if (constrainedCustomWidth >= 300 && constrainedCustomWidth <= 2000) {
-          const avgSize = (stockCount * defaultStockWidth + constrainedCustomWidth) / totalPanels;
-          const variance = Math.abs(customPanelWidth - constrainedCustomWidth);
+        if (customPanelWidth >= 300 && customPanelWidth <= maxPanelWidth) {
+          const avgSize = (stockCount * defaultStockWidth + customPanelWidth) / totalPanels;
+          const variance = 0; // No variance since we're using exact calculation
           const score = calculateScore(totalPanels, variance, avgSize);
+          console.log(`  Stock+Custom: ${stockCount}x${defaultStockWidth} + 1x${Math.round(customPanelWidth)} score=${score.toFixed(0)}`);
           
           if (score < bestScore) {
             bestScore = score;
             bestSolution = {
               stockCount,
-              customWidth: Math.round(constrainedCustomWidth),
+              customWidth: Math.round(customPanelWidth),
               totalPanels,
               stockWidth: defaultStockWidth,
               stock1Width: defaultStockWidth,
@@ -659,6 +647,7 @@ export function AutoCalcPanelControls({
           <Select
             value={panelSelectionMode}
             onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
+              console.log("🔄 Panel selection mode changed to:", value);
               onUpdate({ ...config, panelSelectionMode: value });
             }}
           >
