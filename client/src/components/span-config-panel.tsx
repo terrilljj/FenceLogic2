@@ -1554,57 +1554,55 @@ export function SpanConfigPanel({
                     }
                   }
                   
-                  // Calculate panel widths respecting gate/hinge overrides
+                  // Build panel widths array - USE panelWidthOverrides if they exist (mixed stock sizes!)
                   const numPanels = finalConfig.panelTypes.length;
                   const totalGaps = finalConfig.interPanelGaps.reduce((sum, gap) => sum + gap, 0);
-                  const availableForPanels = span.length - (span.leftGap?.size || 0) - (span.rightGap?.size || 0) - totalGaps;
-                  
-                  // Identify fixed panels (gate/hinge with custom widths) and calculate remaining space
-                  const fixedPanels: { index: number; width: number }[] = [];
-                  let fixedWidth = 0;
-                  let standardPanelCount = 0;
-                  
-                  for (let i = 0; i < numPanels; i++) {
-                    if (finalConfig.panelTypes[i] === "gate" || 
-                        finalConfig.panelTypes[i] === "hinge" || 
-                        finalConfig.panelTypes[i] === "custom") {
-                      const width = finalConfig.panelWidthOverrides?.[i] || 
-                        (finalConfig.panelTypes[i] === "gate" ? 900 : 
-                         finalConfig.panelTypes[i] === "hinge" ? 1200 : 1000);
-                      fixedPanels.push({ index: i, width });
-                      fixedWidth += width;
-                    } else {
-                      standardPanelCount++;
-                    }
-                  }
-                  
-                  // Calculate width for standard panels
-                  const availableForStandard = availableForPanels - fixedWidth;
-                  
-                  // For "all-stock" mode, ALWAYS use the stock panel width (never evenly divide)
-                  // For other modes, evenly distribute the space
-                  const baseWidth = finalConfig.panelSelectionMode === "all-stock" && finalConfig.stockPanelWidth
-                    ? finalConfig.stockPanelWidth
-                    : (standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0);
-                  
-                  const remainder = availableForStandard - (baseWidth * standardPanelCount);
-                  
-                  // Build final widths array
                   const panelWidths: number[] = [];
-                  let standardIndex = 0;
                   
-                  for (let i = 0; i < numPanels; i++) {
-                    const fixedPanel = fixedPanels.find(fp => fp.index === i);
-                    if (fixedPanel) {
-                      panelWidths.push(fixedPanel.width);
-                    } else {
-                      // In all-stock mode, all standard panels use the exact stock width
-                      // In other modes, distribute remainder across panels
-                      const extraMm = finalConfig.panelSelectionMode === "all-stock" 
-                        ? 0 
-                        : (standardIndex < remainder ? 1 : 0);
-                      panelWidths.push(baseWidth + extraMm);
-                      standardIndex++;
+                  // If we have panelWidthOverrides, use them directly (already calculated by auto-calc)
+                  if (finalConfig.panelWidthOverrides && Object.keys(finalConfig.panelWidthOverrides).length > 0) {
+                    // Use the individual widths that were calculated
+                    for (let i = 0; i < numPanels; i++) {
+                      panelWidths.push(finalConfig.panelWidthOverrides[i] || finalConfig.stockPanelWidth || 1000);
+                    }
+                  } else {
+                    // Fallback: calculate panel widths if no overrides exist
+                    const availableForPanels = span.length - (span.leftGap?.size || 0) - (span.rightGap?.size || 0) - totalGaps;
+                    
+                    // Identify fixed panels (gate/hinge with custom widths) and calculate remaining space
+                    const fixedPanels: { index: number; width: number }[] = [];
+                    let fixedWidth = 0;
+                    let standardPanelCount = 0;
+                    
+                    for (let i = 0; i < numPanels; i++) {
+                      if (finalConfig.panelTypes[i] === "gate" || 
+                          finalConfig.panelTypes[i] === "hinge" || 
+                          finalConfig.panelTypes[i] === "custom") {
+                        const width = finalConfig.panelWidthOverrides?.[i] || 
+                          (finalConfig.panelTypes[i] === "gate" ? 900 : 
+                           finalConfig.panelTypes[i] === "hinge" ? 1200 : 1000);
+                        fixedPanels.push({ index: i, width });
+                        fixedWidth += width;
+                      } else {
+                        standardPanelCount++;
+                      }
+                    }
+                    
+                    // Calculate width for standard panels
+                    const availableForStandard = availableForPanels - fixedWidth;
+                    const baseWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
+                    const remainder = availableForStandard - (baseWidth * standardPanelCount);
+                    
+                    let standardIndex = 0;
+                    for (let i = 0; i < numPanels; i++) {
+                      const fixedPanel = fixedPanels.find(fp => fp.index === i);
+                      if (fixedPanel) {
+                        panelWidths.push(fixedPanel.width);
+                      } else {
+                        const extraMm = standardIndex < remainder ? 1 : 0;
+                        panelWidths.push(baseWidth + extraMm);
+                        standardIndex++;
+                      }
                     }
                   }
                   
