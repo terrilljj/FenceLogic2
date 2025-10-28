@@ -37,6 +37,11 @@ interface AutoCalcConfig {
   }>;
 }
 
+interface SemiFramelessPostConfig {
+  lhsPostType?: "wall" | "end" | "corner-in" | "corner-out";
+  rhsPostType?: "wall" | "end" | "corner-in" | "corner-out";
+}
+
 interface AutoCalcPanelControlsProps {
   autoCalcConfig: AutoCalcConfig | undefined;
   spanLength: number;
@@ -44,6 +49,7 @@ interface AutoCalcPanelControlsProps {
   rightGapSize: number;
   spanId: string | number;
   onUpdate: (autoCalcConfig: AutoCalcConfig) => void;
+  postConfig?: SemiFramelessPostConfig;
 }
 
 export function AutoCalcPanelControls({
@@ -52,7 +58,8 @@ export function AutoCalcPanelControls({
   leftGapSize,
   rightGapSize,
   spanId,
-  onUpdate
+  onUpdate,
+  postConfig
 }: AutoCalcPanelControlsProps) {
   // State for stock panel fit dialog
   const [showStockFitDialog, setShowStockFitDialog] = useState(false);
@@ -75,6 +82,22 @@ export function AutoCalcPanelControls({
   const numPanels = panelTypes.length;
   const gapSize = interPanelGaps[0] || 50;
 
+  // Helper: Calculate spacing to glass based on post type
+  const getPostSpacing = (postType: "wall" | "end" | "corner-in" | "corner-out" | undefined): number => {
+    // Wall post: 40mm (50mm post, glass shuffles 10mm)
+    // End post: 90mm (50mm gap + 50mm post - 10mm shuffle = 90mm)
+    // Corner: 40mm (same as wall)
+    switch (postType) {
+      case "end":
+        return 90;
+      case "wall":
+      case "corner-in":
+      case "corner-out":
+      default:
+        return 40;
+    }
+  };
+
   // Auto-calculate optimal solution using stock panels + 1 custom panel
   // Semi-frameless with FIXED 30mm gaps
   const autoCalculatePanelCount = (): { 
@@ -86,8 +109,14 @@ export function AutoCalcPanelControls({
     const FIXED_GAP_MM = 30;
     const POST_WIDTH_MM = 50;
     const SHUFFLE_PER_SIDE_MM = 10;
-    // Section length does NOT include wall posts - it's the clear span
-    const availableSpace = spanLength;
+    
+    // Calculate actual spacing based on post types
+    const lhsSpacing = getPostSpacing(postConfig?.lhsPostType);
+    const rhsSpacing = getPostSpacing(postConfig?.rhsPostType);
+    
+    // Section length does NOT include wall posts
+    // Available space = section length - LHS spacing - RHS spacing
+    const availableSpace = spanLength - lhsSpacing - rhsSpacing;
     
     // Find best stock width available (must be actual stock size!)
     const availableStockWidths = getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth);
@@ -250,7 +279,7 @@ export function AutoCalcPanelControls({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spanLength, leftGapSize, rightGapSize, maxPanelWidth, gapSize, layoutMode, panelSelectionMode]);
+  }, [spanLength, leftGapSize, rightGapSize, maxPanelWidth, gapSize, layoutMode, panelSelectionMode, postConfig?.lhsPostType, postConfig?.rhsPostType]);
 
   const updateLayoutMode = (mode: LayoutMode) => {
     if (mode === "auto") {
@@ -383,8 +412,14 @@ export function AutoCalcPanelControls({
       const FIXED_GAP_MM = 30;
       const POST_WIDTH_MM = 50;
       const SHUFFLE_PER_SIDE_MM = 10;
-      // Section length does NOT include wall posts - it's the clear span
-      const availableSpace = spanLength;
+      
+      // Calculate actual spacing based on post types
+      const lhsSpacing = getPostSpacing(postConfig?.lhsPostType);
+      const rhsSpacing = getPostSpacing(postConfig?.rhsPostType);
+      
+      // Section length does NOT include wall posts
+      // Available space = section length - LHS spacing - RHS spacing
+      const availableSpace = spanLength - lhsSpacing - rhsSpacing;
       const maxPanelWidth = config.maxPanelWidth;
       
       // Find best stock width available (must be actual stock size!)

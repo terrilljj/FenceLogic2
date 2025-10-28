@@ -1487,13 +1487,14 @@ export function SpanConfigPanel({
                   panelHeight: 1500,
                   glassType: "12mm" as const,
                   gapMode: "auto" as const,
-                  interPanelGaps: [50],
+                  interPanelGaps: [30], // Fixed 30mm gaps
                   panelTypes: ["standard" as const, "standard" as const],
                 }}
                 spanLength={span.length}
                 leftGapSize={span.leftGap?.size || 0}
                 rightGapSize={span.rightGap?.size || 0}
                 spanId={span.spanId}
+                postConfig={span.semiFramelessConfig}
                 onUpdate={(autoCalcConfig) => {
                   // For semi-frameless in all-stock mode, enforce stock panel width
                   let finalConfig = autoCalcConfig;
