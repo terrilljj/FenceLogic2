@@ -617,14 +617,6 @@ export function AutoCalcPanelControls({
 
   return (
     <div className="space-y-4">
-      {/* Info about auto calculation */}
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Auto-calculator finds the best combination of stock panels within your max panel width. Prioritizes fewer, larger panels using available stock sizes (500-1150mm in 50mm increments). Falls back to stock + 1 custom panel only if needed.
-        </AlertDescription>
-      </Alert>
-
       {/* Panel Selection Mode */}
       <div className="bg-card rounded-md p-4 border space-y-3">
         <div className="flex items-center justify-between">

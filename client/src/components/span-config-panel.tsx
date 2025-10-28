@@ -1474,6 +1474,18 @@ export function SpanConfigPanel({
                   </p>
                 </div>
               )}
+
+              {/* Semi-Frameless Post Hardware Configuration */}
+              {isSemiFrameless && (
+                <div className="space-y-4 pt-4">
+                  <SemiFramelessPostConfig
+                    config={span.semiFramelessConfig}
+                    onUpdate={(semiFramelessConfig) => {
+                      updateSpan({ semiFramelessConfig });
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -1595,18 +1607,6 @@ export function SpanConfigPanel({
                       panelTypes: finalConfig.panelTypes,
                     }
                   });
-                }}
-              />
-            </div>
-          )}
-
-          {/* Semi-Frameless Post Hardware Configuration */}
-          {isSemiFrameless && (
-            <div className="space-y-4 pt-4">
-              <SemiFramelessPostConfig
-                config={span.semiFramelessConfig}
-                onUpdate={(semiFramelessConfig) => {
-                  updateSpan({ semiFramelessConfig });
                 }}
               />
             </div>
