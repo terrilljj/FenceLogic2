@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,9 @@ import { Plus, Trash2, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { GlassThickness } from "@shared/schema";
+import { calculateStockPanelFit } from "@shared/stockPanelFit";
+import { findBestStockPanelWidth, getAvailableStockPanelWidths } from "@shared/findBestStockPanelWidth";
+import { StockPanelFitDialog } from "./stock-panel-fit-dialog";
 
 type PanelType = "standard" | "gate" | "hinge" | "custom";
 type LayoutMode = "auto" | "manual-qty" | "manual-individual";
@@ -20,6 +23,9 @@ interface AutoCalcConfig {
   interPanelGaps: number[];
   panelTypes: PanelType[];
   panelWidthOverrides?: { [index: number]: number };
+  panelSelectionMode?: "all-stock" | "stock-plus-custom" | "all-custom";
+  stockPanelWidth?: number;
+  customPanelPosition?: number;
   gateConfigs?: Array<{
     position: number;
     widthMm?: number;
@@ -48,6 +54,10 @@ export function AutoCalcPanelControls({
   spanId,
   onUpdate
 }: AutoCalcPanelControlsProps) {
+  // State for stock panel fit dialog
+  const [showStockFitDialog, setShowStockFitDialog] = useState(false);
+  const [stockFitResult, setStockFitResult] = useState<ReturnType<typeof calculateStockPanelFit> | null>(null);
+
   // Initialize with default config if not exists
   const config = autoCalcConfig || {
     layoutMode: "auto" as const,
@@ -57,9 +67,11 @@ export function AutoCalcPanelControls({
     gapMode: "auto" as const,
     interPanelGaps: [50],
     panelTypes: ["standard", "standard"],
+    panelSelectionMode: "all-stock" as const,
+    stockPanelWidth: 966,
   };
 
-  const { layoutMode = "auto", maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides } = config;
+  const { layoutMode = "auto", maxPanelWidth, panelHeight, glassType, gapMode, interPanelGaps, panelTypes, panelWidthOverrides, panelSelectionMode = "all-stock", stockPanelWidth = 966 } = config;
   const numPanels = panelTypes.length;
   const gapSize = interPanelGaps[0] || 50;
 
@@ -282,7 +294,7 @@ export function AutoCalcPanelControls({
     onUpdate({ ...config, panelHeight: value });
   };
 
-  const updateGlassType = (value: "12mm" | "15mm") => {
+  const updateGlassType = (value: GlassThickness) => {
     onUpdate({ ...config, glassType: value });
   };
 
@@ -298,6 +310,30 @@ export function AutoCalcPanelControls({
     onUpdate({ ...config, panelTypes: newTypes });
   };
 
+  // Auto-calculate best stock panel width when in "all-stock" mode
+  useEffect(() => {
+    if (panelSelectionMode === "all-stock") {
+      const bestFit = findBestStockPanelWidth({
+        sectionLengthMm: spanLength,
+        panelHeight,
+        glassType,
+        minGapMm: 6,
+        maxGapMm: 100,
+        postWidthMm: 50,
+        shufflePerSideMm: 10,
+      });
+
+      if (bestFit.canFit && bestFit.stockPanelWidth !== stockPanelWidth) {
+        // Auto-update to the best stock panel width
+        onUpdate({
+          ...config,
+          stockPanelWidth: bestFit.stockPanelWidth,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spanLength, panelSelectionMode, panelHeight, glassType]);
+
   return (
     <div className="space-y-4">
       {/* Info about auto calculation */}
@@ -307,6 +343,98 @@ export function AutoCalcPanelControls({
           Panel count auto-calculated based on max width. Mark panels as Gate/Hinge/Custom to set specific widths - standard panels auto-adjust to fill remaining space.
         </AlertDescription>
       </Alert>
+
+      {/* Panel Selection Mode */}
+      <div className="bg-card rounded-md p-4 border space-y-3">
+        <Label className="text-sm font-medium">Panel Selection Mode</Label>
+        <div className="grid grid-cols-1 gap-3">
+          <Select
+            value={panelSelectionMode}
+            onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
+              onUpdate({ ...config, panelSelectionMode: value });
+            }}
+          >
+            <SelectTrigger className="h-9" data-testid={`panel-selection-mode-${spanId}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-stock">All Stock Panels</SelectItem>
+              <SelectItem value="stock-plus-custom">Stock Panels + 1 Custom</SelectItem>
+              <SelectItem value="all-custom">All Custom Panels</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(panelSelectionMode === "stock-plus-custom" || panelSelectionMode === "all-stock") && (
+            <div className="flex items-center gap-2">
+              <Label className="text-sm shrink-0">Stock Panel Width:</Label>
+              {panelSelectionMode === "all-stock" ? (
+                <Select
+                  value={stockPanelWidth.toString()}
+                  onValueChange={(value) => {
+                    onUpdate({ ...config, stockPanelWidth: parseInt(value) });
+                  }}
+                >
+                  <SelectTrigger className="h-9 flex-1" data-testid={`stock-panel-width-${spanId}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableStockPanelWidths(panelHeight, glassType).map((width) => (
+                      <SelectItem key={width} value={width.toString()}>
+                        {width}mm panel (opening: {width - 20}mm)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <>
+                  <Input
+                    type="number"
+                    min={200}
+                    max={2000}
+                    step={50}
+                    value={stockPanelWidth}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 966;
+                      onUpdate({ ...config, stockPanelWidth: value });
+                    }}
+                    className="h-9 flex-1"
+                    data-testid={`stock-panel-width-${spanId}`}
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">mm</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {(panelSelectionMode === "stock-plus-custom" || panelSelectionMode === "all-stock") && (
+          <div className="pt-2 border-t">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                // Calculate stock fit
+                const fitResult = calculateStockPanelFit({
+                  sectionLengthMm: spanLength,
+                  stockPanelWidthMm: stockPanelWidth,
+                  minGapMm: 6,
+                  maxGapMm: 100,
+                  postWidthMm: 50,
+                  shufflePerSideMm: 10,
+                });
+
+                if (!fitResult.canFitStock) {
+                  setStockFitResult(fitResult);
+                  setShowStockFitDialog(true);
+                }
+              }}
+              data-testid={`check-stock-fit-${spanId}`}
+            >
+              Check Stock Panel Fit
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Panel Specifications */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -557,6 +685,38 @@ export function AutoCalcPanelControls({
           </div>
         </AlertDescription>
       </Alert>
+
+      {/* Stock Panel Fit Dialog */}
+      {stockFitResult && (
+        <StockPanelFitDialog
+          open={showStockFitDialog}
+          onOpenChange={setShowStockFitDialog}
+          fitResult={stockFitResult}
+          currentLengthMm={spanLength}
+          stockPanelWidthMm={stockPanelWidth}
+          onAdjustLength={(newLengthMm) => {
+            // This would need to be handled by the parent component
+            // For now, just show a message
+            console.log(`Adjust section length to ${newLengthMm}mm`);
+          }}
+          onUseStockPlusCustom={(customPanelWidth, position) => {
+            // Set panel selection mode and configure panels
+            onUpdate({
+              ...config,
+              panelSelectionMode: "stock-plus-custom",
+              stockPanelWidth,
+              customPanelPosition: position,
+            });
+          }}
+          onUseAllCustom={() => {
+            // Switch to all custom mode
+            onUpdate({
+              ...config,
+              panelSelectionMode: "all-custom",
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

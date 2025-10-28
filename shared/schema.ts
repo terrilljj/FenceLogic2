@@ -561,7 +561,7 @@ export const spanConfigSchema = z.object({
     interPanelGaps: z.array(z.number().min(6).max(100)), // Exact gap values between panels
     panelTypes: z.array(z.enum(["standard", "gate", "hinge", "custom"])), // Type for each panel position (no raked for custom-frameless)
     panelWidthOverrides: z.record(z.number()).optional(), // Optional width overrides for specific panels (index -> width)
-    panelSelectionMode: z.enum(["stock-plus-custom", "all-custom"]).default("stock-plus-custom"), // Panel selection mode: stock sizes + 1 custom, or all custom
+    panelSelectionMode: z.enum(["all-stock", "stock-plus-custom", "all-custom"]).default("stock-plus-custom"), // Panel selection mode: all stock, stock sizes + 1 custom, or all custom
     stockPanelWidth: z.number().min(500).max(2000).optional(), // Stock panel width when using stock-plus-custom mode
     customPanelPosition: z.number().optional(), // Position of custom panel in stock-plus-custom mode
     gateConfigs: z.array(z.object({
