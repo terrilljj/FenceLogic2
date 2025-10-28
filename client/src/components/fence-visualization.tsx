@@ -634,9 +634,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // For Blade, BARR, Tubular, Hamptons PVC (NOT Semi-Frameless), use gaps from panelLayout array (N+1 gaps for N panels)
-    // Semi-Frameless keeps user-specified L&R gaps because panelLayout.gaps only contains inter-panel gaps
-    if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC) && !isSemiFrameless && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+    // For Semi-Frameless with wall posts: NO gap at walls (wall post mounts directly to wall)
+    // Left/right gaps would only apply if using core posts at boundaries
+    if (isSemiFrameless) {
+      // Wall posts mount directly to wall with no gap
+      // Only show gaps if explicitly configured (for core post at boundary scenario)
+      // Default behavior: wall posts at ends = no gaps
+      if (!span.leftGap?.enabled) leftGapSize = 0;
+      if (!span.rightGap?.enabled) rightGapSize = 0;
+    }
+    // For Blade, BARR, Tubular, Hamptons PVC, use gaps from panelLayout array (N+1 gaps for N panels)
+    else if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
@@ -985,7 +993,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       // Semi-Frameless panels: full-height posts with shuffle-glazed glass
       else if (isSemiFrameless) {
         // Semi-frameless panel configuration
-        const postWidth = 50 * scale; // 50mm wide posts
+        const corePostWidth = (span.semiFramelessConfig?.corePostWidth || 40) * scale; // Core posts: 40mm default (10mm shuffle each side + base plate)
+        const wallPostWidth = (span.semiFramelessConfig?.wallPostWidth || 50) * scale; // Wall posts: 50mm default
         const shuffleDepth = 10 * scale; // 10mm shuffle glaze each side
         
         // Glass sits from ground level up (no bottom clearance)
@@ -1005,38 +1014,59 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         // For Semi-Frameless: N panels need N+1 posts (one before first panel, one after each panel)
         ctx.fillStyle = "#555555"; // Darker gray for semi-frameless posts
         
-        // Draw start post only for first panel - extends from glass top to ground
+        // Draw start post only for first panel - WALL POST (50mm default)
         if (i === 0) {
           ctx.fillRect(
-            currentX - postWidth / 2,
+            currentX - wallPostWidth / 2,
             panelTop,
-            postWidth,
+            wallPostWidth,
             groundLevel - panelTop
           );
           
-          // Post measurement label - show only once for the entire section
+          // Wall post label showing wall-to-glass distance (50mm post - 10mm shuffle = 40mm)
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
-          ctx.fillText("50mm post", currentX, groundLevel + 20);
+          const wallPostWidthMm = span.semiFramelessConfig?.wallPostWidth || 50;
+          ctx.fillText(`${wallPostWidthMm}mm wall post`, currentX - wallPostWidth / 2 - 10, groundLevel + 20);
+          
+          // Show wall-to-glass distance
+          ctx.fillStyle = "#888";
+          ctx.font = "500 9px Inter";
+          ctx.fillText(`40mm to glass`, currentX - wallPostWidth / 2 - 10, groundLevel + 35);
         }
         
-        // Always draw post after this panel - extends from glass top to ground
+        // Draw post after this panel - CORE POST (40mm default) or WALL POST if last panel
+        const isLastPanel = i === numPanels - 1;
+        const postWidthAfter = isLastPanel ? wallPostWidth : corePostWidth;
+        
         ctx.fillStyle = "#555555";
         ctx.fillRect(
-          currentX + scaledPanelWidth - postWidth / 2,
+          currentX + scaledPanelWidth - postWidthAfter / 2,
           panelTop,
-          postWidth,
+          postWidthAfter,
           groundLevel - panelTop
         );
         
-        // Show gap between panels (if not last panel)
-        if (i < numPanels - 1 && span.panelLayout?.gaps && span.panelLayout.gaps[i + 1] !== undefined) {
-          const gapWidth = span.panelLayout.gaps[i + 1];
+        // Show core post label between panels (not on last panel which is wall post)
+        if (!isLastPanel) {
+          const corePostWidthMm = span.semiFramelessConfig?.corePostWidth || 40;
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "600 10px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText(`${corePostWidthMm}mm core post`, currentX + scaledPanelWidth, groundLevel + 35);
+        } else {
+          // Last panel: show wall post on right side
+          const wallPostWidthMm = span.semiFramelessConfig?.wallPostWidth || 50;
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "600 10px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText(`${wallPostWidthMm}mm wall post`, currentX + scaledPanelWidth + wallPostWidth / 2 + 10, groundLevel + 20);
+          
+          // Show wall-to-glass distance
           ctx.fillStyle = "#888";
           ctx.font = "500 9px Inter";
-          ctx.textAlign = "center";
-          ctx.fillText(`${gapWidth}mm gap`, currentX + scaledPanelWidth, groundLevel + 35);
+          ctx.fillText(`40mm to glass`, currentX + scaledPanelWidth + wallPostWidth / 2 + 10, groundLevel + 35);
         }
         
       }

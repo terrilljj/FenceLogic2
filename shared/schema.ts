@@ -571,6 +571,10 @@ export const spanConfigSchema = z.object({
       widthMm: z.number().optional(), // Fixed width if specified
     })).optional(),
   }).optional(), // Auto-calc configuration (custom-frameless variant)
+  semiFramelessConfig: z.object({
+    corePostWidth: z.number().min(30).max(60).default(40), // Width of core/intermediate posts (default 40mm, allows base plate + 10mm shuffle each side)
+    wallPostWidth: z.number().min(40).max(60).default(50), // Width of wall/end posts (default 50mm, 10mm shuffle on one side)
+  }).optional(), // Semi-frameless specific configuration (post widths)
 });
 
 export type SpanConfig = z.infer<typeof spanConfigSchema>;
