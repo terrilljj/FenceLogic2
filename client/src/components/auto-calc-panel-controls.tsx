@@ -331,6 +331,7 @@ export function AutoCalcPanelControls({
         maxGapMm: 100,
         postWidthMm: 50,
         shufflePerSideMm: 10,
+        lengthToleranceMm: 50, // ±50mm tolerance
       });
 
       if (bestFit.canFit && bestFit.stockPanelWidth !== stockPanelWidth) {
@@ -339,6 +340,12 @@ export function AutoCalcPanelControls({
           ...config,
           stockPanelWidth: bestFit.stockPanelWidth,
         });
+      }
+      
+      // Store the best fit result for display
+      if (bestFit.canFit && bestFit.lengthAdjustment) {
+        // Could show a message about the length adjustment here
+        console.log(`Stock panels fit with ${bestFit.lengthAdjustment > 0 ? '+' : ''}${bestFit.lengthAdjustment}mm length adjustment`);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -423,7 +430,32 @@ export function AutoCalcPanelControls({
               size="sm"
               variant="outline"
               onClick={() => {
-                // Calculate stock fit
+                // First try to fit with ±50mm tolerance
+                const bestFit = findBestStockPanelWidth({
+                  sectionLengthMm: spanLength,
+                  panelHeight,
+                  glassType,
+                  maxPanelWidth,
+                  minGapMm: 6,
+                  maxGapMm: 100,
+                  postWidthMm: 50,
+                  shufflePerSideMm: 10,
+                  lengthToleranceMm: 50, // ±50mm tolerance
+                });
+
+                // If stock panels can fit within ±50mm tolerance, we're good
+                if (bestFit.canFit && Math.abs(bestFit.lengthAdjustment || 0) <= 50) {
+                  // Stock panels fit! Show success message or auto-apply
+                  if (bestFit.lengthAdjustment && bestFit.lengthAdjustment !== 0) {
+                    alert(`Stock panels fit with ${bestFit.lengthAdjustment > 0 ? '+' : ''}${bestFit.lengthAdjustment}mm adjustment to section length (within ±50mm tolerance).`);
+                  } else {
+                    alert('Stock panels fit perfectly at current section length!');
+                  }
+                  return;
+                }
+
+                // Stock panels can't fit within ±50mm tolerance
+                // Calculate solutions requiring larger adjustments
                 const fitResult = calculateStockPanelFit({
                   sectionLengthMm: spanLength,
                   stockPanelWidthMm: stockPanelWidth,
@@ -433,10 +465,9 @@ export function AutoCalcPanelControls({
                   shufflePerSideMm: 10,
                 });
 
-                if (!fitResult.canFitStock) {
-                  setStockFitResult(fitResult);
-                  setShowStockFitDialog(true);
-                }
+                // Show dialog with custom panel options
+                setStockFitResult(fitResult);
+                setShowStockFitDialog(true);
               }}
               data-testid={`check-stock-fit-${spanId}`}
             >

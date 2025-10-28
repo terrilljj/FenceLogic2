@@ -46,6 +46,7 @@ interface FindBestStockPanelWidthOptions {
   maxGapMm?: number;
   postWidthMm?: number;
   shufflePerSideMm?: number;
+  lengthToleranceMm?: number; // Allow section length adjustment within this tolerance (default ±50mm)
 }
 
 interface BestStockPanelResult {
@@ -53,6 +54,8 @@ interface BestStockPanelResult {
   canFit: boolean;
   panelCount?: number;
   averageGap?: number;
+  adjustedSectionLength?: number; // If section length was adjusted within tolerance
+  lengthAdjustment?: number; // How much the section was adjusted (+/- mm)
 }
 
 /**
@@ -71,6 +74,7 @@ export function findBestStockPanelWidth(
     maxGapMm = 100,
     postWidthMm = 50,
     shufflePerSideMm = 10,
+    lengthToleranceMm = 50, // Default ±50mm tolerance
   } = options;
 
   let availableStockWidths = getStockPanelWidthsForConfig(panelHeight, glassType);
@@ -86,22 +90,15 @@ export function findBestStockPanelWidth(
   };
 
   let bestScore = Infinity;
+  const wallPostVisible = postWidthMm - shufflePerSideMm;
 
-  // Try each stock panel width
-  for (const stockPanelWidth of availableStockWidths) {
-    const fitResult = calculateStockPanelFit({
-      sectionLengthMm,
-      stockPanelWidthMm: stockPanelWidth,
-      minGapMm,
-      maxGapMm,
-      postWidthMm,
-      shufflePerSideMm,
-    });
+  // Try each section length within tolerance range
+  for (let lengthOffset = -lengthToleranceMm; lengthOffset <= lengthToleranceMm; lengthOffset++) {
+    const testLength = sectionLengthMm + lengthOffset;
+    const availableSpace = testLength - 2 * wallPostVisible;
 
-    if (fitResult.canFitStock) {
-      // Calculate a score (prefer gaps closer to ideal 50mm)
-      const wallPostVisible = postWidthMm - shufflePerSideMm;
-      const availableSpace = sectionLengthMm - 2 * wallPostVisible;
+    // Try each stock panel width
+    for (const stockPanelWidth of availableStockWidths) {
       const stockOpeningWidth = stockPanelWidth - 2 * shufflePerSideMm;
 
       // Find panel count that fits
@@ -115,9 +112,12 @@ export function findBestStockPanelWidth(
         const averageGap = remainingForGaps / gapCount;
 
         if (averageGap >= minGapMm && averageGap <= maxGapMm) {
-          // Score based on deviation from ideal 50mm gap
-          const idealGap = 50;
-          const score = Math.abs(averageGap - idealGap);
+          // Score based on:
+          // 1. Prefer no length adjustment (weight: 10)
+          // 2. Prefer gaps closer to ideal 50mm (weight: 1)
+          const lengthAdjustmentPenalty = Math.abs(lengthOffset) * 10;
+          const gapPenalty = Math.abs(averageGap - 50);
+          const score = lengthAdjustmentPenalty + gapPenalty;
 
           if (score < bestScore) {
             bestScore = score;
@@ -126,6 +126,8 @@ export function findBestStockPanelWidth(
               canFit: true,
               panelCount,
               averageGap,
+              adjustedSectionLength: lengthOffset !== 0 ? testLength : undefined,
+              lengthAdjustment: lengthOffset !== 0 ? lengthOffset : undefined,
             };
           }
         }
