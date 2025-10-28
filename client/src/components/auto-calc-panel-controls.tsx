@@ -111,16 +111,14 @@ export function AutoCalcPanelControls({
     stock2Width?: number;
     stock2Count?: number;
   } => {
-    const FIXED_GAP_MM = 30;
-    const POST_WIDTH_MM = 50;
-    const SHUFFLE_PER_SIDE_MM = 10;
+    // USER'S EXACT POST DATA - NO SHUFFLE, NO GAPS
+    const INTERMEDIATE_POST_MM = 30; // Core posts between panels
     
     // Calculate actual spacing based on post types
     const lhsSpacing = getPostSpacing(postConfig?.lhsPostType);
     const rhsSpacing = getPostSpacing(postConfig?.rhsPostType);
     
-    // Section length INCLUDES post spacings (as shown in spreadsheet)
-    // Available space for panels+gaps = section length - LHS spacing - RHS spacing
+    // Available space for panels = section length - LHS spacing - RHS spacing
     const availableSpace = spanLength - lhsSpacing - rhsSpacing;
     
     console.log('🔍 Auto-calc params:', {
@@ -165,25 +163,19 @@ export function AutoCalcPanelControls({
     // Start from LARGEST sizes first (reverse order)
     for (let i = availableStockWidths.length - 1; i >= 0; i--) {
       const width1 = availableStockWidths[i];
-      const opening1 = width1 - 2 * SHUFFLE_PER_SIDE_MM;
       
-      // Try using only one stock size (limit to reasonable panel counts: 2-7)
-      for (let totalPanels = 2; totalPanels <= 7; totalPanels++) {
-        const gapCount = totalPanels + 1;
-        const corePostCount = totalPanels - 1;
-        const totalCorePosts = corePostCount * POST_WIDTH_MM;
-        const totalGaps = gapCount * FIXED_GAP_MM;
-        
-        const totalOpeningsNeeded = availableSpace - totalCorePosts - totalGaps;
-        const avgOpeningWidth = totalOpeningsNeeded / totalPanels;
-        const avgPanelWidth = avgOpeningWidth + 2 * SHUFFLE_PER_SIDE_MM;
+      // Try using only one stock size (limit to reasonable panel counts: 2-10)
+      for (let totalPanels = 2; totalPanels <= 10; totalPanels++) {
+        const intermediatePosts = (totalPanels - 1) * INTERMEDIATE_POST_MM;
+        const panelSpace = availableSpace - intermediatePosts;
         
         // Check if we can use all of width1
-        const allWidth1 = totalPanels * opening1 + totalCorePosts + totalGaps;
-        const variance1 = Math.abs(allWidth1 - availableSpace);
+        const totalPanelWidth = totalPanels * width1;
+        const variance1 = Math.abs(totalPanelWidth - panelSpace);
         
         if (variance1 <= 2) {
           const score = calculateScore(totalPanels, variance1, width1);
+          console.log(`  Single: ${totalPanels}x${width1} var=${variance1.toFixed(1)}mm score=${score.toFixed(0)}`);
           if (score < bestScore) {
             bestScore = score;
             bestSolution = {
@@ -204,14 +196,11 @@ export function AutoCalcPanelControls({
           const width2 = availableStockWidths[j];
           if (width2 - width1 > 50) break; // Only try within 50mm range
           
-          const opening2 = width2 - 2 * SHUFFLE_PER_SIDE_MM;
-          
           // Try different combinations of width1 and width2
           for (let count1 = 1; count1 < totalPanels; count1++) {
             const count2 = totalPanels - count1;
-            const totalOpenings = count1 * opening1 + count2 * opening2;
-            const totalUsed = totalOpenings + totalCorePosts + totalGaps;
-            const variance = Math.abs(totalUsed - availableSpace);
+            const totalPanelWidth = count1 * width1 + count2 * width2;
+            const variance = Math.abs(totalPanelWidth - panelSpace);
             
             if (variance <= 2) {
               const avgSize = (count1 * width1 + count2 * width2) / totalPanels;
@@ -240,18 +229,14 @@ export function AutoCalcPanelControls({
     if (!bestSolution) {
       // Use LARGEST stock size available (within maxPanelWidth) as the primary stock
       const defaultStockWidth = availableStockWidths[availableStockWidths.length - 1] || 950;
-      const stockOpeningWidth = defaultStockWidth - 2 * SHUFFLE_PER_SIDE_MM;
       
       // Limit to reasonable panel counts: 1-6 stock panels + 1 custom
       for (let stockCount = 1; stockCount <= 6; stockCount++) {
         const totalPanels = stockCount + 1;
-        const gapCount = totalPanels + 1;
-        const corePostCount = totalPanels - 1;
-        const totalStockOpenings = stockOpeningWidth * stockCount;
-        const totalCorePosts = corePostCount * POST_WIDTH_MM;
-        const totalGaps = gapCount * FIXED_GAP_MM;
-        const remainingForCustom = availableSpace - totalStockOpenings - totalCorePosts - totalGaps;
-        const customPanelWidth = remainingForCustom + 2 * SHUFFLE_PER_SIDE_MM;
+        const intermediatePosts = (totalPanels - 1) * INTERMEDIATE_POST_MM;
+        const panelSpace = availableSpace - intermediatePosts;
+        const totalStockWidth = stockCount * defaultStockWidth;
+        const customPanelWidth = panelSpace - totalStockWidth;
         
         // CRITICAL: Custom panel MUST NOT exceed maxPanelWidth
         if (customPanelWidth > maxPanelWidth) {
