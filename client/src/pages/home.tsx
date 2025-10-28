@@ -62,6 +62,20 @@ const productOptions: ProductOption[] = [
     visual: "standoff-glass"
   },
   {
+    id: "semi-frameless-1000",
+    type: "custom",
+    name: "Semi-Frameless 1000mm",
+    description: "12mm glass, 50mm posts, shuffle glazed",
+    visual: "frameless-glass"
+  },
+  {
+    id: "semi-frameless-1800",
+    type: "custom",
+    name: "Semi-Frameless 1800mm",
+    description: "10mm glass, 50mm posts, mid-rail at 1000mm",
+    visual: "frameless-glass"
+  },
+  {
     id: "alu-pool-tubular",
     type: "aluminium-pool",
     name: "Flat Top Pool Fence",

@@ -18,6 +18,8 @@ export type ProductVariant =
   | "glass-bal-channel-std"
   | "glass-bal-channel-hd"
   | "glass-bal-standoffs"
+  | "semi-frameless-1000"
+  | "semi-frameless-1800"
   | "alu-pool-tubular"
   | "alu-pool-barr"
   | "alu-pool-blade"
