@@ -381,12 +381,14 @@ export function AutoCalcPanelControls({
           <Label className="text-sm font-medium mb-2 block">Glass Type</Label>
           <Select
             value={glassType}
-            onValueChange={(value) => updateGlassType(value as "12mm" | "15mm")}
+            onValueChange={(value) => updateGlassType(value as GlassThickness)}
           >
             <SelectTrigger className="h-9" data-testid={`glass-type-${spanId}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="10mm-clear">10mm Clear</SelectItem>
+              <SelectItem value="10mm-obscure">10mm Obscure</SelectItem>
               <SelectItem value="12mm">12mm Toughened</SelectItem>
               <SelectItem value="15mm">15mm Toughened</SelectItem>
             </SelectContent>
