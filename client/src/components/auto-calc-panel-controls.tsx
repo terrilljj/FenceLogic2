@@ -206,11 +206,22 @@ export function AutoCalcPanelControls({
   const isValid = Math.abs(remaining) <= 2;
 
   // Trigger initial calculation and recalculate when key inputs change
+  // ALSO detect and fix old "all-stock" configs
   useEffect(() => {
     if (layoutMode === "auto") {
       // Recalculate optimal solution when in auto mode
       const solution = autoCalculatePanelCount();
-      if (solution.totalPanels !== panelTypes.length) {
+      
+      // Detect old/incorrect configs that need fixing:
+      // 1. Wrong panel count
+      // 2. Using "all-stock" mode (old default)
+      // 3. Not using stock-plus-custom mode
+      const needsRecalculation = 
+        solution.totalPanels !== panelTypes.length ||
+        panelSelectionMode === "all-stock" ||
+        panelSelectionMode !== "stock-plus-custom";
+      
+      if (needsRecalculation) {
         // Build panel types: stock panels + 1 custom at end
         const newTypes: PanelType[] = [
           ...Array(solution.stockCount).fill("standard" as const),
@@ -234,7 +245,7 @@ export function AutoCalcPanelControls({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spanLength, leftGapSize, rightGapSize, maxPanelWidth, gapSize, layoutMode]);
+  }, [spanLength, leftGapSize, rightGapSize, maxPanelWidth, gapSize, layoutMode, panelSelectionMode]);
 
   const updateLayoutMode = (mode: LayoutMode) => {
     if (mode === "auto") {
@@ -445,54 +456,7 @@ export function AutoCalcPanelControls({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
-  // Auto-calculate best stock panel width when in "all-stock" mode
-  // ALSO recalculate panel count if it doesn't match maxPanelWidth constraint
-  useEffect(() => {
-    if (panelSelectionMode === "all-stock" && autoCalcConfig) {
-      // First, check if panel count is correct for the maxPanelWidth
-      const availableLength = spanLength - leftGapSize - rightGapSize;
-      const minPanels = Math.ceil((availableLength + gapSize) / (maxPanelWidth + gapSize));
-      const correctPanelCount = Math.max(1, minPanels);
-      
-      // If panel count is wrong, fix it first
-      if (numPanels !== correctPanelCount) {
-        onUpdate({
-          ...config,
-          panelTypes: Array(correctPanelCount).fill("standard" as const),
-          interPanelGaps: Array(Math.max(0, correctPanelCount - 1)).fill(gapSize),
-        });
-        return; // Let this update complete first
-      }
-      
-      const bestFit = findBestStockPanelWidth({
-        sectionLengthMm: spanLength,
-        panelHeight,
-        glassType,
-        maxPanelWidth,
-        minGapMm: 6,
-        maxGapMm: 100,
-        postWidthMm: 50,
-        shufflePerSideMm: 10,
-        lengthToleranceMm: 50, // ±50mm tolerance
-      });
-
-      // Always update if we found a better fit OR if current stock width is invalid/default
-      if (bestFit.canFit && (bestFit.stockPanelWidth !== stockPanelWidth || !stockPanelWidth || stockPanelWidth < 600)) {
-        // Auto-update to the best stock panel width
-        onUpdate({
-          ...config,
-          stockPanelWidth: bestFit.stockPanelWidth,
-        });
-      }
-      
-      // Store the best fit result for display
-      if (bestFit.canFit && bestFit.lengthAdjustment) {
-        // Could show a message about the length adjustment here
-        console.log(`Stock panels fit with ${bestFit.lengthAdjustment > 0 ? '+' : ''}${bestFit.lengthAdjustment}mm length adjustment`);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spanLength, panelSelectionMode, panelHeight, glassType, maxPanelWidth, numPanels]);
+  // Removed: Old all-stock auto-calculation - now using stock+custom as default
 
   return (
     <div className="space-y-4">
