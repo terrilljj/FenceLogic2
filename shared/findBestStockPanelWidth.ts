@@ -84,8 +84,13 @@ export function findBestStockPanelWidth(
     availableStockWidths = availableStockWidths.filter(width => width <= maxPanelWidth);
   }
 
+  // Default to middle value for better initial fit (966mm is a good default)
+  const defaultWidth = availableStockWidths.find(w => w >= 900 && w <= 1000) || 
+                       availableStockWidths[Math.floor(availableStockWidths.length / 2)] || 
+                       966;
+
   let bestResult: BestStockPanelResult = {
-    stockPanelWidth: availableStockWidths[0] || 520, // Default to first available
+    stockPanelWidth: defaultWidth,
     canFit: false,
   };
 

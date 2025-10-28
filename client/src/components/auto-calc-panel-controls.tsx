@@ -334,7 +334,8 @@ export function AutoCalcPanelControls({
         lengthToleranceMm: 50, // ±50mm tolerance
       });
 
-      if (bestFit.canFit && bestFit.stockPanelWidth !== stockPanelWidth) {
+      // Always update if we found a better fit OR if current stock width is invalid/default
+      if (bestFit.canFit && (bestFit.stockPanelWidth !== stockPanelWidth || !stockPanelWidth || stockPanelWidth < 600)) {
         // Auto-update to the best stock panel width
         onUpdate({
           ...config,
@@ -349,7 +350,7 @@ export function AutoCalcPanelControls({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spanLength, panelSelectionMode, panelHeight, glassType]);
+  }, [spanLength, panelSelectionMode, panelHeight, glassType, maxPanelWidth]);
 
   return (
     <div className="space-y-4">

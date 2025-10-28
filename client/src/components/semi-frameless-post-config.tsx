@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 interface SemiFramelessConfig {
   postWidth?: number;
-  lhsPostMountType?: "base-plate" | "core-drilled" | "face-fix";
-  rhsPostMountType?: "base-plate" | "core-drilled" | "face-fix";
-  intermediatePostMountType?: "base-plate" | "core-drilled" | "face-fix";
+  lhsPostMountType?: "wall" | "base-plate" | "core";
+  rhsPostMountType?: "wall" | "base-plate" | "core";
+  intermediatePostMountType?: "base-plate" | "core";
   postColor?: "satin-black" | "custom";
   customPostColor?: string;
 }
@@ -34,10 +34,15 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
     onUpdate({ ...currentConfig, [field]: value });
   };
 
-  const mountTypeOptions = [
+  const wallPostMountOptions = [
+    { value: "wall", label: "Wall" },
     { value: "base-plate", label: "Base Plate" },
-    { value: "core-drilled", label: "Core Drilled" },
-    { value: "face-fix", label: "Face Fix" },
+    { value: "core", label: "Core" },
+  ];
+
+  const intermediatePostMountOptions = [
+    { value: "base-plate", label: "Base Plate" },
+    { value: "core", label: "Core" },
   ];
 
   return (
@@ -80,7 +85,7 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {mountTypeOptions.map((opt) => (
+                {wallPostMountOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -100,7 +105,7 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {mountTypeOptions.map((opt) => (
+                {intermediatePostMountOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -120,7 +125,7 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {mountTypeOptions.map((opt) => (
+                {wallPostMountOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
