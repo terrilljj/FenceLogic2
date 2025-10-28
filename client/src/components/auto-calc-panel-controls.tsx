@@ -319,6 +319,14 @@ export function AutoCalcPanelControls({
     onUpdate({ ...config, panelTypes: newTypes });
   };
 
+  // Initialize autoCalcConfig on mount if it doesn't exist
+  useEffect(() => {
+    if (!autoCalcConfig) {
+      onUpdate(config);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
   // Auto-calculate best stock panel width when in "all-stock" mode
   useEffect(() => {
     if (panelSelectionMode === "all-stock") {
