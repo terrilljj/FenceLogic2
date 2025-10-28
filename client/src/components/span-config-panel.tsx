@@ -1520,8 +1520,16 @@ export function SpanConfigPanel({
                   panelTypes: ["standard" as const, "standard" as const],
                 }}
                 spanLength={span.length}
-                leftGapSize={span.leftGap?.size || 0}
-                rightGapSize={span.rightGap?.size || 0}
+                leftGapSize={
+                  span.semiFramelessConfig?.lhsPostType === "wall" ? 40 :
+                  span.semiFramelessConfig?.lhsPostType === "end" ? 90 :
+                  span.leftGap?.size || 0
+                }
+                rightGapSize={
+                  span.semiFramelessConfig?.rhsPostType === "wall" ? 40 :
+                  span.semiFramelessConfig?.rhsPostType === "end" ? 90 :
+                  span.rightGap?.size || 0
+                }
                 spanId={span.spanId}
                 postConfig={span.semiFramelessConfig}
                 onUpdate={(autoCalcConfig) => {
