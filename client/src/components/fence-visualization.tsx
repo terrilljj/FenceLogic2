@@ -1014,11 +1014,11 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             groundLevel - panelTop
           );
           
-          // Post measurement label - 50mm
+          // Post measurement label - show only once for the entire section
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
-          ctx.fillText("50mm", currentX, groundLevel + 20);
+          ctx.fillText("50mm post", currentX, groundLevel + 20);
         }
         
         // Always draw post after this panel - extends from glass top to ground
@@ -1030,11 +1030,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           groundLevel - panelTop
         );
         
-        // Post measurement label - 50mm
-        ctx.fillStyle = "#4b5563";
-        ctx.font = "600 10px Inter";
-        ctx.textAlign = "center";
-        ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
+        // Show gap between panels (if not last panel)
+        if (i < numPanels - 1 && span.panelLayout?.gaps && span.panelLayout.gaps[i + 1] !== undefined) {
+          const gapWidth = span.panelLayout.gaps[i + 1];
+          ctx.fillStyle = "#888";
+          ctx.font = "500 9px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText(`${gapWidth}mm gap`, currentX + scaledPanelWidth, groundLevel + 35);
+        }
         
       }
       // Hamptons PVC panels have different rendering
@@ -1225,29 +1228,39 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
       
-      // Draw the width number (or width x height for custom)
+      // For semi-frameless, show opening width and actual panel size (shuffle glazed)
       let widthLabel = `${currentPanelWidth}${isRaked ? 'H' : ''}`;
-      if (isCustom && span.customPanel?.enabled) {
+      if (isSemiFrameless) {
+        const openingWidth = currentPanelWidth + 20; // Opening = panel + 20mm
+        widthLabel = `${openingWidth}mm`;
+      } else if (isCustom && span.customPanel?.enabled) {
         widthLabel = `${currentPanelWidth}x${span.customPanel.height}`;
       }
       ctx.fillText(
         widthLabel,
         currentX + scaledPanelWidth / 2,
-        groundLevel - scaledPanelHeight / 2 - 4
+        groundLevel - scaledPanelHeight / 2 - 8
       );
       
-      // Draw the panel type below
+      // Draw the panel type or actual panel size below
       let panelTypeLabel = "Panel";
-      if (isGate) panelTypeLabel = "Gate";
-      else if (isHinge) panelTypeLabel = "Hinge";
-      else if (isRaked) panelTypeLabel = "Rake";
-      else if (isCustom) panelTypeLabel = "Custom";
+      if (isSemiFrameless) {
+        panelTypeLabel = `${currentPanelWidth}mm panel`; // Actual panel size after shuffle
+      } else if (isGate) {
+        panelTypeLabel = "Gate";
+      } else if (isHinge) {
+        panelTypeLabel = "Hinge";
+      } else if (isRaked) {
+        panelTypeLabel = "Rake";
+      } else if (isCustom) {
+        panelTypeLabel = "Custom";
+      }
       
-      ctx.font = "500 11px Inter";
+      ctx.font = "500 10px Inter";
       ctx.fillText(
         panelTypeLabel,
         currentX + scaledPanelWidth / 2,
-        groundLevel - scaledPanelHeight / 2 + 10
+        groundLevel - scaledPanelHeight / 2 + 6
       );
 
       // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular/Hamptons/SemiFrameless use posts)
@@ -1466,6 +1479,34 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
     }
 
+    // Draw mid-rail for semi-frameless 1800mm variant
+    if (design.productVariant === "semi-frameless-1800") {
+      const midRailHeight = 1000 * scale; // Mid-rail at 1000mm from ground
+      const railHeight = 4; // Rail thickness
+      const railStartX = startX + (leftGapSize * scale);
+      const railEndX = currentX - (rightGapSize * scale);
+      const railY = groundLevel - midRailHeight;
+      
+      // Draw mid-rail
+      ctx.fillStyle = "#808080"; // Gray for aluminum rail
+      ctx.fillRect(railStartX, railY, railEndX - railStartX, railHeight);
+      
+      // Rail outline
+      ctx.strokeStyle = "#666666";
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(railStartX, railY, railEndX - railStartX, railHeight);
+      
+      // Mid-rail label
+      ctx.fillStyle = "#4b5563";
+      ctx.font = "500 10px Inter";
+      ctx.textAlign = "right";
+      ctx.fillText(
+        "Mid-Rail @ 1000mm",
+        railEndX + 90,
+        railY + 2
+      );
+    }
+    
     // Draw top-mounted rail for glass balustrade if enabled
     const isGlassBalustrade = design.productVariant === "glass-bal-spigots" || 
                               design.productVariant === "glass-bal-channel" || 
