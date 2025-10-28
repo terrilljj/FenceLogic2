@@ -317,6 +317,7 @@ export function AutoCalcPanelControls({
         sectionLengthMm: spanLength,
         panelHeight,
         glassType,
+        maxPanelWidth,
         minGapMm: 6,
         maxGapMm: 100,
         postWidthMm: 50,
@@ -378,7 +379,7 @@ export function AutoCalcPanelControls({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailableStockPanelWidths(panelHeight, glassType).map((width) => (
+                    {getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth).map((width) => (
                       <SelectItem key={width} value={width.toString()}>
                         {width}mm panel (opening: {width - 20}mm)
                       </SelectItem>

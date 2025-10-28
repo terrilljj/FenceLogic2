@@ -41,6 +41,7 @@ interface FindBestStockPanelWidthOptions {
   sectionLengthMm: number;
   panelHeight: number;
   glassType: string;
+  maxPanelWidth?: number;
   minGapMm?: number;
   maxGapMm?: number;
   postWidthMm?: number;
@@ -65,13 +66,19 @@ export function findBestStockPanelWidth(
     sectionLengthMm,
     panelHeight,
     glassType,
+    maxPanelWidth,
     minGapMm = 6,
     maxGapMm = 100,
     postWidthMm = 50,
     shufflePerSideMm = 10,
   } = options;
 
-  const availableStockWidths = getStockPanelWidthsForConfig(panelHeight, glassType);
+  let availableStockWidths = getStockPanelWidthsForConfig(panelHeight, glassType);
+  
+  // Filter by maxPanelWidth constraint if provided
+  if (maxPanelWidth) {
+    availableStockWidths = availableStockWidths.filter(width => width <= maxPanelWidth);
+  }
 
   let bestResult: BestStockPanelResult = {
     stockPanelWidth: availableStockWidths[0] || 520, // Default to first available
@@ -131,7 +138,15 @@ export function findBestStockPanelWidth(
 
 /**
  * Get all available stock panel widths for a given configuration
+ * Optionally filtered by maxPanelWidth constraint
  */
-export function getAvailableStockPanelWidths(panelHeight: number, glassType: string): number[] {
-  return getStockPanelWidthsForConfig(panelHeight, glassType);
+export function getAvailableStockPanelWidths(panelHeight: number, glassType: string, maxPanelWidth?: number): number[] {
+  let widths = getStockPanelWidthsForConfig(panelHeight, glassType);
+  
+  // Filter by maxPanelWidth constraint if provided
+  if (maxPanelWidth) {
+    widths = widths.filter(width => width <= maxPanelWidth);
+  }
+  
+  return widths;
 }
