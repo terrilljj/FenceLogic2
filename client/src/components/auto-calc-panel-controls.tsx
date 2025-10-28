@@ -322,8 +322,24 @@ export function AutoCalcPanelControls({
   // Initialize autoCalcConfig on mount if it doesn't exist
   useEffect(() => {
     if (!autoCalcConfig) {
-      // Initialize with proper defaults and immediately calculate best stock width
-      const initialConfig = config;
+      console.log('[AutoCalc Init] Initializing with defaults, spanLength:', spanLength);
+      // Calculate correct panel count based on maxPanelWidth
+      const availableLength = spanLength - leftGapSize - rightGapSize;
+      const maxPanelWidth = config.maxPanelWidth;
+      const gapSize = config.interPanelGaps[0] || 50;
+      const minPanels = Math.ceil((availableLength + gapSize) / (maxPanelWidth + gapSize));
+      const correctPanelCount = Math.max(1, minPanels);
+      
+      console.log('[AutoCalc Init] Calculated panel count:', correctPanelCount, 'for', availableLength, 'mm with max panel', maxPanelWidth);
+      
+      // Initialize with correct panel count
+      const initialConfig = {
+        ...config,
+        panelTypes: Array(correctPanelCount).fill("standard" as const),
+        interPanelGaps: Array(Math.max(0, correctPanelCount - 1)).fill(gapSize),
+      };
+      
+      // Calculate best stock width
       const bestFit = findBestStockPanelWidth({
         sectionLengthMm: spanLength,
         panelHeight: initialConfig.panelHeight,
@@ -336,7 +352,9 @@ export function AutoCalcPanelControls({
         lengthToleranceMm: 50,
       });
       
-      // Set the best stock width immediately during initialization
+      console.log('[AutoCalc Init] Best fit result:', bestFit);
+      
+      // Set the best stock width and correct panel count immediately
       onUpdate({
         ...initialConfig,
         stockPanelWidth: bestFit.canFit ? bestFit.stockPanelWidth : initialConfig.stockPanelWidth,
