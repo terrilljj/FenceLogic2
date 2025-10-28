@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { GlassThickness } from "@shared/schema";
 
 type PanelType = "standard" | "gate" | "hinge" | "custom";
 type LayoutMode = "auto" | "manual-qty" | "manual-individual";
@@ -14,7 +15,7 @@ interface AutoCalcConfig {
   layoutMode?: LayoutMode;
   maxPanelWidth: number;
   panelHeight: number;
-  glassType: "12mm" | "15mm";
+  glassType: GlassThickness;
   gapMode: "auto" | "manual";
   interPanelGaps: number[];
   panelTypes: PanelType[];
@@ -52,7 +53,7 @@ export function AutoCalcPanelControls({
     layoutMode: "auto" as const,
     maxPanelWidth: 1500,
     panelHeight: 1500,
-    glassType: "12mm" as const,
+    glassType: "10mm-clear" as const,
     gapMode: "auto" as const,
     interPanelGaps: [50],
     panelTypes: ["standard", "standard"],
