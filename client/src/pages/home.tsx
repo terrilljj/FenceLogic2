@@ -65,15 +65,15 @@ const productOptions: ProductOption[] = [
     id: "semi-frameless-1000",
     type: "custom",
     name: "Semi-Frameless 1000mm",
-    description: "12mm glass, 50mm posts, shuffle glazed",
-    visual: "frameless-glass"
+    description: "12mm glass, 50mm posts, shuffle glazed, top rail",
+    visual: "aluminium-slats"
   },
   {
     id: "semi-frameless-1800",
     type: "custom",
     name: "Semi-Frameless 1800mm",
-    description: "10mm glass, 50mm posts, mid-rail at 1000mm",
-    visual: "frameless-glass"
+    description: "10mm glass, 50mm posts, shuffle glazed, mid-rail",
+    visual: "aluminium-slats"
   },
   {
     id: "alu-pool-tubular",
