@@ -322,15 +322,12 @@ export function AutoCalcPanelControls({
   // Initialize autoCalcConfig on mount if it doesn't exist
   useEffect(() => {
     if (!autoCalcConfig) {
-      console.log('[AutoCalc Init] Initializing with defaults, spanLength:', spanLength);
       // Calculate correct panel count based on maxPanelWidth
       const availableLength = spanLength - leftGapSize - rightGapSize;
       const maxPanelWidth = config.maxPanelWidth;
       const gapSize = config.interPanelGaps[0] || 50;
       const minPanels = Math.ceil((availableLength + gapSize) / (maxPanelWidth + gapSize));
       const correctPanelCount = Math.max(1, minPanels);
-      
-      console.log('[AutoCalc Init] Calculated panel count:', correctPanelCount, 'for', availableLength, 'mm with max panel', maxPanelWidth);
       
       // Initialize with correct panel count
       const initialConfig = {
@@ -352,8 +349,6 @@ export function AutoCalcPanelControls({
         lengthToleranceMm: 50,
       });
       
-      console.log('[AutoCalc Init] Best fit result:', bestFit);
-      
       // Set the best stock width and correct panel count immediately
       onUpdate({
         ...initialConfig,
@@ -364,8 +359,24 @@ export function AutoCalcPanelControls({
   }, []); // Run once on mount
 
   // Auto-calculate best stock panel width when in "all-stock" mode
+  // ALSO recalculate panel count if it doesn't match maxPanelWidth constraint
   useEffect(() => {
     if (panelSelectionMode === "all-stock" && autoCalcConfig) {
+      // First, check if panel count is correct for the maxPanelWidth
+      const availableLength = spanLength - leftGapSize - rightGapSize;
+      const minPanels = Math.ceil((availableLength + gapSize) / (maxPanelWidth + gapSize));
+      const correctPanelCount = Math.max(1, minPanels);
+      
+      // If panel count is wrong, fix it first
+      if (numPanels !== correctPanelCount) {
+        onUpdate({
+          ...config,
+          panelTypes: Array(correctPanelCount).fill("standard" as const),
+          interPanelGaps: Array(Math.max(0, correctPanelCount - 1)).fill(gapSize),
+        });
+        return; // Let this update complete first
+      }
+      
       const bestFit = findBestStockPanelWidth({
         sectionLengthMm: spanLength,
         panelHeight,
@@ -394,7 +405,7 @@ export function AutoCalcPanelControls({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spanLength, panelSelectionMode, panelHeight, glassType, maxPanelWidth]);
+  }, [spanLength, panelSelectionMode, panelHeight, glassType, maxPanelWidth, numPanels]);
 
   return (
     <div className="space-y-4">
