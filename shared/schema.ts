@@ -58,7 +58,7 @@ export type SpigotMounting = "base-plate" | "core-drilled" | "side-mounted";
 export type SpigotColor = "polished" | "satin" | "black" | "white";
 
 // Glass thickness types
-export type GlassThickness = "12mm" | "15mm";
+export type GlassThickness = "10mm-clear" | "10mm-obscure" | "12mm" | "15mm";
 
 // Handrail types
 export type HandrailType = "nonorail-25x21" | "nanorail-30x21" | "series-35x35";
@@ -74,6 +74,16 @@ export type RailTerminationType = "end-cap" | "wall-tie" | "90-degree" | "adjust
 
 // Glass size constraints by thickness
 export const GLASS_CONSTRAINTS = {
+  "10mm-clear": {
+    minWidth: 250,
+    maxWidth: 1000,
+    height: 1800,
+  },
+  "10mm-obscure": {
+    minWidth: 250,
+    maxWidth: 1000,
+    height: 1800,
+  },
   "12mm": {
     minWidth: 300,
     maxWidth: 1500,
