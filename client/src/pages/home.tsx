@@ -8,7 +8,7 @@ interface ProductOption {
   type: ProductType;
   name: string;
   description: string;
-  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail";
+  visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "semi-frameless-posts" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail";
 }
 
 const productOptions: ProductOption[] = [
@@ -66,14 +66,14 @@ const productOptions: ProductOption[] = [
     type: "custom",
     name: "Semi-Frameless 1000mm",
     description: "12mm glass, 50mm posts, shuffle glazed, top rail",
-    visual: "aluminium-slats"
+    visual: "semi-frameless-posts"
   },
   {
     id: "semi-frameless-1800",
     type: "custom",
     name: "Semi-Frameless 1800mm",
     description: "10mm glass, 50mm posts, shuffle glazed, mid-rail",
-    visual: "aluminium-slats"
+    visual: "semi-frameless-posts"
   },
   {
     id: "alu-pool-tubular",
@@ -147,7 +147,7 @@ const productOptions: ProductOption[] = [
   }
 ];
 
-function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail" }) {
+function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "semi-frameless-posts" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail" }) {
   if (type === "frameless-glass") {
     return (
       <div className="relative w-20 h-24 mx-auto">
@@ -198,6 +198,29 @@ function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "
           <div className="absolute top-2 right-1.5 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shadow-sm" />
           <div className="absolute bottom-2 left-1.5 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shadow-sm" />
           <div className="absolute bottom-2 right-1.5 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shadow-sm" />
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "semi-frameless-posts") {
+    return (
+      <div className="relative w-20 h-24 mx-auto">
+        {/* Semi-frameless: Full-height posts with glass panels shuffle glazed between */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-2 w-16 h-20 flex justify-between">
+          {/* Left post - full height */}
+          <div className="w-1.5 h-20 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-600 dark:to-zinc-700 shadow-md" />
+          
+          {/* Glass panels between posts */}
+          <div className="flex-1 mx-0.5 flex gap-0.5">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex-1 h-20 bg-gradient-to-br from-sky-100/80 via-sky-50/60 to-cyan-100/70 dark:from-sky-900/30 dark:via-sky-950/20 dark:to-cyan-900/25 border border-sky-200/40 dark:border-sky-700/40 shadow-sm"
+                   style={{ backdropFilter: 'blur(2px)' }} />
+            ))}
+          </div>
+          
+          {/* Right post - full height */}
+          <div className="w-1.5 h-20 bg-gradient-to-b from-zinc-400 to-zinc-500 dark:from-zinc-600 dark:to-zinc-700 shadow-md" />
         </div>
       </div>
     );
