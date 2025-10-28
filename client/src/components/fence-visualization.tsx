@@ -634,8 +634,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // For Blade, BARR, Tubular, Hamptons PVC, and Semi-Frameless, use gaps from panelLayout array (N+1 gaps for N panels)
-    if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC || isSemiFrameless) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+    // For Blade, BARR, Tubular, Hamptons PVC (NOT Semi-Frameless), use gaps from panelLayout array (N+1 gaps for N panels)
+    // Semi-Frameless keeps user-specified L&R gaps because panelLayout.gaps only contains inter-panel gaps
+    if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC) && !isSemiFrameless && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
