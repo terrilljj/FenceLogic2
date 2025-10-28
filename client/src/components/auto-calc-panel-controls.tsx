@@ -659,7 +659,7 @@ export function AutoCalcPanelControls({
     }
     
     const updatedConfig = {
-      ...config,
+      ...autoCalcConfig, // Use autoCalcConfig prop instead of stale local config variable
       panelTypes,
       interPanelGaps: Array(solution.totalPanels - 1).fill(30),
       panelSelectionMode: solution.customWidth > 0 ? "stock-plus-custom" as const : "all-stock" as const,
