@@ -1228,11 +1228,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
       
-      // For semi-frameless, show opening width and actual panel size (shuffle glazed)
+      // For semi-frameless, show panel size and opening width
       let widthLabel = `${currentPanelWidth}${isRaked ? 'H' : ''}`;
       if (isSemiFrameless) {
-        const openingWidth = currentPanelWidth + 20; // Opening = panel + 20mm
-        widthLabel = `${openingWidth}mm`;
+        widthLabel = `${currentPanelWidth}mm panel`; // Actual panel size
       } else if (isCustom && span.customPanel?.enabled) {
         widthLabel = `${currentPanelWidth}x${span.customPanel.height}`;
       }
@@ -1242,10 +1241,11 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2 - 8
       );
       
-      // Draw the panel type or actual panel size below
+      // Draw the panel type or opening width below
       let panelTypeLabel = "Panel";
       if (isSemiFrameless) {
-        panelTypeLabel = `${currentPanelWidth}mm panel`; // Actual panel size after shuffle
+        const openingWidth = currentPanelWidth - 20; // Opening = panel - 20mm shuffle glazing
+        panelTypeLabel = `${openingWidth}mm opening`; // Opening width in posts
       } else if (isGate) {
         panelTypeLabel = "Gate";
       } else if (isHinge) {
@@ -1496,13 +1496,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.lineWidth = 0.5;
       ctx.strokeRect(railStartX, railY, railEndX - railStartX, railHeight);
       
-      // Mid-rail label
+      // Mid-rail label - positioned to the left to avoid overlap
       ctx.fillStyle = "#4b5563";
       ctx.font = "500 10px Inter";
-      ctx.textAlign = "right";
+      ctx.textAlign = "left";
       ctx.fillText(
         "Mid-Rail @ 1000mm",
-        railEndX + 90,
+        railStartX - 100,
         railY + 2
       );
     }
