@@ -334,7 +334,8 @@ export function AutoCalcPanelControls({
       if (fixedPanel) {
         panelWidths.push(fixedPanel.width);
       } else {
-        panelWidths.push(standardPanelWidth);
+        // Use panelWidthOverrides if they exist (for mixed stock sizes), otherwise use uniform width
+        panelWidths.push(panelWidthOverrides?.[i] || standardPanelWidth);
       }
     }
     
