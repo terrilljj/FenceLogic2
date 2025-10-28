@@ -993,8 +993,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       // Semi-Frameless panels: full-height posts with shuffle-glazed glass
       else if (isSemiFrameless) {
         // Semi-frameless panel configuration
-        const corePostWidth = (span.semiFramelessConfig?.corePostWidth || 40) * scale; // Core posts: 40mm default (10mm shuffle each side + base plate)
-        const wallPostWidth = (span.semiFramelessConfig?.wallPostWidth || 50) * scale; // Wall posts: 50mm default
+        const postWidth = (span.semiFramelessConfig?.postWidth || 50) * scale; // All posts: 50mm (glass shuffles 10mm into posts)
         const shuffleDepth = 10 * scale; // 10mm shuffle glaze each side
         
         // Glass sits from ground level up (no bottom clearance)
@@ -1014,12 +1013,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         // For Semi-Frameless: N panels need N+1 posts (one before first panel, one after each panel)
         ctx.fillStyle = "#555555"; // Darker gray for semi-frameless posts
         
-        // Draw start post only for first panel - WALL POST (50mm default)
+        // Draw start post only for first panel - WALL POST (50mm)
         if (i === 0) {
           ctx.fillRect(
-            currentX - wallPostWidth / 2,
+            currentX - postWidth / 2,
             panelTop,
-            wallPostWidth,
+            postWidth,
             groundLevel - panelTop
           );
           
@@ -1027,46 +1026,45 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
-          const wallPostWidthMm = span.semiFramelessConfig?.wallPostWidth || 50;
-          ctx.fillText(`${wallPostWidthMm}mm wall post`, currentX - wallPostWidth / 2 - 10, groundLevel + 20);
+          const postWidthMm = span.semiFramelessConfig?.postWidth || 50;
+          ctx.fillText(`${postWidthMm}mm wall post`, currentX - postWidth / 2 - 10, groundLevel + 20);
           
           // Show wall-to-glass distance
           ctx.fillStyle = "#888";
           ctx.font = "500 9px Inter";
-          ctx.fillText(`40mm to glass`, currentX - wallPostWidth / 2 - 10, groundLevel + 35);
+          ctx.fillText(`40mm to glass`, currentX - postWidth / 2 - 10, groundLevel + 35);
         }
         
-        // Draw post after this panel - CORE POST (40mm default) or WALL POST if last panel
-        const isLastPanel = i === numPanels - 1;
-        const postWidthAfter = isLastPanel ? wallPostWidth : corePostWidth;
-        
+        // Always draw post after this panel (same 50mm for all posts)
         ctx.fillStyle = "#555555";
         ctx.fillRect(
-          currentX + scaledPanelWidth - postWidthAfter / 2,
+          currentX + scaledPanelWidth - postWidth / 2,
           panelTop,
-          postWidthAfter,
+          postWidth,
           groundLevel - panelTop
         );
         
-        // Show core post label between panels (not on last panel which is wall post)
+        // Show post label
+        const isLastPanel = i === numPanels - 1;
+        const postWidthMm = span.semiFramelessConfig?.postWidth || 50;
+        
         if (!isLastPanel) {
-          const corePostWidthMm = span.semiFramelessConfig?.corePostWidth || 40;
+          // Core post between panels
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
-          ctx.fillText(`${corePostWidthMm}mm core post`, currentX + scaledPanelWidth, groundLevel + 35);
+          ctx.fillText(`${postWidthMm}mm core post`, currentX + scaledPanelWidth, groundLevel + 35);
         } else {
           // Last panel: show wall post on right side
-          const wallPostWidthMm = span.semiFramelessConfig?.wallPostWidth || 50;
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
-          ctx.fillText(`${wallPostWidthMm}mm wall post`, currentX + scaledPanelWidth + wallPostWidth / 2 + 10, groundLevel + 20);
+          ctx.fillText(`${postWidthMm}mm wall post`, currentX + scaledPanelWidth + postWidth / 2 + 10, groundLevel + 20);
           
           // Show wall-to-glass distance
           ctx.fillStyle = "#888";
           ctx.font = "500 9px Inter";
-          ctx.fillText(`40mm to glass`, currentX + scaledPanelWidth + wallPostWidth / 2 + 10, groundLevel + 35);
+          ctx.fillText(`40mm to glass`, currentX + scaledPanelWidth + postWidth / 2 + 10, groundLevel + 35);
         }
         
       }
