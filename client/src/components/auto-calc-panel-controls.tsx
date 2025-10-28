@@ -86,8 +86,8 @@ export function AutoCalcPanelControls({
     const FIXED_GAP_MM = 30;
     const POST_WIDTH_MM = 50;
     const SHUFFLE_PER_SIDE_MM = 10;
-    const wallPostVisible = POST_WIDTH_MM - SHUFFLE_PER_SIDE_MM;
-    const availableSpace = spanLength - 2 * wallPostVisible;
+    // Section length does NOT include wall posts - it's the clear span
+    const availableSpace = spanLength;
     
     // Find best stock width available (must be actual stock size!)
     const availableStockWidths = getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth);
@@ -383,8 +383,8 @@ export function AutoCalcPanelControls({
       const FIXED_GAP_MM = 30;
       const POST_WIDTH_MM = 50;
       const SHUFFLE_PER_SIDE_MM = 10;
-      const wallPostVisible = POST_WIDTH_MM - SHUFFLE_PER_SIDE_MM;
-      const availableSpace = spanLength - 2 * wallPostVisible;
+      // Section length does NOT include wall posts - it's the clear span
+      const availableSpace = spanLength;
       const maxPanelWidth = config.maxPanelWidth;
       
       // Find best stock width available (must be actual stock size!)
