@@ -61,6 +61,8 @@ export function AutoCalcPanelControls({
   onUpdate,
   postConfig
 }: AutoCalcPanelControlsProps) {
+  console.log("🎯 AutoCalcPanelControls render - postConfig:", postConfig);
+  
   // State for stock panel fit dialog
   const [showStockFitDialog, setShowStockFitDialog] = useState(false);
   const [stockFitResult, setStockFitResult] = useState<ReturnType<typeof calculateStockPanelFit> | null>(null);
@@ -147,16 +149,18 @@ export function AutoCalcPanelControls({
     let bestSolution: any = null;
     let bestScore = Infinity; // Lower score is better
     
-    // Scoring function: Prefer fewer panels and larger sizes
-    const calculateScore = (panelCount: number, variance: number, avgPanelSize: number) => {
-      // Heavy penalty for more panels (want to minimize panel count)
-      const panelCountPenalty = panelCount * 1000;
+    // Scoring function: Prefer better fit and reasonable panel count
+    const calculateScore = (panelCount: number, variance: number, avgPanelSize: number, isMixed: boolean = false) => {
+      // Moderate penalty for more panels (prefer fewer but not at all costs)
+      const panelCountPenalty = panelCount * 500; // Reduced from 1000
       // Prefer larger panel sizes (inverse of size)
       const sizePenalty = avgPanelSize > 0 ? 10000 / avgPanelSize : 1000;
-      // Small penalty for variance
-      const variancePenalty = variance * 10;
+      // MAJOR penalty for variance - fit quality is important
+      const variancePenalty = variance * 100; // Increased from 10
+      // BONUS for using mixed stock (shows better optimization)
+      const mixedBonus = isMixed ? -200 : 0;
       
-      return panelCountPenalty + sizePenalty + variancePenalty;
+      return panelCountPenalty + sizePenalty + variancePenalty + mixedBonus;
     };
     
     // Try combinations of adjacent stock sizes (within 100mm for flexibility)
@@ -178,7 +182,7 @@ export function AutoCalcPanelControls({
         const variance1 = Math.abs(totalPanelWidth - panelSpace);
         
         if (variance1 <= 10) { // Allow up to 10mm variance
-          const score = calculateScore(totalPanels, variance1, width1);
+          const score = calculateScore(totalPanels, variance1, width1, false); // Not mixed
           console.log(`  Single: ${totalPanels}x${width1} var=${variance1.toFixed(1)}mm score=${score.toFixed(0)}`);
           if (score < bestScore) {
             bestScore = score;
@@ -208,7 +212,7 @@ export function AutoCalcPanelControls({
             
             if (variance <= 10) { // Allow up to 10mm variance
               const avgSize = (count1 * width1 + count2 * width2) / totalPanels;
-              const score = calculateScore(totalPanels, variance, avgSize);
+              const score = calculateScore(totalPanels, variance, avgSize, true); // IS mixed!
               console.log(`  Mixed: ${totalPanels}p (${count1}x${width1} + ${count2}x${width2}) var=${variance.toFixed(1)}mm score=${score.toFixed(0)}`);
               if (score < bestScore) {
                 bestScore = score;

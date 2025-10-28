@@ -42,6 +42,23 @@ export function SpanConfigPanel({
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
 
+  // Initialize semiFramelessConfig if it's a semi-frameless product and config doesn't exist
+  useEffect(() => {
+    if (isSemiFrameless && !span.semiFramelessConfig) {
+      console.log("🔧 Initializing semiFramelessConfig for span", span.spanId);
+      onUpdate({
+        ...span,
+        semiFramelessConfig: {
+          postWidth: 50,
+          lhsPostType: "wall",
+          rhsPostType: "wall",
+          intermediatePostMountType: "base-plate",
+          postColor: "satin-black",
+        },
+      });
+    }
+  }, [isSemiFrameless, span.spanId]); // Run when product changes or span ID changes
+
   // Helper function to check if a field is enabled in calculator config
   const isFieldEnabled = (fieldKey: string): boolean => {
     // If no config, default to enabled
