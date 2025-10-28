@@ -98,13 +98,18 @@ export function AutoCalcPanelControls({
     }
   };
 
-  // Auto-calculate optimal solution using stock panels + 1 custom panel
-  // Semi-frameless with FIXED 30mm gaps
+  // Auto-calculate optimal solution using mixed stock panels
+  // Try combinations of 2 adjacent stock sizes (e.g., 950+1000)
+  // If custom needed, constrain it within the 50mm stock range
   const autoCalculatePanelCount = (): { 
     stockCount: number; 
     customWidth: number; 
     totalPanels: number;
     stockWidth: number;
+    stock1Width?: number;
+    stock1Count?: number;
+    stock2Width?: number;
+    stock2Count?: number;
   } => {
     const FIXED_GAP_MM = 30;
     const POST_WIDTH_MM = 50;
@@ -114,67 +119,153 @@ export function AutoCalcPanelControls({
     const lhsSpacing = getPostSpacing(postConfig?.lhsPostType);
     const rhsSpacing = getPostSpacing(postConfig?.rhsPostType);
     
-    // Section length does NOT include wall posts
-    // Available space = section length - LHS spacing - RHS spacing
+    // Section length INCLUDES post spacings (as shown in spreadsheet)
+    // Available space for panels+gaps = section length - LHS spacing - RHS spacing
     const availableSpace = spanLength - lhsSpacing - rhsSpacing;
     
-    // Find best stock width available (must be actual stock size!)
-    const availableStockWidths = getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth);
-    // Use 950mm or 1000mm as default for 1800mm panels (closest to old 966mm)
-    const defaultStockWidth = stockPanelWidth && availableStockWidths.includes(stockPanelWidth) 
-      ? stockPanelWidth 
-      : availableStockWidths.find(w => w >= 900 && w <= 1000) 
-      || availableStockWidths[Math.floor(availableStockWidths.length / 2)] 
-      || 950;
-    const stockOpeningWidth = defaultStockWidth - 2 * SHUFFLE_PER_SIDE_MM;
+    // Get all available stock widths
+    const availableStockWidths = getAvailableStockPanelWidths(panelHeight, glassType, maxPanelWidth).sort((a, b) => a - b);
+    if (availableStockWidths.length === 0) {
+      return {
+        stockCount: 1,
+        customWidth: 1000,
+        totalPanels: 2,
+        stockWidth: 950,
+      };
+    }
     
-    // Calculate optimal panel count and custom width
-    let bestSolution = {
-      stockCount: 1,
-      customWidth: 1000,
-      totalPanels: 2,
-      stockWidth: defaultStockWidth,
-    };
-    let smallestDeviation = Infinity;
+    let bestSolution: any = null;
+    let smallestVariance = Infinity;
     
-    for (let stockCount = 1; stockCount <= 10; stockCount++) {
-      const totalPanels = stockCount + 1; // stock + 1 custom
-      const gapCount = totalPanels + 1;
-      const corePostCount = totalPanels - 1;
+    // Try combinations of adjacent stock sizes (within 50mm)
+    for (let i = 0; i < availableStockWidths.length; i++) {
+      const width1 = availableStockWidths[i];
+      const opening1 = width1 - 2 * SHUFFLE_PER_SIDE_MM;
       
-      const totalStockOpenings = stockOpeningWidth * stockCount;
-      const totalCorePosts = corePostCount * POST_WIDTH_MM;
-      const totalGaps = gapCount * FIXED_GAP_MM;
-      
-      const remainingForCustom = availableSpace - totalStockOpenings - totalCorePosts - totalGaps;
-      const customPanelWidth = remainingForCustom + 2 * SHUFFLE_PER_SIDE_MM;
-      
-      // Check if custom panel is reasonable (between 300mm and 2000mm)
-      if (customPanelWidth >= 300 && customPanelWidth <= 2000) {
-        const deviation = Math.abs(customPanelWidth - defaultStockWidth);
-        if (deviation < smallestDeviation) {
-          smallestDeviation = deviation;
+      // Try using only one stock size
+      for (let totalPanels = 2; totalPanels <= 10; totalPanels++) {
+        const gapCount = totalPanels + 1;
+        const corePostCount = totalPanels - 1;
+        const totalCorePosts = corePostCount * POST_WIDTH_MM;
+        const totalGaps = gapCount * FIXED_GAP_MM;
+        
+        const totalOpeningsNeeded = availableSpace - totalCorePosts - totalGaps;
+        const avgOpeningWidth = totalOpeningsNeeded / totalPanels;
+        const avgPanelWidth = avgOpeningWidth + 2 * SHUFFLE_PER_SIDE_MM;
+        
+        // Check if we can use all of width1
+        const allWidth1 = totalPanels * opening1 + totalCorePosts + totalGaps;
+        const variance1 = Math.abs(allWidth1 - availableSpace);
+        
+        if (variance1 <= 2 && variance1 < smallestVariance) {
+          smallestVariance = variance1;
           bestSolution = {
-            stockCount,
-            customWidth: Math.round(customPanelWidth),
+            stockCount: totalPanels,
+            customWidth: 0,
             totalPanels,
-            stockWidth: defaultStockWidth,
+            stockWidth: width1,
+            stock1Width: width1,
+            stock1Count: totalPanels,
+            stock2Width: undefined,
+            stock2Count: 0,
           };
+        }
+        
+        // Try mixing with adjacent stock size (within 50mm)
+        for (let j = i + 1; j < availableStockWidths.length; j++) {
+          const width2 = availableStockWidths[j];
+          if (width2 - width1 > 50) break; // Only try within 50mm range
+          
+          const opening2 = width2 - 2 * SHUFFLE_PER_SIDE_MM;
+          
+          // Try different combinations of width1 and width2
+          for (let count1 = 1; count1 < totalPanels; count1++) {
+            const count2 = totalPanels - count1;
+            const totalOpenings = count1 * opening1 + count2 * opening2;
+            const totalUsed = totalOpenings + totalCorePosts + totalGaps;
+            const variance = Math.abs(totalUsed - availableSpace);
+            
+            if (variance <= 2 && variance < smallestVariance) {
+              smallestVariance = variance;
+              bestSolution = {
+                stockCount: totalPanels,
+                customWidth: 0,
+                totalPanels,
+                stockWidth: width1, // Primary stock width
+                stock1Width: width1,
+                stock1Count: count1,
+                stock2Width: width2,
+                stock2Count: count2,
+              };
+            }
+          }
         }
       }
     }
     
-    // Validate solution
-    if (bestSolution.totalPanels < 1 || bestSolution.stockCount < 0) {
-      bestSolution = {
-        stockCount: 1,
-        customWidth: 1000,
-        totalPanels: 2,
-        stockWidth: defaultStockWidth,
-      };
+    // If no perfect stock combination found, fall back to stock + custom
+    if (!bestSolution) {
+      const defaultStockWidth = stockPanelWidth && availableStockWidths.includes(stockPanelWidth) 
+        ? stockPanelWidth 
+        : availableStockWidths.find(w => w >= 900 && w <= 1000) 
+        || availableStockWidths[Math.floor(availableStockWidths.length / 2)] 
+        || 950;
+      const stockOpeningWidth = defaultStockWidth - 2 * SHUFFLE_PER_SIDE_MM;
+      
+      for (let stockCount = 1; stockCount <= 10; stockCount++) {
+        const totalPanels = stockCount + 1;
+        const gapCount = totalPanels + 1;
+        const corePostCount = totalPanels - 1;
+        const totalStockOpenings = stockOpeningWidth * stockCount;
+        const totalCorePosts = corePostCount * POST_WIDTH_MM;
+        const totalGaps = gapCount * FIXED_GAP_MM;
+        const remainingForCustom = availableSpace - totalStockOpenings - totalCorePosts - totalGaps;
+        const customPanelWidth = remainingForCustom + 2 * SHUFFLE_PER_SIDE_MM;
+        
+        // NEW RULE: If custom is within 50mm of stock size, constrain it to that range
+        let constrainedCustomWidth = customPanelWidth;
+        if (Math.abs(customPanelWidth - defaultStockWidth) <= 50) {
+          // Find adjacent stock size
+          const stockIndex = availableStockWidths.indexOf(defaultStockWidth);
+          const adjacentStock = stockIndex < availableStockWidths.length - 1 
+            ? availableStockWidths[stockIndex + 1]
+            : stockIndex > 0 
+            ? availableStockWidths[stockIndex - 1]
+            : null;
+          
+          if (adjacentStock && Math.abs(adjacentStock - defaultStockWidth) <= 50) {
+            const minStock = Math.min(defaultStockWidth, adjacentStock);
+            const maxStock = Math.max(defaultStockWidth, adjacentStock);
+            // Constrain custom to be within stock range
+            constrainedCustomWidth = Math.max(minStock, Math.min(maxStock, customPanelWidth));
+          }
+        }
+        
+        if (constrainedCustomWidth >= 300 && constrainedCustomWidth <= 2000) {
+          const variance = Math.abs(customPanelWidth - constrainedCustomWidth);
+          if (!bestSolution || variance < smallestVariance) {
+            smallestVariance = variance;
+            bestSolution = {
+              stockCount,
+              customWidth: Math.round(constrainedCustomWidth),
+              totalPanels,
+              stockWidth: defaultStockWidth,
+              stock1Width: defaultStockWidth,
+              stock1Count: stockCount,
+              stock2Width: undefined,
+              stock2Count: 0,
+            };
+          }
+        }
+      }
     }
     
-    return bestSolution;
+    return bestSolution || {
+      stockCount: 1,
+      customWidth: 1000,
+      totalPanels: 2,
+      stockWidth: 950,
+    };
   };
 
   // Calculate panel widths based on mode
@@ -256,25 +347,51 @@ export function AutoCalcPanelControls({
         panelSelectionMode !== "stock-plus-custom";
       
       if (needsRecalculation) {
-        // Build panel types: stock panels + 1 custom at end
-        const newTypes: PanelType[] = [
-          ...Array(solution.stockCount).fill("standard" as const),
-          "custom" as const,
-        ];
+        // Build panel types based on solution (mixed stock or stock+custom)
+        const newTypes: PanelType[] = [];
+        const newOverrides: Record<number, number> = {};
         
-        const newOverrides: Record<number, number> = {
-          [solution.stockCount]: solution.customWidth,
-        };
+        if (solution.customWidth > 0) {
+          // Solution uses stock + custom
+          for (let i = 0; i < solution.stockCount; i++) {
+            newTypes.push("standard");
+          }
+          newTypes.push("custom");
+          newOverrides[solution.stockCount] = solution.customWidth;
+        } else if (solution.stock2Width && solution.stock2Count && solution.stock2Count > 0) {
+          // Solution uses mixed stock (2 different sizes)
+          // Add stock1 panels
+          for (let i = 0; i < (solution.stock1Count || 0); i++) {
+            newTypes.push("standard");
+            if (solution.stock1Width) {
+              newOverrides[i] = solution.stock1Width;
+            }
+          }
+          // Add stock2 panels
+          for (let i = 0; i < solution.stock2Count; i++) {
+            const index = (solution.stock1Count || 0) + i;
+            newTypes.push("standard");
+            newOverrides[index] = solution.stock2Width;
+          }
+        } else {
+          // Solution uses all same stock size
+          for (let i = 0; i < solution.totalPanels; i++) {
+            newTypes.push("standard");
+            if (solution.stock1Width) {
+              newOverrides[i] = solution.stock1Width;
+            }
+          }
+        }
         
         const newGaps = Array(solution.totalPanels - 1).fill(30);
         onUpdate({
           ...config,
           panelTypes: newTypes,
           interPanelGaps: newGaps,
-          panelWidthOverrides: newOverrides,
-          panelSelectionMode: "stock-plus-custom" as const,
+          panelWidthOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined,
+          panelSelectionMode: solution.customWidth > 0 ? "stock-plus-custom" as const : "all-stock" as const,
           stockPanelWidth: solution.stockWidth,
-          customPanelPosition: solution.stockCount,
+          customPanelPosition: solution.customWidth > 0 ? solution.stockCount : undefined,
         });
       }
     }
@@ -285,23 +402,49 @@ export function AutoCalcPanelControls({
     if (mode === "auto") {
       // Auto-calculate optimal solution
       const solution = autoCalculatePanelCount();
-      const newTypes: PanelType[] = [
-        ...Array(solution.stockCount).fill("standard" as const),
-        "custom" as const,
-      ];
-      const newOverrides: Record<number, number> = {
-        [solution.stockCount]: solution.customWidth,
-      };
+      const newTypes: PanelType[] = [];
+      const newOverrides: Record<number, number> = {};
+      
+      if (solution.customWidth > 0) {
+        // Solution uses stock + custom
+        for (let i = 0; i < solution.stockCount; i++) {
+          newTypes.push("standard");
+        }
+        newTypes.push("custom");
+        newOverrides[solution.stockCount] = solution.customWidth;
+      } else if (solution.stock2Width && solution.stock2Count && solution.stock2Count > 0) {
+        // Solution uses mixed stock (2 different sizes)
+        for (let i = 0; i < (solution.stock1Count || 0); i++) {
+          newTypes.push("standard");
+          if (solution.stock1Width) {
+            newOverrides[i] = solution.stock1Width;
+          }
+        }
+        for (let i = 0; i < solution.stock2Count; i++) {
+          const index = (solution.stock1Count || 0) + i;
+          newTypes.push("standard");
+          newOverrides[index] = solution.stock2Width;
+        }
+      } else {
+        // Solution uses all same stock size
+        for (let i = 0; i < solution.totalPanels; i++) {
+          newTypes.push("standard");
+          if (solution.stock1Width) {
+            newOverrides[i] = solution.stock1Width;
+          }
+        }
+      }
+      
       const newGaps = Array(solution.totalPanels - 1).fill(30);
       onUpdate({
         ...config,
         layoutMode: mode,
         panelTypes: newTypes,
         interPanelGaps: newGaps,
-        panelWidthOverrides: newOverrides,
-        panelSelectionMode: "stock-plus-custom" as const,
+        panelWidthOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined,
+        panelSelectionMode: solution.customWidth > 0 ? "stock-plus-custom" as const : "all-stock" as const,
         stockPanelWidth: solution.stockWidth,
-        customPanelPosition: solution.stockCount,
+        customPanelPosition: solution.customWidth > 0 ? solution.stockCount : undefined,
       });
     } else {
       onUpdate({ ...config, layoutMode: mode });
@@ -408,87 +551,51 @@ export function AutoCalcPanelControls({
   // Initialize autoCalcConfig on mount if it doesn't exist
   useEffect(() => {
     if (!autoCalcConfig) {
-      // Calculate optimal solution using stock panels + 1 custom panel with FIXED 30mm gaps
-      const FIXED_GAP_MM = 30;
-      const POST_WIDTH_MM = 50;
-      const SHUFFLE_PER_SIDE_MM = 10;
+      // Calculate optimal solution using the new mixed stock algorithm
+      const solution = autoCalculatePanelCount();
       
-      // Calculate actual spacing based on post types
-      const lhsSpacing = getPostSpacing(postConfig?.lhsPostType);
-      const rhsSpacing = getPostSpacing(postConfig?.rhsPostType);
+      // Build panel types based on solution
+      const panelTypes: PanelType[] = [];
+      const panelWidthOverrides: Record<number, number> = {};
       
-      // Section length does NOT include wall posts
-      // Available space = section length - LHS spacing - RHS spacing
-      const availableSpace = spanLength - lhsSpacing - rhsSpacing;
-      const maxPanelWidth = config.maxPanelWidth;
-      
-      // Find best stock width available (must be actual stock size!)
-      const availableStockWidths = getAvailableStockPanelWidths(config.panelHeight, config.glassType, maxPanelWidth);
-      const defaultStockWidth = availableStockWidths.find(w => w >= 900 && w <= 1000) || availableStockWidths[Math.floor(availableStockWidths.length / 2)] || 950;
-      const stockOpeningWidth = defaultStockWidth - 2 * SHUFFLE_PER_SIDE_MM;
-      
-      // Calculate optimal panel count and custom width
-      // Try different stock panel counts and find which gives the best custom panel size
-      let bestSolution = {
-        stockCount: 1,
-        customWidth: 1000,
-        totalPanels: 2,
-      };
-      let smallestDeviation = Infinity;
-      
-      for (let stockCount = 1; stockCount <= 10; stockCount++) {
-        const totalPanels = stockCount + 1; // stock + 1 custom
-        const gapCount = totalPanels + 1;
-        const corePostCount = totalPanels - 1;
-        
-        const totalStockOpenings = stockOpeningWidth * stockCount;
-        const totalCorePosts = corePostCount * POST_WIDTH_MM;
-        const totalGaps = gapCount * FIXED_GAP_MM;
-        
-        const remainingForCustom = availableSpace - totalStockOpenings - totalCorePosts - totalGaps;
-        const customPanelWidth = remainingForCustom + 2 * SHUFFLE_PER_SIDE_MM;
-        
-        // Check if custom panel is reasonable (between 300mm and 2000mm)
-        if (customPanelWidth >= 300 && customPanelWidth <= 2000) {
-          const deviation = Math.abs(customPanelWidth - defaultStockWidth);
-          if (deviation < smallestDeviation) {
-            smallestDeviation = deviation;
-            bestSolution = {
-              stockCount,
-              customWidth: Math.round(customPanelWidth),
-              totalPanels,
-            };
+      if (solution.customWidth > 0) {
+        // Solution uses stock + custom
+        for (let i = 0; i < solution.stockCount; i++) {
+          panelTypes.push("standard");
+        }
+        panelTypes.push("custom");
+        panelWidthOverrides[solution.stockCount] = solution.customWidth;
+      } else if (solution.stock2Width && solution.stock2Count && solution.stock2Count > 0) {
+        // Solution uses mixed stock (2 different sizes)
+        for (let i = 0; i < (solution.stock1Count || 0); i++) {
+          panelTypes.push("standard");
+          if (solution.stock1Width) {
+            panelWidthOverrides[i] = solution.stock1Width;
+          }
+        }
+        for (let i = 0; i < solution.stock2Count; i++) {
+          const index = (solution.stock1Count || 0) + i;
+          panelTypes.push("standard");
+          panelWidthOverrides[index] = solution.stock2Width;
+        }
+      } else {
+        // Solution uses all same stock size
+        for (let i = 0; i < solution.totalPanels; i++) {
+          panelTypes.push("standard");
+          if (solution.stock1Width) {
+            panelWidthOverrides[i] = solution.stock1Width;
           }
         }
       }
       
-      // Validate solution
-      if (bestSolution.totalPanels < 1 || bestSolution.stockCount < 0) {
-        bestSolution = {
-          stockCount: 1,
-          customWidth: 1000,
-          totalPanels: 2,
-        };
-      }
-      
-      // Build panel types: stock panels + 1 custom at end
-      const panelTypes: PanelType[] = [
-        ...Array(Math.max(0, bestSolution.stockCount)).fill("standard" as const),
-        "custom" as const,
-      ];
-      
-      const panelWidthOverrides: Record<number, number> = {
-        [bestSolution.stockCount]: bestSolution.customWidth, // Custom panel at end
-      };
-      
       const initialConfig = {
         ...config,
         panelTypes,
-        interPanelGaps: Array(bestSolution.totalPanels - 1).fill(FIXED_GAP_MM),
-        panelSelectionMode: "stock-plus-custom" as const,
-        stockPanelWidth: defaultStockWidth,
-        panelWidthOverrides,
-        customPanelPosition: bestSolution.stockCount,
+        interPanelGaps: Array(solution.totalPanels - 1).fill(30),
+        panelSelectionMode: solution.customWidth > 0 ? "stock-plus-custom" as const : "all-stock" as const,
+        stockPanelWidth: solution.stockWidth,
+        panelWidthOverrides: Object.keys(panelWidthOverrides).length > 0 ? panelWidthOverrides : undefined,
+        customPanelPosition: solution.customWidth > 0 ? solution.stockCount : undefined,
       };
       
       onUpdate(initialConfig);
