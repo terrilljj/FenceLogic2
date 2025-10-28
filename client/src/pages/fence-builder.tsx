@@ -127,7 +127,7 @@ export default function FenceLogic() {
               layoutMode: "auto" as const,
               maxPanelWidth: defaultMaxPanel,
               panelHeight: calculatorConfig.fields?.glassHeight?.defaultValue || 1500,
-              glassType: "12mm" as const,
+              glassType: (calculatorConfig.fields?.glassType?.defaultValue || "10mm-clear") as GlassThickness,
               gapMode: "auto" as const,
               interPanelGaps: [calculatorConfig.fields?.betweenGapMm?.defaultValue || 50],
               panelTypes: ["standard", "standard"] as const,
