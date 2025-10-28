@@ -1022,17 +1022,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             groundLevel - panelTop
           );
           
-          // Wall post label showing wall-to-glass distance (50mm post - 10mm shuffle = 40mm)
+          // Wall post label - positioned higher up to avoid overlap
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
           const postWidthMm = span.semiFramelessConfig?.postWidth || 50;
-          ctx.fillText(`${postWidthMm}mm wall post`, currentX - postWidth / 2 - 10, groundLevel + 20);
-          
-          // Show wall-to-glass distance
-          ctx.fillStyle = "#888";
-          ctx.font = "500 9px Inter";
-          ctx.fillText(`40mm to glass`, currentX - postWidth / 2 - 10, groundLevel + 35);
+          ctx.fillText(`${postWidthMm}mm wall post`, currentX - postWidth / 2 - 20, groundLevel - 20);
         }
         
         // Always draw post after this panel (same 50mm for all posts)
@@ -1049,22 +1044,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         const postWidthMm = span.semiFramelessConfig?.postWidth || 50;
         
         if (!isLastPanel) {
-          // Core post between panels
+          // Core post between panels - positioned higher up
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
-          ctx.fillText(`${postWidthMm}mm core post`, currentX + scaledPanelWidth, groundLevel + 35);
+          ctx.fillText(`${postWidthMm}mm core post`, currentX + scaledPanelWidth, groundLevel - 20);
         } else {
-          // Last panel: show wall post on right side
+          // Last panel: show wall post on right side - positioned higher up
           ctx.fillStyle = "#4b5563";
           ctx.font = "600 10px Inter";
           ctx.textAlign = "center";
-          ctx.fillText(`${postWidthMm}mm wall post`, currentX + scaledPanelWidth + postWidth / 2 + 10, groundLevel + 20);
-          
-          // Show wall-to-glass distance
-          ctx.fillStyle = "#888";
-          ctx.font = "500 9px Inter";
-          ctx.fillText(`40mm to glass`, currentX + scaledPanelWidth + postWidth / 2 + 10, groundLevel + 35);
+          ctx.fillText(`${postWidthMm}mm wall post`, currentX + scaledPanelWidth + postWidth / 2 + 20, groundLevel - 20);
         }
         
       }
@@ -1241,32 +1231,38 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.lineTo(currentX + scaledPanelWidth, dimLineY + 5);
       ctx.stroke();
 
-      // Panel width dimension label - cleaner
-      ctx.fillStyle = "#374151";
-      ctx.font = "600 11px Inter";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        `${currentPanelWidth}`,
-        currentX + scaledPanelWidth / 2,
-        dimLineY + 16
-      );
+      // Panel width dimension label - skip for semi-frameless (shown on panel itself)
+      if (!isSemiFrameless) {
+        ctx.fillStyle = "#374151";
+        ctx.font = "600 11px Inter";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          `${currentPanelWidth}`,
+          currentX + scaledPanelWidth / 2,
+          dimLineY + 16
+        );
+      }
 
       // Panel width label on the panel itself - number and type
       ctx.fillStyle = "#000000";
       ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
       
-      // For semi-frameless, show panel size and opening width
+      // For semi-frameless, show panel size and opening width - positioned lower to avoid mid-rail overlap
       let widthLabel = `${currentPanelWidth}${isRaked ? 'H' : ''}`;
       if (isSemiFrameless) {
         widthLabel = `${currentPanelWidth}mm panel`; // Actual panel size
       } else if (isCustom && span.customPanel?.enabled) {
         widthLabel = `${currentPanelWidth}x${span.customPanel.height}`;
       }
+      
+      // Position labels lower for semi-frameless to avoid mid-rail overlap
+      const labelYOffset = isSemiFrameless ? groundLevel - scaledPanelHeight * 0.3 : groundLevel - scaledPanelHeight / 2 - 8;
+      
       ctx.fillText(
         widthLabel,
         currentX + scaledPanelWidth / 2,
-        groundLevel - scaledPanelHeight / 2 - 8
+        labelYOffset
       );
       
       // Draw the panel type or opening width below
@@ -1284,12 +1280,22 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         panelTypeLabel = "Custom";
       }
       
-      ctx.font = "500 10px Inter";
-      ctx.fillText(
-        panelTypeLabel,
-        currentX + scaledPanelWidth / 2,
-        groundLevel - scaledPanelHeight / 2 + 6
-      );
+      if (!isSemiFrameless) {
+        ctx.font = "500 10px Inter";
+        ctx.fillText(
+          panelTypeLabel,
+          currentX + scaledPanelWidth / 2,
+          groundLevel - scaledPanelHeight / 2 + 6
+        );
+      } else {
+        // For semi-frameless, show opening width below panel size
+        ctx.font = "500 10px Inter";
+        ctx.fillText(
+          panelTypeLabel,
+          currentX + scaledPanelWidth / 2,
+          labelYOffset + 14
+        );
+      }
 
       // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular/Hamptons/SemiFrameless use posts)
       if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing && !isHamptonsPVC && !isSemiFrameless) {

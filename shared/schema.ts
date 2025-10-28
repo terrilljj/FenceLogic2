@@ -576,6 +576,11 @@ export const spanConfigSchema = z.object({
     // Wall posts: 50mm at wall, 10mm shuffle → 40mm wall-to-glass
     // Core posts: 50mm between panels, 10mm shuffle each side
     // At boundaries: gap clearance + 50mm post (with 10mm shuffle)
+    lhsPostMountType: z.enum(["base-plate", "core-drilled", "face-fix"]).default("base-plate"), // Left hand side wall post mount type
+    rhsPostMountType: z.enum(["base-plate", "core-drilled", "face-fix"]).default("base-plate"), // Right hand side wall post mount type
+    intermediatePostMountType: z.enum(["base-plate", "core-drilled", "face-fix"]).default("base-plate"), // Intermediate/core post mount type
+    postColor: z.enum(["satin-black", "custom"]).default("satin-black"), // Post color selection (universal to section)
+    customPostColor: z.string().optional(), // Custom color specification if postColor is "custom"
   }).optional(), // Semi-frameless specific configuration (post widths)
 });
 

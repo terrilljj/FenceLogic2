@@ -14,6 +14,7 @@ import { GateControls } from "./gate-controls";
 import { CustomPanelControls } from "./custom-panel-controls";
 import { FullyCustomPanelControls } from "./fully-custom-panel-controls";
 import { AutoCalcPanelControls } from "./auto-calc-panel-controls";
+import { SemiFramelessPostConfig } from "./semi-frameless-post-config";
 import { InfoTooltip } from "./info-tooltip";
 
 interface SpanConfigPanelProps {
@@ -1554,6 +1555,18 @@ export function SpanConfigPanel({
                       panelTypes: autoCalcConfig.panelTypes,
                     }
                   });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Semi-Frameless Post Hardware Configuration */}
+          {isSemiFrameless && (
+            <div className="space-y-4 pt-4">
+              <SemiFramelessPostConfig
+                config={span.semiFramelessConfig}
+                onUpdate={(semiFramelessConfig) => {
+                  updateSpan({ semiFramelessConfig });
                 }}
               />
             </div>
