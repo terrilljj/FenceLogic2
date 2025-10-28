@@ -412,7 +412,7 @@ export function AutoCalcPanelControls({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spanLength, leftGapSize, rightGapSize, maxPanelWidth, gapSize, layoutMode, panelSelectionMode, postConfig?.lhsPostType, postConfig?.rhsPostType]);
+  }, [spanLength, maxPanelWidth, gapSize, layoutMode, panelSelectionMode, postConfig?.lhsPostType, postConfig?.rhsPostType]);
 
   const updateLayoutMode = (mode: LayoutMode) => {
     if (mode === "auto") {
