@@ -556,11 +556,14 @@ export const spanConfigSchema = z.object({
     layoutMode: z.enum(["auto", "manual-qty", "manual-individual"]).optional(), // Layout mode for panel configuration
     maxPanelWidth: z.number().min(500).max(2000),
     panelHeight: z.number().min(1000).max(1800).default(1500), // Panel height (1000mm for semi-frameless, 1200mm+ for standard)
-    glassType: z.enum(["12mm", "15mm"]).default("12mm"), // Glass thickness
+    glassType: z.enum(["10mm-clear", "10mm-obscure", "12mm", "15mm"]).default("12mm"), // Glass thickness
     gapMode: z.enum(["auto", "manual"]).default("auto"), // Auto-calc gaps or user-defined
     interPanelGaps: z.array(z.number().min(6).max(100)), // Exact gap values between panels
     panelTypes: z.array(z.enum(["standard", "gate", "hinge", "custom"])), // Type for each panel position (no raked for custom-frameless)
     panelWidthOverrides: z.record(z.number()).optional(), // Optional width overrides for specific panels (index -> width)
+    panelSelectionMode: z.enum(["stock-plus-custom", "all-custom"]).default("stock-plus-custom"), // Panel selection mode: stock sizes + 1 custom, or all custom
+    stockPanelWidth: z.number().min(500).max(2000).optional(), // Stock panel width when using stock-plus-custom mode
+    customPanelPosition: z.number().optional(), // Position of custom panel in stock-plus-custom mode
     gateConfigs: z.array(z.object({
       position: z.number(), // Index of the gate panel
       widthMm: z.number().optional(), // Fixed width if specified
@@ -597,6 +600,8 @@ export const fenceDesignSchema = z.object({
     "glass-bal-spigots",
     "glass-bal-channel",
     "glass-bal-standoffs",
+    "semi-frameless-1000",
+    "semi-frameless-1800",
     "alu-pool-tubular",
     "alu-pool-barr",
     "alu-pool-blade",

@@ -18,12 +18,13 @@ interface SemiFramelessPostConfigProps {
 }
 
 export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostConfigProps) {
-  const currentConfig = config || {
-    postWidth: 50,
-    lhsPostMountType: "base-plate" as const,
-    rhsPostMountType: "base-plate" as const,
-    intermediatePostMountType: "base-plate" as const,
-    postColor: "satin-black" as const,
+  const currentConfig: Required<SemiFramelessConfig> = {
+    postWidth: config?.postWidth ?? 50,
+    lhsPostMountType: config?.lhsPostMountType ?? "base-plate",
+    rhsPostMountType: config?.rhsPostMountType ?? "base-plate",
+    intermediatePostMountType: config?.intermediatePostMountType ?? "base-plate",
+    postColor: config?.postColor ?? "satin-black",
+    customPostColor: config?.customPostColor,
   };
 
   const updateField = <K extends keyof SemiFramelessConfig>(
@@ -137,10 +138,12 @@ export function SemiFramelessPostConfig({ config, onUpdate }: SemiFramelessPostC
               <Select
                 value={currentConfig.postColor}
                 onValueChange={(value) => {
-                  updateField("postColor", value as any);
-                  if (value !== "custom") {
-                    updateField("customPostColor", undefined);
-                  }
+                  // Merge updates to avoid overwriting
+                  onUpdate({
+                    ...currentConfig,
+                    postColor: value as any,
+                    customPostColor: value !== "custom" ? undefined : currentConfig.customPostColor,
+                  });
                 }}
               >
                 <SelectTrigger className="h-9" data-testid="select-post-color">
