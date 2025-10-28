@@ -60,7 +60,7 @@ interface BestStockPanelResult {
 
 /**
  * Find the best stock panel width that fits the section length
- * Returns the stock panel width that provides the best fit with acceptable gaps
+ * Returns the stock panel width that provides the best fit with FIXED 30mm gaps
  */
 export function findBestStockPanelWidth(
   options: FindBestStockPanelWidthOptions
@@ -76,6 +76,8 @@ export function findBestStockPanelWidth(
     shufflePerSideMm = 10,
     lengthToleranceMm = 50, // Default ±50mm tolerance
   } = options;
+
+  const FIXED_GAP_MM = 30; // Semi-frameless systems use fixed 30mm gaps
 
   let availableStockWidths = getStockPanelWidthsForConfig(panelHeight, glassType);
   
@@ -106,23 +108,26 @@ export function findBestStockPanelWidth(
     for (const stockPanelWidth of availableStockWidths) {
       const stockOpeningWidth = stockPanelWidth - 2 * shufflePerSideMm;
 
-      // Find panel count that fits
+      // Find panel count that fits with FIXED 30mm gaps
       for (let panelCount = 1; panelCount <= 20; panelCount++) {
-        const totalPanelOpenings = stockOpeningWidth * panelCount;
+        const gapCount = panelCount + 1; // Start + between + end
+        const totalGaps = gapCount * FIXED_GAP_MM;
         const corePostCount = panelCount - 1;
         const totalCorePostSpace = corePostCount * postWidthMm;
-        const totalUsedSpace = totalPanelOpenings + totalCorePostSpace;
-        const remainingForGaps = availableSpace - totalUsedSpace;
-        const gapCount = panelCount + 1;
-        const averageGap = remainingForGaps / gapCount;
+        const totalPanelOpenings = stockOpeningWidth * panelCount;
+        
+        // Calculate total used space
+        const totalUsed = totalPanelOpenings + totalCorePostSpace + totalGaps;
+        const variance = availableSpace - totalUsed;
 
-        if (averageGap >= minGapMm && averageGap <= maxGapMm) {
+        // Stock panels fit if variance is within ±2mm (rounding tolerance)
+        if (Math.abs(variance) <= 2) {
           // Score based on:
-          // 1. Prefer no length adjustment (weight: 10)
-          // 2. Prefer gaps closer to ideal 50mm (weight: 1)
-          const lengthAdjustmentPenalty = Math.abs(lengthOffset) * 10;
-          const gapPenalty = Math.abs(averageGap - 50);
-          const score = lengthAdjustmentPenalty + gapPenalty;
+          // 1. Prefer no length adjustment (weight: 1000)
+          // 2. Prefer smaller variance (weight: 1)
+          const lengthAdjustmentPenalty = Math.abs(lengthOffset) * 1000;
+          const variancePenalty = Math.abs(variance);
+          const score = lengthAdjustmentPenalty + variancePenalty;
 
           if (score < bestScore) {
             bestScore = score;
@@ -130,7 +135,7 @@ export function findBestStockPanelWidth(
               stockPanelWidth,
               canFit: true,
               panelCount,
-              averageGap,
+              averageGap: FIXED_GAP_MM,
               adjustedSectionLength: lengthOffset !== 0 ? testLength : undefined,
               lengthAdjustment: lengthOffset !== 0 ? lengthOffset : undefined,
             };

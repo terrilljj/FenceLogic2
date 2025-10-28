@@ -28,6 +28,7 @@ interface StockPanelFitOptions {
 
 /**
  * Calculate if stock panels can fit, and provide solution options
+ * Semi-frameless systems use FIXED 30mm gaps (no variance allowed)
  */
 export function calculateStockPanelFit(options: StockPanelFitOptions): StockPanelFitResult {
   const {
@@ -39,13 +40,15 @@ export function calculateStockPanelFit(options: StockPanelFitOptions): StockPane
     shufflePerSideMm,
   } = options;
 
+  const FIXED_GAP_MM = 30; // Semi-frameless systems use fixed 30mm gaps
+
   // For semi-frameless: opening = panel - 2*shuffle
   // Wall posts: 50mm at wall, glass shuffles in 10mm → 40mm wall-to-glass
   // Available space = section length - 2 * (post width - shuffle)
   const wallPostVisible = postWidthMm - shufflePerSideMm; // 50mm - 10mm = 40mm
   const availableSpace = sectionLengthMm - 2 * wallPostVisible;
 
-  // Try to fit stock panels only
+  // Try to fit stock panels only with FIXED 30mm gaps
   const stockOpeningWidth = stockPanelWidthMm - 2 * shufflePerSideMm;
   
   // Try different panel counts
@@ -53,12 +56,13 @@ export function calculateStockPanelFit(options: StockPanelFitOptions): StockPane
     const totalPanelOpenings = stockOpeningWidth * panelCount;
     const corePostCount = panelCount - 1; // Core posts between panels
     const totalCorePostSpace = corePostCount * postWidthMm; // Core posts are full width
-    const totalUsedSpace = totalPanelOpenings + totalCorePostSpace;
-    const remainingForGaps = availableSpace - totalUsedSpace;
     const gapCount = panelCount + 1; // Start gap + end gap + (panelCount - 1) between
-    const averageGap = remainingForGaps / gapCount;
+    const totalGaps = gapCount * FIXED_GAP_MM;
+    const totalUsed = totalPanelOpenings + totalCorePostSpace + totalGaps;
+    const variance = availableSpace - totalUsed;
 
-    if (averageGap >= minGapMm && averageGap <= maxGapMm) {
+    // Stock panels fit if variance is within ±2mm
+    if (Math.abs(variance) <= 2) {
       // Stock panels fit!
       return {
         canFitStock: true,
@@ -82,7 +86,7 @@ export function calculateStockPanelFit(options: StockPanelFitOptions): StockPane
 }
 
 /**
- * Calculate suggested section lengths that would allow all stock panels to fit
+ * Calculate suggested section lengths that would allow all stock panels to fit with FIXED 30mm gaps
  */
 function calculateLengthAdjustments(options: StockPanelFitOptions) {
   const {
@@ -93,32 +97,29 @@ function calculateLengthAdjustments(options: StockPanelFitOptions) {
     shufflePerSideMm,
   } = options;
 
+  const FIXED_GAP_MM = 30; // Semi-frameless systems use fixed 30mm gaps
   const wallPostVisible = postWidthMm - shufflePerSideMm;
   const stockOpeningWidth = stockPanelWidthMm - 2 * shufflePerSideMm;
 
   let shorterLength = 0;
   let longerLength = 0;
 
-  // Find the closest shorter and longer lengths that work
+  // Find the closest shorter and longer lengths that work with FIXED 30mm gaps
   for (let panelCount = 1; panelCount <= 20; panelCount++) {
     const totalPanelOpenings = stockOpeningWidth * panelCount;
     const corePostCount = panelCount - 1;
     const totalCorePostSpace = corePostCount * postWidthMm;
     const gapCount = panelCount + 1;
+    const totalGaps = gapCount * FIXED_GAP_MM;
 
-    // Calculate with minimum gaps
-    const minTotalGaps = gapCount * minGapMm;
-    const minSectionLength = totalPanelOpenings + totalCorePostSpace + minTotalGaps + 2 * wallPostVisible;
+    // Calculate exact section length needed with fixed 30mm gaps
+    const requiredSectionLength = totalPanelOpenings + totalCorePostSpace + totalGaps + 2 * wallPostVisible;
 
-    // Calculate with maximum gaps
-    const maxTotalGaps = gapCount * maxGapMm;
-    const maxSectionLength = totalPanelOpenings + totalCorePostSpace + maxTotalGaps + 2 * wallPostVisible;
-
-    if (maxSectionLength < options.sectionLengthMm && maxSectionLength > shorterLength) {
-      shorterLength = Math.round(maxSectionLength);
+    if (requiredSectionLength < options.sectionLengthMm && requiredSectionLength > shorterLength) {
+      shorterLength = Math.round(requiredSectionLength);
     }
-    if (minSectionLength > options.sectionLengthMm && (longerLength === 0 || minSectionLength < longerLength)) {
-      longerLength = Math.round(minSectionLength);
+    if (requiredSectionLength > options.sectionLengthMm && (longerLength === 0 || requiredSectionLength < longerLength)) {
+      longerLength = Math.round(requiredSectionLength);
     }
   }
 
@@ -129,7 +130,7 @@ function calculateLengthAdjustments(options: StockPanelFitOptions) {
 }
 
 /**
- * Calculate optimal stock + 1 custom panel solution
+ * Calculate optimal stock + 1 custom panel solution with FIXED 30mm gaps
  */
 function calculateStockPlusCustomSolution(
   options: StockPanelFitOptions,
@@ -143,24 +144,22 @@ function calculateStockPlusCustomSolution(
     shufflePerSideMm,
   } = options;
 
+  const FIXED_GAP_MM = 30; // Semi-frameless systems use fixed 30mm gaps
   const stockOpeningWidth = stockPanelWidthMm - 2 * shufflePerSideMm;
 
   let bestSolution: StockPanelFitResult['customPanelSolution'] | null = null;
   let smallestCustomWidth = Infinity;
 
-  // Try different combinations of stock panels + 1 custom
+  // Try different combinations of stock panels + 1 custom with FIXED 30mm gaps
   for (let stockCount = 1; stockCount <= 19; stockCount++) {
     const totalStockOpenings = stockOpeningWidth * stockCount;
     const totalPanelCount = stockCount + 1; // +1 for custom panel
     const corePostCount = totalPanelCount - 1;
     const totalCorePostSpace = corePostCount * postWidthMm;
     const gapCount = totalPanelCount + 1;
+    const totalGaps = gapCount * FIXED_GAP_MM;
 
-    // Use average gaps
-    const averageGap = (minGapMm + maxGapMm) / 2;
-    const totalGapSpace = gapCount * averageGap;
-
-    const remainingForCustom = availableSpace - totalStockOpenings - totalCorePostSpace - totalGapSpace;
+    const remainingForCustom = availableSpace - totalStockOpenings - totalCorePostSpace - totalGaps;
     const customOpeningWidth = Math.round(remainingForCustom);
     const customPanelWidth = customOpeningWidth + 2 * shufflePerSideMm;
 
