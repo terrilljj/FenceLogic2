@@ -61,7 +61,7 @@ export function AutoCalcPanelControls({
   // Initialize with default config if not exists
   const config = autoCalcConfig || {
     layoutMode: "auto" as const,
-    maxPanelWidth: 1500,
+    maxPanelWidth: 1100, // Default 1100mm for semi-frameless
     panelHeight: 1500,
     glassType: "10mm-clear" as const,
     gapMode: "auto" as const,

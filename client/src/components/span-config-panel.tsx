@@ -1453,7 +1453,7 @@ export function SpanConfigPanel({
                       updateSpan({
                         autoCalcConfig: {
                           ...(span.autoCalcConfig || {
-                            maxPanelWidth: span.maxPanelWidth || 1500,
+                            maxPanelWidth: span.maxPanelWidth || 1100, // Default 1100mm
                             panelHeight: 1500,
                             glassType: "12mm",
                             gapMode: "auto",
@@ -1483,7 +1483,7 @@ export function SpanConfigPanel({
               <AutoCalcPanelControls
                 autoCalcConfig={span.autoCalcConfig || {
                   layoutMode: "auto" as const,
-                  maxPanelWidth: span.maxPanelWidth || 1500,
+                  maxPanelWidth: span.maxPanelWidth || 1100, // Default 1100mm for semi-frameless
                   panelHeight: 1500,
                   glassType: "12mm" as const,
                   gapMode: "auto" as const,
@@ -1500,7 +1500,7 @@ export function SpanConfigPanel({
                   if (isSemiFrameless && autoCalcConfig.panelSelectionMode === "all-stock") {
                     // Ensure stockPanelWidth is valid and within constraints
                     const panelHeight = autoCalcConfig.panelHeight || 1800;
-                    const maxPanelWidth = autoCalcConfig.maxPanelWidth || 1500;
+                    const maxPanelWidth = autoCalcConfig.maxPanelWidth || 1100; // Default 1100mm
                     
                     // Get valid stock widths for this configuration
                     const validStockWidths: number[] = [];
