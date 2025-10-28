@@ -107,20 +107,37 @@ export default function FenceLogic() {
     },
   });
 
-  // Update maxPanelWidth when calculator config loads
+  // Update maxPanelWidth and initialize autoCalcConfig when calculator config loads
   useEffect(() => {
     if (calculatorConfig?.fields?.maxPanelMm?.defaultValue) {
       const defaultMaxPanel = calculatorConfig.fields.maxPanelMm.defaultValue;
+      const isSemiFrameless = design.productVariant === "semi-frameless-1000" || design.productVariant === "semi-frameless-1800";
+      const isCustomFrameless = design.productVariant === "custom-frameless";
+      
       setDesign(prev => ({
         ...prev,
         spans: prev.spans.map(span => ({
           ...span,
           // Only update if still at initial hardcoded value
           maxPanelWidth: span.maxPanelWidth === 1200 ? defaultMaxPanel : span.maxPanelWidth,
+          // Initialize autoCalcConfig for semi-frameless and custom-frameless if not already set
+          ...(((isSemiFrameless || isCustomFrameless) && !span.autoCalcConfig) ? {
+            layoutMode: "auto-calc" as const,
+            autoCalcConfig: {
+              layoutMode: "auto" as const,
+              maxPanelWidth: defaultMaxPanel,
+              panelHeight: calculatorConfig.fields?.glassHeight?.defaultValue || 1500,
+              glassType: "12mm" as const,
+              gapMode: "auto" as const,
+              interPanelGaps: [calculatorConfig.fields?.betweenGapMm?.defaultValue || 50],
+              panelTypes: ["standard", "standard"] as const,
+              panelWidthOverrides: undefined,
+            }
+          } : {}),
         })),
       }));
     }
-  }, [calculatorConfig]);
+  }, [calculatorConfig, design.productVariant]);
 
   // Helper function to get default max panel width from calculator config
   const getDefaultMaxPanelWidth = () => {
@@ -242,7 +259,13 @@ export default function FenceLogic() {
         desiredGap: lastSpan?.desiredGap || 50,
         spigotMounting: lastSpan?.spigotMounting || "base-plate",
         spigotColor: lastSpan?.spigotColor || "polished",
-        layoutMode: lastSpan?.layoutMode || (design.productVariant === "custom-frameless" ? "auto-calc" : "auto-equalize"),
+        layoutMode: lastSpan?.layoutMode || (
+          design.productVariant === "custom-frameless" || 
+          design.productVariant === "semi-frameless-1000" || 
+          design.productVariant === "semi-frameless-1800" 
+            ? "auto-calc" 
+            : "auto-equalize"
+        ),
         leftGap: lastSpan?.leftGap || {
           enabled: true,
           position: "inside",
@@ -324,6 +347,7 @@ export default function FenceLogic() {
           desiredGap: 50,
           spigotMounting: "base-plate",
           spigotColor: "polished",
+          layoutMode: "auto-equalize",
           leftGap: {
             enabled: true,
             position: "inside",
@@ -667,6 +691,7 @@ function getSpansForShape(shape: FenceShape, customSides?: number, defaultMaxPan
     desiredGap: 50,
     spigotMounting: "base-plate",
     spigotColor: "polished",
+    layoutMode: "auto-equalize",
     leftGap: {
       enabled: true,
       position: "inside",
@@ -752,11 +777,111 @@ function calculateComponents(
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
   const isTubularFencing = design.productVariant === "alu-pool-tubular";
+  const isSemiFrameless = design.productVariant === "semi-frameless-1000" || design.productVariant === "semi-frameless-1800";
   const gatesAllowed = !design.productVariant.includes("bal-");
 
   design.spans.forEach((span) => {
+    // Semi-Frameless has its own component generation logic (post-based system)
+    if (isSemiFrameless && span.panelLayout && span.panelLayout.panels.length > 0) {
+      const glassHeight = design.productVariant === "semi-frameless-1000" ? 1000 : 1800;
+      const glassThickness = design.productVariant === "semi-frameless-1000" ? 12 : 10;
+      const postFinish = span.postFinish || "satin";
+      const postMounting = span.postMounting || "core-drilled";
+      const leftEndPost = span.leftEndPost || "end";
+      const rightEndPost = span.rightEndPost || "end";
+      
+      // Add glass panels from layout
+      const panelTypes = span.panelLayout.panelTypes || [];
+      span.panelLayout.panels.forEach((panelWidth, index) => {
+        const panelType = panelTypes[index] || "standard";
+        
+        if (panelType === "gate") {
+          components.push({
+            qty: 1,
+            description: `Semi-Frameless Gate Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
+            sku: `SF-GATE-${panelWidth}-${glassHeight}-${glassThickness}`,
+          });
+        } else if (panelType === "hinge") {
+          components.push({
+            qty: 1,
+            description: `Semi-Frameless Hinge Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
+            sku: `SF-HINGE-${panelWidth}-${glassHeight}-${glassThickness}`,
+          });
+        } else {
+          components.push({
+            qty: 1,
+            description: `Semi-Frameless Glass Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
+            sku: `SF-PANEL-${panelWidth}-${glassHeight}-${glassThickness}`,
+          });
+        }
+      });
+      
+      // Add posts (N+1 posts for N panels)
+      const numPosts = span.panelLayout.panels.length + 1;
+      const postDescription = `Semi-Frameless 50mm Square Post ${glassHeight + 200}mm (${postFinish} finish, ${postMounting} mounting)`;
+      components.push({
+        qty: numPosts,
+        description: postDescription,
+        sku: `SF-POST-50-${glassHeight + 200}-${postFinish.toUpperCase()}-${postMounting.toUpperCase()}`,
+      });
+      
+      // Add left end post if different from standard
+      if (leftEndPost !== "end") {
+        components.push({
+          qty: 1,
+          description: `Semi-Frameless Left ${leftEndPost} Post ${glassHeight + 200}mm (${postFinish} finish)`,
+          sku: `SF-POST-LEFT-${leftEndPost.toUpperCase()}-${glassHeight + 200}-${postFinish.toUpperCase()}`,
+        });
+      }
+      
+      // Add right end post if different from standard
+      if (rightEndPost !== "end") {
+        components.push({
+          qty: 1,
+          description: `Semi-Frameless Right ${rightEndPost} Post ${glassHeight + 200}mm (${postFinish} finish)`,
+          sku: `SF-POST-RIGHT-${rightEndPost.toUpperCase()}-${glassHeight + 200}-${postFinish.toUpperCase()}`,
+        });
+      }
+      
+      // Add top rail for 1000mm variant or mid-rail for 1800mm variant
+      if (design.productVariant === "semi-frameless-1000") {
+        const railFinish = span.railFinish || "satin";
+        const totalLength = span.length || 5000;
+        components.push({
+          qty: 1,
+          description: `Semi-Frameless Top Rail ${totalLength}mm (${railFinish} finish)`,
+          sku: `SF-RAIL-TOP-${totalLength}-${railFinish.toUpperCase()}`,
+        });
+      } else {
+        const midRailFinish = span.midRailFinish || "satin";
+        const midRailHeight = span.midRailHeight || 1000;
+        const totalLength = span.length || 5000;
+        components.push({
+          qty: 1,
+          description: `Semi-Frameless Mid-Rail @ ${midRailHeight}mm ${totalLength}mm (${midRailFinish} finish)`,
+          sku: `SF-RAIL-MID-${midRailHeight}-${totalLength}-${midRailFinish.toUpperCase()}`,
+        });
+      }
+      
+      // Gate hardware for Semi-Frameless
+      if (gatesAllowed && span.gateConfig?.required) {
+        const gateWidth = span.gateConfig.gateSize || 900;
+        components.push({
+          qty: 1,
+          description: `Semi-Frameless Gate Hinge Set for ${gateWidth}mm x ${glassHeight}mm Gate`,
+          sku: `SF-HINGE-SET-${gateWidth}-${glassHeight}`,
+        });
+        components.push({
+          qty: 1,
+          description: `Semi-Frameless Gate Latch for ${gateWidth}mm x ${glassHeight}mm Gate`,
+          sku: `SF-LATCH-${gateWidth}-${glassHeight}`,
+        });
+      }
+      
+      return; // Skip spigot/channel logic for Semi-Frameless
+    }
     // Blade Fencing has its own component generation logic
-    if (isBladeFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
+    else if (isBladeFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
       const bladeHeight = span.bladeHeight || "1200mm";
       const bladeFinish = span.bladeFinish || "satin-black";
       const bladePostType = span.bladePostType || "welded-base-plate";

@@ -541,6 +541,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
   const isTubularFencing = design.productVariant === "alu-pool-tubular";
+  const isSemiFrameless = design.productVariant === "semi-frameless-1000" || design.productVariant === "semi-frameless-1800";
   const isHamptonsPVC = design.productVariant.startsWith("pvc-hamptons-");
 
   // Set canvas size to match container
@@ -633,8 +634,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     let leftGapSize = span.leftGap?.enabled ? span.leftGap.size : 0;
     let rightGapSize = span.rightGap?.enabled ? span.rightGap.size : 0;
     
-    // For Blade, BARR, Tubular, and Hamptons PVC, use gaps from panelLayout array (N+1 gaps for N panels)
-    if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+    // For Blade, BARR, Tubular, Hamptons PVC, and Semi-Frameless, use gaps from panelLayout array (N+1 gaps for N panels)
+    if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC || isSemiFrameless) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
@@ -980,6 +981,61 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
         
       } 
+      // Semi-Frameless panels: full-height posts with shuffle-glazed glass
+      else if (isSemiFrameless) {
+        // Semi-frameless panel configuration
+        const postWidth = 50 * scale; // 50mm wide posts
+        const shuffleDepth = 10 * scale; // 10mm shuffle glaze each side
+        
+        // Glass sits from ground level up (no bottom clearance)
+        const panelBottom = groundLevel;
+        const panelTop = panelBottom - scaledPanelHeight;
+        
+        // Draw glass panel (shuffle-glazed, sits inside posts by 10mm each side)
+        ctx.fillStyle = isGate ? "rgba(135, 206, 235, 0.15)" : "rgba(135, 206, 235, 0.2)";
+        ctx.fillRect(currentX, panelTop, scaledPanelWidth, scaledPanelHeight);
+        
+        // Glass border
+        ctx.strokeStyle = isGate ? "rgba(70, 130, 180, 0.3)" : "rgba(70, 130, 180, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(currentX, panelTop, scaledPanelWidth, scaledPanelHeight);
+        
+        // Draw posts at panel edges (posts extend from top of glass to ground, full height)
+        // For Semi-Frameless: N panels need N+1 posts (one before first panel, one after each panel)
+        ctx.fillStyle = "#555555"; // Darker gray for semi-frameless posts
+        
+        // Draw start post only for first panel - extends from glass top to ground
+        if (i === 0) {
+          ctx.fillRect(
+            currentX - postWidth / 2,
+            panelTop,
+            postWidth,
+            groundLevel - panelTop
+          );
+          
+          // Post measurement label - 50mm
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "600 10px Inter";
+          ctx.textAlign = "center";
+          ctx.fillText("50mm", currentX, groundLevel + 20);
+        }
+        
+        // Always draw post after this panel - extends from glass top to ground
+        ctx.fillStyle = "#555555";
+        ctx.fillRect(
+          currentX + scaledPanelWidth - postWidth / 2,
+          panelTop,
+          postWidth,
+          groundLevel - panelTop
+        );
+        
+        // Post measurement label - 50mm
+        ctx.fillStyle = "#4b5563";
+        ctx.font = "600 10px Inter";
+        ctx.textAlign = "center";
+        ctx.fillText("50mm", currentX + scaledPanelWidth, groundLevel + 20);
+        
+      }
       // Hamptons PVC panels have different rendering
       else if (isHamptonsPVC) {
         // Hamptons PVC panel configuration
@@ -1193,8 +1249,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         groundLevel - scaledPanelHeight / 2 + 10
       );
 
-      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular/Hamptons use posts)
-      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing && !isHamptonsPVC) {
+      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular/Hamptons/SemiFrameless use posts)
+      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing && !isHamptonsPVC && !isSemiFrameless) {
         const spigotWidth = 50 * scale;   // 50mm wide
         const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass
@@ -1319,9 +1375,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Gap between panels
       if (i < numPanels - 1) {
-        // For BARR, Blade, Tubular, and Hamptons PVC: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
+        // For BARR, Blade, Tubular, Hamptons PVC, and Semi-Frameless: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
         // For glass: gaps array uses gap[i] for gap between panel i and i+1
-        const gapIndex = (isBarrFencing || isBladeFencing || isTubularFencing || isHamptonsPVC) ? i + 1 : i;
+        const gapIndex = (isBarrFencing || isBladeFencing || isTubularFencing || isHamptonsPVC || isSemiFrameless) ? i + 1 : i;
         const actualGapSize = span.panelLayout?.gaps?.[gapIndex] ?? gapSize;
         const scaledGapSize = actualGapSize * scale;
         const gapStart = currentX;

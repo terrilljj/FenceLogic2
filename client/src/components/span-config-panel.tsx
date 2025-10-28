@@ -35,6 +35,9 @@ export function SpanConfigPanel({
 }: SpanConfigPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
+  // Determine if this is a semi-frameless variant
+  const isSemiFrameless = productVariant === "semi-frameless-1000" || productVariant === "semi-frameless-1800";
+
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
 
@@ -59,8 +62,8 @@ export function SpanConfigPanel({
       updates.rightRakedPanel = undefined;
     }
     
-    // For custom-frameless in auto mode, recalculate panels when length changes
-    if (productVariant === "custom-frameless" && 
+    // For custom-frameless and semi-frameless in auto mode, recalculate panels when length changes
+    if ((productVariant === "custom-frameless" || isSemiFrameless) && 
         updates.length !== undefined && 
         span.autoCalcConfig?.layoutMode === "auto") {
       const newLength = updates.length;
@@ -1412,8 +1415,8 @@ export function SpanConfigPanel({
                 )}
               </div>
 
-              {/* Between Panel Gap - For custom-frameless only */}
-              {productVariant === "custom-frameless" && (
+              {/* Between Panel Gap - For custom-frameless and semi-frameless */}
+              {(productVariant === "custom-frameless" || isSemiFrameless) && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium">Between Panel Gap</Label>
@@ -1473,8 +1476,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Panel Layout Mode - For custom-frameless */}
-          {productVariant === "custom-frameless" && (
+          {/* Panel Layout Mode - For custom-frameless and semi-frameless */}
+          {(productVariant === "custom-frameless" || isSemiFrameless) && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <AutoCalcPanelControls
                 autoCalcConfig={span.autoCalcConfig || {
@@ -1556,8 +1559,14 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, and custom-frameless */}
-          {(isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && productVariant !== "custom-frameless" && (
+          {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, custom-frameless, and semi-frameless */}
+          {(isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) && 
+           productVariant !== "alu-pool-barr" && 
+           productVariant !== "alu-pool-blade" && 
+           productVariant !== "alu-pool-tubular" && 
+           !productVariant.startsWith("pvc-hamptons-") && 
+           productVariant !== "custom-frameless" &&
+           !isSemiFrameless && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Panel Configuration</h4>
@@ -1622,7 +1631,7 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Hardware Configuration - Show spigot OR channel based on product type, hide for BARR, Blade, and Tubular */}
+          {/* Hardware Configuration - Show channel, spigot, OR post based on product type */}
           {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant === "glass-pool-channel" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Channel Hardware</h4>
@@ -1650,6 +1659,95 @@ export function SpanConfigPanel({
                   <p><strong>Friction Clamps:</strong> Positioned at 300mm centers</p>
                   <p><strong>Mounting:</strong> {span.channelMounting === "wall" ? "Base mounted" : "Side mounted"}</p>
                 </div>
+              </div>
+            </div>
+          ) : isSemiFrameless ? (
+            <div className="space-y-4 pt-4 border-t border-card-border">
+              <h4 className="text-sm font-semibold">Post Hardware</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Left End Post Type</Label>
+                  <Select
+                    value={span.leftEndPost || "end"}
+                    onValueChange={(leftEndPost: string) => 
+                      updateSpan({ leftEndPost })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-left-end-post`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="wall">Wall Mount</SelectItem>
+                      <SelectItem value="end">End Post</SelectItem>
+                      <SelectItem value="corner-in">Corner In</SelectItem>
+                      <SelectItem value="corner-out">Corner Out</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Right End Post Type</Label>
+                  <Select
+                    value={span.rightEndPost || "end"}
+                    onValueChange={(rightEndPost: string) => 
+                      updateSpan({ rightEndPost })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-right-end-post`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="wall">Wall Mount</SelectItem>
+                      <SelectItem value="end">End Post</SelectItem>
+                      <SelectItem value="corner-in">Corner In</SelectItem>
+                      <SelectItem value="corner-out">Corner Out</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Post Finish</Label>
+                  <Select
+                    value={span.postFinish || "satin"}
+                    onValueChange={(postFinish: string) => 
+                      updateSpan({ postFinish })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-post-finish`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="satin">Satin</SelectItem>
+                      <SelectItem value="black">Black</SelectItem>
+                      <SelectItem value="custom">Custom Color</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Post Mounting</Label>
+                  <Select
+                    value={span.postMounting || "core-drilled"}
+                    onValueChange={(postMounting: string) => 
+                      updateSpan({ postMounting })
+                    }
+                  >
+                    <SelectTrigger data-testid={`span-${span.spanId}-post-mounting`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="core-drilled">Core Drilled</SelectItem>
+                      <SelectItem value="base-plate">Base Plate</SelectItem>
+                      <SelectItem value="side-mounted">Side Mounted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-1">
+                <p><strong>Post System:</strong> 50mm square aluminum posts with shuffle glazing (10mm each side)</p>
+                <p><strong>Glass:</strong> Panels fit between posts with {calculatorConfig?.fields?.shuffleGlazeDepth?.defaultValue || 10}mm shuffle depth</p>
+                <p><strong>Height:</strong> {calculatorConfig?.fields?.glassHeight?.defaultValue || 1000}mm glass with full-height posts</p>
               </div>
             </div>
           ) : productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" ? (
@@ -1924,7 +2022,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Hardware Configuration - Moved to bottom */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && productVariant === "glass-pool-channel" ? (
+          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && !isSemiFrameless && productVariant === "glass-pool-channel" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Channel Hardware</h4>
               <div className="space-y-3">
@@ -1953,7 +2051,7 @@ export function SpanConfigPanel({
                 </div>
               </div>
             </div>
-          ) : productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" ? (
+          ) : productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
