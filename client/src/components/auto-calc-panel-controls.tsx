@@ -375,6 +375,12 @@ export function AutoCalcPanelControls({
       // Recalculate optimal solution when in auto mode
       const solution = autoCalculatePanelCount();
       
+      // CRITICAL: Don't recalculate if user has manually selected "all-custom" mode
+      if (panelSelectionMode === "all-custom") {
+        console.log("⏸️ Skipping auto-recalculation - user selected all-custom mode");
+        return;
+      }
+      
       // Detect old/incorrect configs that need fixing:
       // 1. Wrong panel count
       // 2. Using "all-stock" mode (old default)
