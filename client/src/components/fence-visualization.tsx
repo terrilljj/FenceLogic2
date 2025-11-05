@@ -997,13 +997,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
             postWidth,
             groundLevel - panelTop
           );
-          
-          // Wall post label - positioned higher up to avoid overlap
-          ctx.fillStyle = "#4b5563";
-          ctx.font = "600 10px Inter";
-          ctx.textAlign = "center";
-          const postWidthMm = span.semiFramelessConfig?.postWidth || 50;
-          ctx.fillText(`${postWidthMm}mm wall post`, currentX - postWidth / 2 - 20, groundLevel - 20);
         }
         
         // Always draw post after this panel (same 50mm for all posts)
@@ -1014,25 +1007,6 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           postWidth,
           groundLevel - panelTop
         );
-        
-        // Show post label
-        const isLastPanel = i === numPanels - 1;
-        const postWidthMm = span.semiFramelessConfig?.postWidth || 50;
-        
-        if (!isLastPanel) {
-          // Core post between panels - positioned higher up
-          ctx.fillStyle = "#4b5563";
-          ctx.font = "600 10px Inter";
-          ctx.textAlign = "center";
-          ctx.fillText(`${postWidthMm}mm core post`, currentX + scaledPanelWidth, groundLevel - 20);
-        } else {
-          // Last panel: show wall post on right side - positioned higher up
-          ctx.fillStyle = "#4b5563";
-          ctx.font = "600 10px Inter";
-          ctx.textAlign = "center";
-          ctx.fillText(`${postWidthMm}mm wall post`, currentX + scaledPanelWidth + postWidth / 2 + 20, groundLevel - 20);
-        }
-        
       }
       // Hamptons PVC panels have different rendering
       else if (isHamptonsPVC) {
