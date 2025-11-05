@@ -782,8 +782,17 @@ export function AutoCalcPanelControls({
             <div className="text-xs text-muted-foreground">Current mode: {panelSelectionMode}</div>
             <Select
               value={panelSelectionMode}
+              onOpenChange={(open) => {
+                console.log("🚪 Dropdown open state changed:", open);
+              }}
               onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
-                console.log("🔄 Panel selection mode changed from", panelSelectionMode, "to:", value);
+                console.log("🔄🔔 DROPDOWN CLICKED! Panel selection mode changed from", panelSelectionMode, "to:", value);
+                
+                // CRITICAL: Prevent any event bubbling issues
+                if (value === panelSelectionMode) {
+                  console.log("⚠️ Same value selected, ignoring");
+                  return;
+                }
                 
                 // When switching to all-custom, we need to calculate uniform panel widths
                 // and bypass the auto-calculation logic

@@ -1,0 +1,131 @@
+Run a read-only health check of my FenceLogic app and produce a concise report with exact fixes. Do not modify any files unless I say so. If a step fails, keep going and record the failure.
+
+Tasks
+
+Environment & Processes
+
+Print Node and NPM versions.
+
+Print PORT and NODE_ENV.
+
+Show what’s listening on common dev ports (3000/5000/5173/8080).
+
+Build & Typecheck
+
+Run: npm run check
+
+Run: npm run build
+
+Capture first 200 lines of each failure (if any).
+
+Dev Server Smoke
+
+Run npm run dev for ~30 seconds, capture logs (first 200 lines), then stop.
+
+Note: server bind address and port, and any route mount logs.
+
+Tests & Data Lints
+
+Run: npm test
+
+Run: npm run lint:data (ignore non-zero exit)
+
+Run: npm run lint:data:strict (ignore non-zero exit)
+
+Summarize pass/fail counts and any orphan/dead categories.
+
+Route Discovery (static scan)
+Search these files for route mounts and list matches with file:line:
+
+server/index.ts
+
+server/routes/*.ts
+Patterns to find:
+
+/api/optimizer/cutlength/plan
+
+/api/admin/product-slots
+
+/api/admin/config/google
+
+/api/admin/google/oauth
+
+/api/admin/sheets/pull
+
+/api/debug/*
+
+Live Endpoint Probes (best effort)
+Assuming the app is running on its dev port (if not, skip with a note):
+
+GET /api/admin/product-slots (or /api/admin/product-slots/<any-variant> if needed)
+
+POST /api/optimizer/cutlength/plan with a tiny sample payload (channel example):
+
+{
+  "variantKey":"Glass Balustrade – Channel",
+  "material":"channel",
+  "selectionSnapshot":{"sections":[{"runLengthMm":1200},{"runLengthMm":1800}]},
+  "options":{"stockLengthsMm":[3600,4200],"kerfPerCutMm":3,"mitreAllowanceMm":40,"minUsableOffcutMm":600,"connectorAllowanceMm":0,"maxSegmentsPerSection":2}
+}
+
+
+GET /api/admin/config/google/status
+
+GET /api/admin/google/oauth/status
+
+If auth required: report 401 and continue (don’t try to log in).
+
+Front-end Hooks (static scan)
+
+Confirm the optimizer toggle is present in Channel/Rail style screens (list the component file paths).
+
+Confirm Slot Manager page exists (/slot-manager) and calls:
+
+GET /api/admin/product-slots/:variant
+
+POST /api/admin/product-slots/generate
+
+Report Problems & Fixes
+For every failure, include:
+
+Symptom: one-liner
+
+Probable Cause: file:line if possible
+
+Exact Fix: short actionable steps (or exact code snippet + file path)
+
+Risk: low/med/high
+
+Acceptance Block (print exactly)
+After all steps, print this block filled in:
+
+TS compile: ✅/❌
+Build: ✅/❌
+Dev server reachable: ✅/❌ (port: ___)
+Routes mounted:
+- /api/optimizer/cutlength/plan: yes/no
+- /api/admin/product-slots/*: yes/no
+- /api/admin/config/google + /api/admin/google/oauth/*: yes/no
+- /api/admin/sheets/pull: yes/no
+Key probes:
+- product-slots: HTTP ___
+- optimizer plan: HTTP ___
+- google status: HTTP ___
+Tests: <passed>/<total>
+Data lints: summary (orphans/dead/missing)
+Optimizer toggle present in UI: yes/no (paths)
+Slot Manager page present: yes/no (path)
+Top 3 issues to fix next:
+1) …
+2) …
+3) …
+
+Guardrails
+
+Do not alter files or secrets.
+
+Redact any secrets/keys if encountered.
+
+If a command hangs, abort and continue to next task.
+
+Keep the output concise but complete.
