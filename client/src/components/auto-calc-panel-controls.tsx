@@ -148,17 +148,43 @@ export function AutoCalcPanelControls({
     let bestScore = Infinity; // Lower score is better
     
     // Scoring function: Prefer better fit and reasonable panel count
-    const calculateScore = (panelCount: number, variance: number, avgPanelSize: number, isMixed: boolean = false) => {
+    const calculateScore = (
+      panelCount: number, 
+      variance: number, 
+      avgPanelSize: number, 
+      isMixed: boolean = false,
+      customWidth: number = 0
+    ) => {
       // Moderate penalty for more panels (prefer fewer but not at all costs)
-      const panelCountPenalty = panelCount * 500; // Reduced from 1000
+      const panelCountPenalty = panelCount * 500;
       // Prefer larger panel sizes (inverse of size)
       const sizePenalty = avgPanelSize > 0 ? 10000 / avgPanelSize : 1000;
       // MAJOR penalty for variance - fit quality is important
-      const variancePenalty = variance * 100; // Increased from 10
+      const variancePenalty = variance * 100;
       // BONUS for using mixed stock (shows better optimization)
       const mixedBonus = isMixed ? -200 : 0;
       
-      return panelCountPenalty + sizePenalty + variancePenalty + mixedBonus;
+      // CRITICAL: Penalty for custom panels that are far from stock sizes
+      let customPenalty = 0;
+      if (customWidth > 0) {
+        // Find closest stock size
+        const closestStock = availableStockWidths.reduce((closest, stock) => {
+          const currentDiff = Math.abs(stock - customWidth);
+          const closestDiff = Math.abs(closest - customWidth);
+          return currentDiff < closestDiff ? stock : closest;
+        }, availableStockWidths[0]);
+        
+        const distanceFromStock = Math.abs(customWidth - closestStock);
+        
+        // HUGE penalty if custom is >50mm from nearest stock
+        if (distanceFromStock > 50) {
+          customPenalty = distanceFromStock * 200; // Heavy penalty
+        } else {
+          customPenalty = distanceFromStock * 20; // Lighter penalty within ±50mm
+        }
+      }
+      
+      return panelCountPenalty + sizePenalty + variancePenalty + mixedBonus + customPenalty;
     };
     
     // Try combinations of adjacent stock sizes (within 100mm for flexibility)
@@ -180,7 +206,7 @@ export function AutoCalcPanelControls({
         const variance1 = Math.abs(totalPanelWidth - panelSpace);
         
         if (variance1 <= 10) { // Allow up to 10mm variance
-          const score = calculateScore(totalPanels, variance1, width1, false); // Not mixed
+          const score = calculateScore(totalPanels, variance1, width1, false, 0); // Not mixed, no custom
           console.log(`  Single: ${totalPanels}x${width1} var=${variance1.toFixed(1)}mm score=${score.toFixed(0)}`);
           if (score < bestScore) {
             bestScore = score;
@@ -210,7 +236,7 @@ export function AutoCalcPanelControls({
             
             if (variance <= 10) { // Allow up to 10mm variance
               const avgSize = (count1 * width1 + count2 * width2) / totalPanels;
-              const score = calculateScore(totalPanels, variance, avgSize, true); // IS mixed!
+              const score = calculateScore(totalPanels, variance, avgSize, true, 0); // IS mixed, no custom
               console.log(`  Mixed: ${totalPanels}p (${count1}x${width1} + ${count2}x${width2}) var=${variance.toFixed(1)}mm score=${score.toFixed(0)}`);
               if (score < bestScore) {
                 bestScore = score;
@@ -250,8 +276,18 @@ export function AutoCalcPanelControls({
         if (customPanelWidth >= 300 && customPanelWidth <= maxPanelWidth) {
           const avgSize = (stockCount * stockWidth + customPanelWidth) / totalPanels;
           const variance = 0; // No variance since we're using exact calculation
-          const score = calculateScore(totalPanels, variance, avgSize);
-          console.log(`  Stock+Custom: ${stockCount}x${stockWidth} + 1x${Math.round(customPanelWidth)} var=0.0mm score=${score.toFixed(0)}`);
+          const roundedCustomWidth = Math.round(customPanelWidth);
+          const score = calculateScore(totalPanels, variance, avgSize, false, roundedCustomWidth);
+          
+          // Find closest stock to show distance
+          const closestStock = availableStockWidths.reduce((closest, stock) => {
+            const currentDiff = Math.abs(stock - roundedCustomWidth);
+            const closestDiff = Math.abs(closest - roundedCustomWidth);
+            return currentDiff < closestDiff ? stock : closest;
+          }, availableStockWidths[0]);
+          const distFromStock = Math.abs(roundedCustomWidth - closestStock);
+          
+          console.log(`  Stock+Custom: ${stockCount}x${stockWidth} + 1x${roundedCustomWidth} (${distFromStock}mm from ${closestStock}) score=${score.toFixed(0)}`);
           
           if (score < bestScore) {
             bestScore = score;
