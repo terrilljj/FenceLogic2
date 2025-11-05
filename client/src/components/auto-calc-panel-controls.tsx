@@ -782,7 +782,16 @@ export function AutoCalcPanelControls({
             value={panelSelectionMode}
             onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
               console.log("🔄 Panel selection mode changed to:", value);
-              onUpdate({ ...config, panelSelectionMode: value });
+              
+              // When switching to all-custom, CLEAR panelWidthOverrides to ensure uniform widths
+              const updatedConfig = {
+                ...config,
+                panelSelectionMode: value,
+                // Clear overrides when switching to all-custom mode
+                panelWidthOverrides: value === "all-custom" ? undefined : config.panelWidthOverrides,
+              };
+              
+              onUpdate(updatedConfig);
             }}
           >
             <SelectTrigger className="h-9" data-testid={`panel-selection-mode-${spanId}`}>
