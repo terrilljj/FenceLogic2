@@ -778,31 +778,35 @@ export function AutoCalcPanelControls({
           </Button>
         </div>
         <div className="grid grid-cols-1 gap-3">
-          <Select
-            value={panelSelectionMode}
-            onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
-              console.log("🔄 Panel selection mode changed to:", value);
-              
-              // When switching to all-custom, CLEAR panelWidthOverrides to ensure uniform widths
-              const updatedConfig = {
-                ...config,
-                panelSelectionMode: value,
-                // Clear overrides when switching to all-custom mode
-                panelWidthOverrides: value === "all-custom" ? undefined : config.panelWidthOverrides,
-              };
-              
-              onUpdate(updatedConfig);
-            }}
-          >
-            <SelectTrigger className="h-9" data-testid={`panel-selection-mode-${spanId}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-stock">All Stock Panels</SelectItem>
-              <SelectItem value="stock-plus-custom">Stock Panels + 1 Custom</SelectItem>
-              <SelectItem value="all-custom">All Custom Panels</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">Current mode: {panelSelectionMode}</div>
+            <Select
+              value={panelSelectionMode}
+              onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
+                console.log("🔄 Panel selection mode changed from", panelSelectionMode, "to:", value);
+                
+                // When switching to all-custom, CLEAR panelWidthOverrides to ensure uniform widths
+                const updatedConfig = {
+                  ...config,
+                  panelSelectionMode: value,
+                  // Clear overrides when switching to all-custom mode
+                  panelWidthOverrides: value === "all-custom" ? undefined : config.panelWidthOverrides,
+                };
+                
+                console.log("📤 Sending updated config:", updatedConfig);
+                onUpdate(updatedConfig);
+              }}
+            >
+              <SelectTrigger className="h-9" data-testid={`panel-selection-mode-${spanId}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-stock">All Stock Panels</SelectItem>
+                <SelectItem value="stock-plus-custom">Stock Panels + 1 Custom</SelectItem>
+                <SelectItem value="all-custom">All Custom Panels</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
         </div>
 
