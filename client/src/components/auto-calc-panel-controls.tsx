@@ -785,16 +785,46 @@ export function AutoCalcPanelControls({
               onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
                 console.log("🔄 Panel selection mode changed from", panelSelectionMode, "to:", value);
                 
-                // When switching to all-custom, CLEAR panelWidthOverrides to ensure uniform widths
-                const updatedConfig = {
-                  ...config,
-                  panelSelectionMode: value,
-                  // Clear overrides when switching to all-custom mode
-                  panelWidthOverrides: value === "all-custom" ? undefined : config.panelWidthOverrides,
-                };
-                
-                console.log("📤 Sending updated config:", updatedConfig);
-                onUpdate(updatedConfig);
+                // When switching to all-custom, we need to calculate uniform panel widths
+                // and bypass the auto-calculation logic
+                if (value === "all-custom") {
+                  const lhsSpacing = getPostSpacing(postConfig?.lhsPostType);
+                  const rhsSpacing = getPostSpacing(postConfig?.rhsPostType);
+                  const availableSpace = spanLength - lhsSpacing - rhsSpacing;
+                  
+                  // Calculate how many panels we currently have
+                  const currentPanelCount = numPanels || 2;
+                  
+                  // Calculate uniform panel width
+                  const intermediatePosts = (currentPanelCount - 1) * 30;
+                  const totalPanelSpace = availableSpace - intermediatePosts;
+                  const uniformWidth = Math.round(totalPanelSpace / currentPanelCount);
+                  
+                  // Create uniform panel widths
+                  const uniformOverrides: { [index: number]: number } = {};
+                  for (let i = 0; i < currentPanelCount; i++) {
+                    uniformOverrides[i] = uniformWidth;
+                  }
+                  
+                  const updatedConfig = {
+                    ...config,
+                    panelSelectionMode: value,
+                    panelWidthOverrides: uniformOverrides, // Set uniform widths
+                    stockPanelWidth: uniformWidth, // Update stock width to match
+                  };
+                  
+                  console.log("📤 All-custom mode: uniform width =", uniformWidth, "mm for", currentPanelCount, "panels");
+                  onUpdate(updatedConfig);
+                } else {
+                  // For other modes, keep existing overrides
+                  const updatedConfig = {
+                    ...config,
+                    panelSelectionMode: value,
+                  };
+                  
+                  console.log("📤 Sending updated config:", updatedConfig);
+                  onUpdate(updatedConfig);
+                }
               }}
             >
               <SelectTrigger className="h-9" data-testid={`panel-selection-mode-${spanId}`}>
