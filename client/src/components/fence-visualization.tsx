@@ -1198,28 +1198,29 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.font = "600 13px Inter";
       ctx.textAlign = "center";
       
-      // For semi-frameless, show panel size and opening width - positioned lower to avoid mid-rail overlap
+      // For semi-frameless, show panel size and opening width - positioned at ¼ points
       let widthLabel = `${currentPanelWidth}${isRaked ? 'H' : ''}`;
       if (isSemiFrameless) {
-        widthLabel = `${currentPanelWidth}mm panel`; // Actual panel size
+        widthLabel = `${currentPanelWidth}`; // Just the panel size number
       } else if (isCustom && span.customPanel?.enabled) {
         widthLabel = `${currentPanelWidth}x${span.customPanel.height}`;
       }
       
-      // Position labels lower for semi-frameless to avoid mid-rail overlap
-      const labelYOffset = isSemiFrameless ? groundLevel - scaledPanelHeight * 0.3 : groundLevel - scaledPanelHeight / 2 - 8;
+      // Position labels: top ¼ point for panel size, lower ¼ point for opening
+      const topLabelY = isSemiFrameless ? groundLevel - scaledPanelHeight * 0.75 : groundLevel - scaledPanelHeight / 2 - 8;
+      const bottomLabelY = isSemiFrameless ? groundLevel - scaledPanelHeight * 0.25 : groundLevel - scaledPanelHeight / 2 + 6;
       
       ctx.fillText(
         widthLabel,
         currentX + scaledPanelWidth / 2,
-        labelYOffset
+        topLabelY
       );
       
       // Draw the panel type or opening width below
       let panelTypeLabel = "Panel";
       if (isSemiFrameless) {
         const openingWidth = currentPanelWidth - 20; // Opening = panel - 20mm shuffle glazing
-        panelTypeLabel = `${openingWidth}mm opening`; // Opening width in posts
+        panelTypeLabel = `${openingWidth}`; // Just the opening size number
       } else if (isGate) {
         panelTypeLabel = "Gate";
       } else if (isHinge) {
@@ -1235,15 +1236,15 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillText(
           panelTypeLabel,
           currentX + scaledPanelWidth / 2,
-          groundLevel - scaledPanelHeight / 2 + 6
+          bottomLabelY
         );
       } else {
-        // For semi-frameless, show opening width below panel size
+        // For semi-frameless, show opening width at lower ¼ point
         ctx.font = "500 10px Inter";
         ctx.fillText(
           panelTypeLabel,
           currentX + scaledPanelWidth / 2,
-          labelYOffset + 14
+          bottomLabelY
         );
       }
 
