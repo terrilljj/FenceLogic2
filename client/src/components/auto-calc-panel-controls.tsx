@@ -101,7 +101,7 @@ export function AutoCalcPanelControls({
   // Auto-calculate optimal solution using mixed stock panels
   // Try combinations of 2 adjacent stock sizes (e.g., 950+1000)
   // If custom needed, constrain it within the 50mm stock range
-  const autoCalculatePanelCount = (): { 
+  const autoCalculatePanelCount = (mode: "all-stock" | "stock-plus-custom" | "all-custom" = "stock-plus-custom"): { 
     stockCount: number; 
     customWidth: number; 
     totalPanels: number;
@@ -257,9 +257,10 @@ export function AutoCalcPanelControls({
       }
     }
     
-    // ALWAYS try stock + custom combinations (not just as fallback!)
-    // Try with each available stock width as the base
-    for (const stockWidth of availableStockWidths) {
+    // Try stock + custom combinations (SKIP if mode is "all-stock")
+    if (mode === "stock-plus-custom") {
+      // Try with each available stock width as the base
+      for (const stockWidth of availableStockWidths) {
       // Limit to reasonable panel counts: 1-50 stock panels + 1 custom
       for (let stockCount = 1; stockCount <= 50; stockCount++) {
         const totalPanels = stockCount + 1;
@@ -303,6 +304,7 @@ export function AutoCalcPanelControls({
             };
           }
         }
+      }
       }
     }
     
@@ -407,7 +409,7 @@ export function AutoCalcPanelControls({
   useEffect(() => {
     if (layoutMode === "auto") {
       // Recalculate optimal solution when in auto mode
-      const solution = autoCalculatePanelCount();
+      const solution = autoCalculatePanelCount(panelSelectionMode);
       
       // CRITICAL: Don't recalculate if user has manually selected "all-custom" mode
       if (panelSelectionMode === "all-custom") {
@@ -478,7 +480,7 @@ export function AutoCalcPanelControls({
   const updateLayoutMode = (mode: LayoutMode) => {
     if (mode === "auto") {
       // Auto-calculate optimal solution
-      const solution = autoCalculatePanelCount();
+      const solution = autoCalculatePanelCount(panelSelectionMode);
       const newTypes: PanelType[] = [];
       const newOverrides: Record<number, number> = {};
       
@@ -629,7 +631,7 @@ export function AutoCalcPanelControls({
   useEffect(() => {
     if (!autoCalcConfig) {
       // Calculate optimal solution using the new mixed stock algorithm
-      const solution = autoCalculatePanelCount();
+      const solution = autoCalculatePanelCount("stock-plus-custom");
       
       // Build panel types based on solution
       const panelTypes: PanelType[] = [];
@@ -687,7 +689,7 @@ export function AutoCalcPanelControls({
     console.log("🔄 Post config changed, recalculating:", postConfig);
     
     // Only auto-recalculate if config already exists (not initial mount)
-    const solution = autoCalculatePanelCount();
+    const solution = autoCalculatePanelCount(autoCalcConfig.panelSelectionMode || "stock-plus-custom");
     
     console.log("📊 New solution from post change:", solution);
     
@@ -750,7 +752,7 @@ export function AutoCalcPanelControls({
             variant="outline"
             onClick={() => {
               // Re-run auto-calculation
-              const solution = autoCalculatePanelCount();
+              const solution = autoCalculatePanelCount(panelSelectionMode);
               
               // Build panel types based on solution AND current selection mode
               const panelTypes: PanelType[] = [];
