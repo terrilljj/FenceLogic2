@@ -168,8 +168,8 @@ export function AutoCalcPanelControls({
     for (let i = availableStockWidths.length - 1; i >= 0; i--) {
       const width1 = availableStockWidths[i];
       
-      // Try using only one stock size (limit to reasonable panel counts: 2-15)
-      for (let totalPanels = 2; totalPanels <= 15; totalPanels++) {
+      // Try using only one stock size (limit to reasonable panel counts: 2-50)
+      for (let totalPanels = 2; totalPanels <= 50; totalPanels++) {
         const intermediatePosts = (totalPanels - 1) * INTERMEDIATE_POST_MM;
         const panelSpace = availableSpace - intermediatePosts;
         
@@ -236,8 +236,8 @@ export function AutoCalcPanelControls({
     // ALWAYS try stock + custom combinations (not just as fallback!)
     // Try with each available stock width as the base
     for (const stockWidth of availableStockWidths) {
-      // Limit to reasonable panel counts: 1-6 stock panels + 1 custom
-      for (let stockCount = 1; stockCount <= 6; stockCount++) {
+      // Limit to reasonable panel counts: 1-50 stock panels + 1 custom
+      for (let stockCount = 1; stockCount <= 50; stockCount++) {
         const totalPanels = stockCount + 1;
         const intermediatePosts = (totalPanels - 1) * INTERMEDIATE_POST_MM;
         const panelSpace = availableSpace - intermediatePosts;
