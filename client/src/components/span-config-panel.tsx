@@ -1535,8 +1535,6 @@ export function SpanConfigPanel({
                 spanId={span.spanId}
                 postConfig={span.semiFramelessConfig}
                 onUpdate={(autoCalcConfig) => {
-                  console.log("📥 Parent onUpdate received config:", autoCalcConfig);
-                  
                   // For semi-frameless in all-stock mode, enforce stock panel width
                   let finalConfig = autoCalcConfig;
                   if (isSemiFrameless && autoCalcConfig.panelSelectionMode === "all-stock") {
@@ -1639,10 +1637,14 @@ export function SpanConfigPanel({
                   const totalPanelWidth = panelWidths.reduce((sum, w) => sum + w, 0);
                   const gapSize = finalConfig.interPanelGaps[0] || 50;
                   
-                  console.log("📤 Parent calling updateSpan with finalConfig.panelSelectionMode:", finalConfig.panelSelectionMode);
+                  // Ensure panelSelectionMode is always defined
+                  const configWithMode = {
+                    ...finalConfig,
+                    panelSelectionMode: finalConfig.panelSelectionMode || "stock-plus-custom" as const,
+                  };
                   
                   updateSpan({ 
-                    autoCalcConfig: finalConfig, // Use finalConfig with validated stockPanelWidth
+                    autoCalcConfig: configWithMode,
                     layoutMode: "auto-calc",
                     maxPanelWidth: finalConfig.maxPanelWidth,
                     panelLayout: {

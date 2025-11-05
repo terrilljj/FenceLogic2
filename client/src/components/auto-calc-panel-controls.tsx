@@ -61,8 +61,6 @@ export function AutoCalcPanelControls({
   onUpdate,
   postConfig
 }: AutoCalcPanelControlsProps) {
-  console.log("🎯 AutoCalcPanelControls render - postConfig:", postConfig);
-  
   // State for stock panel fit dialog
   const [showStockFitDialog, setShowStockFitDialog] = useState(false);
   const [stockFitResult, setStockFitResult] = useState<ReturnType<typeof calculateStockPanelFit> | null>(null);
@@ -377,7 +375,6 @@ export function AutoCalcPanelControls({
       
       // CRITICAL: Don't recalculate if user has manually selected "all-custom" mode
       if (panelSelectionMode === "all-custom") {
-        console.log("⏸️ Skipping auto-recalculation - user selected all-custom mode");
         return;
       }
       
@@ -785,18 +782,11 @@ export function AutoCalcPanelControls({
         </div>
         <div className="grid grid-cols-1 gap-3">
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Current mode: {panelSelectionMode}</div>
             <Select
               value={panelSelectionMode}
-              onOpenChange={(open) => {
-                console.log("🚪 Dropdown open state changed:", open);
-              }}
               onValueChange={(value: "all-stock" | "stock-plus-custom" | "all-custom") => {
-                console.log("🔄🔔 DROPDOWN CLICKED! Panel selection mode changed from", panelSelectionMode, "to:", value);
-                
-                // CRITICAL: Prevent any event bubbling issues
+                // Prevent redundant updates
                 if (value === panelSelectionMode) {
-                  console.log("⚠️ Same value selected, ignoring");
                   return;
                 }
                 
@@ -828,7 +818,6 @@ export function AutoCalcPanelControls({
                     stockPanelWidth: uniformWidth, // Update stock width to match
                   };
                   
-                  console.log("📤 All-custom mode: uniform width =", uniformWidth, "mm for", currentPanelCount, "panels");
                   onUpdate(updatedConfig);
                 } else {
                   // For other modes, keep existing overrides
@@ -837,7 +826,6 @@ export function AutoCalcPanelControls({
                     panelSelectionMode: value,
                   };
                   
-                  console.log("📤 Sending updated config:", updatedConfig);
                   onUpdate(updatedConfig);
                 }
               }}
