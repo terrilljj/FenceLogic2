@@ -312,8 +312,25 @@ export function AutoCalcPanelControls({
     if (panelSelectionMode === "all-stock") {
       // All stock mode: use the selected stock panel width for all standard panels
       standardPanelWidth = stockPanelWidth || 966;
+    } else if (panelSelectionMode === "all-custom") {
+      // All-custom mode: all panels should be exactly the same size
+      // If calculated width exceeds max, we need more panels (but this is manual mode, so user controls count)
+      const availableForStandard = availableForPanels - fixedWidth;
+      const idealWidth = standardPanelCount > 0 ? availableForStandard / standardPanelCount : 0;
+      
+      // For all-custom, ensure all panels are equal size and respect max constraint
+      if (idealWidth > maxPanelWidth) {
+        // Calculate minimum panels needed to fit within max width constraint
+        const minPanelsNeeded = Math.ceil(availableForStandard / maxPanelWidth);
+        console.warn(`⚠️ All-custom mode: ${standardPanelCount} panels × ${Math.round(idealWidth)}mm exceeds max (${maxPanelWidth}mm). Need at least ${minPanelsNeeded} panels.`);
+        // Use max width (user needs to add more panels manually)
+        standardPanelWidth = maxPanelWidth;
+      } else {
+        // Use exact equal division (may have decimal, will round per panel)
+        standardPanelWidth = Math.round(idealWidth);
+      }
     } else {
-      // Stock+custom or all-custom modes: distribute remaining space
+      // Stock+custom mode: distribute remaining space
       const availableForStandard = availableForPanels - fixedWidth;
       standardPanelWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
       
@@ -331,8 +348,13 @@ export function AutoCalcPanelControls({
       if (fixedPanel) {
         panelWidths.push(fixedPanel.width);
       } else {
-        // Use panelWidthOverrides if they exist (for mixed stock sizes), otherwise use uniform width
-        panelWidths.push(panelWidthOverrides?.[i] || standardPanelWidth);
+        // In all-custom mode, ignore overrides and use uniform width for all panels
+        // In other modes, use panelWidthOverrides if they exist (for mixed stock sizes)
+        if (panelSelectionMode === "all-custom") {
+          panelWidths.push(standardPanelWidth);
+        } else {
+          panelWidths.push(panelWidthOverrides?.[i] || standardPanelWidth);
+        }
       }
     }
     
@@ -691,17 +713,28 @@ export function AutoCalcPanelControls({
               // Re-run auto-calculation
               const solution = autoCalculatePanelCount();
               
-              // Build panel types based on solution
+              // Build panel types based on solution AND current selection mode
               const panelTypes: PanelType[] = [];
               const panelWidthOverrides: Record<number, number> = {};
               
-              if (solution.customWidth > 0) {
+              // PRESERVE user's panel selection mode choice!
+              let finalMode = panelSelectionMode;
+              
+              // If user chose "all-custom", keep that mode but recalculate panel count
+              if (panelSelectionMode === "all-custom") {
+                // All custom mode: create equal-sized panels
+                for (let i = 0; i < solution.totalPanels; i++) {
+                  panelTypes.push("standard");
+                }
+                // Don't set panelWidthOverrides - let calculatePanelWidths handle it
+              } else if (solution.customWidth > 0) {
                 // Solution uses stock + custom
                 for (let i = 0; i < solution.stockCount; i++) {
                   panelTypes.push("standard");
                 }
                 panelTypes.push("custom");
                 panelWidthOverrides[solution.stockCount] = solution.customWidth;
+                finalMode = "stock-plus-custom";
               } else if (solution.stock2Width && solution.stock2Count && solution.stock2Count > 0) {
                 // Solution uses mixed stock (2 different sizes)
                 for (let i = 0; i < (solution.stock1Count || 0); i++) {
@@ -715,6 +748,7 @@ export function AutoCalcPanelControls({
                   panelTypes.push("standard");
                   panelWidthOverrides[index] = solution.stock2Width;
                 }
+                finalMode = "all-stock";
               } else {
                 // Solution uses all same stock size
                 for (let i = 0; i < solution.totalPanels; i++) {
@@ -723,13 +757,14 @@ export function AutoCalcPanelControls({
                     panelWidthOverrides[i] = solution.stock1Width;
                   }
                 }
+                finalMode = "all-stock";
               }
               
               const updatedConfig = {
                 ...config,
                 panelTypes,
                 interPanelGaps: Array(solution.totalPanels - 1).fill(30),
-                panelSelectionMode: solution.customWidth > 0 ? "stock-plus-custom" as const : "all-stock" as const,
+                panelSelectionMode: finalMode,
                 stockPanelWidth: solution.stockWidth,
                 panelWidthOverrides: Object.keys(panelWidthOverrides).length > 0 ? panelWidthOverrides : undefined,
                 customPanelPosition: solution.customWidth > 0 ? solution.stockCount : undefined,

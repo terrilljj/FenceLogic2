@@ -1567,8 +1567,11 @@ export function SpanConfigPanel({
                   const totalGaps = finalConfig.interPanelGaps.reduce((sum, gap) => sum + gap, 0);
                   const panelWidths: number[] = [];
                   
-                  // If we have panelWidthOverrides, use them directly (already calculated by auto-calc)
-                  if (finalConfig.panelWidthOverrides && Object.keys(finalConfig.panelWidthOverrides).length > 0) {
+                  // If we have panelWidthOverrides AND not in all-custom mode, use them directly
+                  // In all-custom mode, we MUST ignore overrides to ensure all panels are equal size
+                  if (finalConfig.panelSelectionMode !== "all-custom" && 
+                      finalConfig.panelWidthOverrides && 
+                      Object.keys(finalConfig.panelWidthOverrides).length > 0) {
                     // Use the individual widths that were calculated
                     for (let i = 0; i < numPanels; i++) {
                       panelWidths.push(finalConfig.panelWidthOverrides[i] || finalConfig.stockPanelWidth || 1000);
@@ -1598,18 +1601,33 @@ export function SpanConfigPanel({
                     
                     // Calculate width for standard panels
                     const availableForStandard = availableForPanels - fixedWidth;
-                    const baseWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
-                    const remainder = availableForStandard - (baseWidth * standardPanelCount);
                     
-                    let standardIndex = 0;
-                    for (let i = 0; i < numPanels; i++) {
-                      const fixedPanel = fixedPanels.find(fp => fp.index === i);
-                      if (fixedPanel) {
-                        panelWidths.push(fixedPanel.width);
-                      } else {
-                        const extraMm = standardIndex < remainder ? 1 : 0;
-                        panelWidths.push(baseWidth + extraMm);
-                        standardIndex++;
+                    if (finalConfig.panelSelectionMode === "all-custom") {
+                      // All-custom mode: use exact equal division with rounding
+                      const uniformWidth = standardPanelCount > 0 ? Math.round(availableForStandard / standardPanelCount) : 0;
+                      for (let i = 0; i < numPanels; i++) {
+                        const fixedPanel = fixedPanels.find(fp => fp.index === i);
+                        if (fixedPanel) {
+                          panelWidths.push(fixedPanel.width);
+                        } else {
+                          panelWidths.push(uniformWidth);
+                        }
+                      }
+                    } else {
+                      // Other modes: distribute with floor + remainder
+                      const baseWidth = standardPanelCount > 0 ? Math.floor(availableForStandard / standardPanelCount) : 0;
+                      const remainder = availableForStandard - (baseWidth * standardPanelCount);
+                      
+                      let standardIndex = 0;
+                      for (let i = 0; i < numPanels; i++) {
+                        const fixedPanel = fixedPanels.find(fp => fp.index === i);
+                        if (fixedPanel) {
+                          panelWidths.push(fixedPanel.width);
+                        } else {
+                          const extraMm = standardIndex < remainder ? 1 : 0;
+                          panelWidths.push(baseWidth + extraMm);
+                          standardIndex++;
+                        }
                       }
                     }
                   }
