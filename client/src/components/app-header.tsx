@@ -1,4 +1,4 @@
-import { Sun, Moon, Save, FolderOpen, RotateCcw, Loader2, Home } from "lucide-react";
+import { Sun, Moon, Save, FolderOpen, RotateCcw, Loader2, Home, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "./theme-provider";
 import { Progress } from "@/components/ui/progress";
@@ -41,11 +41,12 @@ interface AppHeaderProps {
   onSave: () => void;
   onLoad: () => void;
   onReset: () => void;
+  onDownloadPDF?: () => void;
   isSaving?: boolean;
   productVariant?: ProductVariant;
 }
 
-export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false, productVariant }: AppHeaderProps) {
+export function AppHeader({ progress, onSave, onLoad, onReset, onDownloadPDF, isSaving = false, productVariant }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
   const [, setLocation] = useLocation();
 
@@ -87,6 +88,18 @@ export function AppHeader({ progress, onSave, onLoad, onReset, isSaving = false,
             <Home className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">Home</span>
           </Button>
+          {onDownloadPDF && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={onDownloadPDF}
+              data-testid="button-download-pdf"
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"

@@ -29,6 +29,7 @@ export default function FenceLogic() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showProductMockup, setShowProductMockup] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
+  const [downloadPDFHandler, setDownloadPDFHandler] = useState<(() => void) | null>(null);
 
   // Get URL params for pre-selecting product
   const urlParams = new URLSearchParams(window.location.search);
@@ -435,6 +436,7 @@ export default function FenceLogic() {
         onSave={handleSave}
         onLoad={handleLoad}
         onReset={handleReset}
+        onDownloadPDF={downloadPDFHandler || undefined}
         isSaving={saveDesignMutation.isPending}
         productVariant={design.productVariant}
       />
@@ -442,7 +444,11 @@ export default function FenceLogic() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_420px] overflow-hidden">
         {/* 3D Visualization */}
         <div className="relative h-full min-h-[400px] lg:min-h-0">
-          <FenceVisualization design={design} activeSpanId={activeSpanId} />
+          <FenceVisualization 
+            design={design} 
+            activeSpanId={activeSpanId} 
+            onDownloadPDFReady={setDownloadPDFHandler}
+          />
         </div>
 
         {/* Controls Panel */}

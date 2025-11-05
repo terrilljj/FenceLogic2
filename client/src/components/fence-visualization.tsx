@@ -7,9 +7,10 @@ import { FenceDesign } from "@shared/schema";
 interface FenceVisualizationProps {
   design: FenceDesign;
   activeSpanId?: string;
+  onDownloadPDFReady?: (handler: () => void) => void;
 }
 
-export function FenceVisualization({ design, activeSpanId }: FenceVisualizationProps) {
+export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }: FenceVisualizationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -253,6 +254,13 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
     }
   };
 
+  // Expose download handler to parent component
+  useEffect(() => {
+    if (onDownloadPDFReady) {
+      onDownloadPDFReady(handleDownloadPDF);
+    }
+  }, [onDownloadPDFReady]);
+
   // Fallback: Browser-based PDF (old method)
   const handleDownloadPDFBrowser = () => {
     let imageDataUrl: string | null = null;
@@ -458,19 +466,6 @@ export function FenceVisualization({ design, activeSpanId }: FenceVisualizationP
         />
       )}
 
-      {/* Download PDF Button */}
-      <div className="absolute top-4 right-4 flex gap-2 z-50">
-        <Button
-          size="sm"
-          variant="default"
-          onClick={handleDownloadPDF}
-          data-testid="button-download-pdf"
-          className="gap-2 shadow-lg bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Download className="w-4 h-4" />
-          <span>Download PDF</span>
-        </Button>
-      </div>
 
       {/* View cycling disabled - only elevation view for v1 */}
       {false && (
