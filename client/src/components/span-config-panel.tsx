@@ -1518,6 +1518,8 @@ export function SpanConfigPanel({
                   gapMode: "auto" as const,
                   interPanelGaps: [30], // Fixed 30mm gaps
                   panelTypes: ["standard" as const, "standard" as const],
+                  panelSelectionMode: "stock-plus-custom" as const, // Include default mode
+                  stockPanelWidth: 950,
                 }}
                 spanLength={span.length}
                 leftGapSize={
