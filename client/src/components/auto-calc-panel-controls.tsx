@@ -192,6 +192,10 @@ export function AutoCalcPanelControls({
     for (let i = availableStockWidths.length - 1; i >= 0; i--) {
       const width1 = availableStockWidths[i];
       
+      // Tolerance: all-stock mode is more lenient (up to 200mm) — exact fit is rarely possible
+      // for arbitrary span lengths; stock-plus-custom uses tight 10mm (custom panel handles remainder)
+      const STOCK_TOLERANCE = mode === "all-stock" ? 200 : 10;
+
       // Try using only one stock size (limit to reasonable panel counts: 2-50)
       for (let totalPanels = 2; totalPanels <= 50; totalPanels++) {
         const intermediatePosts = (totalPanels - 1) * INTERMEDIATE_POST_MM;
@@ -205,9 +209,8 @@ export function AutoCalcPanelControls({
         const totalPanelWidth = totalPanels * width1;
         const variance1 = Math.abs(totalPanelWidth - panelSpace);
         
-        if (variance1 <= 10) { // Allow up to 10mm variance
-          const score = calculateScore(totalPanels, variance1, width1, false, 0); // Not mixed, no custom
-          console.log(`  Single: ${totalPanels}x${width1} var=${variance1.toFixed(1)}mm score=${score.toFixed(0)}`);
+        if (variance1 <= STOCK_TOLERANCE) {
+          const score = calculateScore(totalPanels, variance1, width1, false, 0);
           if (score < bestScore) {
             bestScore = score;
             bestSolution = {
@@ -226,7 +229,7 @@ export function AutoCalcPanelControls({
         // Try mixing with adjacent stock size (within 100mm range for more flexibility)
         for (let j = i + 1; j < availableStockWidths.length; j++) {
           const width2 = availableStockWidths[j];
-          if (width2 - width1 > 100) break; // Try within 100mm range
+          if (width2 - width1 > 100) break; // Only adjacent stock sizes (50mm step)
           
           // Try different combinations of width1 and width2
           for (let count1 = 1; count1 < totalPanels; count1++) {
@@ -234,17 +237,16 @@ export function AutoCalcPanelControls({
             const totalPanelWidth = count1 * width1 + count2 * width2;
             const variance = Math.abs(totalPanelWidth - panelSpace);
             
-            if (variance <= 10) { // Allow up to 10mm variance
+            if (variance <= STOCK_TOLERANCE) {
               const avgSize = (count1 * width1 + count2 * width2) / totalPanels;
-              const score = calculateScore(totalPanels, variance, avgSize, true, 0); // IS mixed, no custom
-              console.log(`  Mixed: ${totalPanels}p (${count1}x${width1} + ${count2}x${width2}) var=${variance.toFixed(1)}mm score=${score.toFixed(0)}`);
+              const score = calculateScore(totalPanels, variance, avgSize, true, 0);
               if (score < bestScore) {
                 bestScore = score;
                 bestSolution = {
                   stockCount: totalPanels,
                   customWidth: 0,
                   totalPanels,
-                  stockWidth: width1, // Primary stock width
+                  stockWidth: width1,
                   stock1Width: width1,
                   stock1Count: count1,
                   stock2Width: width2,
@@ -308,12 +310,11 @@ export function AutoCalcPanelControls({
       }
     }
     
-    const finalSolution = bestSolution || {
-      stockCount: 1,
-      customWidth: 1000,
-      totalPanels: 2,
-      stockWidth: 950,
-    };
+    // Fallback differs by mode: all-stock must never include a custom panel
+    const finalSolution = bestSolution || (mode === "all-stock"
+      ? { stockCount: 17, customWidth: 0, totalPanels: 17, stockWidth: 950, stock1Width: 950, stock1Count: 17, stock2Count: 0 }
+      : { stockCount: 1, customWidth: 1000, totalPanels: 2, stockWidth: 950 }
+    );
     
     console.log('✅ Auto-calc solution:', finalSolution);
     return finalSolution;
@@ -416,14 +417,10 @@ export function AutoCalcPanelControls({
         return;
       }
       
-      // Detect old/incorrect configs that need fixing:
-      // 1. Wrong panel count
-      // 2. Using "all-stock" mode (old default)
-      // 3. Not using stock-plus-custom mode
-      const needsRecalculation = 
-        solution.totalPanels !== panelTypes.length ||
-        panelSelectionMode === "all-stock" ||
-        panelSelectionMode !== "stock-plus-custom";
+      // Recalculate only when the optimal panel count differs from current count.
+      // Mode changes are handled by the Re-calculate button and dropdown handler,
+      // NOT by this background effect — that was causing mode to flip back.
+      const needsRecalculation = solution.totalPanels !== panelTypes.length;
       
       if (needsRecalculation) {
         // Build panel types based on solution (mixed stock or stock+custom)
