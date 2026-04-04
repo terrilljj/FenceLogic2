@@ -13,10 +13,10 @@ import adminSheetsRouter from "./routes/adminSheets";
 import { calculateComponents, stripSkus } from "./services/bom-calculator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get all fence designs
+  // Get all fence designs for the current session
   app.get("/api/designs", async (req, res) => {
     try {
-      const designs = await storage.getAllFenceDesigns();
+      const designs = await storage.getFenceDesignsBySession(req.sessionID);
       res.json(designs);
     } catch (error) {
       console.error("Error fetching designs:", error);
@@ -24,10 +24,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get a specific fence design
+  // Get a specific fence design (scoped to session)
   app.get("/api/designs/:id", async (req, res) => {
     try {
-      const design = await storage.getFenceDesign(req.params.id);
+      const design = await storage.getFenceDesign(req.params.id, req.sessionID);
       if (!design) {
         return res.status(404).json({ error: "Design not found" });
       }
@@ -38,11 +38,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new fence design
+  // Create a new fence design (tagged with session ID)
   app.post("/api/designs", async (req, res) => {
     try {
       const validatedData = insertFenceDesignSchema.parse(req.body);
-      const design = await storage.createFenceDesign(validatedData);
+      // Ensure the session is saved so the cookie is sent to the browser
+      req.session.initialized = true;
+      const design = await storage.createFenceDesign({
+        ...validatedData,
+        sessionId: req.sessionID,
+      });
       res.status(201).json(design);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -53,10 +58,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete a fence design
+  // Delete a fence design (scoped to session)
   app.delete("/api/designs/:id", async (req, res) => {
     try {
-      const deleted = await storage.deleteFenceDesign(req.params.id);
+      const deleted = await storage.deleteFenceDesign(req.params.id, req.sessionID);
       if (!deleted) {
         return res.status(404).json({ error: "Design not found" });
       }

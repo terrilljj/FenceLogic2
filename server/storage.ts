@@ -17,10 +17,10 @@ import { eq, asc, sql as sqlOp, and } from "drizzle-orm";
 
 export interface IStorage {
   // Fence Design operations
-  getFenceDesign(id: string): Promise<SavedFenceDesign | undefined>;
-  getAllFenceDesigns(): Promise<SavedFenceDesign[]>;
+  getFenceDesign(id: string, sessionId?: string): Promise<SavedFenceDesign | undefined>;
+  getFenceDesignsBySession(sessionId: string): Promise<SavedFenceDesign[]>;
   createFenceDesign(design: InsertFenceDesign): Promise<SavedFenceDesign>;
-  deleteFenceDesign(id: string): Promise<boolean>;
+  deleteFenceDesign(id: string, sessionId?: string): Promise<boolean>;
   
   // Product operations
   getProduct(id: string): Promise<Product | undefined>;
@@ -95,13 +95,17 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   // Fence Design operations
-  async getFenceDesign(id: string): Promise<SavedFenceDesign | undefined> {
-    const [design] = await db.select().from(fenceDesigns).where(eq(fenceDesigns.id, id));
+  async getFenceDesign(id: string, sessionId?: string): Promise<SavedFenceDesign | undefined> {
+    const conditions = [eq(fenceDesigns.id, id)];
+    if (sessionId) {
+      conditions.push(eq(fenceDesigns.sessionId, sessionId));
+    }
+    const [design] = await db.select().from(fenceDesigns).where(and(...conditions));
     return design || undefined;
   }
 
-  async getAllFenceDesigns(): Promise<SavedFenceDesign[]> {
-    return await db.select().from(fenceDesigns);
+  async getFenceDesignsBySession(sessionId: string): Promise<SavedFenceDesign[]> {
+    return await db.select().from(fenceDesigns).where(eq(fenceDesigns.sessionId, sessionId));
   }
 
   async createFenceDesign(insertDesign: InsertFenceDesign): Promise<SavedFenceDesign> {
@@ -112,8 +116,12 @@ export class DatabaseStorage implements IStorage {
     return design;
   }
 
-  async deleteFenceDesign(id: string): Promise<boolean> {
-    const result = await db.delete(fenceDesigns).where(eq(fenceDesigns.id, id));
+  async deleteFenceDesign(id: string, sessionId?: string): Promise<boolean> {
+    const conditions = [eq(fenceDesigns.id, id)];
+    if (sessionId) {
+      conditions.push(eq(fenceDesigns.sessionId, sessionId));
+    }
+    const result = await db.delete(fenceDesigns).where(and(...conditions));
     return result.rowCount ? result.rowCount > 0 : false;
   }
   

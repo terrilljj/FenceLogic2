@@ -638,6 +638,7 @@ export const fenceDesigns = pgTable("fence_designs", {
   shape: text("shape").notNull(),
   customSides: integer("custom_sides"),
   spans: jsonb("spans").notNull(),
+  sessionId: text("session_id"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
