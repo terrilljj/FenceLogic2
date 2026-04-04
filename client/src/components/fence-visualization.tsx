@@ -200,44 +200,16 @@ export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }:
 
   const handleDownloadPDF = async () => {
     try {
-      let imageDataUrl: string | null = null;
-      
-      if (viewMode === "3d" && rendererRef.current) {
-        imageDataUrl = rendererRef.current.domElement.toDataURL('image/png');
-      } else if (canvasRef.current) {
-        imageDataUrl = canvasRef.current.toDataURL('image/png');
-      }
-      
-      if (!imageDataUrl) return;
-      
-      // The canvas/3D view shows all sections together
-      // Send as a single PDF section for proper layout
-      const sections = [{
-        id: 'complete-design',
-        title: design.name || 'Fence Design',
-        subtitle: design.spans.length > 1 
-          ? `${design.spans.map(s => s.spanId).join(' + ')} (${design.spans.length} sections)` 
-          : design.productVariant,
-        imageDataUrl: imageDataUrl,
-      }];
-
-      // Send request to server to generate PDF
       const response = await fetch('/api/designs/pdf', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          design,
-          sections,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ design }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
       }
 
-      // Download the PDF
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -250,7 +222,6 @@ export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }:
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
-      return;
     }
   };
 

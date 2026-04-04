@@ -1,168 +1,39 @@
 import { Router, type Request, type Response } from 'express';
 import type { FenceDesign } from '../../shared/schema.js';
-import { packSectionsA4Landscape, type SectionBox } from '../../shared/pdf/layout.js';
-import { renderA4LandscapePdf, createPdfDocument, type SectionData } from '../pdf/render.js';
+import { createPdfDocument, renderQuotePdf } from '../pdf/render.js';
+import { calculateComponents, stripSkus } from '../services/bom-calculator.js';
 
 export const pdfRouter = Router();
 
-// Generate PDF for a fence design
+// Generate server-side PDF quote for a fence design
 pdfRouter.post('/designs/pdf', async (req: Request, res: Response) => {
   try {
-    console.log('[PDF] Received PDF generation request');
-    const { design, sections } = req.body as { design: FenceDesign; sections: SectionData[] };
+    const { design } = req.body as { design: FenceDesign };
 
-    if (!design || !sections || sections.length === 0) {
-      console.log('[PDF] Missing design or sections data');
-      return res.status(400).json({ error: 'Missing design or sections data' });
+    if (!design || !design.spans || design.spans.length === 0) {
+      return res.status(400).json({ error: 'Missing or invalid design data' });
     }
-    
-    console.log('[PDF] Design:', design.name, 'Sections:', sections.length);
 
-    // Detect actual image dimensions from base64 data
-    const sectionBoxes: SectionBox[] = await Promise.all(sections.map(async (section, index) => {
-      // Default dimensions (wide landscape)
-      let intrinsicW = 800;
-      let intrinsicH = 400;
-      
-      if (section.imageDataUrl) {
-        try {
-          // Extract base64 data
-          const base64Data = section.imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
-          const imgBuffer = Buffer.from(base64Data, 'base64');
-          
-          // Try to detect PNG dimensions (quick and dirty)
-          if (imgBuffer[0] === 0x89 && imgBuffer[1] === 0x50) { // PNG signature
-            // PNG width and height are at bytes 16-23 (big-endian)
-            intrinsicW = imgBuffer.readUInt32BE(16);
-            intrinsicH = imgBuffer.readUInt32BE(20);
-            console.log('[PDF] Detected PNG dimensions:', intrinsicW, 'x', intrinsicH);
-          }
-        } catch (err) {
-          console.log('[PDF] Could not detect image dimensions, using defaults');
-        }
-      }
-      
-      return {
-        id: section.id || `section-${index}`,
-        intrinsicW,
-        intrinsicH,
-      };
-    }));
+    // Compute BOM server-side (same as POST /api/quote)
+    const components = calculateComponents(design);
+    const bom = stripSkus(components);
 
-    // Pack sections using layout algorithm
-    const packResult = packSectionsA4Landscape(sectionBoxes, {
-      marginPt: 18,
-      gutterPt: 12,
-      headerPt: 22,
-      footerPt: 14,
-      minScale: 0.6,
-      maxScale: 1.2,
-    });
-
-    // Create PDF document
-    const doc = createPdfDocument();
-
-    // Set up response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${design.name || 'fence-design'}.pdf"`);
-
-    // Pipe PDF to response
-    doc.pipe(res);
-
-    // Render PDF
-    renderA4LandscapePdf(doc, {
-      documentTitle: design.name || 'Fence Design',
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-      jobRef: design.id?.substring(0, 8).toUpperCase(),
-      sections,
-      packResult,
-      opts: {
-        drawWatermark: true,  // Enable vertical branding on RHS
-      },
-    });
-
-    // Finalize PDF
-    doc.end();
-  } catch (error) {
-    console.error('PDF generation error:', error);
-    res.status(500).json({ error: 'Failed to generate PDF' });
-  }
-});
-
-// Debug route for testing PDF layout
-pdfRouter.get('/debug/pdf/a4-landscape', async (req: Request, res: Response) => {
-  try {
-    const strategyParam = req.query.strategy as string || 'auto';
-    const debug = req.query.debug === '1';
-    const minColumn = parseInt(req.query.minColumn as string) || 1;
-    const maxColumn = parseInt(req.query.maxColumn as string) || 2;
-
-    // Create sample sections for testing
-    const sampleSections: SectionData[] = [
-      {
-        id: 'section-1',
-        title: 'Section A',
-        subtitle: 'Glass Pool Fencing',
-        imageDataUrl: undefined,  // Would need actual image data
-      },
-      {
-        id: 'section-2',
-        title: 'Section B',
-        subtitle: 'Glass Pool Fencing',
-        imageDataUrl: undefined,
-      },
-    ];
-
-    const sectionBoxes: SectionBox[] = sampleSections.map(section => ({
-      id: section.id,
-      intrinsicW: 2200,
-      intrinsicH: 900,
-    }));
-
-    // Pack sections
-    const packResult = packSectionsA4Landscape(sectionBoxes, {
-      marginPt: strategyParam === 'two-row-max' ? 16 : 18,
-      gutterPt: 12,
-      headerPt: strategyParam === 'two-row-max' ? 16 : 22,
-      footerPt: strategyParam === 'two-row-max' ? 12 : 14,
-      minScale: 0.6,
-      maxScale: 1.2,
-      strategy: strategyParam === 'auto' ? undefined : strategyParam,
-    });
-
-    // Create PDF
+    // Build PDF
     const doc = createPdfDocument();
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="debug-fence-layout.pdf"');
-    res.setHeader('X-PDF-Strategy', packResult.usedStrategy);
-
-    // Set debug mode if requested
-    if (debug) {
-      process.env.PDF_LAYOUT_DEBUG = '1';
-    }
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${(design.name || 'fence-design').replace(/[^a-zA-Z0-9 _-]/g, '')}.pdf"`
+    );
 
     doc.pipe(res);
-
-    renderA4LandscapePdf(doc, {
-      documentTitle: 'Debug Fence Layout',
-      date: new Date().toLocaleDateString(),
-      jobRef: 'DEBUG',
-      sections: sampleSections,
-      packResult,
-      opts: {
-        drawWatermark: true,
-      },
-    });
-
+    renderQuotePdf(doc, design, bom);
     doc.end();
-
-    // Reset debug mode
-    if (debug) {
-      delete process.env.PDF_LAYOUT_DEBUG;
-    }
   } catch (error) {
-    console.error('Debug PDF error:', error);
-    res.status(500).json({ error: 'Failed to generate debug PDF' });
+    console.error('[PDF] generation error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate PDF' });
+    }
   }
 });
