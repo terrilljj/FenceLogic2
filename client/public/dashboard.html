@@ -179,7 +179,7 @@ const FORM_FIELDS = {
       {key:'Name',type:'text',label:'Name',required:true},
       {key:'Category',type:'select',label:'Category'},
       {key:'Amount',type:'number',label:'Amount'},
-      {key:'Status',type:'select',label:'Status',options:['Not Started','In Progress','Complete']},
+      {key:'Status',type:'select',label:'Status',options:['On Track','Behind','Done','Pending']},
       {key:'Due Date',type:'date',label:'Due Date'},
       {key:'Notes',type:'textarea',label:'Notes'}
     ]
@@ -189,8 +189,8 @@ const FORM_FIELDS = {
     fields:[
       {key:'Name',type:'text',label:'Name',required:true},
       {key:'Category',type:'select',label:'Category'},
-      {key:'Status',type:'select',label:'Status',options:['Not Started','In Progress','Complete']},
-      {key:'Frequency',type:'text',label:'Frequency'},
+      {key:'Status',type:'select',label:'Status',options:['Active','Planned','Done','Missed']},
+      {key:'Frequency',type:'select',label:'Frequency',options:['Daily','Weekly','Monthly','Quarterly','Half-yearly','Annual','One-off']},
       {key:'Due Date',type:'date',label:'Due Date'},
       {key:'Notes',type:'textarea',label:'Notes'}
     ]
@@ -200,8 +200,8 @@ const FORM_FIELDS = {
     fields:[
       {key:'Name',type:'text',label:'Name',required:true},
       {key:'Category',type:'select',label:'Category'},
-      {key:'Priority',type:'select',label:'Priority',options:['Critical','High','Medium','Low']},
-      {key:'Status',type:'select',label:'Status',options:['Not Started','In Progress','Complete']},
+      {key:'Priority',type:'select',label:'Priority',options:['High','Medium','Low']},
+      {key:'Status',type:'select',label:'Status',options:['To Do','In Progress','Done','Waiting']},
       {key:'Due Date',type:'date',label:'Due Date'},
       {key:'Notes',type:'textarea',label:'Notes'}
     ]
