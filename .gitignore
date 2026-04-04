@@ -8,3 +8,4 @@ vite.config.ts.*
 # Encrypted config files (keep .gitkeep)
 /server/config/secure/*
 !/server/config/secure/.gitkeep
+.env
