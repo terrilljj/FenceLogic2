@@ -14,6 +14,7 @@ import metaCategoryPathsRouter from "./routes/meta-category-paths";
 import { pdfRouter } from "./routes/pdf";
 import adminConfigRouter from "./routes/adminConfig";
 import adminSheetsRouter from "./routes/adminSheets";
+import { calculateComponents, stripSkus } from "./services/bom-calculator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs
@@ -177,36 +178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email quote endpoint
-  app.post("/api/email-quote", async (req, res) => {
-    try {
-      const { email, design, components } = req.body;
-
-      if (!email || !design || !components) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      // In a real implementation, this would send an email using a service like SendGrid or Nodemailer
-      // For now, we'll just simulate the email sending
-      console.log("Sending quote email to:", email);
-      console.log("Design:", design);
-      console.log("Components:", components);
-
-      // Simulate email delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      res.json({ 
-        success: true, 
-        message: `Quote email would be sent to ${email}` 
-      });
-    } catch (error) {
-      console.error("Error sending email:", error);
-      res.status(500).json({ error: "Failed to send email" });
-    }
-  });
-
-  // Calculate component list endpoint
-  app.post("/api/calculate-components", async (req, res) => {
+  // Server-side BOM quote endpoint — the single entry point for BOM assembly.
+  // Takes a design, computes components server-side, returns descriptions only (no SKUs).
+  app.post("/api/quote", async (req, res) => {
     try {
       const { design } = req.body;
 
@@ -214,94 +188,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid design data" });
       }
 
-      const components: Array<{ qty: number; description: string; sku?: string }> = [];
+      // Load slot mappings and products server-side (never sent to client)
+      const [slotMappings, products] = await Promise.all([
+        design.productVariant
+          ? storage.getAllSlotsByVariant(design.productVariant)
+          : Promise.resolve([]),
+        storage.getAllProducts(),
+      ]);
 
-      design.spans.forEach((span: any) => {
-        const effectiveLength = span.length;
-        const panelWidth = span.maxPanelWidth;
-        const gapSize = span.maxGap;
-        // Correct calculation: N panels need N-1 gaps
-        const numPanels = Math.floor((effectiveLength + gapSize) / (panelWidth + gapSize));
+      const slotData = slotMappings.map(s => ({
+        internalId: s.internalId,
+        fieldName: s.fieldName,
+        productId: s.productId,
+        label: s.label,
+      }));
 
-        if (numPanels > 0) {
-          components.push({
-            qty: numPanels,
-            description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-            sku: `GP-${panelWidth}-1200-12`,
-          });
-
-          // Posts (one less than panels)
-          if (numPanels > 1) {
-            components.push({
-              qty: numPanels - 1,
-              description: "Spigot Post (50mm diameter, 1200mm height)",
-              sku: "SP-50-1200",
-            });
-          }
-
-          // Gate hardware if configured
-          if (span.gateConfig?.required) {
-            const hardware = span.gateConfig.hardware === "polaris" ? "Polaris Soft Close" : "Master Range";
-            components.push({
-              qty: 1,
-              description: `${hardware} Gate Hardware Set (${span.gateConfig.gateSize}mm gate)`,
-              sku: `GH-${span.gateConfig.hardware.toUpperCase()}-${span.gateConfig.gateSize}`,
-            });
-          }
-
-          // Raked panels if configured
-          if (span.leftRakedPanel?.enabled) {
-            components.push({
-              qty: 1,
-              description: `Left Raked Panel ${panelWidth}mm x ${span.leftRakedPanel.height}mm`,
-              sku: `RP-LEFT-${panelWidth}-${span.leftRakedPanel.height}`,
-            });
-          }
-
-          if (span.rightRakedPanel?.enabled) {
-            components.push({
-              qty: 1,
-              description: `Right Raked Panel ${panelWidth}mm x ${span.rightRakedPanel.height}mm`,
-              sku: `RP-RIGHT-${panelWidth}-${span.rightRakedPanel.height}`,
-            });
-          }
-        }
-      });
-
-      // Consolidate duplicate components
-      const consolidated: typeof components = [];
-      components.forEach((comp) => {
-        const existing = consolidated.find((c) => c.description === comp.description);
-        if (existing) {
-          existing.qty += comp.qty;
-        } else {
-          consolidated.push({ ...comp });
-        }
-      });
-
-      res.json(consolidated);
-    } catch (error) {
-      console.error("Error calculating components:", error);
-      res.status(500).json({ error: "Failed to calculate components" });
-    }
-  });
-
-  // Public endpoint for fetching products (used by fence builder)
-  // MUST be defined before /api/products/:id to avoid route collision
-  app.get("/api/products/lookup", async (req, res) => {
-    try {
-      const products = await storage.getAllProducts();
-      // Only return essential fields for public consumption
-      const publicProducts = products.map(p => ({
+      const productData = products.map(p => ({
         id: p.id,
         code: p.code,
         description: p.description,
         price: p.price,
       }));
-      res.json(publicProducts);
+
+      const components = calculateComponents(design, slotData, productData);
+
+      // Strip SKUs — public response contains descriptions only
+      res.json({ components: stripSkus(components) });
     } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ error: "Failed to fetch products" });
+      console.error("Error computing quote:", error);
+      res.status(500).json({ error: "Failed to compute quote" });
+    }
+  });
+
+  // Email quote endpoint — now computes BOM server-side instead of trusting client data
+  app.post("/api/email-quote", async (req, res) => {
+    try {
+      const { email, design } = req.body;
+
+      if (!email || !design) {
+        return res.status(400).json({ error: "Missing required fields (email, design)" });
+      }
+
+      // Compute BOM server-side
+      const [slotMappings, products] = await Promise.all([
+        design.productVariant
+          ? storage.getAllSlotsByVariant(design.productVariant)
+          : Promise.resolve([]),
+        storage.getAllProducts(),
+      ]);
+
+      const slotData = slotMappings.map(s => ({
+        internalId: s.internalId,
+        fieldName: s.fieldName,
+        productId: s.productId,
+        label: s.label,
+      }));
+
+      const productData = products.map(p => ({
+        id: p.id,
+        code: p.code,
+        description: p.description,
+        price: p.price,
+      }));
+
+      const components = calculateComponents(design, slotData, productData);
+
+      // In a real implementation, this would send an email
+      console.log("Sending quote email to:", email);
+      console.log("Design variant:", design.productVariant);
+      console.log("Components count:", components.length);
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      res.json({
+        success: true,
+        message: `Quote email would be sent to ${email}`,
+        components: stripSkus(components),
+      });
+    } catch (error) {
+      console.error("Error sending email:", error);
+      res.status(500).json({ error: "Failed to send email" });
     }
   });
 
