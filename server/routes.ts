@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import rateLimit from "express-rate-limit";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertFenceDesignSchema, insertProductSchema, insertProductUIConfigSchema, insertCategorySchema, insertSubcategorySchema, PANEL_SIZE_REGISTRY, getAvailablePanelSizes, type ProductVariant } from "@shared/schema";
@@ -178,9 +179,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const quoteLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many quote requests, please try again later" },
+  });
+
+  const emailQuoteLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 3,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many email requests, please try again later" },
+  });
+
   // Server-side BOM quote endpoint — the single entry point for BOM assembly.
   // Takes a design, computes components server-side, returns descriptions only (no SKUs).
-  app.post("/api/quote", async (req, res) => {
+  app.post("/api/quote", quoteLimiter, async (req, res) => {
     try {
       const { design } = req.body;
 
@@ -221,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email quote endpoint — now computes BOM server-side instead of trusting client data
-  app.post("/api/email-quote", async (req, res) => {
+  app.post("/api/email-quote", emailQuoteLimiter, async (req, res) => {
     try {
       const { email, design } = req.body;
 
