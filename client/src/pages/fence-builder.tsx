@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { FenceShapeSelector } from "@/components/fence-shape-selector";
 import { SpanConfigPanel } from "@/components/span-config-panel";
@@ -64,6 +64,43 @@ export default function FenceLogic() {
       },
     ],
   });
+
+  const [showRestoredBanner, setShowRestoredBanner] = useState(false);
+  const hasRestoredRef = useRef(false);
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    if (hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
+    try {
+      const raw = localStorage.getItem("bhub-draft-v1");
+      if (!raw) return;
+      const { design: saved, savedAt } = JSON.parse(raw);
+      if (!saved || !savedAt) return;
+      const age = Date.now() - savedAt;
+      if (age > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem("bhub-draft-v1");
+        return;
+      }
+      setDesign(saved);
+      setShowRestoredBanner(true);
+    } catch {
+      localStorage.removeItem("bhub-draft-v1");
+    }
+  }, []);
+
+  // Auto-save draft to localStorage, debounced 800ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          "bhub-draft-v1",
+          JSON.stringify({ design, savedAt: Date.now() })
+        );
+      } catch { /* quota exceeded — ignore */ }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [design]);
 
   // Fetch all saved designs
   const { data: savedDesigns, isLoading: isLoadingDesigns } = useQuery<SavedFenceDesign[]>({
@@ -282,6 +319,7 @@ export default function FenceLogic() {
 
   const handleSave = () => {
     saveDesignMutation.mutate(design);
+    localStorage.removeItem("bhub-draft-v1");
   };
 
   const handleLoad = () => {
@@ -348,6 +386,7 @@ export default function FenceLogic() {
       ],
     });
     setActiveSpanId(undefined);
+    localStorage.removeItem("bhub-draft-v1");
     toast({
       title: "Design Reset",
       description: "All settings have been reset to defaults.",
@@ -447,6 +486,18 @@ export default function FenceLogic() {
         isSaving={saveDesignMutation.isPending}
         productVariant={design.productVariant}
       />
+
+      {showRestoredBanner && (
+        <div className="flex items-center justify-between bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-800">
+          <span>Design restored from your last session.</span>
+          <button
+            onClick={() => setShowRestoredBanner(false)}
+            className="ml-4 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_420px] overflow-hidden">
         {/* 3D Visualization */}
