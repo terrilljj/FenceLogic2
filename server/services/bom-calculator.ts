@@ -75,7 +75,8 @@ export function calculateComponents(
 
   // Cast spans to any — design JSON from clients may carry extra dynamic properties
   // (e.g. postFinish, bladeHeight) that aren't on the strict SpanConfig type.
-  (design.spans as any[]).forEach((span: any) => {
+  const isMultiSpanCorner = design.shape === "l-shape" || design.shape === "u-shape";
+  (design.spans as any[]).forEach((span: any, spanIndex: number) => {
     // Semi-Frameless
     if (isSemiFrameless && span.panelLayout && span.panelLayout.panels.length > 0) {
       const glassHeight = design.productVariant === "semi-frameless-1000" ? 1000 : 1800;
@@ -110,7 +111,9 @@ export function calculateComponents(
         }
       });
 
-      const numPosts = span.panelLayout.panels.length + 1;
+      // For L/U shapes, spans after the first share a corner post with the previous span
+      const sharedCornerPost = isMultiSpanCorner && spanIndex > 0 ? 1 : 0;
+      const numPosts = span.panelLayout.panels.length + 1 - sharedCornerPost;
       const postDescription = `Semi-Frameless 50mm Square Post ${glassHeight + 200}mm (${postFinish} finish, ${postMounting} mounting)`;
       components.push({
         qty: numPosts,
@@ -733,10 +736,11 @@ export function calculateComponents(
     });
   }
 
-  // Consolidate duplicate components
+  // Consolidate duplicate components by SKU (falls back to description if no SKU)
   const consolidated: Component[] = [];
   components.forEach((comp) => {
-    const existing = consolidated.find((c) => c.description === comp.description);
+    const key = comp.sku || comp.description;
+    const existing = consolidated.find((c) => (c.sku || c.description) === key);
     if (existing) {
       existing.qty += comp.qty;
     } else {
