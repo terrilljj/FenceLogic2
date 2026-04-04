@@ -5,11 +5,6 @@ import { storage } from "./storage";
 import { insertFenceDesignSchema, insertProductSchema, insertProductUIConfigSchema, insertCategorySchema, insertSubcategorySchema, PANEL_SIZE_REGISTRY, getAvailablePanelSizes, type ProductVariant } from "@shared/schema";
 import { z } from "zod";
 import { requireAdmin } from "./middleware/auth";
-import { createDebugUIConfigRouter } from "./routes/debug-ui-config";
-import { createDebugResolveTraceRouter } from "./routes/debug-resolve-trace";
-import { createDebugProductsLintRouter } from "./routes/debug-products-lint";
-import { createDebugEndgapAdviceRouter } from "./routes/debug-endgap-advice";
-import { createDebugFramelessCustomRouter } from "./routes/debug-frameless-custom";
 import { UiConfigSchema } from "./schemas/ui-config";
 import metaCategoryPathsRouter from "./routes/meta-category-paths";
 import { pdfRouter } from "./routes/pdf";
@@ -1703,12 +1698,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PDF generation
   app.use("/api", pdfRouter);
 
-  // Debug routes
-  app.use("/api/debug/ui-config", createDebugUIConfigRouter(storage));
-  app.use("/api/debug/resolve-trace", createDebugResolveTraceRouter(storage));
-  app.use("/api/debug/products-lint", createDebugProductsLintRouter(storage));
-  app.use("/api/debug/endgap-advice", createDebugEndgapAdviceRouter(storage));
-  app.use("/api/debug/frameless-custom", createDebugFramelessCustomRouter(storage));
 
   // Meta routes
   app.use("/api/meta", metaCategoryPathsRouter);
