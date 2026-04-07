@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Barrier Hub — Command Centre</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f6f8;--surface:#fff;--card:#fff;--border:#e2e5ea;
+  --text:#1a1d23;--muted:#6b7280;--accent:#4f46e5;
+  --green:#16a34a;--amber:#d97706;--blue:#2563eb;--red:#dc2626;--purple:#7c3aed;--cyan:#0891b2;--gray:#9ca3af;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg:0 4px 12px rgba(0,0,0,.08);
+}
+html{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text)}
+body{min-height:100vh}
+
+/* Header */
+.hdr{background:#1e1b4b;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.hdr h1{font-size:18px;font-weight:700}.hdr h1 span{color:#a5b4fc;font-weight:400;margin-left:4px}
+.hdr-r{display:flex;align-items:center;gap:12px;font-size:12px;color:#a5b4fc}
+.hdr-r .dot{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#refreshBtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#e0e7ff;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+#refreshBtn:hover{background:rgba(255,255,255,.18)}
+
+/* Tabs */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:52px;z-index:99;overflow-x:auto;gap:0}
+.tab-sep{width:1px;background:var(--border);margin:8px 10px;flex-shrink:0}
+.tab{padding:10px 14px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;transition:.15s}
+.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Main */
+.main{padding:24px;max-width:1320px;margin:0 auto}
+.panel{display:none}.panel.active{display:block}
+
+/* Loading */
+.loader{display:flex;justify-content:center;padding:80px 0}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Summary grid */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:.2s;box-shadow:var(--shadow)}
+.scard:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);border-color:var(--accent)}
+.scard-top{display:flex;justify-content:space-between;align-items:start;margin-bottom:12px}
+.phase{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:4px}
+.phase-planning{background:#fef3c7;color:#92400e}.phase-building{background:#dbeafe;color:#1e40af}.phase-live{background:#dcfce7;color:#166534}
+.scard h3{font-size:15px;font-weight:600;margin-bottom:14px}
+.dial-wrap{display:flex;justify-content:center;margin-bottom:14px}
+.dial{position:relative}
+.dial svg{transform:rotate(-90deg)}
+.dial-bg{fill:none;stroke:#e5e7eb;stroke-width:5}
+.dial-fg{fill:none;stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.dial-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700}
+.scard-stats{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.scard-stats .s-done{color:var(--green)}.scard-stats .s-wip{color:var(--amber)}
+.scard .next-action{margin-top:10px;padding:8px 10px;background:#f8fafc;border-radius:6px;font-size:12px;color:var(--muted);border-left:3px solid var(--accent)}
+.scard .blocker{margin-top:6px;padding:8px 10px;background:#fef2f2;border-radius:6px;font-size:12px;color:var(--red);border-left:3px solid var(--red)}
+
+/* Kanban */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+@media(max-width:800px){.kanban{grid-template-columns:1fr}}
+.kcol{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kcol h4{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.kcol h4 .kd{width:7px;height:7px;border-radius:50%}
+.kcol h4 .cnt{margin-left:auto;background:var(--bg);padding:1px 7px;border-radius:8px;font-size:11px}
+.kcard{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:13px;line-height:1.4}
+
+/* Detail header */
+.dhdr{display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.dhdr h2{font-size:20px;font-weight:700}
+.dhdr p{color:var(--muted);font-size:13px;margin-top:2px}
+.back{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px}
+.back:hover{border-color:var(--accent)}
+
+/* Section boxes */
+.sect{margin-bottom:24px}
+.sect-title{font-size:14px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sect-title::before{content:'';display:block;width:4px;height:16px;border-radius:2px;background:var(--accent)}
+.dep-list,.road-list{display:flex;flex-wrap:wrap;gap:8px}
+.dep-chip{padding:6px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:12px;color:#92400e}
+.road-chip{padding:6px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#166534}
+
+/* Personal columns */
+.pcols{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.pcols{grid-template-columns:1fr}}
+.pcol{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.pcol-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.pcol-hdr h3{font-size:14px;font-weight:600}
+.add-btn{background:var(--accent);color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+.add-btn:hover{opacity:.9}
+.pcard{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.pcard-name{font-size:13px;font-weight:500;margin-bottom:6px}
+.pcard-meta{display:flex;flex-wrap:wrap;gap:4px}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+.badge-cat{background:#ede9fe;color:#5b21b6}.badge-status{background:#e0e7ff;color:#3730a3}
+.badge-priority-Critical{background:#fecaca;color:#991b1b}.badge-priority-High{background:#fef3c7;color:#92400e}
+.badge-priority-Medium{background:#dbeafe;color:#1e40af}.badge-priority-Low{background:#f3f4f6;color:#6b7280}
+.pcard-date{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* Form */
+.iform{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;display:none}
+.iform.open{display:block}
+.iform label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin:6px 0 2px;text-transform:uppercase;letter-spacing:.3px}
+.iform input,.iform select,.iform textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff;color:var(--text)}
+.iform textarea{resize:vertical;min-height:60px}
+.iform-btns{display:flex;gap:8px;margin-top:10px}
+.iform-btns button{padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+.btn-submit{background:var(--accent);color:#fff}.btn-submit:hover{opacity:.9}
+.btn-cancel{background:var(--surface);color:var(--muted);border:1px solid var(--border) !important}.btn-cancel:hover{color:var(--text)}
+
+/* Error banner */
+.err-banner{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:12px 24px;font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>Barrier Hub<span>Command Centre</span></h1>
+  <div class="hdr-r">
+    <div class="dot"></div><span id="statusTxt">Loading...</span>
+    <button id="refreshBtn" onclick="loadData()">Refresh</button>
+  </div>
+</div>
+<div class="tabs" id="tabs"></div>
+<div class="main" id="main"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────
+const PROJECT_META = {
+  'Barrier Hub Calculator':{ color:'#4f46e5', id:'calculator' },
+  'Barrier Hub Shopify':{ color:'#16a34a', id:'shopify' },
+  'Google Ads Launch':{ color:'#d97706', id:'ads' },
+  'SolveLogic Platform':{ color:'#7c3aed', id:'solvelogic' },
+  'Joe AI':{ color:'#0891b2', id:'joe' },
+  'Contractor App':{ color:'#dc2626', id:'contractor' },
+};
+
+const ROADMAP = {
+  calculator:[
+    {v:'V1.1',items:['Material optimisation engine','Handrail calculator','Gate validation','Subsections hybrid fence types','Scenario comparison','Section naming','Shareable quote link','Gate clearance validator','Setback calculator']},
+    {v:'V2',items:['User accounts freemium','Joe voice mode','Semi-frameless balustrade','Privacy screen balustrade Axiom Group','Custom glass configurator','Programmatic SEO 5000-20000 pages']},
+    {v:'V3',items:['Glass Outlet B2B integration','SolveLogic Timber Fencing','Paving','Retaining Walls','Contractor Portal']}
+  ],
+  shopify:[{v:'Post-launch',items:['Customer accounts','Upsell flows','Review widgets','SEO pages']}],
+  ads:[{v:'Month 1',items:['Performance Max','Remarketing BOM not purchased','Installer leads','Suburb targeting']}],
+  solvelogic:[
+    {v:'V1',items:['Glass Outlet licensing','White-label trade suppliers']},
+    {v:'V2',items:['Timber','Paving','Retaining Walls','Axiom Group']},
+    {v:'V3',items:['15-niche marketplace','Open API','Acquisition positioning']}
+  ],
+  joe:[
+    {v:'V1.1',items:['Refinement mode','Fixings intelligence','Historical job training 30 scenarios']},
+    {v:'V2',items:['Voice mode ElevenLabs+Deepgram','Screen context','Contractor app integration','Reg 126 leads']},
+    {v:'V3',items:['New SolveLogic verticals','B2B mode Glass Outlet']}
+  ],
+  contractor:[
+    {v:'V1',items:['CRM + quote builder + job management','Stripe Connect','Lead flow from BH']},
+    {v:'V2',items:['Multi-tenant platform','Territory management','Anti-Hubspot pricing']},
+    {v:'V3',items:['SolveLogic engine all trades','Direct supplier ordering']}
+  ]
+};
+
+const DEPS = {
+  calculator:['Railway must be live before Google Ads spend','Joe AI needs UI integration','Price update due next week'],
+  shopify:['Calculator on Railway first','Legal entity details needed','Shopify dev access ready'],
+  ads:['barrierhub.com.au must be live','GTM on Shopify required','GA4 events before budget'],
+  solvelogic:['BH live as proof of concept','solvelogic.app registration','Glass Outlet relationship needs traction'],
+  joe:['Calculator UI stable first','Product images needed in R2','Compliance training requires knowledge base'],
+  contractor:['BH live and generating revenue','Joe V1 working well','Installer lead flow established']
+};
+
+const FORM_FIELDS = {
+  finance:{
+    categories:['Income','Expense','Savings Goal','Investment','Tax'],
+    fields:[
+      {key:'Name',type:'text',label:'Name',required:true},
+      {key:'Category',type:'select',label:'Category'},
+      {key:'Amount',type:'number',label:'Amount'},
+      {key:'Status',type:'select',label:'Status',options:['On Track','Behind','Done','Pending']},
+      {key:'Due Date',type:'date',label:'Due Date'},
+      {key:'Notes',type:'textarea',label:'Notes'}
+    ]
+  },
+  health:{
+    categories:['Fitness','Medical','Mental Health','Nutrition','Sleep'],
+    fields:[
+      {key:'Name',type:'text',label:'Name',required:true},
+      {key:'Category',type:'select',label:'Category'},
+      {key:'Status',type:'select',label:'Status',options:['Active','Planned','Done','Missed']},
+      {key:'Frequency',type:'select',label:'Frequency',options:['Daily','Weekly','Monthly','Quarterly','Half-yearly','Annual','One-off']},
+      {key:'Due Date',type:'date',label:'Due Date'},
+      {key:'Notes',type:'textarea',label:'Notes'}
+    ]
+  },
+  lifeAdmin:{
+    categories:['Home','Family','Legal','Appointments','Admin','Ideas'],
+    fields:[
+      {key:'Name',type:'text',label:'Name',required:true},
+      {key:'Category',type:'select',label:'Category'},
+      {key:'Priority',type:'select',label:'Priority',options:['High','Medium','Low']},
+      {key:'Status',type:'select',label:'Status',options:['To Do','In Progress','Done','Waiting']},
+      {key:'Due Date',type:'date',label:'Due Date'},
+      {key:'Notes',type:'textarea',label:'Notes'}
+    ]
+  }
+};
+
+// ── State ──────────────────────────────────────────
+let DATA = null;
+let activeTab = 'all';
+
+// ── Data ───────────────────────────────────────────
+async function loadData() {
+  document.getElementById('statusTxt').textContent = 'Fetching...';
+  try {
+    const r = await fetch('/api/dashboard');
+    if (!r.ok) throw new Error(await r.text());
+    DATA = await r.json();
+    document.getElementById('statusTxt').textContent = 'Live — ' + new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+    render();
+  } catch(e) {
+    document.getElementById('statusTxt').textContent = 'Error';
+    document.getElementById('main').innerHTML = '<div class="err-banner">Failed to load: ' + esc(e.message) + '</div>';
+  }
+}
+
+// ── Helpers ────────────────────────────────────────
+function esc(s){ const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+
+function prop(item,key){
+  // Try exact key first, then case-insensitive
+  if(item[key]!==undefined) return item[key];
+  const lk=key.toLowerCase();
+  for(const k of Object.keys(item)){if(k.toLowerCase()===lk) return item[k];}
+  return '';
+}
+
+function dialSVG(pct,color,r){
+  r=r||42;const C=2*Math.PI*r,off=C-(pct/100)*C,sz=(r+5)*2;
+  return `<div class="dial" style="width:${sz}px;height:${sz}px"><svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}"><circle class="dial-bg" cx="${sz/2}" cy="${sz/2}" r="${r}"/><circle class="dial-fg" cx="${sz/2}" cy="${sz/2}" r="${r}" stroke="${color}" stroke-dasharray="${C}" stroke-dashoffset="${off}"/></svg><div class="dial-txt" style="color:${color};font-size:${r>30?20:16}px">${pct}%</div></div>`;
+}
+
+function phaseBadge(ph){
+  const p=(ph||'').toLowerCase();
+  if(p.includes('live'))return '<span class="phase phase-live">Live</span>';
+  if(p.includes('build'))return '<span class="phase phase-building">Building</span>';
+  return '<span class="phase phase-planning">Planning</span>';
+}
+
+function priBadge(pr){
+  if(!pr)return '';
+  return `<span class="badge badge-priority-${pr}">${esc(pr)}</span>`;
+}
+
+function getProjectItems(name){
+  if(!DATA)return[];
+  return DATA.projects.filter(p=>{
+    const n=prop(p,'Name')||prop(p,'name')||prop(p,'Project')||'';
+    return n.toLowerCase().includes(name.toLowerCase());
+  });
+}
+
+function classifyTasks(items){
+  const done=[],wip=[],todo=[];
+  items.forEach(it=>{
+    const s=(prop(it,'Status')||prop(it,'status')||'').toLowerCase();
+    const name=prop(it,'Name')||prop(it,'name')||prop(it,'Task')||prop(it,'task')||'Unknown';
+    if(s.includes('done')||s.includes('complete')||s.includes('finished'))done.push(name);
+    else if(s.includes('progress')||s.includes('active')||s.includes('building'))wip.push(name);
+    else todo.push(name);
+  });
+  return {done,wip,todo};
+}
+
+function computePct(t){
+  const total=t.done.length+t.wip.length+t.todo.length;
+  if(!total)return 0;
+  return Math.round(((t.done.length+t.wip.length*0.5)/total)*100);
+}
+
+function getProjectSummaries(){
+  if(!DATA)return[];
+  const seen=new Set();
+  const summaries=[];
+  for(const[displayName,meta] of Object.entries(PROJECT_META)){
+    // Notion rows use "Project" as the title column
+    const item=DATA.projects.find(p=>{
+      const n=prop(p,'Project')||prop(p,'Name')||'';
+      return n===displayName;
+    });
+    if(item)seen.add(item._id);
+    const phase=item?prop(item,'Phase')||'Planning':'Planning';
+    const pct=item?prop(item,'Progress %'):0;
+    const nextAction=item?prop(item,'Next Action'):'';
+    const blocker=item?prop(item,'Blockers'):'';
+    const currentTask=item?prop(item,'Current Task'):'';
+    const lastUpdated=item?prop(item,'Last Updated'):'';
+
+    // Classify using Phase field for this single-row-per-project structure
+    const done=[],wip=[],todo=[];
+    if(currentTask)wip.push(currentTask);
+
+    summaries.push({
+      name:displayName,
+      id:meta.id,
+      color:meta.color,
+      phase,
+      pct:typeof pct==='number'?pct:0,
+      nextAction,
+      blocker,
+      currentTask,
+      lastUpdated,
+      done,wip,todo,
+      totalTasks:done.length+wip.length+todo.length
+    });
+  }
+  // Add any unmatched projects
+  DATA.projects.filter(p=>!seen.has(p._id)).forEach(p=>{
+    const name=prop(p,'Project')||prop(p,'Name')||'Unknown';
+    if(!summaries.find(s=>s.name===name)){
+      const phase=prop(p,'Phase')||'Planning';
+      const pct=prop(p,'Progress %')||0;
+      summaries.push({name,id:name.toLowerCase().replace(/\s+/g,'-'),color:'#6b7280',phase,pct:typeof pct==='number'?pct:0,nextAction:prop(p,'Next Action'),blocker:prop(p,'Blockers'),currentTask:prop(p,'Current Task'),lastUpdated:prop(p,'Last Updated'),done:[],wip:[],todo:[],totalTasks:0});
+    }
+  });
+  return summaries;
+}
+
+// ── Render ─────────────────────────────────────────
+function render(){
+  renderTabs();
+  if(activeTab==='all')renderAll();
+  else if(activeTab==='personal')renderPersonal();
+  else renderProject(activeTab);
+}
+
+function renderTabs(){
+  const t=document.getElementById('tabs');
+  const projects=getProjectSummaries();
+  let h=`<button class="tab ${activeTab==='all'?'active':''}" onclick="sw('all')">All Projects</button>`;
+  projects.forEach(p=>{
+    h+=`<button class="tab ${activeTab===p.id?'active':''}" onclick="sw('${p.id}')">${esc(p.name)}</button>`;
+  });
+  h+='<div class="tab-sep"></div>';
+  h+=`<button class="tab ${activeTab==='personal'?'active':''}" onclick="sw('personal')">Personal</button>`;
+  t.innerHTML=h;
+}
+
+function sw(id){activeTab=id;render();}
+
+function renderAll(){
+  const projects=getProjectSummaries();
+  if(!projects.length){
+    document.getElementById('main').innerHTML='<div class="loader"><div class="spinner"></div></div>';
+    return;
+  }
+  let h='<div class="sgrid">';
+  projects.forEach(p=>{
+    h+=`<div class="scard" onclick="sw('${p.id}')">
+      <div class="scard-top">${phaseBadge(p.phase)}</div>
+      <h3>${esc(p.name)}</h3>
+      <div class="dial-wrap">${dialSVG(p.pct,p.color)}</div>
+      ${p.currentTask?`<div class="next-action"><strong>Current:</strong> ${esc(p.currentTask)}</div>`:''}
+      ${p.nextAction?`<div class="next-action"><strong>Next:</strong> ${esc(p.nextAction)}</div>`:''}
+      ${p.blocker?`<div class="blocker"><strong>Blocker:</strong> ${esc(p.blocker)}</div>`:''}
+      ${p.lastUpdated?`<div style="font-size:11px;color:var(--muted);margin-top:8px">Updated: ${esc(p.lastUpdated)}</div>`:''}
+    </div>`;
+  });
+  h+='</div>';
+  document.getElementById('main').innerHTML=h;
+}
+
+function kanbanHTML(done,wip,todo){
+  const col=(title,cls,color,items)=>{
+    let cards=items.map(t=>`<div class="kcard">${esc(t)}</div>`).join('');
+    return `<div class="kcol"><h4><span class="kd" style="background:${color}"></span>${title}<span class="cnt">${items.length}</span></h4>${cards}</div>`;
+  };
+  return `<div class="kanban">${col('Done','done','#16a34a',done)}${col('In Progress','wip','#d97706',wip)}${col('To Do','todo','#9ca3af',todo)}</div>`;
+}
+
+function renderProject(id){
+  const projects=getProjectSummaries();
+  const p=projects.find(x=>x.id===id);
+  if(!p){document.getElementById('main').innerHTML='<p>Project not found</p>';return;}
+  const road=ROADMAP[id]||[];
+  const deps=DEPS[id]||[];
+
+  let h=`<div class="dhdr">
+    <button class="back" onclick="sw('all')">← All</button>
+    <div class="dial-wrap">${dialSVG(p.pct,p.color,28)}</div>
+    <div><h2>${esc(p.name)}</h2><p>${phaseBadge(p.phase)}${p.lastUpdated?' Updated '+esc(p.lastUpdated):''}</p></div>
+  </div>`;
+
+  // Live status from Notion
+  const statusItems=[];
+  if(p.currentTask)statusItems.push({label:'Current Task',value:p.currentTask});
+  if(p.nextAction)statusItems.push({label:'Next Action',value:p.nextAction});
+  if(p.blocker)statusItems.push({label:'Blocker',value:p.blocker,warn:true});
+  if(statusItems.length){
+    h+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:24px">`;
+    statusItems.forEach(s=>{
+      const bg=s.warn?'#fef2f2':'#f8fafc';
+      const border=s.warn?'var(--red)':'var(--accent)';
+      h+=`<div style="background:${bg};border-left:3px solid ${border};border-radius:8px;padding:12px 14px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px">${esc(s.label)}</div><div style="font-size:13px">${esc(s.value)}</div></div>`;
+    });
+    h+=`</div>`;
+  }
+
+  if(deps.length){
+    h+=`<div class="sect"><div class="sect-title">Dependencies</div><div class="dep-list">`;
+    deps.forEach(d=>{h+=`<div class="dep-chip">${esc(d)}</div>`;});
+    h+=`</div></div>`;
+  }
+
+  if(road.length){
+    road.forEach(r=>{
+      h+=`<div class="sect"><div class="sect-title">Roadmap — ${esc(r.v)}</div><div class="road-list">`;
+      r.items.forEach(i=>{h+=`<div class="road-chip">${esc(i)}</div>`;});
+      h+=`</div></div>`;
+    });
+  }
+
+  document.getElementById('main').innerHTML=h;
+}
+
+// ── Personal ──────────────────────────────────────
+function renderPersonal(){
+  let h='<div class="pcols">';
+  h+=personalCol('Personal Finance','finance',DATA?DATA.finance:[]);
+  h+=personalCol('Health & Wellbeing','health',DATA?DATA.health:[]);
+  h+=personalCol('Life Admin','lifeAdmin',DATA?DATA.lifeAdmin:[]);
+  h+='</div>';
+  document.getElementById('main').innerHTML=h;
+}
+
+function personalCol(title,type,items){
+  let h=`<div class="pcol"><div class="pcol-hdr"><h3>${esc(title)}</h3><button class="add-btn" onclick="toggleForm('${type}')">+ Add</button></div>`;
+  h+=buildForm(type);
+  items.forEach(it=>{
+    const name=prop(it,'Name')||prop(it,'name')||prop(it,'Title')||'Untitled';
+    const cat=prop(it,'Category')||prop(it,'category')||'';
+    const status=prop(it,'Status')||prop(it,'status')||'';
+    const priority=prop(it,'Priority')||prop(it,'priority')||'';
+    const due=prop(it,'Due Date')||prop(it,'due date')||prop(it,'Due')||'';
+    const amount=prop(it,'Amount')||prop(it,'amount');
+
+    h+=`<div class="pcard"><div class="pcard-name">${esc(name)}</div><div class="pcard-meta">`;
+    if(cat)h+=`<span class="badge badge-cat">${esc(Array.isArray(cat)?cat.join(', '):cat)}</span>`;
+    if(status)h+=`<span class="badge badge-status">${esc(status)}</span>`;
+    if(priority)h+=priBadge(priority);
+    if(amount!=null&&amount!=='')h+=`<span class="badge badge-cat">$${amount}</span>`;
+    h+=`</div>`;
+    if(due)h+=`<div class="pcard-date">Due: ${esc(due)}</div>`;
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+
+function buildForm(type){
+  const cfg=FORM_FIELDS[type];
+  if(!cfg)return '';
+  let h=`<div class="iform" id="form-${type}">`;
+  cfg.fields.forEach(f=>{
+    h+=`<label>${esc(f.label)}</label>`;
+    if(f.type==='select'){
+      const opts=f.options||cfg.categories;
+      h+=`<select id="f-${type}-${f.key}"><option value="">—</option>`;
+      opts.forEach(o=>{h+=`<option value="${esc(o)}">${esc(o)}</option>`;});
+      h+=`</select>`;
+    } else if(f.type==='textarea'){
+      h+=`<textarea id="f-${type}-${f.key}"></textarea>`;
+    } else {
+      h+=`<input type="${f.type}" id="f-${type}-${f.key}" ${f.required?'required':''}/>`;
+    }
+  });
+  h+=`<div class="iform-btns"><button class="btn-submit" onclick="submitForm('${type}')">Save</button><button class="btn-cancel" onclick="toggleForm('${type}')">Cancel</button></div></div>`;
+  return h;
+}
+
+function toggleForm(type){
+  const el=document.getElementById('form-'+type);
+  if(el)el.classList.toggle('open');
+}
+
+async function submitForm(type){
+  const cfg=FORM_FIELDS[type];
+  if(!cfg)return;
+  const properties={};
+  for(const f of cfg.fields){
+    const el=document.getElementById(`f-${type}-${f.key}`);
+    if(!el)continue;
+    const val=el.value.trim();
+    if(!val)continue;
+    if(f.key==='Name'){
+      properties[f.key]={title:[{text:{content:val}}]};
+    } else if(f.type==='select'){
+      properties[f.key]={select:{name:val}};
+    } else if(f.type==='number'){
+      properties[f.key]={number:parseFloat(val)};
+    } else if(f.type==='date'){
+      properties[f.key]={date:{start:val}};
+    } else {
+      properties[f.key]={rich_text:[{text:{content:val}}]};
+    }
+  }
+  if(!properties.Name){alert('Name is required');return;}
+
+  const btn=document.querySelector(`#form-${type} .btn-submit`);
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
+  try{
+    const r=await fetch(`/api/personal/${type}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({properties})});
+    if(!r.ok)throw new Error(await r.text());
+    toggleForm(type);
+    // Clear fields
+    cfg.fields.forEach(f=>{const el=document.getElementById(`f-${type}-${f.key}`);if(el)el.value='';});
+    await loadData();
+  }catch(e){
+    alert('Save failed: '+e.message);
+  }finally{
+    if(btn){btn.textContent='Save';btn.disabled=false;}
+  }
+}
+
+// ── Init ──────────────────────────────────────────
+document.getElementById('main').innerHTML='<div class="loader"><div class="spinner"></div></div>';
+loadData();
+setInterval(loadData,5*60*1000);
+</script>
+</body>
+</html>

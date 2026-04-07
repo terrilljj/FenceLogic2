@@ -1707,6 +1707,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Meta routes
   app.use("/api/meta", metaCategoryPathsRouter);
 
+  // ── Notion-powered dashboard endpoints ──────────────────────────
+  const NOTION_KEY = process.env.NOTION_API_KEY;
+  const NOTION_DBS: Record<string, string> = {
+    projects: "17f5dd87-015b-4be5-9f04-0b1892fba6ca",
+    finance: "940118f42d0b408badf49c4f0cf609c1",
+    health: "5480d47b71b5460ba888323199ced17d",
+    lifeAdmin: "e11d25b31fca44d390322312862a3cfc",
+  };
+
+  async function queryNotionDB(dbId: string) {
+    const res = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${NOTION_KEY}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ page_size: 100 }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Notion ${res.status}: ${text}`);
+    }
+    return (await res.json() as any).results;
+  }
+
+  function extractPageProps(page: any) {
+    const props: Record<string, any> = {};
+    for (const [key, val] of Object.entries(page.properties) as any) {
+      if (val.type === "title") props[key] = val.title?.[0]?.plain_text || "";
+      else if (val.type === "rich_text") props[key] = val.rich_text?.[0]?.plain_text || "";
+      else if (val.type === "select") props[key] = val.select?.name || "";
+      else if (val.type === "multi_select") props[key] = (val.multi_select || []).map((s: any) => s.name);
+      else if (val.type === "number") props[key] = val.number;
+      else if (val.type === "checkbox") props[key] = val.checkbox;
+      else if (val.type === "date") props[key] = val.date?.start || "";
+      else if (val.type === "status") props[key] = val.status?.name || "";
+      else if (val.type === "formula") {
+        if (val.formula.type === "number") props[key] = val.formula.number;
+        else if (val.formula.type === "string") props[key] = val.formula.string;
+        else props[key] = val.formula[val.formula.type];
+      }
+      else if (val.type === "url") props[key] = val.url || "";
+      else if (val.type === "email") props[key] = val.email || "";
+      else if (val.type === "phone_number") props[key] = val.phone_number || "";
+      else props[key] = null;
+    }
+    props._id = page.id;
+    return props;
+  }
+
+  app.get("/api/dashboard", async (_req, res) => {
+    if (!NOTION_KEY) return res.status(500).json({ error: "NOTION_API_KEY not set" });
+    try {
+      const [projects, finance, health, lifeAdmin] = await Promise.all([
+        queryNotionDB(NOTION_DBS.projects),
+        queryNotionDB(NOTION_DBS.finance),
+        queryNotionDB(NOTION_DBS.health),
+        queryNotionDB(NOTION_DBS.lifeAdmin),
+      ]);
+      res.json({
+        projects: projects.map(extractPageProps),
+        finance: finance.map(extractPageProps),
+        health: health.map(extractPageProps),
+        lifeAdmin: lifeAdmin.map(extractPageProps),
+      });
+    } catch (err: any) {
+      console.error("[Dashboard] Notion error:", err.message);
+      res.status(502).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/personal/:type", async (req, res) => {
+    if (!NOTION_KEY) return res.status(500).json({ error: "NOTION_API_KEY not set" });
+    const dbId = NOTION_DBS[req.params.type as keyof typeof NOTION_DBS];
+    if (!dbId) return res.status(400).json({ error: "Invalid type" });
+    try {
+      const { properties } = req.body;
+      if (!properties) return res.status(400).json({ error: "Missing properties" });
+
+      const notionRes = await fetch("https://api.notion.com/v1/pages", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${NOTION_KEY}`,
+          "Notion-Version": "2022-06-28",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ parent: { database_id: dbId }, properties }),
+      });
+      if (!notionRes.ok) {
+        const text = await notionRes.text();
+        return res.status(notionRes.status).json({ error: text });
+      }
+      res.json({ success: true, page: (await notionRes.json() as any).id });
+    } catch (err: any) {
+      console.error("[Dashboard] Create error:", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
