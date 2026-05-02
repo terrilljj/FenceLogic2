@@ -72,6 +72,7 @@ export default function FenceLogic() {
   useEffect(() => {
     if (hasRestoredRef.current) return;
     hasRestoredRef.current = true;
+    if (urlVariant) return;
     try {
       const raw = localStorage.getItem("bhub-draft-v1");
       if (!raw) return;
