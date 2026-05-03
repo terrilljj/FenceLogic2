@@ -4,7 +4,6 @@ import { FenceShapeSelector } from "@/components/fence-shape-selector";
 import { SpanConfigPanel } from "@/components/span-config-panel";
 import { FenceVisualization } from "@/components/fence-visualization";
 import { ComponentList } from "@/components/component-list";
-import { AccessoriesChecklist, type AccessoryItem, type SpigotFamily, type SpigotFinish, type FixingMethod } from "@/components/accessories-checklist";
 import { AppHeader } from "@/components/app-header";
 import { ProductSelector } from "@/components/product-selector";
 import { useToast } from "@/hooks/use-toast";
@@ -18,11 +17,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Loader2, Package, Plus } from "lucide-react";
 
 export default function FenceLogic() {
@@ -33,18 +30,6 @@ export default function FenceLogic() {
   const [showProductMockup, setShowProductMockup] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   const [downloadPDFHandler, setDownloadPDFHandler] = useState<(() => void) | null>(null);
-
-  // Install configuration for accessories checklist (glass-pool-spigots only)
-  const [installConfig, setInstallConfig] = useState<{
-    spigotFamily: SpigotFamily;
-    as3000Required: boolean;
-    fixingMethod: FixingMethod | null;
-  }>({
-    spigotFamily: "madrid",
-    as3000Required: false,
-    fixingMethod: "concrete",
-  });
-  const [checkedAccessories, setCheckedAccessories] = useState<AccessoryItem[]>([]);
 
   // Get URL params for pre-selecting product
   const urlParams = new URLSearchParams(window.location.search);
@@ -124,7 +109,7 @@ export default function FenceLogic() {
   });
 
   // Fetch BOM components from server-side quote endpoint
-  const { data: quoteData } = useQuery<{ components: Array<{ qty: number; description: string; sku?: string }> }>({
+  const { data: quoteData } = useQuery<{ components: Array<{ qty: number; description: string }> }>({
     queryKey: ["/api/quote", design],
     queryFn: async () => {
       const response = await apiRequest("POST", "/api/quote", { design });
@@ -448,20 +433,10 @@ export default function FenceLogic() {
 
     lines.push("");
     lines.push("COMPONENT LIST");
-    lines.push("QTY,Description,SKU");
+    lines.push("QTY,Description");
     components.forEach((comp) => {
-      lines.push(`${comp.qty},"${comp.description}","${comp.sku || ""}"`);
+      lines.push(`${comp.qty},"${comp.description}"`);
     });
-
-    if (checkedAccessories.length > 0) {
-      lines.push("");
-      lines.push("ACCESSORIES");
-      lines.push("QTY,Description,SKU,Unit Price (ex GST)");
-      checkedAccessories.forEach((acc) => {
-        const price = acc.unitPrice !== null ? acc.unitPrice.toFixed(2) : "TBC";
-        lines.push(`${acc.qty},"${acc.description}","${acc.sku}",${price}`);
-      });
-    }
 
     const csvContent = lines.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -481,25 +456,6 @@ export default function FenceLogic() {
   const components = useMemo(() => {
     return quoteData?.components ?? [];
   }, [quoteData]);
-
-  // Total spigot count across all spans (2 per panel — one at each end)
-  const spigotCount = useMemo(() =>
-    design.spans.reduce((sum, s) => sum + (s.panelLayout?.panels.length ?? 0) * 2, 0),
-    [design.spans]
-  );
-
-  // BOM = server components + any checked accessories (as Component entries)
-  const displayComponents = useMemo(() => {
-    if (design.productVariant !== "glass-pool-spigots" || checkedAccessories.length === 0) {
-      return components;
-    }
-    const accessoryComponents = checkedAccessories.map((a) => ({
-      qty: a.qty,
-      description: a.description,
-      sku: a.sku,
-    }));
-    return [...components, ...accessoryComponents];
-  }, [components, checkedAccessories, design.productVariant]);
 
   const progress = useMemo(() => {
     let completed = 0;
@@ -656,99 +612,10 @@ export default function FenceLogic() {
 
             {/* Component List */}
             <ComponentList
-              components={displayComponents}
+              components={components}
               onEmail={handleEmailQuote}
               onDownload={handleDownloadList}
             />
-
-            {/* Install Configuration + Accessories Checklist — glass-pool-spigots only */}
-            {design.productVariant === "glass-pool-spigots" && components.length > 0 && (
-              <>
-                <Card data-testid="install-config">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Install Details</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Tell us about your install to get required accessories
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="spigot-family" className="text-sm">Spigot family</Label>
-                        <Select
-                          value={installConfig.spigotFamily}
-                          onValueChange={(v) => setInstallConfig((c) => ({ ...c, spigotFamily: v as SpigotFamily }))}
-                        >
-                          <SelectTrigger id="spigot-family" data-testid="select-spigot-family">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="madrid">Madrid</SelectItem>
-                            <SelectItem value="madrid-pool">Madrid Pool</SelectItem>
-                            <SelectItem value="insuluxe">Insuluxe</SelectItem>
-                            <SelectItem value="lifestyle-square">Lifestyle Square</SelectItem>
-                            <SelectItem value="lifestyle-round">Lifestyle Round</SelectItem>
-                            <SelectItem value="rio">Rio</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="fixing-method" className="text-sm">Substrate</Label>
-                        <Select
-                          value={installConfig.fixingMethod ?? "none"}
-                          onValueChange={(v) =>
-                            setInstallConfig((c) => ({
-                              ...c,
-                              fixingMethod: v === "none" ? null : (v as FixingMethod),
-                            }))
-                          }
-                        >
-                          <SelectTrigger id="fixing-method" data-testid="select-fixing-method">
-                            <SelectValue placeholder="Select substrate" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="concrete">Concrete</SelectItem>
-                            <SelectItem value="timber">Timber</SelectItem>
-                            <SelectItem value="none">Not sure / skip</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label className="text-sm">AS-3000 compliance required?</Label>
-                        <div className="flex items-center gap-3 pt-1.5">
-                          <Switch
-                            id="as3000-toggle"
-                            checked={installConfig.as3000Required}
-                            onCheckedChange={(v) =>
-                              setInstallConfig((c) => ({ ...c, as3000Required: v }))
-                            }
-                            data-testid="switch-as3000"
-                          />
-                          <Label htmlFor="as3000-toggle" className="text-sm cursor-pointer">
-                            {installConfig.as3000Required ? "Yes — within 1.25m of water" : "No / not sure"}
-                          </Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Required for Madrid / Madrid Pool spigots near pool water (AS/NZS 3000)
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <AccessoriesChecklist
-                  spigotFamily={installConfig.spigotFamily}
-                  spigotFinish={(design.spans[0]?.spigotColor ?? "polished") as SpigotFinish}
-                  spigotMounting={design.spans[0]?.spigotMounting ?? "base-plate"}
-                  as3000Required={installConfig.as3000Required}
-                  fixingMethod={installConfig.fixingMethod}
-                  spigotCount={spigotCount}
-                  onSelectionChange={setCheckedAccessories}
-                />
-              </>
-            )}
           </div>
         </div>
       </div>
