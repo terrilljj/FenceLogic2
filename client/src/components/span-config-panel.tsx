@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { SpanConfig, getGateGaps, ProductVariant } from "@shared/schema";
 import { calculatePanelLayout, calculateBarrPanelLayout, calculateBladePanelLayout, calculateTubularPanelLayout, calculateHamptonsPanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
@@ -38,6 +40,8 @@ export function SpanConfigPanel({
 
   // Determine if this is a semi-frameless variant
   const isSemiFrameless = productVariant === "semi-frameless-1000" || productVariant === "semi-frameless-1800";
+
+  const isGlassSpigots = productVariant === "glass-pool-spigots";
 
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
@@ -545,6 +549,505 @@ export function SpanConfigPanel({
               <span className="text-sm text-muted-foreground">mm</span>
             </div>
           </div>
+
+          {/* ── Glass Pool Spigots: 4-column config grid ─────────────────────── */}
+          {isGlassSpigots && (
+            <>
+              {/* Summary stats bar */}
+              <div className="flex items-center gap-2 py-1.5 px-3 bg-muted/50 rounded-md text-xs text-muted-foreground font-mono border border-card-border flex-wrap">
+                <span>{span.length.toLocaleString()} mm</span>
+                <span>·</span>
+                <span>{span.panelLayout?.panels.length ?? 0} panels</span>
+                {span.gateConfig?.required && <><span>·</span><span>1 gate</span></>}
+                <span>·</span>
+                <span>{(span.panelLayout?.panels.length ?? 0) + 1} spigots</span>
+                <span>·</span>
+                <span className={cn(
+                  "font-semibold",
+                  Math.abs(variance) < 0.1 ? "text-green-600 dark:text-green-400" :
+                  Math.abs(variance) <= 50 ? "text-amber-600 dark:text-amber-400" :
+                  "text-red-600 dark:text-red-400"
+                )}>
+                  {variance >= 0 ? "+" : ""}{variance.toFixed(1)} mm
+                </span>
+              </div>
+
+              {/* 4-column grid — desktop (lg+) */}
+              <div className="hidden lg:grid grid-cols-4 divide-x divide-card-border border border-card-border rounded-md">
+
+                {/* Col 1: Dimensions & Gaps */}
+                <div className="p-3 space-y-3">
+                  <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Dimensions & Gaps</h5>
+
+                  {isFieldEnabled("maxPanelMm") && (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Max Panel Width</Label>
+                      <Select
+                        value={span.maxPanelWidth.toString()}
+                        onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
+                      >
+                        <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-max-panel-width`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((w) => (
+                            <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {showLeftGap && isFieldEnabled("startGapMm") && (
+                    <div className="space-y-1">
+                      <GapSlider
+                        label="LHS Gap"
+                        value={span.leftGap?.enabled ? span.leftGap.size : 0}
+                        onChange={(size) => updateSpan({ leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined })}
+                        min={0} max={150}
+                        testId={`span-${span.spanId}-left-gap`}
+                      />
+                    </div>
+                  )}
+
+                  {isFieldEnabled("betweenGapMm") && (
+                    <div className="space-y-1">
+                      <GapSlider
+                        label="Mid Gap"
+                        value={span.desiredGap}
+                        onChange={(desiredGap) => updateSpan({ desiredGap })}
+                        min={0} max={99}
+                        testId={`span-${span.spanId}-gap-slider`}
+                      />
+                    </div>
+                  )}
+
+                  {showRightGap && isFieldEnabled("endGapMm") && (
+                    <div className="space-y-1">
+                      <GapSlider
+                        label="RHS Gap"
+                        value={span.rightGap?.enabled ? span.rightGap.size : 0}
+                        onChange={(size) => updateSpan({ rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined })}
+                        min={0} max={150}
+                        testId={`span-${span.spanId}-right-gap`}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Col 2: Spigots & Posts */}
+                <div className="p-3 space-y-3">
+                  <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Spigots & Posts</h5>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Mounting</Label>
+                    <Select
+                      value={span.spigotMounting || "base-plate"}
+                      onValueChange={(v: "base-plate" | "core-drilled" | "side-mounted") => updateSpan({ spigotMounting: v })}
+                    >
+                      <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-mounting`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="base-plate">Base Plate</SelectItem>
+                        <SelectItem value="core-drilled">Core Drilled</SelectItem>
+                        <SelectItem value="side-mounted">Side Mounted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Finish</Label>
+                    <Select
+                      value={span.spigotColor || "polished"}
+                      onValueChange={(v: "polished" | "satin" | "black" | "white") => updateSpan({ spigotColor: v })}
+                    >
+                      <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-color`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="polished">Polished</SelectItem>
+                        <SelectItem value="satin">Satin</SelectItem>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="white">White</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Col 3: Gates */}
+                <div className="p-3 space-y-3">
+                  <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Gates</h5>
+
+                  {isSectionEnabled("Gate") && gatesAllowed && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Gate Required</Label>
+                        <Switch
+                          checked={span.gateConfig?.required || false}
+                          onCheckedChange={(required) => {
+                            if (required) {
+                              const gaps = getGateGaps("polaris", "glass");
+                              updateSpan({
+                                gateConfig: {
+                                  required: true,
+                                  hardware: "polaris",
+                                  hingeFrom: "glass",
+                                  latchTo: "glass",
+                                  hingeType: "glass-to-glass",
+                                  latchType: "glass-to-glass",
+                                  gateSize: 900,
+                                  hingePanelSize: 1200,
+                                  autoHingePanel: false,
+                                  position: 0,
+                                  flipped: false,
+                                  postAdapterPlate: false,
+                                  ...gaps,
+                                },
+                              });
+                            } else {
+                              updateSpan({ gateConfig: undefined });
+                            }
+                          }}
+                          data-testid={`span-${span.spanId}-gate-toggle`}
+                        />
+                      </div>
+
+                      {span.gateConfig?.required && (
+                        <GateControls
+                          config={span.gateConfig}
+                          spanId={span.spanId}
+                          onUpdate={(gateConfig) => updateSpan({ gateConfig: { ...gateConfig, postAdapterPlate: gateConfig.postAdapterPlate ?? false } })}
+                          calculatedHingePanelSize={optimalHingePanelSize}
+                          numPanels={span.panelLayout?.panels.length}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Col 4: Rake & Custom Panels */}
+                <div className="p-3 space-y-3">
+                  <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Rake & Custom</h5>
+
+                  {isSectionEnabled("Raked Panel") && gatesAllowed && (
+                    <>
+                      {span.maxPanelWidth < 1200 && (
+                        <p className="text-xs text-muted-foreground">Requires max panel ≥ 1200mm</p>
+                      )}
+
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Left Rake</Label>
+                          <Switch
+                            checked={span.leftRakedPanel?.enabled || false}
+                            disabled={span.maxPanelWidth < 1200}
+                            onCheckedChange={(enabled) => updateSpan({ leftRakedPanel: { enabled, height: 1500 } })}
+                            data-testid={`span-${span.spanId}-left-raked-toggle`}
+                          />
+                        </div>
+                        {span.leftRakedPanel?.enabled && (
+                          <Select
+                            value={span.leftRakedPanel.height.toString()}
+                            onValueChange={(v) => updateSpan({ leftRakedPanel: { ...span.leftRakedPanel!, height: parseInt(v) } })}
+                          >
+                            <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-left-raked-height`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1400">1400mm</SelectItem>
+                              <SelectItem value="1500">1500mm</SelectItem>
+                              <SelectItem value="1600">1600mm</SelectItem>
+                              <SelectItem value="1700">1700mm</SelectItem>
+                              <SelectItem value="1800">1800mm</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Right Rake</Label>
+                          <Switch
+                            checked={span.rightRakedPanel?.enabled || false}
+                            disabled={span.maxPanelWidth < 1200}
+                            onCheckedChange={(enabled) => updateSpan({ rightRakedPanel: { enabled, height: 1500 } })}
+                            data-testid={`span-${span.spanId}-right-raked-toggle`}
+                          />
+                        </div>
+                        {span.rightRakedPanel?.enabled && (
+                          <Select
+                            value={span.rightRakedPanel.height.toString()}
+                            onValueChange={(v) => updateSpan({ rightRakedPanel: { ...span.rightRakedPanel!, height: parseInt(v) } })}
+                          >
+                            <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-right-raked-height`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1400">1400mm</SelectItem>
+                              <SelectItem value="1500">1500mm</SelectItem>
+                              <SelectItem value="1600">1600mm</SelectItem>
+                              <SelectItem value="1700">1700mm</SelectItem>
+                              <SelectItem value="1800">1800mm</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {isSectionEnabled("Custom Panel") && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Custom Panel</Label>
+                        <Switch
+                          checked={span.customPanel?.enabled || false}
+                          onCheckedChange={(enabled) => updateSpan({ customPanel: { enabled, width: Math.min(1200, span.maxPanelWidth), height: 1200, position: 0 } })}
+                          data-testid={`span-${span.spanId}-custom-panel-toggle`}
+                        />
+                      </div>
+                      {span.customPanel?.enabled && (
+                        <CustomPanelControls
+                          config={span.customPanel}
+                          spanId={span.spanId}
+                          onUpdate={(customPanel) => updateSpan({ customPanel })}
+                          numPanels={span.panelLayout?.panels.length || 1}
+                          maxPanelWidth={span.maxPanelWidth}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Tabs — below lg */}
+              <Tabs defaultValue="dimensions" className="lg:hidden">
+                <TabsList className="w-full grid grid-cols-4 h-9">
+                  <TabsTrigger value="dimensions" className="text-xs">Dimensions</TabsTrigger>
+                  <TabsTrigger value="spigots" className="text-xs">Spigots</TabsTrigger>
+                  <TabsTrigger value="gates" className="text-xs">Gates</TabsTrigger>
+                  <TabsTrigger value="rake" className="text-xs">Rake</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="dimensions" className="space-y-3 pt-3">
+                  {isFieldEnabled("maxPanelMm") && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Max Panel Width</Label>
+                      <Select
+                        value={span.maxPanelWidth.toString()}
+                        onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((w) => (
+                            <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {showLeftGap && isFieldEnabled("startGapMm") && (
+                    <GapSlider
+                      label="LHS Gap"
+                      value={span.leftGap?.enabled ? span.leftGap.size : 0}
+                      onChange={(size) => updateSpan({ leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined })}
+                      min={0} max={150}
+                      testId={`span-${span.spanId}-left-gap-mobile`}
+                    />
+                  )}
+                  {isFieldEnabled("betweenGapMm") && (
+                    <GapSlider
+                      label="Mid Gap"
+                      value={span.desiredGap}
+                      onChange={(desiredGap) => updateSpan({ desiredGap })}
+                      min={0} max={99}
+                      testId={`span-${span.spanId}-gap-slider-mobile`}
+                    />
+                  )}
+                  {showRightGap && isFieldEnabled("endGapMm") && (
+                    <GapSlider
+                      label="RHS Gap"
+                      value={span.rightGap?.enabled ? span.rightGap.size : 0}
+                      onChange={(size) => updateSpan({ rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined })}
+                      min={0} max={150}
+                      testId={`span-${span.spanId}-right-gap-mobile`}
+                    />
+                  )}
+                </TabsContent>
+
+                <TabsContent value="spigots" className="space-y-3 pt-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Mounting</Label>
+                    <Select
+                      value={span.spigotMounting || "base-plate"}
+                      onValueChange={(v: "base-plate" | "core-drilled" | "side-mounted") => updateSpan({ spigotMounting: v })}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="base-plate">Base Plate</SelectItem>
+                        <SelectItem value="core-drilled">Core Drilled</SelectItem>
+                        <SelectItem value="side-mounted">Side Mounted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Finish</Label>
+                    <Select
+                      value={span.spigotColor || "polished"}
+                      onValueChange={(v: "polished" | "satin" | "black" | "white") => updateSpan({ spigotColor: v })}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="polished">Polished</SelectItem>
+                        <SelectItem value="satin">Satin</SelectItem>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="white">White</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="gates" className="space-y-3 pt-3">
+                  {isSectionEnabled("Gate") && gatesAllowed && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Gate Required</Label>
+                        <Switch
+                          checked={span.gateConfig?.required || false}
+                          onCheckedChange={(required) => {
+                            if (required) {
+                              const gaps = getGateGaps("polaris", "glass");
+                              updateSpan({
+                                gateConfig: {
+                                  required: true,
+                                  hardware: "polaris",
+                                  hingeFrom: "glass",
+                                  latchTo: "glass",
+                                  hingeType: "glass-to-glass",
+                                  latchType: "glass-to-glass",
+                                  gateSize: 900,
+                                  hingePanelSize: 1200,
+                                  autoHingePanel: false,
+                                  position: 0,
+                                  flipped: false,
+                                  postAdapterPlate: false,
+                                  ...gaps,
+                                },
+                              });
+                            } else {
+                              updateSpan({ gateConfig: undefined });
+                            }
+                          }}
+                          data-testid={`span-${span.spanId}-gate-toggle-mobile`}
+                        />
+                      </div>
+                      {span.gateConfig?.required && (
+                        <GateControls
+                          config={span.gateConfig}
+                          spanId={span.spanId}
+                          onUpdate={(gateConfig) => updateSpan({ gateConfig: { ...gateConfig, postAdapterPlate: gateConfig.postAdapterPlate ?? false } })}
+                          calculatedHingePanelSize={optimalHingePanelSize}
+                          numPanels={span.panelLayout?.panels.length}
+                        />
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="rake" className="space-y-3 pt-3">
+                  {isSectionEnabled("Raked Panel") && gatesAllowed && (
+                    <>
+                      {span.maxPanelWidth < 1200 && (
+                        <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+                          Raked panels require max panel width ≥ 1200mm.
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Left Rake</Label>
+                        <Switch
+                          checked={span.leftRakedPanel?.enabled || false}
+                          disabled={span.maxPanelWidth < 1200}
+                          onCheckedChange={(enabled) => updateSpan({ leftRakedPanel: { enabled, height: 1500 } })}
+                          data-testid={`span-${span.spanId}-left-raked-toggle-mobile`}
+                        />
+                      </div>
+                      {span.leftRakedPanel?.enabled && (
+                        <Select
+                          value={span.leftRakedPanel.height.toString()}
+                          onValueChange={(v) => updateSpan({ leftRakedPanel: { ...span.leftRakedPanel!, height: parseInt(v) } })}
+                        >
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1400">1400mm</SelectItem>
+                            <SelectItem value="1500">1500mm</SelectItem>
+                            <SelectItem value="1600">1600mm</SelectItem>
+                            <SelectItem value="1700">1700mm</SelectItem>
+                            <SelectItem value="1800">1800mm</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Right Rake</Label>
+                        <Switch
+                          checked={span.rightRakedPanel?.enabled || false}
+                          disabled={span.maxPanelWidth < 1200}
+                          onCheckedChange={(enabled) => updateSpan({ rightRakedPanel: { enabled, height: 1500 } })}
+                          data-testid={`span-${span.spanId}-right-raked-toggle-mobile`}
+                        />
+                      </div>
+                      {span.rightRakedPanel?.enabled && (
+                        <Select
+                          value={span.rightRakedPanel.height.toString()}
+                          onValueChange={(v) => updateSpan({ rightRakedPanel: { ...span.rightRakedPanel!, height: parseInt(v) } })}
+                        >
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1400">1400mm</SelectItem>
+                            <SelectItem value="1500">1500mm</SelectItem>
+                            <SelectItem value="1600">1600mm</SelectItem>
+                            <SelectItem value="1700">1700mm</SelectItem>
+                            <SelectItem value="1800">1800mm</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </>
+                  )}
+                  {isSectionEnabled("Custom Panel") && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Custom Panel</Label>
+                        <Switch
+                          checked={span.customPanel?.enabled || false}
+                          onCheckedChange={(enabled) => updateSpan({ customPanel: { enabled, width: Math.min(1200, span.maxPanelWidth), height: 1200, position: 0 } })}
+                          data-testid={`span-${span.spanId}-custom-panel-toggle-mobile`}
+                        />
+                      </div>
+                      {span.customPanel?.enabled && (
+                        <CustomPanelControls
+                          config={span.customPanel}
+                          spanId={span.spanId}
+                          onUpdate={(customPanel) => updateSpan({ customPanel })}
+                          numPanels={span.panelLayout?.panels.length || 1}
+                          maxPanelWidth={span.maxPanelWidth}
+                        />
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+          {/* ── END glass-pool-spigots 4-column grid ───────────────────────────── */}
 
           {/* Glass Balustrade Configuration - glass thickness and top rail */}
           {(productVariant === "glass-bal-spigots" || productVariant === "glass-bal-channel" || productVariant === "glass-bal-standoffs") && (
@@ -1394,8 +1897,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Gap Configurations - Hide for BARR, Blade, Tubular, and Hamptons PVC */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
+          {/* Gap Configurations - Hide for BARR, Blade, Tubular, Hamptons PVC, and glass-pool-spigots (uses 4-col grid) */}
+          {!isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 {showLeftGap && isFieldEnabled("startGapMm") && (
@@ -1661,12 +2164,12 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, custom-frameless, and semi-frameless */}
-          {(isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) && 
-           productVariant !== "alu-pool-barr" && 
-           productVariant !== "alu-pool-blade" && 
-           productVariant !== "alu-pool-tubular" && 
-           !productVariant.startsWith("pvc-hamptons-") && 
+          {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, custom-frameless, semi-frameless, and glass-pool-spigots (uses 4-col grid) */}
+          {!isGlassSpigots && (isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) &&
+           productVariant !== "alu-pool-barr" &&
+           productVariant !== "alu-pool-blade" &&
+           productVariant !== "alu-pool-tubular" &&
+           !productVariant.startsWith("pvc-hamptons-") &&
            productVariant !== "custom-frameless" &&
            !isSemiFrameless && (
             <div className="space-y-4 pt-4 border-t border-card-border">
@@ -1733,8 +2236,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Hardware Configuration - Show channel, spigot, OR post based on product type */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant === "glass-pool-channel" ? (
+          {/* Hardware Configuration - Show channel, spigot, OR post based on product type (glass-pool-spigots uses 4-col grid) */}
+          {!isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant === "glass-pool-channel" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Channel Hardware</h4>
               <div className="space-y-3">
@@ -1763,7 +2266,7 @@ export function SpanConfigPanel({
                 </div>
               </div>
             </div>
-          ) : productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !isSemiFrameless ? (
+          ) : !isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -1809,8 +2312,8 @@ export function SpanConfigPanel({
             </div>
           ) : null}
 
-          {/* Gate Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
-          {isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {/* Gate Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing; glass-pool-spigots uses 4-col grid */}
+          {!isGlassSpigots && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1864,8 +2367,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Raked Panels Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing (not balustrades) */}
-          {isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {/* Raked Panels Configuration - only for non-BARR/Blade/Tubular; glass-pool-spigots uses 4-col grid */}
+          {!isGlassSpigots && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
@@ -1999,8 +2502,8 @@ export function SpanConfigPanel({
           )}
 
 
-          {/* Custom Panel - Hide for BARR, Blade, and Tubular */}
-          {isSectionEnabled("Custom Panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
+          {/* Custom Panel - Hide for BARR, Blade, Tubular, and glass-pool-spigots (uses 4-col grid) */}
+          {!isGlassSpigots && isSectionEnabled("Custom Panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && (
             <div className="space-y-3 pt-4 border-t border-card-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -2034,8 +2537,8 @@ export function SpanConfigPanel({
               </div>
           )}
 
-          {/* Hardware Configuration - Moved to bottom */}
-          {productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && !isSemiFrameless && productVariant === "glass-pool-channel" ? (
+          {/* Hardware Configuration - Moved to bottom (glass-pool-spigots uses 4-col grid) */}
+          {!isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && !isSemiFrameless && productVariant === "glass-pool-channel" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Channel Hardware</h4>
               <div className="space-y-3">
@@ -2064,7 +2567,7 @@ export function SpanConfigPanel({
                 </div>
               </div>
             </div>
-          ) : productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
+          ) : !isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -2110,8 +2613,8 @@ export function SpanConfigPanel({
             </div>
           ) : null}
 
-          {/* Gate Configuration - Moved to bottom */}
-          {isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && (
+          {/* Gate Configuration - Moved to bottom (glass-pool-spigots uses 4-col grid) */}
+          {!isGlassSpigots && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

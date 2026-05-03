@@ -72,6 +72,7 @@ export default function FenceLogic() {
   useEffect(() => {
     if (hasRestoredRef.current) return;
     hasRestoredRef.current = true;
+    if (urlVariant) return;
     try {
       const raw = localStorage.getItem("bhub-draft-v1");
       if (!raw) return;
@@ -499,18 +500,18 @@ export default function FenceLogic() {
         </div>
       )}
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_420px] overflow-hidden">
-        {/* 3D Visualization */}
-        <div className="relative h-full min-h-[400px] lg:min-h-0">
-          <FenceVisualization 
-            design={design} 
-            activeSpanId={activeSpanId} 
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* 3D Visualization — fixed height strip */}
+        <div className="relative h-[300px] shrink-0 border-b border-card-border">
+          <FenceVisualization
+            design={design}
+            activeSpanId={activeSpanId}
             onDownloadPDFReady={setDownloadPDFHandler}
           />
         </div>
 
-        {/* Controls Panel */}
-        <div className="h-full overflow-y-auto bg-card border-l border-card-border">
+        {/* Controls Panel — full width, scrollable */}
+        <div className="flex-1 overflow-y-auto bg-card">
           <div className="p-6 space-y-6">
             {/* Design Name */}
             <div className="space-y-2">
