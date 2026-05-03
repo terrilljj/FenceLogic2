@@ -13,6 +13,7 @@ import { calculatePanelLayout, calculateBarrPanelLayout, calculateBladePanelLayo
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
+import DynamicFieldColumns from "./DynamicFieldColumns";
 import { CustomPanelControls } from "./custom-panel-controls";
 import { FullyCustomPanelControls } from "./fully-custom-panel-controls";
 import { AutoCalcPanelControls } from "./auto-calc-panel-controls";
@@ -572,7 +573,16 @@ export function SpanConfigPanel({
                 </span>
               </div>
 
-              {/* 4-column grid — desktop (lg+) */}
+              {/* 4-column grid — desktop (lg+).
+                  If calculatorConfig has fields with displayColumn set, render data-driven columns.
+                  Otherwise fall back to the hardcoded layout (backward compat for unimported styles). */}
+              {calculatorConfig?.fields && Object.values(calculatorConfig.fields).some((f: any) => f.displayColumn != null) ? (
+                <DynamicFieldColumns
+                  fields={calculatorConfig.fields}
+                  span={span}
+                  updateSpan={updateSpan}
+                />
+              ) : (
               <div className="hidden lg:grid grid-cols-4 divide-x divide-card-border border border-card-border rounded-md">
 
                 {/* Col 1: Dimensions & Gaps */}
@@ -819,6 +829,7 @@ export function SpanConfigPanel({
                   )}
                 </div>
               </div>
+              )} {/* end fallback hardcoded grid */}
 
               {/* Mobile Tabs — below lg */}
               <Tabs defaultValue="dimensions" className="lg:hidden">

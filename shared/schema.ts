@@ -541,6 +541,11 @@ export const spanConfigSchema = z.object({
     height: z.number().min(1200).max(1800), // Custom panel height in mm
     position: z.number().min(0), // Panel position index (like glass-to-glass gate)
   }).optional(),
+  // Generic field value store for data-driven fields rendered by DynamicFieldColumns.
+  // Keys are the fieldKey from style_calculator_fields (e.g. "spigot-family", "panel-height").
+  // Legacy specific fields (spigotMounting, spigotColor, maxPanelWidth, etc.) are
+  // mirrored here when set via DynamicFieldColumns for BOM discriminator resolution.
+  fieldValues: z.record(z.any()).optional(),
   layoutMode: z.enum(["auto-equalize", "fully-custom", "auto-calc"]).default("auto-equalize"), // Layout calculation mode
   customLayout: z.object({
     panels: z.array(z.object({
@@ -735,12 +740,16 @@ export type Product = typeof products.$inferSelect;
 // Product Slots table for slot-based product configuration
 export const productSlots = pgTable("product_slots", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  internalId: varchar("internal_id", { length: 50 }).notNull(), // e.g., "0001", "0002", "0003"
+  internalId: varchar("internal_id", { length: 50 }).notNull(), // e.g., "GP-0250", "SP-MAD-CD-P"
   productVariant: varchar("product_variant", { length: 100 }).notNull(), // e.g., "glass-pool-spigots"
-  fieldName: varchar("field_name", { length: 100 }).notNull(), // e.g., "glass-panels", "spigots"
+  fieldName: varchar("field_name", { length: 100 }).notNull(), // e.g., "glass-panels", "spigot-hardware"
   sequence: integer("sequence").notNull(), // Display order (1, 2, 3...)
   productId: varchar("product_id", { length: 100 }), // Foreign key to products table (nullable)
   label: varchar("label", { length: 200 }), // Display name (e.g., "1300mm Raked Panel")
+  // discriminatorAttributes: keyed attributes that uniquely identify this slot within a fieldName.
+  // e.g. {"size_mm":"1200"} for glass panels, {"family":"madrid","mounting":"core-drilled","finish":"polished"} for spigots.
+  // Null on legacy slots (pre-migration) — resolver falls back to regex on product description.
+  discriminatorAttributes: jsonb("discriminator_attributes"),
   isActive: integer("is_active").notNull().default(1), // 1 = active, 0 = inactive
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -763,6 +772,10 @@ export const fenceStyles = pgTable("fence_styles", {
   description: text("description"), // Optional description
   productVariant: varchar("product_variant", { length: 100 }), // Legacy link to ProductVariant type
   templateId: varchar("template_id", { length: 100 }), // Link to CSV template (e.g., "01-pool-spigots")
+  // Panel size auto-generate config (replaces PANEL_SIZE_REGISTRY hardcoding)
+  panelIncrement: integer("panel_increment"), // e.g. 50 (mm step). If set, auto-generate is available.
+  panelFieldName: varchar("panel_field_name", { length: 100 }), // e.g. "glass-panels"
+  panelPrefix: varchar("panel_prefix", { length: 10 }), // e.g. "GP"
   
   // Panel width constraints for calculator (CompositionInput requirements)
   minPanelWidth: integer("min_panel_width").default(250), // Minimum panel width in mm
@@ -822,10 +835,17 @@ export const styleCalculatorFields = pgTable("style_calculator_fields", {
   
   // UI configuration
   displayOrder: integer("display_order").notNull().default(0),
-  section: varchar("section", { length: 100 }), // Group fields into sections
+  section: varchar("section", { length: 100 }), // Group fields into sections (controls isSectionEnabled)
   tooltip: text("tooltip"), // Help text
   isRequired: integer("is_required").notNull().default(0), // 1 = required field
   isVisible: integer("is_visible").notNull().default(1), // 1 = visible, 0 = hidden
+  // Data-driven layout columns (replaces hardcoded 4-column JSX in span-config-panel)
+  displayColumn: integer("display_column"), // Column number (1=Dimensions, 2=Hardware, 3=Gates, 4=Rake…)
+  displayPosition: integer("display_position"), // Sort order within the column
+  displayColumnName: varchar("display_column_name", { length: 100 }), // Column header label
+  // visibilityCondition: show field only when another field has a given value.
+  // e.g. {"fieldKey":"gate-config","value":true} — show when gate-config is truthy.
+  visibilityCondition: jsonb("visibility_condition"),
   
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
