@@ -413,7 +413,10 @@ export class DatabaseStorage implements IStorage {
   
   async getAllSlotsByVariant(productVariant: string): Promise<ProductSlot[]> {
     return await db.select().from(productSlots)
-      .where(eq(productSlots.productVariant, productVariant))
+      .where(and(
+        eq(productSlots.productVariant, productVariant),
+        eq(productSlots.isActive, 1)
+      ))
       .orderBy(asc(productSlots.fieldName), asc(productSlots.sequence));
   }
   

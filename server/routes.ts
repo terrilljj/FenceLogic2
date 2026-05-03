@@ -243,6 +243,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin BOM preview — same computation as /api/quote but returns full SKUs and prices.
+  // Use this endpoint to verify slot resolver output during development and testing.
+  app.post("/api/admin/bom-preview", requireAdmin, async (req, res) => {
+    try {
+      const { design } = req.body;
+      if (!design || !design.spans) {
+        return res.status(400).json({ error: "Invalid design data" });
+      }
+
+      const [slotMappings, allProducts] = await Promise.all([
+        design.productVariant
+          ? storage.getAllSlotsByVariant(design.productVariant)
+          : Promise.resolve([]),
+        storage.getAllProducts(),
+      ]);
+
+      const slotData = slotMappings.map(s => ({
+        internalId: s.internalId,
+        fieldName: s.fieldName,
+        productId: s.productId,
+        label: s.label,
+        discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
+      }));
+
+      const productData = allProducts.map(p => ({
+        id: p.id,
+        code: p.code,
+        description: p.description,
+        price: p.price,
+      }));
+
+      const components = calculateComponents(design, slotData, productData);
+
+      // Enrich each component with price from the products table
+      const productByCode = new Map(allProducts.map(p => [p.code, p]));
+      const enriched = components.map(c => {
+        const prod = c.sku ? productByCode.get(c.sku) : undefined;
+        const unitPrice = prod
+          ? parseFloat(prod.price?.replace(/[$,\s]/g, "") ?? "") || null
+          : null;
+        return {
+          qty: c.qty,
+          description: c.description,
+          sku: c.sku ?? "",
+          unitPrice,
+          totalPrice: unitPrice != null ? Math.round(unitPrice * c.qty * 100) / 100 : null,
+        };
+      });
+
+      res.json({ components: enriched });
+    } catch (error) {
+      console.error("Error computing admin BOM preview:", error);
+      res.status(500).json({ error: "Failed to compute BOM preview" });
+    }
+  });
+
   // Email quote endpoint — now computes BOM server-side instead of trusting client data
   app.post("/api/email-quote", emailQuoteLimiter, async (req, res) => {
     try {

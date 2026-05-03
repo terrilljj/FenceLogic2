@@ -62,7 +62,7 @@ export function calculateComponents(
       if (slot.discriminatorAttributes) {
         // New path: all provided discriminators must be present and match
         const attrs = slot.discriminatorAttributes as Record<string, string>;
-        if (Object.entries(discriminators).every(([k, v]) => attrs[k] === v)) {
+        if (Object.entries(discriminators).every(([k, v]) => String(attrs[k]) === String(v))) {
           return { sku: product.code, description: product.description };
         }
       } else {
