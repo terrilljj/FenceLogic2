@@ -1,0 +1,243 @@
+variable_type,label,field_type,min,max,step,default_value,options,enabled,slot_prefix,size_mm,product_sku,product_description,product_price,notes
+section-length,Section Length,number,500,10000,50,6000,,,,,,,,
+left-gap,Left Gap,number,0,100,5,50,,,,,,,,
+right-gap,Right Gap,number,0,100,5,50,,,,,,,,
+desired-gap,Desired Gap,number,30,99,5,50,,,,,,,,
+max-panel-width,Max Panel Width,number,500,2000,50,1500,,,,,,,,
+panel-height,Panel Height,select,,,,1200,1200 | 1300 | 1400 | 1500 (mm),,,,,,,Standard 1200 covers most. Higher heights use raked-panel SKUs.
+spigot-family,Spigot Family,select,,,,Madrid,Madrid | Madrid Pool | Insuluxe | Lifestyle Square | Lifestyle Round | Rio,,,,,,,
+spigot-mounting,Spigot Mounting,select,,,,base-plate,base-plate | core-drilled,,,,,,,
+spigot-hardware,Madrid — core-drilled — Polish,product,,,,,,,spigot-hardware,,MAD-S-P,Madrid — core-drilled — Polish,52.1,"V1 family 1/6. GO desc: MADRID - Core Drill Spigot - POLISH. SS2205, 45mm front profile, 227mm + M10 height adj, earthing terminal incl. spigot-mounting=core-drilled. Same SKU also serves balustrade application (cross-ref balustrade.csv). IMG: hero shot needed | SEO: madrid pool spigot polish"
+spigot-hardware,Madrid — core-drilled — Satin,product,,,,,,,spigot-hardware,,MAD-S-S,Madrid — core-drilled — Satin,52.1,"V1 family 1/6. GO desc: MADRID - Core Drill Spigot - SATIN. SS2205, earthing terminal incl. spigot-mounting=core-drilled."
+spigot-hardware,Madrid — core-drilled — Matt Black,product,,,,,,,spigot-hardware,,MAD-S-B,Madrid — core-drilled — Matt Black,58.63,"V1 family 1/6. GO desc: MADRID - Core Drill Spigot - BLACK. SS2205, earthing terminal incl. spigot-mounting=core-drilled. Akzo Nobel textured powder over zirconium-based pre-treatment."
+spigot-hardware,Madrid — core-drilled — Matt White,product,,,,,,,spigot-hardware,,MAD-S-MW,Madrid — core-drilled — Matt White,,NEW: 4th finish per extract. Confirm GO stocks.
+spigot-hardware,Madrid — base-plated — Polish,product,,,,,,,spigot-hardware,,MAD-SBP-P,Madrid — base-plated — Polish,50,"V1 family 1/6. GO desc: MADRID - Spigot w/ Base Plate - POLISH. SS2205, 162mm tall, 95×95mm × 7mm base plate, 4× CSK Ø11.5mm holes, 70×70mm pattern, earthing terminal incl. spigot-mounting=base-plate."
+spigot-hardware,Madrid — base-plated — Satin,product,,,,,,,spigot-hardware,,MAD-SBP-S,Madrid — base-plated — Satin,50,"V1 family 1/6. GO desc: MADRID - Spigot w/ Base Plate - SATIN. SS2205, base-plated. spigot-mounting=base-plate."
+spigot-hardware,Madrid — base-plated — Matt Black,product,,,,,,,spigot-hardware,,MAD-SBP-B,Madrid — base-plated — Matt Black,56.92,"V1 family 1/6. GO desc: MADRID - Base Plated Spigot - BLACK. SS2205, base-plated. spigot-mounting=base-plate. Akzo Nobel textured powder over zirconium-based pre-treatment."
+spigot-hardware,Madrid — base-plated — Matt White,product,,,,,,,spigot-hardware,,MAD-SBP-MW,Madrid — base-plated — Matt White,,NEW: 4th finish per extract. Confirm GO stocks.
+spigot-hardware,Madrid Pool — core-drilled — Polish,product,,,,,,,spigot-hardware,,POOLMAD-S-P,Madrid Pool — core-drilled — Polish,,"Pool-specific SS2205, 45mm front, earthing terminal incl."
+spigot-hardware,Madrid Pool — core-drilled — Satin,product,,,,,,,spigot-hardware,,POOLMAD-S-S,Madrid Pool — core-drilled — Satin,,"Pool-specific SS2205, 45mm front, earthing terminal incl."
+spigot-hardware,Madrid Pool — core-drilled — Matt Black,product,,,,,,,spigot-hardware,,POOLMAD-S-B,Madrid Pool — core-drilled — Matt Black,,"Pool-specific SS2205, 45mm front, earthing terminal incl."
+spigot-hardware,Madrid Pool — base-plated — Polish,product,,,,,,,spigot-hardware,,POOLMAD-SBP-P,Madrid Pool — base-plated — Polish,,"162mm tall, 95×95×7mm baseplate, 4× CSK Ø11.5mm holes."
+spigot-hardware,Madrid Pool — base-plated — Satin,product,,,,,,,spigot-hardware,,POOLMAD-SBP-S,Madrid Pool — base-plated — Satin,,"162mm tall, 95×95×7mm baseplate, 4× CSK Ø11.5mm holes."
+spigot-hardware,Madrid Pool — base-plated — Matt Black,product,,,,,,,spigot-hardware,,POOLMAD-SBP-B,Madrid Pool — base-plated — Matt Black,,"162mm tall, 95×95×7mm baseplate, 4× CSK Ø11.5mm holes."
+spigot-hardware,Insuluxe — core-drilled — Silver,product,,,,,,,spigot-hardware,,INS-S-SG,Insuluxe — core-drilled — Silver,,"SS2205+polymer overmould. AS3000 compliant — no cover, no electrician needed."
+spigot-hardware,Insuluxe — core-drilled — Matt Black,product,,,,,,,spigot-hardware,,INS-S-B,Insuluxe — core-drilled — Matt Black,,"SS2205+polymer overmould. AS3000 compliant — no cover, no electrician needed."
+spigot-hardware,Insuluxe — core-drilled — Matt White,product,,,,,,,spigot-hardware,,INS-S-W,Insuluxe — core-drilled — Matt White,,"SS2205+polymer overmould. AS3000 compliant — no cover, no electrician needed."
+spigot-hardware,Insuluxe — base-plated — Silver,product,,,,,,,spigot-hardware,,INS-SBP-SG,Insuluxe — base-plated — Silver,,"102×102mm baseplate 12mm thick, 4× M10 CSK fixings."
+spigot-hardware,Insuluxe — base-plated — Matt Black,product,,,,,,,spigot-hardware,,INS-SBP-B,Insuluxe — base-plated — Matt Black,,"102×102mm baseplate 12mm thick, 4× M10 CSK fixings."
+spigot-hardware,Insuluxe — base-plated — Matt White,product,,,,,,,spigot-hardware,,INS-SBP-W,Insuluxe — base-plated — Matt White,,"102×102mm baseplate 12mm thick, 4× M10 CSK fixings."
+spigot-hardware,Lifestyle Square — core-drilled — Polish,product,,,,,,,spigot-hardware,,LS-DF-S-P,Lifestyle Square — core-drilled — Polish,,Patented double-friction. 47mm front. 236mm tall.
+spigot-hardware,Lifestyle Square — core-drilled — Satin,product,,,,,,,spigot-hardware,,LS-DF-S-S,Lifestyle Square — core-drilled — Satin,,Patented double-friction. 47mm front. 236mm tall.
+spigot-hardware,Lifestyle Square — core-drilled — Matt Black,product,,,,,,,spigot-hardware,,LS-DF-S-B,Lifestyle Square — core-drilled — Matt Black,,Patented double-friction. 47mm front. 236mm tall.
+spigot-hardware,Lifestyle Square — base-plated — Polish,product,,,,,,,spigot-hardware,,LS-DF-SBP-P,Lifestyle Square — base-plated — Polish,,22mm DOMICAL COVER INCLUDED. 7mm baseplate.
+spigot-hardware,Lifestyle Square — base-plated — Satin,product,,,,,,,spigot-hardware,,LS-DF-SBP-S,Lifestyle Square — base-plated — Satin,,22mm DOMICAL COVER INCLUDED. 7mm baseplate.
+spigot-hardware,Lifestyle Square — base-plated — Matt Black,product,,,,,,,spigot-hardware,,LS-DF-SBP-B,Lifestyle Square — base-plated — Matt Black,,22mm DOMICAL COVER INCLUDED. 7mm baseplate.
+spigot-hardware,Lifestyle Round — core-drilled — Satin,product,,,,,,,spigot-hardware,,LR-DF-S-S,Lifestyle Round — core-drilled — Satin,,Round profile. Single finish stocked. Confirm V1 inclusion vs V2 defer.
+spigot-hardware,Lifestyle Round — base-plated — Satin,product,,,,,,,spigot-hardware,,LR-DF-SBP-S,Lifestyle Round — base-plated — Satin,,Round profile. Confirm V1 inclusion.
+spigot-hardware,Rio — core-drilled — Polish,product,,,,,,,spigot-hardware,,RIO-S-P,Rio — core-drilled — Polish,,Round Ø50mm classic. SS2205. NO Matt Black.
+spigot-hardware,Rio — core-drilled — Satin,product,,,,,,,spigot-hardware,,RIO-S-S,Rio — core-drilled — Satin,,Round Ø50mm classic. SS2205. NO Matt Black.
+spigot-hardware,Rio — core-drilled — Matt White,product,,,,,,,spigot-hardware,,RIO-S-MW,Rio — core-drilled — Matt White,,Round Ø50mm classic. SS2205. NO Matt Black.
+spigot-hardware,Rio — base-plated — Polish,product,,,,,,,spigot-hardware,,RIO-SBP-P,Rio — base-plated — Polish,,"Ø100mm baseplate, 8mm thick."
+spigot-hardware,Rio — base-plated — Satin,product,,,,,,,spigot-hardware,,RIO-SBP-S,Rio — base-plated — Satin,,"Ø100mm baseplate, 8mm thick."
+spigot-hardware,Rio — base-plated — Matt White,product,,,,,,,spigot-hardware,,RIO-SBP-MW,Rio — base-plated — Matt White,,"Ø100mm baseplate, 8mm thick."
+as-3000-required,As 3000 Required,boolean,,,,false,,,,,,,,
+as-3000-cover,Madrid Insulator — core-drilled cover — Matt Black,product,,,,,,,as-3000-cover,,MAD-INS-CD-B,Madrid Insulator — core-drilled cover — Matt Black,,BOM auto-add when as-3000=on AND family=Madrid/Madrid Pool. Includes dress ring + 2 screw covers.
+as-3000-cover,Madrid Insulator — core-drilled cover — Silver,product,,,,,,,as-3000-cover,,MAD-INS-CD-SG,Madrid Insulator — core-drilled cover — Silver,,BOM auto-add when as-3000=on AND family=Madrid/Madrid Pool. Includes dress ring + 2 screw covers.
+as-3000-cover,Madrid Insulator — core-drilled cover — Matt White,product,,,,,,,as-3000-cover,,MAD-INS-CD-W,Madrid Insulator — core-drilled cover — Matt White,,BOM auto-add when as-3000=on AND family=Madrid/Madrid Pool. Includes dress ring + 2 screw covers.
+as-3000-cover,Madrid Insulator — base-plated cover — Matt Black,product,,,,,,,as-3000-cover,,MAD-INS-BP-B,Madrid Insulator — base-plated cover — Matt Black,,BOM auto-add. Includes 2-part domical + 2 screw covers.
+as-3000-cover,Madrid Insulator — base-plated cover — Silver,product,,,,,,,as-3000-cover,,MAD-INS-BP-SG,Madrid Insulator — base-plated cover — Silver,,BOM auto-add. Includes 2-part domical + 2 screw covers.
+as-3000-cover,Madrid Insulator — base-plated cover — Matt White,product,,,,,,,as-3000-cover,,MAD-INS-BP-W,Madrid Insulator — base-plated cover — Matt White,,BOM auto-add. Includes 2-part domical + 2 screw covers.
+standard-panel,12mm Glass Frameless 200W x 1200H,product,,,,,,,standard-panel,200,12N-0200,12mm Glass Frameless 200W x 1200H,10.12,
+standard-panel,12mm Glass Frameless 250W x 1200H,product,,,,,,,standard-panel,250,12N-0250,12mm Glass Frameless 250W x 1200H,12.65,
+standard-panel,12mm Glass Frameless 300W x 1200H,product,,,,,,,standard-panel,300,12N-0300,12mm Glass Frameless 300W x 1200H,15.18,
+standard-panel,12mm Glass Frameless 350W x 1200H,product,,,,,,,standard-panel,350,12N-0350,12mm Glass Frameless 350W x 1200H,17.71,
+standard-panel,12mm Glass Frameless 400W x 1200H,product,,,,,,,standard-panel,400,12N-0400,12mm Glass Frameless 400W x 1200H,20.24,
+standard-panel,12mm Glass Frameless 450W x 1200H,product,,,,,,,standard-panel,450,12N-0450,12mm Glass Frameless 450W x 1200H,22.77,
+standard-panel,12mm Glass Frameless 500W x 1200H,product,,,,,,,standard-panel,500,12N-0500,12mm Glass Frameless 500W x 1200H,25.31,
+standard-panel,12mm Glass Frameless 550W x 1200H,product,,,,,,,standard-panel,550,12N-0550,12mm Glass Frameless 550W x 1200H,27.83,
+standard-panel,12mm Glass Frameless 600W x 1200H,product,,,,,,,standard-panel,600,12N-0600,12mm Glass Frameless 600W x 1200H,30.36,
+standard-panel,12mm Glass Frameless 650W x 1200H,product,,,,,,,standard-panel,650,12N-0650,12mm Glass Frameless 650W x 1200H,32.89,
+standard-panel,12mm Glass Frameless 700W x 1200H,product,,,,,,,standard-panel,700,12N-0700,12mm Glass Frameless 700W x 1200H,35.43,
+standard-panel,12mm Glass Frameless 750W x 1200H,product,,,,,,,standard-panel,750,12N-0750,12mm Glass Frameless 750W x 1200H,37.95,
+standard-panel,12mm Glass Frameless 800W x 1200H,product,,,,,,,standard-panel,800,12N-0800,12mm Glass Frameless 800W x 1200H,40.48,
+standard-panel,12mm Glass Frameless 850W x 1200H,product,,,,,,,standard-panel,850,12N-0850,12mm Glass Frameless 850W x 1200H,43.01,
+standard-panel,12mm Glass Frameless 900W x 1200H,product,,,,,,,standard-panel,900,12N-0900,12mm Glass Frameless 900W x 1200H,45.54,
+standard-panel,12mm Glass Frameless 950W x 1200H,product,,,,,,,standard-panel,950,12N-0950,12mm Glass Frameless 950W x 1200H,48.07,
+standard-panel,12mm Glass Frameless 1000W x 1200H,product,,,,,,,standard-panel,1000,12N-1000,12mm Glass Frameless 1000W x 1200H,50.6,
+standard-panel,12mm Glass Frameless 1050W x 1200H,product,,,,,,,standard-panel,1050,12N-1050,12mm Glass Frameless 1050W x 1200H,53.13,
+standard-panel,12mm Glass Frameless 1100W x 1200H,product,,,,,,,standard-panel,1100,12N-1100,12mm Glass Frameless 1100W x 1200H,55.66,
+standard-panel,12mm Glass Frameless 1150W x 1200H,product,,,,,,,standard-panel,1150,12N-1150,12mm Glass Frameless 1150W x 1200H,58.19,
+standard-panel,12mm Glass Frameless 1200W x 1200H,product,,,,,,,standard-panel,1200,12N-1200,12mm Glass Frameless 1200W x 1200H,60.72,
+standard-panel,12mm Glass Frameless 1250W x 1200H,product,,,,,,,standard-panel,1250,12N-1250,12mm Glass Frameless 1250W x 1200H,63.25,
+standard-panel,12mm Glass Frameless 1300W x 1200H,product,,,,,,,standard-panel,1300,12N-1300,12mm Glass Frameless 1300W x 1200H,65.78,
+standard-panel,12mm Glass Frameless 1350W x 1200H,product,,,,,,,standard-panel,1350,12N-1350,12mm Glass Frameless 1350W x 1200H,68.31,
+standard-panel,12mm Glass Frameless 1400W x 1200H,product,,,,,,,standard-panel,1400,12N-1400,12mm Glass Frameless 1400W x 1200H,70.84,
+standard-panel,12mm Glass Frameless 1450W x 1200H,product,,,,,,,standard-panel,1450,12N-1450,12mm Glass Frameless 1450W x 1200H,73.37,
+standard-panel,12mm Glass Frameless 1500W x 1200H,product,,,,,,,standard-panel,1500,12N-1500,12mm Glass Frameless 1500W x 1200H,75.9,
+standard-panel,12mm Glass Frameless 1550W x 1200H,product,,,,,,,standard-panel,1550,12N-1550,12mm Glass Frameless 1550W x 1200H,78.43,
+standard-panel,12mm Glass Frameless 1600W x 1200H,product,,,,,,,standard-panel,1600,12N-1600,12mm Glass Frameless 1600W x 1200H,80.97,
+standard-panel,12mm Glass Frameless 1650W x 1200H,product,,,,,,,standard-panel,1650,12N-1650,12mm Glass Frameless 1650W x 1200H,83.49,
+standard-panel,12mm Glass Frameless 1700W x 1200H,product,,,,,,,standard-panel,1700,12N-1700,12mm Glass Frameless 1700W x 1200H,86.03,
+standard-panel,12mm Glass Frameless 1750W x 1200H,product,,,,,,,standard-panel,1750,12N-1750,12mm Glass Frameless 1750W x 1200H,88.55,
+standard-panel,12mm Glass Frameless 1800W x 1200H,product,,,,,,,standard-panel,1800,12N-1800,12mm Glass Frameless 1800W x 1200H,91.08,
+standard-panel,12mm Glass Frameless 1850W x 1200H,product,,,,,,,standard-panel,1850,12N-1850,12mm Glass Frameless 1850W x 1200H,93.62,
+standard-panel,12mm Glass Frameless 1900W x 1200H,product,,,,,,,standard-panel,1900,12N-1900,12mm Glass Frameless 1900W x 1200H,96.14,
+standard-panel,12mm Glass Frameless 1950W x 1200H,product,,,,,,,standard-panel,1950,12N-1950,12mm Glass Frameless 1950W x 1200H,98.67,
+standard-panel,12mm Glass Frameless 2000W x 1200H,product,,,,,,,standard-panel,2000,12N-2000,12mm Glass Frameless 2000W x 1200H,101.21,
+raked-panels,Raked Panels,boolean,,,,false,,,,,,,,
+raked-panel-height,Raked Panel Height,select,,,,1500,1400 | 1500 | 1600 | 1700 | 1800 (mm),,,,,,,
+raked-panel,Retaining wall panel 1200W × 1400H,product,,,,,,,,1400,12NRP-1400HT,Retaining wall panel 1200W × 1400H,,Always 1200mm wide. No raked hinge variants.
+raked-panel,Retaining wall panel 1200W × 1500H,product,,,,,,,,1500,12NRP-1500HT,Retaining wall panel 1200W × 1500H,,Always 1200mm wide. No raked hinge variants.
+raked-panel,Retaining wall panel 1200W × 1600H,product,,,,,,,,1600,12NRP-1600HT,Retaining wall panel 1200W × 1600H,,Always 1200mm wide. No raked hinge variants.
+raked-panel,Retaining wall panel 1200W × 1700H,product,,,,,,,,1700,12NRP-1700HT,Retaining wall panel 1200W × 1700H,,Always 1200mm wide. No raked hinge variants.
+raked-panel,Retaining wall panel 1200W × 1800H,product,,,,,,,,1800,12NRP-1800HT,Retaining wall panel 1200W × 1800H,,Always 1200mm wide. No raked hinge variants.
+hinge-panel-style,Hinge Panel Style,select,,,,Master Range,Master Range (12NH-) | Polaris Soft Close (12NPH-),,,,,,,
+hinge-panel-width,Hinge Panel Width,select,,,,1200,600 | 800 | 1000 | 1100 | 1200 | 1300 | 1400 | 1500 | 1600 | 1700 | 1800 (mm),,,,,,,
+hinge-panel-mr,12mm Glass Master Hinge 600W x 1200H,product,,,,,,,hinge-panel-mr,600,12NH-0600,12mm Glass Master Hinge 600W x 1200H,35.26,
+hinge-panel-mr,12mm Glass Master Hinge 800W x 1200H,product,,,,,,,hinge-panel-mr,800,12NH-0800,12mm Glass Master Hinge 800W x 1200H,47,
+hinge-panel-mr,12mm Glass Master Hinge 1000W x 1200H,product,,,,,,,hinge-panel-mr,1000,12NH-1000,12mm Glass Master Hinge 1000W x 1200H,57.19,
+hinge-panel-mr,12mm Glass Master Hinge 1100W x 1200H,product,,,,,,,hinge-panel-mr,1100,12NH-1100,12mm Glass Master Hinge 1100W x 1200H,62.21,
+hinge-panel-mr,12mm Glass Master Hinge 1200W x 1200H,product,,,,,,,hinge-panel-mr,1200,12NH-1200,12mm Glass Master Hinge 1200W x 1200H,67.24,
+hinge-panel-mr,12mm Glass Master Hinge 1300W x 1200H,product,,,,,,,hinge-panel-mr,1300,12NH-1300,12mm Glass Master Hinge 1300W x 1200H,72.25,
+hinge-panel-mr,12mm Glass Master Hinge 1400W x 1200H,product,,,,,,,hinge-panel-mr,1400,12NH-1400,12mm Glass Master Hinge 1400W x 1200H,77.27,
+hinge-panel-mr,12mm Glass Master Hinge 1500W x 1200H,product,,,,,,,hinge-panel-mr,1500,12NH-1500,12mm Glass Master Hinge 1500W x 1200H,82.3,
+hinge-panel-mr,12mm Glass Master Hinge 1600W x 1200H,product,,,,,,,hinge-panel-mr,1600,12NH-1600,12mm Glass Master Hinge 1600W x 1200H,87.32,
+hinge-panel-mr,12mm Glass Master Hinge 1700W x 1200H,product,,,,,,,hinge-panel-mr,1700,12NH-1700,12mm Glass Master Hinge 1700W x 1200H,92.78,
+hinge-panel-mr,12mm Glass Master Hinge 1800W x 1200H,product,,,,,,,hinge-panel-mr,1800,12NH-1800,12mm Glass Master Hinge 1800W x 1200H,97.37,
+hinge-panel-polaris,12mm Glass Polaris Hinge 600W x 1200H,product,,,,,,,hinge-panel-polaris,600,12NPH-0600,12mm Glass Polaris Hinge 600W x 1200H,39.14,
+hinge-panel-polaris,12mm Glass Polaris Hinge 800W x 1200H,product,,,,,,,hinge-panel-polaris,800,12NPH-0800,12mm Glass Polaris Hinge 800W x 1200H,52.18,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1000W x 1200H,product,,,,,,,hinge-panel-polaris,1000,12NPH-1000,12mm Glass Polaris Hinge 1000W x 1200H,64.06,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1100W x 1200H,product,,,,,,,hinge-panel-polaris,1100,12NPH-1100,12mm Glass Polaris Hinge 1100W x 1200H,68.6,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1200W x 1200H,product,,,,,,,hinge-panel-polaris,1200,12NPH-1200,12mm Glass Polaris Hinge 1200W x 1200H,73.11,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1300W x 1200H,product,,,,,,,hinge-panel-polaris,1300,12NPH-1300,12mm Glass Polaris Hinge 1300W x 1200H,77.63,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1400W x 1200H,product,,,,,,,hinge-panel-polaris,1400,12NPH-1400,12mm Glass Polaris Hinge 1400W x 1200H,82.15,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1500W x 1200H,product,,,,,,,hinge-panel-polaris,1500,12NPH-1500,12mm Glass Polaris Hinge 1500W x 1200H,86.68,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1600W x 1200H,product,,,,,,,hinge-panel-polaris,1600,12NPH-1600,12mm Glass Polaris Hinge 1600W x 1200H,91.21,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1700W x 1200H,product,,,,,,,hinge-panel-polaris,1700,12NPH-1700,12mm Glass Polaris Hinge 1700W x 1200H,96.89,
+hinge-panel-polaris,12mm Glass Polaris Hinge 1800W x 1200H,product,,,,,,,hinge-panel-polaris,1800,12NPH-1800,12mm Glass Polaris Hinge 1800W x 1200H,100.24,
+gate-config,Gate Config,boolean,,,,false,,,,,,,,
+gate-type,Gate Type,select,,,,Master Range Standard,Master Range Standard (08SLG-) | Polaris GG (12PGG-) | Polaris Wall-Post (12PWG-),,,,,,,
+gate-width,Gate Width,select,,,,1000,Master Range: 750/834/890/1000mm. Polaris soft-close: 800/900mm only.,,,,,,,
+gate-panel-mr,Master Range gate 750mm — 8mm glass,product,,,,,,,,750,08SLG-0750,Master Range gate 750mm — 8mm glass,,Wall/post mount.
+gate-panel-mr,Master Range gate 834mm — 8mm glass,product,,,,,,,,834,08SLG-0834,Master Range gate 834mm — 8mm glass,,Wall/post mount.
+gate-panel-mr,Master Range gate 890mm — 8mm glass,product,,,,,,,,890,08SLG-0890,Master Range gate 890mm — 8mm glass,,Wall/post mount.
+gate-panel-mr,Master Range gate 1000mm — 8mm glass,product,,,,,,,,1000,08SLG-1000,Master Range gate 1000mm — 8mm glass,,Wall/post mount.
+gate-panel-polaris-wp,Polaris soft-close wall/post gate 800mm — 12mm glass,product,,,,,,,,800,12PWG-0800,Polaris soft-close wall/post gate 800mm — 12mm glass,,2× cut-out + 2× Ø12mm holes.
+gate-panel-polaris-wp,Polaris soft-close wall/post gate 900mm — 12mm glass,product,,,,,,,,900,12PWG-0900,Polaris soft-close wall/post gate 900mm — 12mm glass,,2× cut-out + 2× Ø12mm holes.
+gate-panel-polaris-gg,Polaris soft-close glass-to-glass gate 800mm — 12mm glass,product,,,,,,,,800,12PGG-0800,Polaris soft-close glass-to-glass gate 800mm — 12mm glass,,Requires hinge panel adjacent.
+gate-panel-polaris-gg,Polaris soft-close glass-to-glass gate 900mm — 12mm glass,product,,,,,,,,900,12PGG-0900,Polaris soft-close glass-to-glass gate 900mm — 12mm glass,,Requires hinge panel adjacent.
+hinge-brand,Hinge Brand,select,,,,Polaris,Polaris | Atlantic | Master Range,,,,,,,
+hinge-mounting,Hinge Mounting,select,,,,Glass-to-Glass,Glass-to-Glass | Wall | Square Post (with adapter plate) | Round Post,,,,,,,
+hinge-finish,Hinge Finish,select,,,,Polish,Polish | Satin | Matt Black | Matt White (availability varies by brand),,,,,,,
+hinge-set,Polaris 125 Glass-to-Glass — Polish,product,,,,,,,hinge-set,,PSC-125GG-P,Polaris 125 Glass-to-Glass — Polish,,Soft close.
+hinge-set,Polaris 125 Glass-to-Glass — Satin,product,,,,,,,hinge-set,,PSC-125GG-S,Polaris 125 Glass-to-Glass — Satin,,Soft close.
+hinge-set,Polaris 125 Glass-to-Glass — Matt Black,product,,,,,,,hinge-set,,PSC-125GG-B,Polaris 125 Glass-to-Glass — Matt Black,,Soft close.
+hinge-set,Polaris 125 Glass-to-Glass — Matt White,product,,,,,,,hinge-set,,PSC-125GG-MW,Polaris 125 Glass-to-Glass — Matt White,,Soft close.
+hinge-set,Polaris 125 Wall — Polish,product,,,,,,,hinge-set,,PSC-125W-P,Polaris 125 Wall — Polish,,Soft close.
+hinge-set,Polaris 125 Wall — Satin,product,,,,,,,hinge-set,,PSC-125W-S,Polaris 125 Wall — Satin,,Soft close.
+hinge-set,Polaris 125 Wall — Matt Black,product,,,,,,,hinge-set,,PSC-125W-B,Polaris 125 Wall — Matt Black,,Soft close.
+hinge-set,Polaris 125 Wall — Matt White,product,,,,,,,hinge-set,,PSC-125W-MW,Polaris 125 Wall — Matt White,,Soft close.
+hinge-set,Polaris 125 Square Post Adapter — Polish,product,,,,,,,hinge-set,,PSC-125PLATE-SP-P,Polaris 125 Square Post Adapter — Polish,,Auto-add to wall hinge for square post mount.
+hinge-set,Polaris 125 Square Post Adapter — Satin,product,,,,,,,hinge-set,,PSC-125PLATE-SP-S,Polaris 125 Square Post Adapter — Satin,,Auto-add to wall hinge for square post mount.
+hinge-set,Polaris 125 Square Post Adapter — Matt Black,product,,,,,,,hinge-set,,PSC-125PLATE-SP-B,Polaris 125 Square Post Adapter — Matt Black,,Auto-add to wall hinge for square post mount.
+hinge-set,Atlantic 530 Glass-to-Glass — Polish,product,,,,,,,hinge-set,,AH-530G-P,Atlantic 530 Glass-to-Glass — Polish,,Soft close.
+hinge-set,Atlantic 530 Glass-to-Glass — Satin,product,,,,,,,hinge-set,,AH-530G-S,Atlantic 530 Glass-to-Glass — Satin,,Soft close.
+hinge-set,Atlantic 530 Glass-to-Glass — Matt Black,product,,,,,,,hinge-set,,AH-530G-B,Atlantic 530 Glass-to-Glass — Matt Black,,Soft close.
+hinge-set,Atlantic 530 Glass-to-Glass — White,product,,,,,,,hinge-set,,AH-530G-W,Atlantic 530 Glass-to-Glass — White,,Soft close.
+hinge-set,Atlantic 530 Wall — Polish,product,,,,,,,hinge-set,,AH-530W-P,Atlantic 530 Wall — Polish,,Soft close.
+hinge-set,Atlantic 530 Wall — Satin,product,,,,,,,hinge-set,,AH-530W-S,Atlantic 530 Wall — Satin,,Soft close.
+hinge-set,Atlantic 530 Wall — Matt Black,product,,,,,,,hinge-set,,AH-530W-B,Atlantic 530 Wall — Matt Black,,Soft close.
+hinge-set,Atlantic 530 Wall — White,product,,,,,,,hinge-set,,AH-530W-W,Atlantic 530 Wall — White,,Soft close.
+hinge-set,Atlantic 530 Square Post Plate — Polish,product,,,,,,,hinge-set,,AH-530SPB-P,Atlantic 530 Square Post Plate — Polish,,Add-on accessory.
+hinge-set,Atlantic 530 Square Post Plate — Satin,product,,,,,,,hinge-set,,AH-530SPB-S,Atlantic 530 Square Post Plate — Satin,,Add-on accessory.
+hinge-set,Atlantic 530 Square Post Plate — Matt Black,product,,,,,,,hinge-set,,AH-530SPB-B,Atlantic 530 Square Post Plate — Matt Black,,Add-on accessory.
+hinge-set,Atlantic 530 Square Post Plate — White,product,,,,,,,hinge-set,,AH-530SPB-W,Atlantic 530 Square Post Plate — White,,Add-on accessory.
+hinge-set,Master Range Glass-to-Glass Hinge — Polish,product,,,,,,,hinge-set,,MR-GGH-P,Master Range Glass-to-Glass Hinge — Polish,,"Standard, not soft close."
+hinge-set,Master Range Glass-to-Glass Hinge — Satin,product,,,,,,,hinge-set,,MR-GGH-S,Master Range Glass-to-Glass Hinge — Satin,,"Standard, not soft close."
+hinge-set,Master Range Glass-to-Glass Hinge — Matt Black,product,,,,,,,hinge-set,,MR-GGH-B,Master Range Glass-to-Glass Hinge — Matt Black,,"Standard, not soft close."
+hinge-set,Master Range Glass-to-Glass Hinge — Matt White,product,,,,,,,hinge-set,,MR-GGH-MW,Master Range Glass-to-Glass Hinge — Matt White,,"Standard, not soft close."
+hinge-set,Master Range Square Post / Wall Hinge — Polish,product,,,,,,,hinge-set,,MR-SPH-P,Master Range Square Post / Wall Hinge — Polish,,Standard.
+hinge-set,Master Range Square Post / Wall Hinge — Satin,product,,,,,,,hinge-set,,MR-SPH-S,Master Range Square Post / Wall Hinge — Satin,,Standard.
+hinge-set,Master Range Square Post / Wall Hinge — Matt Black,product,,,,,,,hinge-set,,MR-SPH-B,Master Range Square Post / Wall Hinge — Matt Black,,Standard.
+hinge-set,Master Range Square Post / Wall Hinge — Matt White,product,,,,,,,hinge-set,,MR-SPH-MW,Master Range Square Post / Wall Hinge — Matt White,,Standard.
+hinge-set,Master Range Round Post Hinge — Polish,product,,,,,,,hinge-set,,MR-RPH-P,Master Range Round Post Hinge — Polish,,Round-post specific.
+hinge-set,Master Range Round Post Hinge — Satin,product,,,,,,,hinge-set,,MR-RPH-S,Master Range Round Post Hinge — Satin,,Round-post specific.
+hinge-set,Master Range Round Post Hinge — Matt Black,product,,,,,,,hinge-set,,MR-RPH-B,Master Range Round Post Hinge — Matt Black,,Round-post specific.
+hinge-set,Master Range Round Post Hinge — Matt White,product,,,,,,,hinge-set,,MR-RPH-MW,Master Range Round Post Hinge — Matt White,,Round-post specific.
+auto-add-dress-ring,"Madrid dress ring (per finish, core-drilled installs) — Polish",product,,,,,,,auto-add-dress-ring,,MAD-DR-P,"Madrid dress ring (per finish, core-drilled installs) — Polish",,Auto-add when family=Madrid/Madrid Pool and mounting=core-drilled. 4 finishes: P/S/B/MW.
+auto-add-dress-ring,"Madrid dress ring (per finish, core-drilled installs) — Satin",product,,,,,,,auto-add-dress-ring,,MAD-DR-S,"Madrid dress ring (per finish, core-drilled installs) — Satin",,Auto-add when family=Madrid/Madrid Pool and mounting=core-drilled. 4 finishes: P/S/B/MW.
+auto-add-dress-ring,"Madrid dress ring (per finish, core-drilled installs) — Matt Black",product,,,,,,,auto-add-dress-ring,,MAD-DR-B,"Madrid dress ring (per finish, core-drilled installs) — Matt Black",,Auto-add when family=Madrid/Madrid Pool and mounting=core-drilled. 4 finishes: P/S/B/MW.
+auto-add-dress-ring,"Madrid dress ring (per finish, core-drilled installs) — Matt White",product,,,,,,,auto-add-dress-ring,,MAD-DR-MW,"Madrid dress ring (per finish, core-drilled installs) — Matt White",,Auto-add when family=Madrid/Madrid Pool and mounting=core-drilled. 4 finishes: P/S/B/MW.
+auto-add-dress-ring,"Insuluxe dress ring (per finish, core-drilled installs) — Silver Grey",product,,,,,,,auto-add-dress-ring,,INS-DR-SG,"Insuluxe dress ring (per finish, core-drilled installs) — Silver Grey",,Auto-add when family=Insuluxe and mounting=core-drilled. 3 finishes: SG/B/W.
+auto-add-dress-ring,"Insuluxe dress ring (per finish, core-drilled installs) — Matt Black",product,,,,,,,auto-add-dress-ring,,INS-DR-B,"Insuluxe dress ring (per finish, core-drilled installs) — Matt Black",,Auto-add when family=Insuluxe and mounting=core-drilled. 3 finishes: SG/B/W.
+auto-add-dress-ring,"Insuluxe dress ring (per finish, core-drilled installs) — White",product,,,,,,,auto-add-dress-ring,,INS-DR-W,"Insuluxe dress ring (per finish, core-drilled installs) — White",,Auto-add when family=Insuluxe and mounting=core-drilled. 3 finishes: SG/B/W.
+auto-add-dress-ring,"Lifestyle dress ring (per finish, core-drilled installs) — Polish",product,,,,,,,auto-add-dress-ring,,LS-DR-P,"Lifestyle dress ring (per finish, core-drilled installs) — Polish",,Auto-add when family=Lifestyle and mounting=core-drilled. 3 finishes: P/S/B.
+auto-add-dress-ring,"Lifestyle dress ring (per finish, core-drilled installs) — Satin",product,,,,,,,auto-add-dress-ring,,LS-DR-S,"Lifestyle dress ring (per finish, core-drilled installs) — Satin",,Auto-add when family=Lifestyle and mounting=core-drilled. 3 finishes: P/S/B.
+auto-add-dress-ring,"Lifestyle dress ring (per finish, core-drilled installs) — Matt Black",product,,,,,,,auto-add-dress-ring,,LS-DR-B,"Lifestyle dress ring (per finish, core-drilled installs) — Matt Black",,Auto-add when family=Lifestyle and mounting=core-drilled. 3 finishes: P/S/B.
+auto-add-dress-ring,"Rio dress ring (per finish, core-drilled installs) — Polish",product,,,,,,,auto-add-dress-ring,,RIO-DR-P,"Rio dress ring (per finish, core-drilled installs) — Polish",,Auto-add when family=Rio and mounting=core-drilled. 3 finishes: P/S/MW.
+auto-add-dress-ring,"Rio dress ring (per finish, core-drilled installs) — Satin",product,,,,,,,auto-add-dress-ring,,RIO-DR-S,"Rio dress ring (per finish, core-drilled installs) — Satin",,Auto-add when family=Rio and mounting=core-drilled. 3 finishes: P/S/MW.
+auto-add-dress-ring,"Rio dress ring (per finish, core-drilled installs) — Matt White",product,,,,,,,auto-add-dress-ring,,RIO-DR-MW,"Rio dress ring (per finish, core-drilled installs) — Matt White",,Auto-add when family=Rio and mounting=core-drilled. 3 finishes: P/S/MW.
+auto-add-domical-cover,Madrid high domical cover (base-plated installs) — Polish,product,,,,,,,auto-add-domical-cover,,MAD-HDC-P,Madrid high domical cover (base-plated installs) — Polish,,Auto-add when family=Madrid/Madrid Pool and mounting=base-plate. 4 finishes.
+auto-add-domical-cover,Madrid high domical cover (base-plated installs) — Satin,product,,,,,,,auto-add-domical-cover,,MAD-HDC-S,Madrid high domical cover (base-plated installs) — Satin,,Auto-add when family=Madrid/Madrid Pool and mounting=base-plate. 4 finishes.
+auto-add-domical-cover,Madrid high domical cover (base-plated installs) — Matt Black,product,,,,,,,auto-add-domical-cover,,MAD-HDC-B,Madrid high domical cover (base-plated installs) — Matt Black,,Auto-add when family=Madrid/Madrid Pool and mounting=base-plate. 4 finishes.
+auto-add-domical-cover,Madrid high domical cover (base-plated installs) — Matt White,product,,,,,,,auto-add-domical-cover,,MAD-HDC-MW,Madrid high domical cover (base-plated installs) — Matt White,,Auto-add when family=Madrid/Madrid Pool and mounting=base-plate. 4 finishes.
+auto-add-domical-cover,"Madrid slimline domical cover (base-plated, alternative) — Polish",product,,,,,,,auto-add-domical-cover,,MAD-SDC-P,"Madrid slimline domical cover (base-plated, alternative) — Polish",,Operator/customer choice between high vs slimline. Different fixing constraints.
+auto-add-domical-cover,"Madrid slimline domical cover (base-plated, alternative) — Satin",product,,,,,,,auto-add-domical-cover,,MAD-SDC-S,"Madrid slimline domical cover (base-plated, alternative) — Satin",,Operator/customer choice between high vs slimline. Different fixing constraints.
+auto-add-domical-cover,"Madrid slimline domical cover (base-plated, alternative) — Matt Black",product,,,,,,,auto-add-domical-cover,,MAD-SDC-B,"Madrid slimline domical cover (base-plated, alternative) — Matt Black",,Operator/customer choice between high vs slimline. Different fixing constraints.
+auto-add-domical-cover,"Madrid slimline domical cover (base-plated, alternative) — Matt White",product,,,,,,,auto-add-domical-cover,,MAD-SDC-MW,"Madrid slimline domical cover (base-plated, alternative) — Matt White",,Operator/customer choice between high vs slimline. Different fixing constraints.
+auto-add-domical-cover,Insuluxe high domical cover (base-plated installs) — Silver Grey,product,,,,,,,auto-add-domical-cover,,INS-HDC-SG,Insuluxe high domical cover (base-plated installs) — Silver Grey,,Auto-add when family=Insuluxe and mounting=base-plate. 3 finishes.
+auto-add-domical-cover,Insuluxe high domical cover (base-plated installs) — Matt Black,product,,,,,,,auto-add-domical-cover,,INS-HDC-B,Insuluxe high domical cover (base-plated installs) — Matt Black,,Auto-add when family=Insuluxe and mounting=base-plate. 3 finishes.
+auto-add-domical-cover,Insuluxe high domical cover (base-plated installs) — White,product,,,,,,,auto-add-domical-cover,,INS-HDC-W,Insuluxe high domical cover (base-plated installs) — White,,Auto-add when family=Insuluxe and mounting=base-plate. 3 finishes.
+auto-add-domical-cover,Rio high domical cover (base-plated installs) — Polish,product,,,,,,,auto-add-domical-cover,,RIO-HDC-P,Rio high domical cover (base-plated installs) — Polish,,Auto-add when family=Rio and mounting=base-plate. 3 finishes.
+auto-add-domical-cover,Rio high domical cover (base-plated installs) — Satin,product,,,,,,,auto-add-domical-cover,,RIO-HDC-S,Rio high domical cover (base-plated installs) — Satin,,Auto-add when family=Rio and mounting=base-plate. 3 finishes.
+auto-add-domical-cover,Rio high domical cover (base-plated installs) — Matt White,product,,,,,,,auto-add-domical-cover,,RIO-HDC-MW,Rio high domical cover (base-plated installs) — Matt White,,Auto-add when family=Rio and mounting=base-plate. 3 finishes.
+fixing-method,Fixing Method,select,,,,concrete,concrete (chemical anchor / threaded rod) | timber (lag screw),,,,,,,
+fixing-set,Timber kit 4× M10×110mm lag screws SS316,product,,,,,,,fixing-set,,S-110LAG-4PK,Timber kit 4× M10×110mm lag screws SS316,,BOM auto-add for base-plated + timber. NOT compatible with slimline domical.
+fixing-set,Concrete kit 4× M10×120mm threaded rods SS316,product,,,,,,,fixing-set,,S-120ROD-4PK,Concrete kit 4× M10×120mm threaded rods SS316,,BOM auto-add for base-plated + concrete.
+fixing-set,Counter sunk timber screw 4-pack SS316 M10×100,product,,,,,,,fixing-set,,CSK-100-4PK,Counter sunk timber screw 4-pack SS316 M10×100,,Alternative timber fixing. Auto-add or operator choice.
+fixing-set,Spigot extender 200mm SS304 (M10/M16 ends),product,,,,,,,fixing-set,,S-XT,Spigot extender 200mm SS304 (M10/M16 ends),,"Optional. Suits Lifestyle, Madrid, Rio core drill. Auto-add only when extra embedment specified."
+fixing-set,Insuluxe spigot extender 93mm SS2205,product,,,,,,,fixing-set,,INS-XT,Insuluxe spigot extender 93mm SS2205,,"Insuluxe-specific. Optional, when extra embedment specified."
+fixing-set,Soudafix CA1400 chemical anchor 280mL,product,,,,,,,fixing-set,,SOUD-CA1400,Soudafix CA1400 chemical anchor 280mL,,BOM auto-add for concrete fixings. Vinylester styrene-free.
+custom-panel,Custom Panel,boolean,,,,false,,,,,,,,
+latch-family,Latch Family,select,,,,Master Range,Master Range | Atlantic |,,,,,,,
+latch-mounting,Latch Mounting,select,,,,Glass-to-Glass,Glass-to-Glass | Wall & Post,,,,,,,
+latch-finish,Latch Finish,select,,,,Polish,Polish | Satin | Matt Black | Matt White (availability varies by brand),,,,,,,
+latch-set,Master FRICTION 90 EXT LATCH - BLACK,product,,,,,,,latch-set,,MR-FL90E-B,Master FRICTION 90 EXT LATCH - BLACK,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 90 EXT LATCH - WHITE,product,,,,,,,latch-set,,MR-FL90E-MW,Master FRICTION 90 EXT LATCH - WHITE,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 90 EXT LATCH - POLISH,product,,,,,,,latch-set,,MR-FL90E-P,Master FRICTION 90 EXT LATCH - POLISH,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 90 EXT LATCH - SATIN,product,,,,,,,latch-set,,MR-FL90E-S,Master FRICTION 90 EXT LATCH - SATIN,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 90 INT LATCH - BLACK,product,,,,,,,latch-set,,MR-FL90I-B,Master FRICTION 90 INT LATCH - BLACK,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 90 INT LATCH - WHITE,product,,,,,,,latch-set,,MR-FL90I-MW,Master FRICTION 90 INT LATCH - WHITE,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 90 INT LATCH - POLISH,product,,,,,,,latch-set,,MR-FL90I-P,Master FRICTION 90 INT LATCH - POLISH,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 90 INT LATCH - SATIN,product,,,,,,,latch-set,,MR-FL90I-S,Master FRICTION 90 INT LATCH - SATIN,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 180 LATCH - BLACK,product,,,,,,,latch-set,,MR-FLGG-B,Master FRICTION 180 LATCH - BLACK,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 180 LATCH - WHITE,product,,,,,,,latch-set,,MR-FLGG-MW,Master FRICTION 180 LATCH - WHITE,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 180 LATCH - POLISH,product,,,,,,,latch-set,,MR-FLGG-P,Master FRICTION 180 LATCH - POLISH,,suits all glass gates based on latching use case
+latch-set,Master FRICTION 180 LATCH - SATIN,product,,,,,,,latch-set,,MR-FLGG-S,Master FRICTION 180 LATCH - SATIN,,suits all glass gates based on latching use case
+latch-set,Master FACE MOUNT LOCK LATCH,product,,,,,,,latch-set,,MR-FMLSL,Master FACE MOUNT LOCK LATCH,,suits all glass gates based on latching use case
+latch-set,FACE MOUNT LATCH - WHITE,product,,,,,,,latch-set,,MR-FMSL-MW,FACE MOUNT LATCH - WHITE,,suits all glass gates based on latching use case
+latch-set,Master ROUND S/ S LATCH - POLISH,product,,,,,,,latch-set,,MR-RPLSS-P,Master ROUND S/ S LATCH - POLISH,,suits all glass gates based on latching use case
+latch-set,Master ROUND S/ S LATCH - SATIN,product,,,,,,,latch-set,,MR-RPLSS-S,Master ROUND S/ S LATCH - SATIN,,suits all glass gates based on latching use case
+latch-set,Master WALL LATCH KIT - BLACK,product,,,,,,,latch-set,,MR-WGL-B,Master WALL LATCH KIT - BLACK,,suits all glass gates based on latching use case
+latch-set,Master WALL LATCH KIT - WHITE,product,,,,,,,latch-set,,MR-WGL-MW,Master WALL LATCH KIT - WHITE,,suits all glass gates based on latching use case
+latch-set,Master WALL LATCH KIT - POLISH,product,,,,,,,latch-set,,MR-WGL-P,Master WALL LATCH KIT - POLISH,,suits all glass gates based on latching use case
+latch-set,Master WALL LATCH KIT - SATIN,product,,,,,,,latch-set,,MR-WGL-S,Master WALL LATCH KIT - SATIN,,suits all glass gates based on latching use case
+latch-set,Master WALL S/ S LATCH - POLISH,product,,,,,,,latch-set,,MR-WGLSS-P,Master WALL S/ S LATCH - POLISH,,suits all glass gates based on latching use case
+latch-set,Master WALL S/ S LATCH - SATIN,product,,,,,,,latch-set,,MR-WGLSS-S,Master WALL S/ S LATCH - SATIN,,suits all glass gates based on latching use case
+latch-set,Atlantic - 180 Degree Latch - BLACK,product,,,,,,,latch-set,,LAT180-B,Atlantic - 180 Degree Latch - BLACK,,suits all glass gates based on latching use case
+latch-set,Atlantic - 180 Degree Latch - POLISH,product,,,,,,,latch-set,,LAT180-P,Atlantic - 180 Degree Latch - POLISH,,suits all glass gates based on latching use case
+latch-set,Atlantic - 180 Degree Latch - SATIN,product,,,,,,,latch-set,,LAT180-S,Atlantic - 180 Degree Latch - SATIN,,suits all glass gates based on latching use case
+latch-set,Atlantic - 180 Degree Latch - WHITE,product,,,,,,,latch-set,,LAT180-W,Atlantic - 180 Degree Latch - WHITE,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg EXTERNAL latch - BLACK,product,,,,,,,latch-set,,LAT90EXT-B,Atlantic- 90 Deg EXTERNAL latch - BLACK,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg EXTERNAL latch - POLISH,product,,,,,,,latch-set,,LAT90EXT-P,Atlantic- 90 Deg EXTERNAL latch - POLISH,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg EXTERNAL latch - SATIN,product,,,,,,,latch-set,,LAT90EXT-S,Atlantic- 90 Deg EXTERNAL latch - SATIN,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg EXTERNAL latch - WHITE,product,,,,,,,latch-set,,LAT90EXT-W,Atlantic- 90 Deg EXTERNAL latch - WHITE,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg INTERNAL latch - BLACK,product,,,,,,,latch-set,,LAT90INT-B,Atlantic- 90 Deg INTERNAL latch - BLACK,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg INTERNAL latch - POLISH,product,,,,,,,latch-set,,LAT90INT-P,Atlantic- 90 Deg INTERNAL latch - POLISH,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg INTERNAL latch - SATIN,product,,,,,,,latch-set,,LAT90INT-S,Atlantic- 90 Deg INTERNAL latch - SATIN,,suits all glass gates based on latching use case
+latch-set,Atlantic- 90 Deg INTERNAL latch - WHITE,product,,,,,,,latch-set,,LAT90INT-W,Atlantic- 90 Deg INTERNAL latch - WHITE,,suits all glass gates based on latching use case
+latch-set,Atlantic - Wall/ Post Latch Latch - BLACK,product,,,,,,,latch-set,,LATWALL-B,Atlantic - Wall/ Post Latch Latch - BLACK,,suits all glass gates based on latching use case
+latch-set,Atlantic - Wall/ Post Latch Latch- POLISH,product,,,,,,,latch-set,,LATWALL-P,Atlantic - Wall/ Post Latch Latch- POLISH,,suits all glass gates based on latching use case
+latch-set,Atlantic - Wall/ Post Latch Latch - SATIN,product,,,,,,,latch-set,,LATWALL-S,Atlantic - Wall/ Post Latch Latch - SATIN,,suits all glass gates based on latching use case
+latch-set,Atlantic - Wall/ Post Latch Latch - WHITE,product,,,,,,,latch-set,,LATWALL-W,Atlantic - Wall/ Post Latch Latch - WHITE,,suits all glass gates based on latching use case
