@@ -1345,8 +1345,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        console.log(`[Template Import] Created ${fieldsCreated} calculator fields for ${matchingStyle.label}`);
-        
+        console.log(`[Template Import] Created ${fieldsCreated} number calculator fields for ${matchingStyle.label}`);
+
+        // Create boolean fields from featureToggles
+        // Maps vault slot variable_type to the section name checked by isSectionEnabled() in span-config-panel
+        const toggleSectionMap: Record<string, string> = {
+          'gate-config': 'Gate',
+          'raked-panels': 'Raked Panel',
+          'custom-panel': 'Custom Panel',
+          'as-3000-required': 'AS3000', // No UI section yet — stored for Option B accessories checklist
+        };
+
+        for (const toggle of processed.featureToggles) {
+          try {
+            await storage.createStyleField({
+              fenceStyleId: matchingStyle.id,
+              fieldKey: toggle.variableType,
+              label: toggle.label,
+              fieldType: 'boolean',
+              defaultValue: toggle.defaultValue ? 'true' : 'false',
+              section: toggleSectionMap[toggle.variableType] || null,
+              displayOrder: fieldsCreated,
+              isVisible: 1,
+            });
+            fieldsCreated++;
+          } catch (error) {
+            console.error(`[Template Import] Failed to create boolean field ${toggle.variableType}:`, error);
+          }
+        }
+
+        console.log(`[Template Import] Created ${fieldsCreated} total calculator fields for ${matchingStyle.label}`);
+
         // Also update min/max panel widths from first calculator input (if available)
         const runLengthField = processed.calculatorInputs.find(f => f.variableType === 'runLengthMm');
         const minPanelField = processed.calculatorInputs.find(f => f.variableType === 'minPanelMm');

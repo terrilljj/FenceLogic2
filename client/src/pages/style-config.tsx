@@ -577,7 +577,7 @@ export default function StyleConfig() {
               <Label htmlFor="field-type">Field Type</Label>
               <Select
                 value={fieldFormData.fieldType || 'number'}
-                onValueChange={(value) => setFieldFormData({ ...fieldFormData, fieldType: value as 'number' | 'select' })}
+                onValueChange={(value) => setFieldFormData({ ...fieldFormData, fieldType: value as 'number' | 'select' | 'boolean' })}
               >
                 <SelectTrigger id="field-type">
                   <SelectValue />
@@ -585,6 +585,7 @@ export default function StyleConfig() {
                 <SelectContent>
                   <SelectItem value="number">Number</SelectItem>
                   <SelectItem value="select">Select</SelectItem>
+                  <SelectItem value="boolean">Boolean (toggle)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -602,7 +603,9 @@ export default function StyleConfig() {
                 <SelectContent>
                   <SelectItem value="Core">Core</SelectItem>
                   <SelectItem value="Gate">Gate</SelectItem>
+                  <SelectItem value="Raked Panel">Raked Panel</SelectItem>
                   <SelectItem value="Custom Panel">Custom Panel</SelectItem>
+                  <SelectItem value="AS3000">AS3000</SelectItem>
                 </SelectContent>
               </Select>
             </div>
