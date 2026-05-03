@@ -20,11 +20,13 @@ import {
   optimizeRailLengths,
 } from "@shared/schema";
 
-type SlotMapping = {
+export type SlotMapping = {
   internalId: string;
   fieldName: string;
   productId: string | null;
   label: string | null;
+  // discriminatorAttributes is set on new slots. Legacy slots (null) fall back to regex match.
+  discriminatorAttributes?: Record<string, string> | null;
 };
 
 type ProductLookup = {
@@ -34,34 +36,46 @@ type ProductLookup = {
   price: string | null;
 };
 
+type ProductDetails = { sku: string; description: string };
+
 export function calculateComponents(
   design: FenceDesign,
   slotMappings: SlotMapping[] = [],
   products: ProductLookup[] = []
 ): Component[] {
-  const lookupProductFromSlot = (panelWidth: number, fieldName: string = "glass-panels"): { sku: string; description: string } | null => {
-    const fieldSlots = slotMappings.filter(slot =>
-      slot.fieldName === fieldName && slot.productId
-    );
-
-    if (fieldSlots.length === 0) {
-      return null;
-    }
+  /**
+   * Generic slot resolver. Queries product_slots WHERE fieldName=fieldName AND
+   * discriminatorAttributes @> discriminators (JSONB contains).
+   * Falls back to regex match on product description/code for legacy slots without
+   * discriminatorAttributes (preserves existing glass-panels behaviour).
+   *
+   * Returns null if no mapped slot matches — callers emit an [unmapped] BOM line.
+   */
+  const lookupSlot = (fieldName: string, discriminators: Record<string, string>): ProductDetails | null => {
+    const fieldSlots = slotMappings.filter(s => s.fieldName === fieldName && s.productId);
+    if (fieldSlots.length === 0) return null;
 
     for (const slot of fieldSlots) {
       const product = products.find(p => p.id === slot.productId);
       if (!product) continue;
 
-      const widthPattern = new RegExp(`\\b${panelWidth}(mm|W)\\b`, 'i');
-
-      if (widthPattern.test(product.description) || widthPattern.test(product.code)) {
-        return {
-          sku: product.code,
-          description: product.description
-        };
+      if (slot.discriminatorAttributes) {
+        // New path: all provided discriminators must be present and match
+        const attrs = slot.discriminatorAttributes as Record<string, string>;
+        if (Object.entries(discriminators).every(([k, v]) => attrs[k] === v)) {
+          return { sku: product.code, description: product.description };
+        }
+      } else {
+        // Legacy path: regex match on size_mm against product description/code
+        const panelWidth = discriminators.size_mm;
+        if (panelWidth) {
+          const widthPattern = new RegExp(`\\b${panelWidth}(mm|W)\\b`, 'i');
+          if (widthPattern.test(product.description) || widthPattern.test(product.code)) {
+            return { sku: product.code, description: product.description };
+          }
+        }
       }
     }
-
     return null;
   };
 
@@ -415,7 +429,7 @@ export function calculateComponents(
         const panelType = panelTypes[index] || "standard";
 
         if (panelType === "standard") {
-          const mappedProduct = lookupProductFromSlot(panelWidth, "glass-panels");
+          const mappedProduct = lookupSlot("glass-panels", { size_mm: String(panelWidth) });
 
           if (mappedProduct) {
             components.push({
@@ -470,15 +484,21 @@ export function calculateComponents(
 
         // Add hardware per panel - either spigots OR channel clamps
         if (!isChannelSystem) {
-          const spigotDetails = getSpigotDetails(
-            (span.spigotMounting || "base-plate") as SpigotMounting,
-            (span.spigotColor || "polished") as SpigotColor
-          );
-          components.push({
-            qty: 2,
-            description: spigotDetails.description,
-            sku: spigotDetails.sku,
-          });
+          const fieldValues = (span as any).fieldValues || {};
+          const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
+          const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
+          const family = fieldValues['spigot-family'] || '';
+          const discriminators: Record<string, string> = { mounting, finish };
+          if (family) discriminators.family = family;
+
+          const slotResult = lookupSlot('spigot-hardware', discriminators);
+          if (slotResult) {
+            components.push({ qty: 2, description: slotResult.description, sku: slotResult.sku });
+          } else {
+            // Fallback: generic description until operator maps spigot-hardware slots
+            const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
+            components.push({ qty: 2, description: fallback.description, sku: fallback.sku });
+          }
         }
       });
 
@@ -553,15 +573,19 @@ export function calculateComponents(
         });
 
         if (!isChannelSystem) {
-          const spigotDetails = getSpigotDetails(
-            (span.spigotMounting || "base-plate") as SpigotMounting,
-            (span.spigotColor || "polished") as SpigotColor
-          );
-          components.push({
-            qty: numPanels * 2,
-            description: spigotDetails.description,
-            sku: spigotDetails.sku,
-          });
+          const fieldValues = (span as any).fieldValues || {};
+          const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
+          const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
+          const family = fieldValues['spigot-family'] || '';
+          const discriminators: Record<string, string> = { mounting, finish };
+          if (family) discriminators.family = family;
+          const slotResult = lookupSlot('spigot-hardware', discriminators);
+          if (slotResult) {
+            components.push({ qty: numPanels * 2, description: slotResult.description, sku: slotResult.sku });
+          } else {
+            const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
+            components.push({ qty: numPanels * 2, description: fallback.description, sku: fallback.sku });
+          }
         } else {
           const spanLength = span.length;
           const channelLength = 4200;

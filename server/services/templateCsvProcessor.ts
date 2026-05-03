@@ -18,6 +18,13 @@ const CsvRowSchema = z.object({
   product_description: z.string().optional(),
   product_price: z.string().optional(),
   notes: z.string().optional(),
+  // Layout metadata columns (optional — existing CSVs without them still import correctly)
+  display_column: z.string().optional(),       // Column number for DynamicFieldColumns (e.g. "1")
+  display_position: z.string().optional(),     // Sort order within column (e.g. "2")
+  display_column_name: z.string().optional(),  // Column header label (e.g. "Dimensions & Gaps")
+  visibility_condition: z.string().optional(), // JSON string: {"fieldKey":"gate-config","value":true}
+  // Discriminator attributes for product slots (JSON string)
+  discriminator_attributes: z.string().optional(), // e.g. '{"family":"madrid","mounting":"core-drilled"}'
 });
 
 export type CsvRow = z.infer<typeof CsvRowSchema>;
@@ -27,6 +34,7 @@ export interface ProcessedTemplate {
   templateId: string;
   filename: string;
   calculatorInputs: CalculatorInput[];
+  selectInputs: SelectInput[];
   productMappings: ProductMapping[];
   featureToggles: FeatureToggle[];
   gateConfigs: GateConfig[];
@@ -41,6 +49,23 @@ export interface CalculatorInput {
   step?: number;
   defaultValue?: number;
   unit?: string;
+  options?: string;
+  section?: string;
+  displayColumn?: number;
+  displayPosition?: number;
+  displayColumnName?: string;
+  visibilityCondition?: Record<string, unknown> | null;
+}
+
+export interface SelectInput {
+  variableType: string;
+  label: string;
+  options: string;
+  defaultValue?: string;
+  displayColumn?: number;
+  displayPosition?: number;
+  displayColumnName?: string;
+  visibilityCondition?: Record<string, unknown> | null;
 }
 
 export interface ProductMapping {
@@ -124,10 +149,17 @@ export function processTemplateRows(
   rows: CsvRow[]
 ): ProcessedTemplate {
   const calculatorInputs: CalculatorInput[] = [];
+  const selectInputs: SelectInput[] = [];
   const productMappings: ProductMapping[] = [];
   const featureToggles: FeatureToggle[] = [];
   const gateConfigs: GateConfig[] = [];
   const validationErrors: string[] = [];
+
+  const parseDisplayCol = (s?: string): number | undefined => s ? (parseInt(s) || undefined) : undefined;
+  const parseVisibility = (s?: string): Record<string, unknown> | null => {
+    if (!s) return null;
+    try { return JSON.parse(s); } catch { return null; }
+  };
 
   for (const row of rows) {
     try {
@@ -140,6 +172,24 @@ export function processTemplateRows(
           max: row.max ? parseFloat(row.max) : undefined,
           step: row.step ? parseFloat(row.step) : undefined,
           defaultValue: row.default_value ? parseFloat(row.default_value) : undefined,
+          displayColumn: parseDisplayCol(row.display_column),
+          displayPosition: parseDisplayCol(row.display_position),
+          displayColumnName: row.display_column_name || undefined,
+          visibilityCondition: parseVisibility(row.visibility_condition),
+        });
+      }
+
+      // Select fields (dropdown without product SKU)
+      if (row.field_type === 'select' && !row.product_sku && row.options) {
+        selectInputs.push({
+          variableType: row.variable_type,
+          label: row.label,
+          options: row.options,
+          defaultValue: row.default_value,
+          displayColumn: parseDisplayCol(row.display_column),
+          displayPosition: parseDisplayCol(row.display_position),
+          displayColumnName: row.display_column_name || undefined,
+          visibilityCondition: parseVisibility(row.visibility_condition),
         });
       }
 
@@ -224,6 +274,7 @@ export function processTemplateRows(
     templateId,
     filename,
     calculatorInputs,
+    selectInputs,
     productMappings,
     featureToggles,
     gateConfigs,

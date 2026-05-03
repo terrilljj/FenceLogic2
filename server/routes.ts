@@ -148,6 +148,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tooltip: field.tooltip || undefined,
           section: field.section || undefined,
           productMapping: field.productMapping || undefined,
+          // Layout metadata for data-driven rendering
+          displayColumn: field.displayColumn ?? undefined,
+          displayPosition: field.displayPosition ?? undefined,
+          displayColumnName: field.displayColumnName ?? undefined,
+          visibilityCondition: field.visibilityCondition ?? undefined,
         };
       });
       
@@ -218,6 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fieldName: s.fieldName,
         productId: s.productId,
         label: s.label,
+        discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
       }));
 
       const productData = products.map(p => ({
@@ -259,6 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fieldName: s.fieldName,
         productId: s.productId,
         label: s.label,
+        discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
       }));
 
       const productData = products.map(p => ({
@@ -986,43 +993,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/product-slots/generate", requireAdmin, async (req, res) => {
     try {
       const { productVariant, fieldName } = req.body;
-      
+
       if (!productVariant || !fieldName) {
         return res.status(400).json({ error: "Missing required fields: productVariant, fieldName" });
       }
 
-      // Get panel size configuration from registry
-      const configs = PANEL_SIZE_REGISTRY[productVariant as ProductVariant] || [];
-      const config = configs.find(c => c.fieldName === fieldName);
+      // Resolve panel size config: try fence_styles DB columns first, fall back to PANEL_SIZE_REGISTRY
+      const styles = await storage.getAllFenceStyles();
+      const dbStyle = styles.find(s => s.code === productVariant || s.productVariant === productVariant);
 
-      if (!config) {
-        return res.status(400).json({ 
-          error: `No panel size configuration found for ${productVariant} / ${fieldName}. Please add to PANEL_SIZE_REGISTRY.` 
-        });
+      let prefix: string;
+      let increment: number;
+      let min: number;
+      let max: number;
+      let fieldLabel: string;
+
+      if (dbStyle?.panelIncrement && dbStyle.panelFieldName === fieldName && dbStyle.panelPrefix) {
+        prefix = dbStyle.panelPrefix;
+        increment = dbStyle.panelIncrement;
+        min = dbStyle.minPanelWidth ?? 250;
+        max = dbStyle.maxPanelWidth ?? 2000;
+        fieldLabel = fieldName;
+      } else {
+        // Legacy fallback to PANEL_SIZE_REGISTRY
+        const regConfigs = PANEL_SIZE_REGISTRY[productVariant as ProductVariant] || [];
+        const regConfig = regConfigs.find(c => c.fieldName === fieldName);
+        if (!regConfig) {
+          return res.status(400).json({
+            error: `No panel size configuration found for ${productVariant} / ${fieldName}. ` +
+                   `Set panelIncrement, panelFieldName, panelPrefix on the fence style or add to PANEL_SIZE_REGISTRY.`
+          });
+        }
+        prefix = regConfig.prefix;
+        increment = regConfig.increment;
+        min = regConfig.minWidth;
+        max = regConfig.maxWidth;
+        fieldLabel = regConfig.label;
       }
 
       // Delete existing slots for this variant+field
       await storage.deleteSlotsByVariantAndField(productVariant, fieldName);
 
-      // Auto-generate slots for all available panel sizes
-      const sizes = getAvailablePanelSizes(productVariant as ProductVariant, fieldName);
+      // Generate slot for each panel size
+      const sizes: number[] = [];
+      for (let w = min; w <= max; w += increment) sizes.push(w);
+
       const slots = sizes.map((width, index) => ({
-        internalId: `${config.prefix}-${String(width).padStart(4, '0')}`, // e.g., "GP-0250", "GP-0300"
+        internalId: `${prefix}-${String(width).padStart(4, '0')}`,
         productVariant,
         fieldName,
         sequence: index + 1,
         productId: null,
-        label: `${config.label} ${width}mm`,
+        label: `${fieldLabel} ${width}mm`,
+        discriminatorAttributes: { size_mm: String(width) },
         isActive: 1,
       }));
 
       const createdSlots = await storage.createProductSlots(slots);
-      res.json({ 
-        success: true, 
-        count: createdSlots.length,
-        sizes: sizes,
-        slots: createdSlots 
-      });
+      res.json({ success: true, count: createdSlots.length, sizes, slots: createdSlots });
     } catch (error) {
       console.error("Error generating product slots:", error);
       res.status(500).json({ error: "Failed to generate product slots" });
@@ -1057,6 +1085,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting product slots:", error);
       res.status(500).json({ error: "Failed to delete product slots" });
+    }
+  });
+
+  // Manual slot creation (supports arbitrary discriminatorAttributes)
+  app.post("/api/admin/product-slots", requireAdmin, async (req, res) => {
+    try {
+      const { productVariant, fieldName, internalId, discriminatorAttributes, productId, label } = req.body;
+      if (!productVariant || !fieldName || !internalId) {
+        return res.status(400).json({ error: "Missing required fields: productVariant, fieldName, internalId" });
+      }
+      const existing = await storage.getAllSlotsByVariant(productVariant);
+      const maxSeq = existing.filter(s => s.fieldName === fieldName)
+        .reduce((m, s) => Math.max(m, s.sequence), 0);
+      const slot = await storage.createProductSlot({
+        internalId,
+        productVariant,
+        fieldName,
+        sequence: maxSeq + 1,
+        productId: productId || null,
+        label: label || null,
+        discriminatorAttributes: discriminatorAttributes || null,
+        isActive: 1,
+      });
+      res.status(201).json(slot);
+    } catch (error) {
+      console.error("Error creating product slot:", error);
+      res.status(500).json({ error: "Failed to create product slot" });
+    }
+  });
+
+  // Delete individual slot
+  app.delete("/api/admin/product-slots/:id", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteProductSlot(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Slot not found" });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting slot:", error);
+      res.status(500).json({ error: "Failed to delete slot" });
+    }
+  });
+
+  // Update fence style panel config (for auto-generate setup)
+  app.patch("/api/admin/styles/:id/panel-config", requireAdmin, async (req, res) => {
+    try {
+      const { panelIncrement, panelFieldName, panelPrefix, minPanelWidth, maxPanelWidth } = req.body;
+      const style = await storage.updateFenceStyle(req.params.id, {
+        panelIncrement: panelIncrement ?? undefined,
+        panelFieldName: panelFieldName ?? undefined,
+        panelPrefix: panelPrefix ?? undefined,
+        minPanelWidth: minPanelWidth ?? undefined,
+        maxPanelWidth: maxPanelWidth ?? undefined,
+      });
+      if (!style) return res.status(404).json({ error: "Style not found" });
+      res.json(style);
+    } catch (error) {
+      console.error("Error updating panel config:", error);
+      res.status(500).json({ error: "Failed to update panel config" });
+    }
+  });
+
+  // CSV export for a (variant, field) combination
+  app.get("/api/admin/product-slots/:variant/:fieldName/export", requireAdmin, async (req, res) => {
+    try {
+      const { variant, fieldName } = req.params;
+      const slots = await storage.getSlotsByVariantAndField(variant, fieldName);
+      const products = await storage.getAllProducts();
+      const prodMap = new Map(products.map(p => [p.id, p]));
+
+      const header = "internal_id,sequence,discriminator_attributes_json,sku,description,cost,retail,status,notes\n";
+      const rows = slots.map(s => {
+        const prod = s.productId ? prodMap.get(s.productId) : undefined;
+        const discriminators = s.discriminatorAttributes ? JSON.stringify(s.discriminatorAttributes) : "";
+        const sku = prod?.code ?? "";
+        const desc = prod?.description ?? "";
+        const price = prod?.price ?? "";
+        const status = s.isActive ? "active" : "inactive";
+        const notes = s.label ?? "";
+        return [
+          s.internalId, s.sequence, `"${discriminators.replace(/"/g, '""')}"`,
+          sku, `"${desc.replace(/"/g, '""')}"`, price, price, status, `"${notes.replace(/"/g, '""')}"`
+        ].join(",");
+      });
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="${variant}-${fieldName}-slots.csv"`);
+      res.send(header + rows.join("\n"));
+    } catch (error) {
+      console.error("Error exporting slots:", error);
+      res.status(500).json({ error: "Failed to export slots" });
+    }
+  });
+
+  // CSV import (upsert) for a (variant, field) combination
+  app.post("/api/admin/product-slots/:variant/:fieldName/import", requireAdmin, async (req, res) => {
+    try {
+      const { variant, fieldName } = req.params;
+      const { csvData } = req.body;
+      if (!csvData) return res.status(400).json({ error: "Missing csvData" });
+
+      const lines = csvData.split("\n").map((l: string) => l.trim()).filter(Boolean);
+      if (lines.length < 2) return res.status(400).json({ error: "CSV must have header + at least one data row" });
+
+      const header = lines[0].split(",").map((h: string) => h.trim());
+      const idx = (col: string) => header.indexOf(col);
+
+      const getCsv = (row: string[], col: string): string => {
+        const i = idx(col);
+        if (i < 0) return "";
+        let v = row[i] ?? "";
+        if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1).replace(/""/g, '"');
+        return v.trim();
+      };
+
+      const products = await storage.getAllProducts();
+      const prodByCode = new Map(products.map(p => [p.code, p]));
+      const existingSlots = await storage.getSlotsByVariantAndField(variant, fieldName);
+      const slotByInternalId = new Map(existingSlots.map(s => [s.internalId, s]));
+
+      let upserted = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g) ?? lines[i].split(",");
+        const internalId = getCsv(row, "internal_id");
+        if (!internalId) { skipped++; continue; }
+
+        const discriminatorsStr = getCsv(row, "discriminator_attributes_json");
+        let discriminatorAttributes: Record<string, string> | null = null;
+        if (discriminatorsStr) {
+          try { discriminatorAttributes = JSON.parse(discriminatorsStr); } catch { errors.push(`Row ${i+1}: invalid discriminator JSON`); }
+        }
+
+        const sku = getCsv(row, "sku");
+        const productId = sku ? (prodByCode.get(sku)?.id ?? null) : null;
+        const label = getCsv(row, "notes") || null;
+        const status = getCsv(row, "status");
+        const isActive = status === "inactive" ? 0 : 1;
+
+        const existing = slotByInternalId.get(internalId);
+        if (existing) {
+          await storage.updateProductSlot(existing.id, {
+            productId,
+            label,
+            isActive,
+            discriminatorAttributes,
+          });
+        } else {
+          const maxSeq = existingSlots.reduce((m, s) => Math.max(m, s.sequence), 0) + upserted;
+          await storage.createProductSlot({
+            internalId,
+            productVariant: variant,
+            fieldName,
+            sequence: maxSeq + 1,
+            productId,
+            label,
+            discriminatorAttributes,
+            isActive,
+          });
+        }
+        upserted++;
+      }
+
+      res.json({ success: true, upserted, skipped, errors });
+    } catch (error) {
+      console.error("Error importing slots:", error);
+      res.status(500).json({ error: "Failed to import slots" });
+    }
+  });
+
+  // Public: list active fence styles (for slot manager variant selector)
+  app.get("/api/styles", async (req, res) => {
+    try {
+      const styles = await storage.getActiveFenceStyles();
+      res.json(styles.map(s => ({ id: s.id, code: s.code, label: s.label, productVariant: s.productVariant })));
+    } catch (error) {
+      console.error("Error fetching styles:", error);
+      res.status(500).json({ error: "Failed to fetch styles" });
     }
   });
 
@@ -1323,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Clear existing fields for this style
         await storage.deleteStyleFields(matchingStyle.id);
         
-        // Create new fields from calculator inputs
+        // Create number calculator fields
         for (const input of processed.calculatorInputs) {
           try {
             await storage.createStyleField({
@@ -1338,14 +1545,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
               unit: input.unit || null,
               displayOrder: fieldsCreated,
               isVisible: 1,
+              displayColumn: input.displayColumn ?? null,
+              displayPosition: input.displayPosition ?? null,
+              displayColumnName: input.displayColumnName ?? null,
+              visibilityCondition: input.visibilityCondition ?? null,
             });
             fieldsCreated++;
           } catch (error) {
             console.error(`[Template Import] Failed to create field ${input.variableType}:`, error);
           }
         }
-        
-        console.log(`[Template Import] Created ${fieldsCreated} number calculator fields for ${matchingStyle.label}`);
+
+        // Create select calculator fields (dropdowns without products)
+        for (const sel of processed.selectInputs) {
+          try {
+            await storage.createStyleField({
+              fenceStyleId: matchingStyle.id,
+              fieldKey: sel.variableType,
+              label: sel.label,
+              fieldType: 'select',
+              options: sel.options ? sel.options.split("|").map(o => o.trim()) : null,
+              defaultValue: sel.defaultValue || null,
+              displayOrder: fieldsCreated,
+              isVisible: 1,
+              displayColumn: sel.displayColumn ?? null,
+              displayPosition: sel.displayPosition ?? null,
+              displayColumnName: sel.displayColumnName ?? null,
+              visibilityCondition: sel.visibilityCondition ?? null,
+            });
+            fieldsCreated++;
+          } catch (error) {
+            console.error(`[Template Import] Failed to create select field ${sel.variableType}:`, error);
+          }
+        }
+
+        console.log(`[Template Import] Created ${fieldsCreated} number/select calculator fields for ${matchingStyle.label}`);
 
         // Create boolean fields from featureToggles
         // Maps vault slot variable_type to the section name checked by isSectionEnabled() in span-config-panel
@@ -1353,7 +1587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'gate-config': 'Gate',
           'raked-panels': 'Raked Panel',
           'custom-panel': 'Custom Panel',
-          'as-3000-required': 'AS3000', // No UI section yet — stored for Option B accessories checklist
+          'as-3000-required': 'AS3000',
         };
 
         for (const toggle of processed.featureToggles) {
