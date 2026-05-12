@@ -103,6 +103,9 @@ export function calculateComponents(
   const isBarrFencing = design.productVariant === "alu-pool-barr";
   const isTubularFencing = design.productVariant === "alu-pool-tubular";
   const isSemiFrameless = design.productVariant === "semi-frameless-1000" || design.productVariant === "semi-frameless-1800";
+  const isStandoffSystem = design.productVariant === "glass-bal-standoffs";
+  const isBalBarr = design.productVariant === "alu-bal-barr";
+  const isBalBlade = design.productVariant === "alu-bal-blade";
   const gatesAllowed = !design.productVariant.includes("bal-");
 
   // Cast spans to any — design JSON from clients may carry extra dynamic properties
@@ -560,6 +563,281 @@ export function calculateComponents(
 
       return;
     }
+    // Aluminium Balustrade — BARR
+    else if (isBalBarr && span.panelLayout && span.panelLayout.panels.length > 0) {
+      const panelHeight = (span.balBarrPanelHeight || "1000mm") as "1000mm" | "1200mm";
+      const finishKey = (span.balBarrFinish || "black") as "black" | "white";
+      const postMounting = (span.balBarrPostMounting || "face-mount") as "face-mount" | "base-plated" | "full-post-core-drill";
+
+      const panelSpecs: Record<string, { width: number; height: number }> = {
+        "1000mm": { width: 1733, height: 1000 },
+        "1200mm": { width: 2205, height: 1200 },
+      };
+      const spec = panelSpecs[panelHeight];
+      const finishLetter = finishKey === "black" ? "B" : "W";
+
+      const panelTypes = span.panelLayout.panelTypes || [];
+
+      // Panels
+      span.panelLayout.panels.forEach((_panelWidth: number, index: number) => {
+        const panelType = panelTypes[index] || "standard";
+        if (panelType === "raked") {
+          pushSlotOrFallback(
+            1,
+            'rake-panel',
+            { width: '1380', height: '1000', finish: finishKey },
+            {
+              description: `Bal BARR Rake Panel 1380×1000 (${finishKey})`,
+              sku: `BR-RAKE-1380-1000-${finishLetter}`,
+            },
+          );
+        } else {
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { width: String(spec.width), height: String(spec.height), finish: finishKey },
+            {
+              description: `Bal BARR Panel ${spec.width}×${spec.height} (${finishKey})`,
+              sku: `BR-PANEL-${spec.width}-${spec.height}-${finishLetter}`,
+            },
+          );
+        }
+      });
+
+      const numPanels = span.panelLayout.panels.length;
+      // For BARR-style fencing, panel junctions = mid posts; span ends = end posts (one 2-pack covers L+R).
+      const midPostCount = Math.max(0, numPanels - 1);
+      const endPostPackCount = 1; // one 2-pack per span termination set
+
+      if (postMounting === "full-post-core-drill") {
+        // Full posts at each junction + ends (numPanels + 1 total positions, but full-post is one piece per position)
+        const fullPostCount = numPanels + 1;
+        pushSlotOrFallback(
+          fullPostCount,
+          'full-post',
+          { length: '5800', mounting: 'core-drill', finish: finishKey },
+          {
+            description: `Bal BARR Full Post 5800mm core-drill (${finishKey})`,
+            sku: `AR-5800-FP-${finishLetter}`,
+          },
+        );
+      } else {
+        // Mid posts (intermediate junctions)
+        if (midPostCount > 0) {
+          const midPostHeight = postMounting === "face-mount" ? "1500" : "1050";
+          const midPostType = postMounting === "face-mount" ? "face-mount" : "base-plated";
+          const midPostSkuMid = postMounting === "face-mount" ? "FMID" : "FPBP";
+          pushSlotOrFallback(
+            midPostCount,
+            'mid-post',
+            { type: midPostType, height: midPostHeight, finish: finishKey },
+            {
+              description: `Bal BARR Mid Post ${midPostHeight}mm ${midPostType} (${finishKey})`,
+              sku: `AR-${midPostHeight}-${midPostSkuMid}-${finishLetter}`,
+            },
+          );
+        }
+        // End posts (2-pack covers L+R)
+        pushSlotOrFallback(
+          endPostPackCount,
+          'end-post',
+          { type: 'face-mount', height: '1500', finish: finishKey },
+          {
+            description: `Bal BARR End Post 1500mm face-mount 2-pack (${finishKey})`,
+            sku: `AR-1500-FMLR-${finishLetter}-2PK`,
+          },
+        );
+      }
+
+      const totalPostCount = postMounting === "full-post-core-drill" ? (numPanels + 1) : (midPostCount + 2);
+
+      // C-brackets: 2 per post, packaged in 4-packs. qty = ceil(2 × postCount / 4)
+      const cBracketPacks = Math.ceil((2 * totalPostCount) / 4);
+      pushSlotOrFallback(
+        cBracketPacks,
+        'c-bracket',
+        { type: 'standard', finish: finishKey },
+        {
+          description: `Bal BARR C-Bracket 4-pack (${finishKey})`,
+          sku: `BR-BR60-${finishLetter}-4PK`,
+        },
+      );
+
+      // Bracket caps match c-bracket quantity
+      pushSlotOrFallback(
+        cBracketPacks,
+        'bracket-cap',
+        { finish: finishKey },
+        {
+          description: `Bal BARR Bracket Cap 4-pack (${finishKey})`,
+          sku: `BR-BRCAP-${finishLetter}-4PK`,
+        },
+      );
+
+      // Top cap — 1 per panel
+      pushSlotOrFallback(
+        numPanels,
+        'top-cap',
+        { finish: finishKey },
+        {
+          description: `Bal BARR Top Cap (${finishKey})`,
+          sku: `BR-TCA-${finishLetter}`,
+        },
+      );
+
+      // Per-post hardware: dress-ring, top-plate, domical-cover
+      pushSlotOrFallback(
+        totalPostCount,
+        'dress-ring',
+        { finish: finishKey },
+        {
+          description: `Dress Ring (${finishKey})`,
+          sku: `XP-DR-${finishLetter}`,
+        },
+      );
+      pushSlotOrFallback(
+        totalPostCount,
+        'top-plate',
+        { finish: finishKey },
+        {
+          description: `Top Plate (${finishKey})`,
+          sku: `XP-TP-${finishLetter}`,
+        },
+      );
+      pushSlotOrFallback(
+        totalPostCount,
+        'domical-cover',
+        { finish: finishKey },
+        {
+          description: `Domical Cover 2-piece (${finishKey})`,
+          sku: `XP-DC-2P-${finishLetter}`,
+        },
+      );
+
+      return;
+    }
+    // Aluminium Balustrade — Blade (black only)
+    else if (isBalBlade && span.panelLayout && span.panelLayout.panels.length > 0) {
+      const postMounting = (span.balBladePostMounting || "face-mount") as "face-mount" | "full-post";
+      const fullPostLen = (span.balBladeFullPostLength || "2400") as "2400" | "6000";
+
+      const numPanels = span.panelLayout.panels.length;
+      const midPostCount = Math.max(0, numPanels - 1);
+
+      // Panels — 1700×1000 fixed, black only
+      span.panelLayout.panels.forEach(() => {
+        pushSlotOrFallback(
+          1,
+          'panel',
+          { width: '1700', height: '1000' },
+          {
+            description: `Bal Blade Panel 1700×1000 (Black)`,
+            sku: `BLA-PNL-1700-1000-B`,
+          },
+        );
+      });
+
+      if (postMounting === "full-post") {
+        const fullPostCount = numPanels + 1;
+        pushSlotOrFallback(
+          fullPostCount,
+          'full-post',
+          { length: fullPostLen },
+          {
+            description: `Bal Blade Full Post ${fullPostLen}mm (Black)`,
+            sku: `XP-${fullPostLen}-FP-B`,
+          },
+        );
+        // Base plate per full post
+        pushSlotOrFallback(
+          fullPostCount,
+          'base-plate',
+          {},
+          {
+            description: `Bal Blade Base Plate Set (Black)`,
+            sku: `XP-BP-SET-B`,
+          },
+        );
+      } else {
+        // Face-mount: mid posts + end-post 2-pack
+        if (midPostCount > 0) {
+          pushSlotOrFallback(
+            midPostCount,
+            'mid-post',
+            { type: 'face-mount', height: '1500' },
+            {
+              description: `Bal Blade Mid Post 1500mm face-mount (Black)`,
+              sku: `AR-1500-FMID-B`,
+            },
+          );
+        }
+        pushSlotOrFallback(
+          1,
+          'end-post',
+          { type: 'face-mount', height: '1500' },
+          {
+            description: `Bal Blade End Post 1500mm face-mount 2-pack (Black)`,
+            sku: `AR-1500-FMLR-B-2PK`,
+          },
+        );
+      }
+
+      const totalPostCount = postMounting === "full-post" ? (numPanels + 1) : (midPostCount + 2);
+
+      // Brackets: fastfit-open, 4-pack
+      const bracketPacks = Math.ceil((2 * totalPostCount) / 4);
+      pushSlotOrFallback(
+        bracketPacks,
+        'bracket',
+        { type: 'fastfit-open' },
+        {
+          description: `Bal Blade FastFit Bracket 4-pack (Black)`,
+          sku: `FF-BH-OPEN-4PK-B`,
+        },
+      );
+
+      // Top cap — 1 per panel
+      pushSlotOrFallback(
+        numPanels,
+        'top-cap',
+        {},
+        {
+          description: `Bal Blade Top Cap (Black)`,
+          sku: `BLA-TCA-B`,
+        },
+      );
+
+      // Per-post hardware
+      pushSlotOrFallback(
+        totalPostCount,
+        'top-plate',
+        {},
+        {
+          description: `Top Plate (Black)`,
+          sku: `XP-TP-B`,
+        },
+      );
+      pushSlotOrFallback(
+        totalPostCount,
+        'dress-ring',
+        {},
+        {
+          description: `Dress Ring (Black)`,
+          sku: `XP-DR-B`,
+        },
+      );
+      pushSlotOrFallback(
+        totalPostCount,
+        'domical-cover',
+        {},
+        {
+          description: `Domical Cover 2-piece (Black)`,
+          sku: `XP-DC-2P-B`,
+        },
+      );
+
+      return;
+    }
 
     // Glass and other fencing types
     if (span.panelLayout && span.panelLayout.panels.length > 0) {
@@ -624,7 +902,9 @@ export function calculateComponents(
         }
 
         // Add hardware per panel - either spigots OR channel clamps
-        if (!isChannelSystem) {
+        // Skip for standoff systems — standoff hardware is emitted later inside the
+        // isGlassBalustrade block at 4 per panel.
+        if (!isChannelSystem && !isStandoffSystem) {
           const fieldValues = (span as any).fieldValues || {};
           const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
           const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
@@ -724,7 +1004,7 @@ export function calculateComponents(
           sku: `GP-${fallbackPanelWidth}-1200-12`,
         });
 
-        if (!isChannelSystem) {
+        if (!isChannelSystem && !isStandoffSystem) {
           const fieldValues = (span as any).fieldValues || {};
           const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
           const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
@@ -738,7 +1018,7 @@ export function calculateComponents(
             const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
             components.push({ qty: numPanels * 2, description: fallback.description, sku: fallback.sku });
           }
-        } else {
+        } else if (isChannelSystem) {
           const spanLength = span.length;
           const channelLength = 4200;
           const numChannels = Math.ceil(spanLength / channelLength);
@@ -805,11 +1085,33 @@ export function calculateComponents(
   });
 
   // Top-mounted rail optimization for glass balustrade variants
-  const isGlassBalustrade = design.productVariant === "glass-bal-spigots" ||
+  // Note: startsWith("glass-bal-spigots") matches both 12mm and 15mm suffixed variants
+  // that home.tsx sends. The unsuffixed legacy string is also matched by startsWith.
+  const isGlassBalustrade = design.productVariant.startsWith("glass-bal-spigots") ||
                            design.productVariant === "glass-bal-channel" ||
                            design.productVariant === "glass-bal-standoffs";
 
   if (isGlassBalustrade) {
+    // Standoff hardware: emit 4 × 50mm standoffs per panel. Standoff balustrade is fixed
+    // at 1280mm height per operator data — count is panel-based, not height-based.
+    if (isStandoffSystem) {
+      (design.spans as any[]).forEach((span: any) => {
+        const numPanels = span.panelLayout?.panels?.length || 0;
+        if (numPanels === 0) return;
+        const fieldValues = (span as any).fieldValues || {};
+        const finish = fieldValues['standoff-finish'] || fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
+        pushSlotOrFallback(
+          numPanels * 4,
+          'standoff-hardware',
+          { finish },
+          {
+            description: `50mm Glass Standoff ${finish}`,
+            sku: `STANDOFF-50-${String(finish).toUpperCase()}`,
+          },
+        );
+      });
+    }
+
     const railGroups = new Map<string, {
       config: { type: HandrailType; material: HandrailMaterial; finish: HandrailFinish };
       spans: { length: number; startTermination: RailTerminationType; endTermination: RailTerminationType }[];

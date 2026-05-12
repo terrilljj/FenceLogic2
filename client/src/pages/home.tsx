@@ -99,8 +99,15 @@ const productOptions: ProductOption[] = [
   {
     id: "alu-bal-barr",
     type: "aluminium-balustrade",
-    name: "Aluminium Balustrade",
-    description: "Modern aluminium design",
+    name: "BARR Balustrade",
+    description: "50×25 picket aluminium balustrade (Black or White)",
+    visual: "aluminium-slats"
+  },
+  {
+    id: "alu-bal-blade",
+    type: "aluminium-balustrade",
+    name: "Blade Balustrade",
+    description: "Modern slim-profile aluminium balustrade",
     visual: "aluminium-slats"
   },
   {
