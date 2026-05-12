@@ -43,6 +43,8 @@ export function calculateComponents(
   slotMappings: SlotMapping[] = [],
   products: ProductLookup[] = []
 ): Component[] {
+  const components: Component[] = [];
+
   /**
    * Generic slot resolver. Queries product_slots WHERE fieldName=fieldName AND
    * discriminatorAttributes @> discriminators (JSONB contains).
@@ -79,7 +81,23 @@ export function calculateComponents(
     return null;
   };
 
-  const components: Component[] = [];
+  // Helper: try slot resolution first, fall through to hardcoded template-literal SKU.
+  // Used by the aluminium/semi-frameless branches that historically emitted only template literals.
+  // Once a style's product_slots are populated, the same call swaps in real SKUs automatically.
+  const pushSlotOrFallback = (
+    qty: number,
+    fieldName: string,
+    discriminators: Record<string, string>,
+    fallback: { description: string; sku: string }
+  ): void => {
+    const slot = lookupSlot(fieldName, discriminators);
+    if (slot) {
+      components.push({ qty, description: slot.description, sku: slot.sku });
+    } else {
+      components.push({ qty, description: fallback.description, sku: fallback.sku });
+    }
+  };
+
   const isChannelSystem = design.productVariant === "glass-pool-channel";
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
@@ -105,83 +123,122 @@ export function calculateComponents(
         const panelType = panelTypes[index] || "standard";
 
         if (panelType === "gate") {
-          components.push({
-            qty: 1,
-            description: `Semi-Frameless Gate Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
-            sku: `SF-GATE-${panelWidth}-${glassHeight}-${glassThickness}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'gate', width: String(panelWidth), height: String(glassHeight), thickness: String(glassThickness) },
+            {
+              description: `Semi-Frameless Gate Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
+              sku: `SF-GATE-${panelWidth}-${glassHeight}-${glassThickness}`,
+            },
+          );
         } else if (panelType === "hinge") {
-          components.push({
-            qty: 1,
-            description: `Semi-Frameless Hinge Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
-            sku: `SF-HINGE-${panelWidth}-${glassHeight}-${glassThickness}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'hinge', width: String(panelWidth), height: String(glassHeight), thickness: String(glassThickness) },
+            {
+              description: `Semi-Frameless Hinge Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
+              sku: `SF-HINGE-${panelWidth}-${glassHeight}-${glassThickness}`,
+            },
+          );
         } else {
-          components.push({
-            qty: 1,
-            description: `Semi-Frameless Glass Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
-            sku: `SF-PANEL-${panelWidth}-${glassHeight}-${glassThickness}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'standard', width: String(panelWidth), height: String(glassHeight), thickness: String(glassThickness) },
+            {
+              description: `Semi-Frameless Glass Panel ${panelWidth}mm x ${glassHeight}mm (${glassThickness}mm thick)`,
+              sku: `SF-PANEL-${panelWidth}-${glassHeight}-${glassThickness}`,
+            },
+          );
         }
       });
 
       // For L/U shapes, spans after the first share a corner post with the previous span
       const sharedCornerPost = isMultiSpanCorner && spanIndex > 0 ? 1 : 0;
       const numPosts = span.panelLayout.panels.length + 1 - sharedCornerPost;
-      const postDescription = `Semi-Frameless 50mm Square Post ${glassHeight + 200}mm (${postFinish} finish, ${postMounting} mounting)`;
-      components.push({
-        qty: numPosts,
-        description: postDescription,
-        sku: `SF-POST-50-${glassHeight + 200}-${postFinish.toUpperCase()}-${postMounting.toUpperCase()}`,
-      });
+      pushSlotOrFallback(
+        numPosts,
+        'post',
+        { height: String(glassHeight + 200), finish: postFinish, mounting: postMounting },
+        {
+          description: `Semi-Frameless 50mm Square Post ${glassHeight + 200}mm (${postFinish} finish, ${postMounting} mounting)`,
+          sku: `SF-POST-50-${glassHeight + 200}-${postFinish.toUpperCase()}-${postMounting.toUpperCase()}`,
+        },
+      );
 
       if (leftEndPost !== "end") {
-        components.push({
-          qty: 1,
-          description: `Semi-Frameless Left ${leftEndPost} Post ${glassHeight + 200}mm (${postFinish} finish)`,
-          sku: `SF-POST-LEFT-${leftEndPost.toUpperCase()}-${glassHeight + 200}-${postFinish.toUpperCase()}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'post',
+          { side: 'left', type: leftEndPost, height: String(glassHeight + 200), finish: postFinish },
+          {
+            description: `Semi-Frameless Left ${leftEndPost} Post ${glassHeight + 200}mm (${postFinish} finish)`,
+            sku: `SF-POST-LEFT-${leftEndPost.toUpperCase()}-${glassHeight + 200}-${postFinish.toUpperCase()}`,
+          },
+        );
       }
 
       if (rightEndPost !== "end") {
-        components.push({
-          qty: 1,
-          description: `Semi-Frameless Right ${rightEndPost} Post ${glassHeight + 200}mm (${postFinish} finish)`,
-          sku: `SF-POST-RIGHT-${rightEndPost.toUpperCase()}-${glassHeight + 200}-${postFinish.toUpperCase()}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'post',
+          { side: 'right', type: rightEndPost, height: String(glassHeight + 200), finish: postFinish },
+          {
+            description: `Semi-Frameless Right ${rightEndPost} Post ${glassHeight + 200}mm (${postFinish} finish)`,
+            sku: `SF-POST-RIGHT-${rightEndPost.toUpperCase()}-${glassHeight + 200}-${postFinish.toUpperCase()}`,
+          },
+        );
       }
 
       if (design.productVariant === "semi-frameless-1000") {
         const railFinish = span.railFinish || "satin";
         const totalLength = span.length || 5000;
-        components.push({
-          qty: 1,
-          description: `Semi-Frameless Top Rail ${totalLength}mm (${railFinish} finish)`,
-          sku: `SF-RAIL-TOP-${totalLength}-${railFinish.toUpperCase()}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'top-rail',
+          { length: String(totalLength), finish: railFinish },
+          {
+            description: `Semi-Frameless Top Rail ${totalLength}mm (${railFinish} finish)`,
+            sku: `SF-RAIL-TOP-${totalLength}-${railFinish.toUpperCase()}`,
+          },
+        );
       } else {
         const midRailFinish = span.midRailFinish || "satin";
         const midRailHeight = span.midRailHeight || 1000;
         const totalLength = span.length || 5000;
-        components.push({
-          qty: 1,
-          description: `Semi-Frameless Mid-Rail @ ${midRailHeight}mm ${totalLength}mm (${midRailFinish} finish)`,
-          sku: `SF-RAIL-MID-${midRailHeight}-${totalLength}-${midRailFinish.toUpperCase()}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'mid-rail',
+          { length: String(totalLength), finish: midRailFinish, height: String(midRailHeight) },
+          {
+            description: `Semi-Frameless Mid-Rail @ ${midRailHeight}mm ${totalLength}mm (${midRailFinish} finish)`,
+            sku: `SF-RAIL-MID-${midRailHeight}-${totalLength}-${midRailFinish.toUpperCase()}`,
+          },
+        );
       }
 
       if (gatesAllowed && span.gateConfig?.required) {
         const gateWidth = span.gateConfig.gateSize || 900;
-        components.push({
-          qty: 1,
-          description: `Semi-Frameless Gate Hinge Set for ${gateWidth}mm x ${glassHeight}mm Gate`,
-          sku: `SF-HINGE-SET-${gateWidth}-${glassHeight}`,
-        });
-        components.push({
-          qty: 1,
-          description: `Semi-Frameless Gate Latch for ${gateWidth}mm x ${glassHeight}mm Gate`,
-          sku: `SF-LATCH-${gateWidth}-${glassHeight}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'hinge-set',
+          { width: String(gateWidth), height: String(glassHeight) },
+          {
+            description: `Semi-Frameless Gate Hinge Set for ${gateWidth}mm x ${glassHeight}mm Gate`,
+            sku: `SF-HINGE-SET-${gateWidth}-${glassHeight}`,
+          },
+        );
+        pushSlotOrFallback(
+          1,
+          'latch-set',
+          { width: String(gateWidth), height: String(glassHeight) },
+          {
+            description: `Semi-Frameless Gate Latch for ${gateWidth}mm x ${glassHeight}mm Gate`,
+            sku: `SF-LATCH-${gateWidth}-${glassHeight}`,
+          },
+        );
       }
 
       return;
@@ -206,57 +263,85 @@ export function calculateComponents(
         const panelType = panelTypes[index] || "standard";
 
         if (panelType === "gate") {
-          components.push({
-            qty: 1,
-            description: `Blade Gate Panel ${bladeHeight} x ${panelWidth}mm (${finishName})`,
-            sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'gate', stock_width: String(spec.width), height: bladeHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `Blade Gate Panel ${bladeHeight} x ${panelWidth}mm (${finishName})`,
+              sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
+            },
+          );
         } else if (panelWidth === spec.width) {
-          components.push({
-            qty: 1,
-            description: `Blade Panel ${bladeHeight} x ${spec.width}mm (${finishName})`,
-            sku: `${spec.sku}-${spec.width}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'standard', stock_width: String(spec.width), height: bladeHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `Blade Panel ${bladeHeight} x ${spec.width}mm (${finishName})`,
+              sku: `${spec.sku}-${spec.width}-${finishSku}`,
+            },
+          );
         } else {
-          components.push({
-            qty: 1,
-            description: `Blade Panel ${bladeHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
-            sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'cut', stock_width: String(spec.width), height: bladeHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `Blade Panel ${bladeHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
+              sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
+            },
+          );
         }
       });
 
       const numPosts = span.panelLayout.gaps.length;
       if (bladePostType === "welded-base-plate") {
-        components.push({
-          qty: numPosts,
-          description: `Blade 50x50mm Welded Base Plate Post 1300mm (${finishName})`,
-          sku: `BLADE-POST-WBP-1300-${finishSku}`,
-        });
+        pushSlotOrFallback(
+          numPosts,
+          'post',
+          { height: '1300', finish: finishSku, mounting: 'welded-base-plate' },
+          {
+            description: `Blade 50x50mm Welded Base Plate Post 1300mm (${finishName})`,
+            sku: `BLADE-POST-WBP-1300-${finishSku}`,
+          },
+        );
       } else {
         const postLength = bladeHeight === "1200mm" ? 2400 : 1800;
-        components.push({
-          qty: numPosts,
-          description: `Blade 50x50mm Standard Post ${postLength}mm (${finishName})`,
-          sku: `BLADE-POST-STD-${postLength}-${finishSku}`,
-        });
+        pushSlotOrFallback(
+          numPosts,
+          'post',
+          { height: String(postLength), finish: finishSku, mounting: 'standard' },
+          {
+            description: `Blade 50x50mm Standard Post ${postLength}mm (${finishName})`,
+            sku: `BLADE-POST-STD-${postLength}-${finishSku}`,
+          },
+        );
       }
 
       if (gatesAllowed && span.gateConfig?.required) {
         const gateHeight = spec.height;
         const gateWidth = span.gateConfig.gateSize || 975;
 
-        components.push({
-          qty: 1,
-          description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
-          sku: `DD-HINGE-BLADE-${gateHeight}-${gateWidth}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'hinge-set',
+          { gate_type: 'blade', height: String(gateHeight), width: String(gateWidth) },
+          {
+            description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
+            sku: `DD-HINGE-BLADE-${gateHeight}-${gateWidth}`,
+          },
+        );
 
-        components.push({
-          qty: 1,
-          description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
-          sku: `DD-LATCH-BLADE-${gateHeight}-${gateWidth}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'latch-set',
+          { gate_type: 'blade', height: String(gateHeight), width: String(gateWidth) },
+          {
+            description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
+            sku: `DD-LATCH-BLADE-${gateHeight}-${gateWidth}`,
+          },
+        );
       }
 
       return;
@@ -282,57 +367,85 @@ export function calculateComponents(
         const panelType = panelTypes[index] || "standard";
 
         if (panelType === "gate") {
-          components.push({
-            qty: 1,
-            description: `BARR Gate Panel ${barrHeight} x ${panelWidth}mm (${finishName})`,
-            sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'gate', stock_width: String(spec.width), height: barrHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `BARR Gate Panel ${barrHeight} x ${panelWidth}mm (${finishName})`,
+              sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
+            },
+          );
         } else if (panelWidth === spec.width) {
-          components.push({
-            qty: 1,
-            description: `BARR Panel ${barrHeight} x ${spec.width}mm (${finishName})`,
-            sku: `${spec.sku}-${spec.width}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'standard', stock_width: String(spec.width), height: barrHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `BARR Panel ${barrHeight} x ${spec.width}mm (${finishName})`,
+              sku: `${spec.sku}-${spec.width}-${finishSku}`,
+            },
+          );
         } else {
-          components.push({
-            qty: 1,
-            description: `BARR Panel ${barrHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
-            sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'cut', stock_width: String(spec.width), height: barrHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `BARR Panel ${barrHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
+              sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
+            },
+          );
         }
       });
 
       const numPosts = span.panelLayout.gaps.length;
       if (barrPostType === "welded-base-plate") {
-        components.push({
-          qty: numPosts,
-          description: `BARR Welded Base Plate Post 1280mm (${finishName})`,
-          sku: `BARR-POST-WBP-1280-${finishSku}`,
-        });
+        pushSlotOrFallback(
+          numPosts,
+          'post',
+          { height: '1280', finish: finishSku, mounting: 'welded-base-plate' },
+          {
+            description: `BARR Welded Base Plate Post 1280mm (${finishName})`,
+            sku: `BARR-POST-WBP-1280-${finishSku}`,
+          },
+        );
       } else {
         const postLength = barrHeight === "1800mm" ? 2500 : 1800;
-        components.push({
-          qty: numPosts,
-          description: `BARR Standard Post ${postLength}mm (${finishName})`,
-          sku: `BARR-POST-STD-${postLength}-${finishSku}`,
-        });
+        pushSlotOrFallback(
+          numPosts,
+          'post',
+          { height: String(postLength), finish: finishSku, mounting: 'standard' },
+          {
+            description: `BARR Standard Post ${postLength}mm (${finishName})`,
+            sku: `BARR-POST-STD-${postLength}-${finishSku}`,
+          },
+        );
       }
 
       if (gatesAllowed && span.gateConfig?.required) {
         const gateHeight = spec.height;
         const gateWidth = span.gateConfig.gateSize || 975;
 
-        components.push({
-          qty: 1,
-          description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
-          sku: `DD-HINGE-BARR-${gateHeight}-${gateWidth}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'hinge-set',
+          { gate_type: 'barr', height: String(gateHeight), width: String(gateWidth) },
+          {
+            description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
+            sku: `DD-HINGE-BARR-${gateHeight}-${gateWidth}`,
+          },
+        );
 
-        components.push({
-          qty: 1,
-          description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
-          sku: `DD-LATCH-BARR-${gateHeight}-${gateWidth}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'latch-set',
+          { gate_type: 'barr', height: String(gateHeight), width: String(gateWidth) },
+          {
+            description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
+            sku: `DD-LATCH-BARR-${gateHeight}-${gateWidth}`,
+          },
+        );
       }
 
       return;
@@ -364,57 +477,85 @@ export function calculateComponents(
         const panelType = panelTypes[index] || "standard";
 
         if (panelType === "gate") {
-          components.push({
-            qty: 1,
-            description: `Tubular Flat Top Gate Panel ${tubularHeight} x ${panelWidth}mm (${finishName})`,
-            sku: `TUBULAR-GATE-${tubularHeight}-${panelWidth}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'gate', stock_width: String(standardWidth), height: tubularHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `Tubular Flat Top Gate Panel ${tubularHeight} x ${panelWidth}mm (${finishName})`,
+              sku: `TUBULAR-GATE-${tubularHeight}-${panelWidth}-${finishSku}`,
+            },
+          );
         } else if (panelWidth === standardWidth) {
-          components.push({
-            qty: 1,
-            description: `Tubular Flat Top Panel ${tubularHeight} x ${standardWidth}mm (${finishName})`,
-            sku: `TUBULAR-${tubularHeight}-${standardWidth}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'standard', stock_width: String(standardWidth), height: tubularHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `Tubular Flat Top Panel ${tubularHeight} x ${standardWidth}mm (${finishName})`,
+              sku: `TUBULAR-${tubularHeight}-${standardWidth}-${finishSku}`,
+            },
+          );
         } else {
-          components.push({
-            qty: 1,
-            description: `Tubular Flat Top Panel ${tubularHeight} x ${panelWidth}mm (Cut from ${standardWidth}mm, ${finishName})`,
-            sku: `TUBULAR-CUT-${tubularHeight}-${panelWidth}-${finishSku}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'panel',
+            { type: 'cut', stock_width: String(standardWidth), height: tubularHeight, cut_width: String(panelWidth), finish: finishSku },
+            {
+              description: `Tubular Flat Top Panel ${tubularHeight} x ${panelWidth}mm (Cut from ${standardWidth}mm, ${finishName})`,
+              sku: `TUBULAR-CUT-${tubularHeight}-${panelWidth}-${finishSku}`,
+            },
+          );
         }
       });
 
       const numPosts = span.panelLayout.gaps.length;
       if (tubularPostType === "welded-base-plate") {
-        components.push({
-          qty: numPosts,
-          description: `Tubular Welded Base Plate Post 1280mm (${finishName})`,
-          sku: `TUBULAR-POST-WBP-1280-${finishSku}`,
-        });
+        pushSlotOrFallback(
+          numPosts,
+          'post',
+          { height: '1280', finish: finishSku, mounting: 'welded-base-plate' },
+          {
+            description: `Tubular Welded Base Plate Post 1280mm (${finishName})`,
+            sku: `TUBULAR-POST-WBP-1280-${finishSku}`,
+          },
+        );
       } else {
         const postLength = tubularHeight === "900mm" ? 1800 : 1800;
-        components.push({
-          qty: numPosts,
-          description: `Tubular Standard Post ${postLength}mm (${finishName})`,
-          sku: `TUBULAR-POST-STD-${postLength}-${finishSku}`,
-        });
+        pushSlotOrFallback(
+          numPosts,
+          'post',
+          { height: String(postLength), finish: finishSku, mounting: 'standard' },
+          {
+            description: `Tubular Standard Post ${postLength}mm (${finishName})`,
+            sku: `TUBULAR-POST-STD-${postLength}-${finishSku}`,
+          },
+        );
       }
 
       if (gatesAllowed && span.gateConfig?.required) {
         const gateHeight = tubularHeight === "1200mm" ? 1200 : 900;
         const gateWidth = span.gateConfig.gateSize || 975;
 
-        components.push({
-          qty: 1,
-          description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
-          sku: `DD-HINGE-TUBULAR-${gateHeight}-${gateWidth}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'hinge-set',
+          { gate_type: 'tubular', height: String(gateHeight), width: String(gateWidth) },
+          {
+            description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
+            sku: `DD-HINGE-TUBULAR-${gateHeight}-${gateWidth}`,
+          },
+        );
 
-        components.push({
-          qty: 1,
-          description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
-          sku: `DD-LATCH-TUBULAR-${gateHeight}-${gateWidth}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'latch-set',
+          { gate_type: 'tubular', height: String(gateHeight), width: String(gateWidth) },
+          {
+            description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
+            sku: `DD-LATCH-TUBULAR-${gateHeight}-${gateWidth}`,
+          },
+        );
       }
 
       return;
@@ -537,18 +678,29 @@ export function calculateComponents(
         const hardware = (span.gateConfig.hardware || "polaris") as GateHardware;
         const hingeDetails = getHingeDetails(hingeType, hardware);
         const latchDetails = getLatchDetails(latchType);
+        const gateSize = String(span.gateConfig.gateSize);
 
-        components.push({
-          qty: 1,
-          description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-          sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
-        });
+        // hinge-set discriminators: { type, finish } — "finish" carries the hardware line (e.g. polaris,
+        // master-range) since the existing model has no separate finish parameter for gate hardware.
+        pushSlotOrFallback(
+          1,
+          'hinge-set',
+          { type: hingeType, finish: hardware, gate_size: gateSize },
+          {
+            description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+            sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
+          },
+        );
 
-        components.push({
-          qty: 1,
-          description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-          sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
-        });
+        pushSlotOrFallback(
+          1,
+          'latch-set',
+          { type: latchType, finish: hardware, gate_size: gateSize },
+          {
+            description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+            sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
+          },
+        );
 
         if (hardware === "polaris" && span.gateConfig.postAdapterPlate) {
           components.push({
@@ -618,18 +770,27 @@ export function calculateComponents(
           const hardware = (span.gateConfig.hardware || "polaris") as GateHardware;
           const hingeDetails = getHingeDetails(hingeType, hardware);
           const latchDetails = getLatchDetails(latchType);
+          const gateSize = String(span.gateConfig.gateSize);
 
-          components.push({
-            qty: 1,
-            description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-            sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'hinge-set',
+            { type: hingeType, finish: hardware, gate_size: gateSize },
+            {
+              description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+              sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
+            },
+          );
 
-          components.push({
-            qty: 1,
-            description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-            sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
-          });
+          pushSlotOrFallback(
+            1,
+            'latch-set',
+            { type: latchType, finish: hardware, gate_size: gateSize },
+            {
+              description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
+              sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
+            },
+          );
 
           if (hardware === "polaris" && span.gateConfig.postAdapterPlate) {
             components.push({

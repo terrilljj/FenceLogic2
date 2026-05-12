@@ -76,6 +76,9 @@ export interface ProductMapping {
   productSku: string;
   productDescription: string;
   productPrice: number;
+  // Discriminator attributes parsed from the CSV `discriminator_attributes` JSON column.
+  // Forwarded to product_slots.discriminator_attributes for the runtime slot resolver.
+  discriminatorAttributes: Record<string, string> | null;
 }
 
 export interface FeatureToggle {
@@ -160,6 +163,18 @@ export function processTemplateRows(
     if (!s) return null;
     try { return JSON.parse(s); } catch { return null; }
   };
+  const parseDiscriminators = (s?: string): Record<string, string> | null => {
+    if (!s) return null;
+    try {
+      const parsed = JSON.parse(s);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const coerced: Record<string, string> = {};
+        for (const [k, v] of Object.entries(parsed)) coerced[k] = String(v);
+        return Object.keys(coerced).length > 0 ? coerced : null;
+      }
+      return null;
+    } catch { return null; }
+  };
 
   for (const row of rows) {
     try {
@@ -216,6 +231,7 @@ export function processTemplateRows(
           productSku: row.product_sku,
           productDescription: row.product_description || '',
           productPrice: isNaN(price) ? 0 : price,
+          discriminatorAttributes: parseDiscriminators(row.discriminator_attributes),
         });
       }
 
@@ -262,6 +278,7 @@ export function processTemplateRows(
           productSku: row.product_sku,
           productDescription: row.product_description || '',
           productPrice: isNaN(price) ? 0 : price,
+          discriminatorAttributes: parseDiscriminators(row.discriminator_attributes),
         });
       }
 

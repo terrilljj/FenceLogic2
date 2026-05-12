@@ -1519,6 +1519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let productsCreated = 0;
       let productsUpdated = 0;
       let slotsCreated = 0;
+      let productSlotsCreated = 0;
       let fieldsCreated = 0;
       const dbErrors: string[] = [];
       const productIdMap = new Map<string, string>(); // SKU -> product ID
@@ -1579,7 +1580,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         console.log(`[Template Import] Created ${slotsCreated} product slots for ${matchingStyle.label}`);
-        
+
+        // Also write to product_slots — the table the runtime BOM solver reads.
+        // style_product_slots above feeds the admin /api/styles/:code/config view only.
+        // Until that admin-view table is retired, both writes coexist.
+        const productVariant = matchingStyle.code;
+        await storage.deleteProductSlotsByVariant(productVariant);
+
+        // Group mappings by fieldName so we can assign per-field sequence numbers.
+        const sequenceByField = new Map<string, number>();
+        for (const mapping of processed.productMappings) {
+          const productId = productIdMap.get(mapping.productSku);
+          if (!productId) continue;
+
+          // Derive a stable internal_id within (productVariant, fieldName):
+          //  - size-keyed slots (e.g. glass panels): `${slotPrefix}-${sizeMm}` matches the
+          //    convention used by migrations/0001_generic_slot_resolver.sql backfill (e.g. GP-1200).
+          //  - non-size slots (spigots, hinges, etc.): use the product SKU directly.
+          const internalId = mapping.sizeMm > 0 && mapping.slotPrefix
+            ? `${mapping.slotPrefix}-${mapping.sizeMm}`
+            : mapping.productSku;
+
+          // Default discriminators: explicit JSON from CSV wins; else auto-derive size_mm for
+          // legacy size-keyed slots so they resolve through the discriminator path, not the
+          // legacy regex fallback.
+          const discriminatorAttributes = mapping.discriminatorAttributes
+            ?? (mapping.sizeMm > 0 ? { size_mm: String(mapping.sizeMm) } : null);
+
+          const seq = (sequenceByField.get(mapping.variableType) ?? 0) + 1;
+          sequenceByField.set(mapping.variableType, seq);
+
+          try {
+            await storage.createProductSlot({
+              internalId,
+              productVariant,
+              fieldName: mapping.variableType,
+              sequence: seq,
+              productId,
+              label: mapping.label || mapping.productDescription,
+              discriminatorAttributes,
+              isActive: 1,
+            });
+            productSlotsCreated++;
+          } catch (error) {
+            const errorMsg = `Failed to create product_slot for ${mapping.productSku} (${productVariant}/${mapping.variableType}): ${error instanceof Error ? error.message : 'Unknown error'}`;
+            dbErrors.push(errorMsg);
+            console.error(`[Template Import] ${errorMsg}`);
+          }
+        }
+
+        console.log(`[Template Import] Created ${productSlotsCreated} runtime product_slots rows for ${productVariant}`);
+
         // Create calculator fields for this style
         console.log(`[Template Import] Creating calculator fields for ${matchingStyle.label}`);
         
@@ -1696,8 +1747,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: matchingStyle 
-          ? `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated, ${slotsCreated} slots linked, ${fieldsCreatedCount} calculator fields created for ${matchingStyle.label}`
+        message: matchingStyle
+          ? `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated, ${slotsCreated} admin-view slots linked, ${productSlotsCreated} runtime slots written, ${fieldsCreatedCount} calculator fields created for ${matchingStyle.label}`
           : `Template ${filename} imported: ${productsCreated} products created, ${productsUpdated} products updated (no matching fence style)`,
         templateId,
         fenceStyle: matchingStyle ? { id: matchingStyle.id, code: matchingStyle.code, label: matchingStyle.label } : null,
@@ -1707,6 +1758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           productsCreated,
           productsUpdated,
           slotsCreated: matchingStyle ? slotsCreated : 0,
+          productSlotsCreated: matchingStyle ? productSlotsCreated : 0,
           fieldsCreated: fieldsCreatedCount,
           featureToggles: processed.featureToggles.length,
           gateConfigs: processed.gateConfigs.length,
