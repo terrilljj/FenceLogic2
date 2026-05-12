@@ -471,6 +471,14 @@ export const spanConfigSchema = z.object({
   tubularLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Tubular panel layout mode
   tubularPostType: z.enum(["welded-base-plate", "standard"]).optional(), // Tubular post type
   tubularPostMounting: z.enum(["inground", "wall", "core-drilled"]).optional(), // Tubular post mounting (for standard posts)
+  // Aluminium Balustrade — BARR
+  balBarrPanelHeight: z.enum(["1000mm", "1200mm"]).optional(), // Bal BARR panel height
+  balBarrFinish: z.enum(["black", "white"]).optional(), // Bal BARR finish
+  balBarrPostMounting: z.enum(["face-mount", "base-plated", "full-post-core-drill"]).optional(), // Bal BARR post mounting
+  balBarrIncludeRakedPanels: z.boolean().optional(), // Bal BARR include raked panels toggle
+  // Aluminium Balustrade — Blade (black only)
+  balBladePostMounting: z.enum(["face-mount", "full-post"]).optional(), // Bal Blade post mounting
+  balBladeFullPostLength: z.enum(["2400", "6000"]).optional(), // Bal Blade full-post length (when post mounting = full-post)
   hamptonsStyle: z.enum(["full-privacy", "combo", "vertical-paling", "semi-privacy", "3rail"]).optional(), // Hamptons PVC style selection
   hamptonsFinish: z.enum(["white", "almond", "clay"]).optional(), // Hamptons PVC finish
   hamptonsLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Hamptons panel layout mode
