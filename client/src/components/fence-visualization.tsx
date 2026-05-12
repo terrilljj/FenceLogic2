@@ -509,6 +509,11 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const isTubularFencing = design.productVariant === "alu-pool-tubular";
   const isSemiFrameless = design.productVariant === "semi-frameless-1000" || design.productVariant === "semi-frameless-1800";
   const isHamptonsPVC = design.productVariant.startsWith("pvc-hamptons-");
+  // Aluminium balustrade variants — reuse Pool aluminium rendering (panel-width specs are identical).
+  const isBalBarr = design.productVariant === "alu-bal-barr";
+  const isBalBlade = design.productVariant === "alu-bal-blade";
+  // Standoff balustrade — distinct mounting visual (4 standoff buttons in place of 2 base spigots).
+  const isStandoffSystem = design.productVariant === "glass-bal-standoffs";
 
   // Set canvas size to match container
   const rect = canvas.getBoundingClientRect();
@@ -609,8 +614,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       if (!span.leftGap?.enabled) leftGapSize = 0;
       if (!span.rightGap?.enabled) rightGapSize = 0;
     }
-    // For Blade, BARR, Tubular, Hamptons PVC, use gaps from panelLayout array (N+1 gaps for N panels)
-    else if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
+    // For Blade, BARR, Tubular, Hamptons PVC (including Bal BARR / Bal Blade), use gaps from panelLayout array (N+1 gaps for N panels)
+    else if ((isBladeFencing || isBarrFencing || isTubularFencing || isHamptonsPVC || isBalBarr || isBalBlade) && span.panelLayout?.gaps && span.panelLayout.gaps.length > 0) {
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
@@ -734,8 +739,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         scaledPanelHeight = span.customPanel.height * scale;
       }
       
-      // Blade panels have different rendering
-      if (isBladeFencing) {
+      // Blade panels have different rendering — Bal Blade reuses the same visual.
+      if (isBladeFencing || isBalBlade) {
         // Blade panel configuration
         const railSize = 40 * scale; // 40x40mm horizontal rail
         const bladeWidth = 16 * scale; // 50x16mm blades (16mm width for vertical blades)
@@ -795,8 +800,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         );
         
       } 
-      // BARR panels have different rendering
-      else if (isBarrFencing) {
+      // BARR panels have different rendering — Bal BARR reuses the same visual.
+      else if (isBarrFencing || isBalBarr) {
         // BARR panel configuration
         const barrBottomClearance = 100 * scale; // Panels float above ground
         const railHeight = 25 * scale; // Top and bottom rails (thinner)
@@ -1214,8 +1219,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         );
       }
 
-      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular/Hamptons/SemiFrameless use posts)
-      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing && !isHamptonsPVC && !isSemiFrameless) {
+      // Draw mounting hardware at base of panel - spigots OR channel (gates don't have spigots, Blade/BARR/Tubular/Hamptons/SemiFrameless use posts).
+      // Bal BARR / Bal Blade use aluminium posts (handled in their render branches above).
+      // Standoff systems draw 4 standoffs on the panel body instead — handled in the dedicated branch below.
+      if (!isGate && !isChannelSystem && !isBladeFencing && !isBarrFencing && !isTubularFencing && !isHamptonsPVC && !isSemiFrameless && !isBalBarr && !isBalBlade && !isStandoffSystem) {
         const spigotWidth = 50 * scale;   // 50mm wide
         const spigotHeight = 200 * scale; // 200mm height (doubled)
         const spigotGap = 50 * scale;     // 50mm gap below glass
@@ -1254,6 +1261,35 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
           spigotWidth,
           spigotHeight
         );
+      }
+
+      // Standoff mounting hardware — 4 standoff buttons per panel (replaces the 2 base spigots).
+      // Two horizontal positions (~150mm in from each side edge), two vertical pairs
+      // (~200mm down from top, ~200mm up from bottom). 50mm diameter visual.
+      if (!isGate && isStandoffSystem) {
+        const standoffRadius = (50 * scale) / 2;
+        const horizontalInset = 150 * scale;
+        const verticalInset = 200 * scale;
+        const panelTopY = groundLevel - scaledPanelHeight;
+        const leftX = currentX + horizontalInset;
+        const rightX = currentX + scaledPanelWidth - horizontalInset;
+        const topY = panelTopY + verticalInset;
+        const bottomY = groundLevel - verticalInset;
+        const positions: Array<[number, number]> = [
+          [leftX, topY],
+          [rightX, topY],
+          [leftX, bottomY],
+          [rightX, bottomY],
+        ];
+        ctx.fillStyle = "#9ca3af";
+        ctx.strokeStyle = "#6b7280";
+        ctx.lineWidth = 1;
+        for (const [cx, cy] of positions) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, standoffRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
       }
 
       // Draw hinges and latch for gate - at edge of panel
@@ -1340,9 +1376,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
       // Gap between panels
       if (i < numPanels - 1) {
-        // For BARR, Blade, Tubular, Hamptons PVC, and Semi-Frameless: gaps array has N+1 elements, gap[i+1] is between panel i and i+1
+        // For BARR, Blade, Tubular, Hamptons PVC, and Semi-Frameless (including Bal BARR / Bal Blade): gaps array has N+1 elements, gap[i+1] is between panel i and i+1
         // For glass: gaps array uses gap[i] for gap between panel i and i+1
-        const gapIndex = (isBarrFencing || isBladeFencing || isTubularFencing || isHamptonsPVC || isSemiFrameless) ? i + 1 : i;
+        const gapIndex = (isBarrFencing || isBladeFencing || isTubularFencing || isHamptonsPVC || isSemiFrameless || isBalBarr || isBalBlade) ? i + 1 : i;
         const actualGapSize = span.panelLayout?.gaps?.[gapIndex] ?? gapSize;
         const scaledGapSize = actualGapSize * scale;
         const gapStart = currentX;
@@ -1458,9 +1494,11 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
     }
     
-    // Draw top-mounted rail for glass balustrade if enabled
-    const isGlassBalustrade = design.productVariant === "glass-bal-spigots" || 
-                              design.productVariant === "glass-bal-channel" || 
+    // Draw top-mounted rail for glass balustrade if enabled.
+    // startsWith("glass-bal-spigots") catches both the 12mm and 15mm suffixed variants
+    // that home.tsx emits, mirroring the same fix landed in bom-calculator.ts (PR #27).
+    const isGlassBalustrade = design.productVariant.startsWith("glass-bal-spigots") ||
+                              design.productVariant === "glass-bal-channel" ||
                               design.productVariant === "glass-bal-standoffs";
     
     if (isGlassBalustrade && span.handrail?.enabled) {
