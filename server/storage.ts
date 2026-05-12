@@ -65,7 +65,8 @@ export interface IStorage {
   updateProductSlot(id: string, slot: Partial<InsertProductSlot>): Promise<ProductSlot | undefined>;
   deleteProductSlot(id: string): Promise<boolean>;
   deleteSlotsByVariantAndField(productVariant: string, fieldName: string): Promise<boolean>;
-  
+  deleteProductSlotsByVariant(productVariant: string): Promise<boolean>;
+
   // Fence Style operations
   getFenceStyle(id: string): Promise<FenceStyle | undefined>;
   getFenceStyleByCode(code: string): Promise<FenceStyle | undefined>;
@@ -458,7 +459,13 @@ export class DatabaseStorage implements IStorage {
       ));
     return result.rowCount ? result.rowCount > 0 : false;
   }
-  
+
+  async deleteProductSlotsByVariant(productVariant: string): Promise<boolean> {
+    const result = await db.delete(productSlots)
+      .where(eq(productSlots.productVariant, productVariant));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
   // Fence Style operations
   async getFenceStyle(id: string): Promise<FenceStyle | undefined> {
     const [style] = await db.select().from(fenceStyles).where(eq(fenceStyles.id, id));
