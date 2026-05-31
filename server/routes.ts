@@ -381,7 +381,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/products", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertProductSchema.parse(req.body);
-      
+
+      if (validatedData.price && validatedData.price.toString().trim() !== "") {
+        console.warn(`[Admin Product API] Price included in ${req.method} /api/products — per ADR 0039 prices should come from /api/admin/products-price-import. Allowing for V1; will harden in V1.1.`);
+      }
+
       // Check if product code already exists
       const existing = await storage.getProductByCode(validatedData.code);
       if (existing) {
@@ -403,7 +407,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/products/:id", requireAdmin, async (req, res) => {
     try {
       const validatedData = insertProductSchema.partial().parse(req.body);
-      
+
+      if (validatedData.price && validatedData.price.toString().trim() !== "") {
+        console.warn(`[Admin Product API] Price included in ${req.method} /api/products/${req.params.id} — per ADR 0039 prices should come from /api/admin/products-price-import. Allowing for V1; will harden in V1.1.`);
+      }
+
       // If updating code, check if new code already exists (and isn't this product's current code)
       if (validatedData.code) {
         const existing = await storage.getProductByCode(validatedData.code);
@@ -692,9 +700,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: [] as string[],
       };
 
+      console.log(`[Product CSV Import] Price column not persisted — per ADR 0039 prices come from /api/admin/products-price-import only`);
+
       for (let i = 1; i < rows.length; i++) {
         const values = rows[i];
-        
+
         try {
           const rowData: Record<string, string> = {};
           header.forEach((field, index) => {
@@ -708,7 +718,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             description: rowData.description,
             category: rowData.category || undefined,
             subcategory: rowData.subcategory || undefined,
-            price: rowData.price || undefined,
             weight: rowData.weight || undefined,
             dimensions: rowData.dimensions || undefined,
             units: rowData.units || undefined,
@@ -742,6 +751,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error importing products:", error);
       res.status(500).json({ error: "Failed to import products" });
+    }
+  });
+
+  // Single-writer price import (per ADR 0039).
+  // Accepts base64-encoded xlsx or csv. Updates only the price column on matched codes.
+  // Never creates products. Never touches columns other than price.
+  app.post("/api/admin/products-price-import", requireAdmin, async (req, res) => {
+    try {
+      const { fileBase64, format } = req.body as { fileBase64?: string; format?: string };
+
+      if (!fileBase64 || typeof fileBase64 !== "string") {
+        return res.status(400).json({ error: "Missing fileBase64 (base64-encoded xlsx or csv body)" });
+      }
+      const fmt = (format || "").toLowerCase();
+      if (fmt !== "xlsx" && fmt !== "csv") {
+        return res.status(400).json({ error: "format must be 'xlsx' or 'csv'" });
+      }
+
+      let buffer: Buffer;
+      try {
+        buffer = Buffer.from(fileBase64, "base64");
+      } catch {
+        return res.status(400).json({ error: "fileBase64 is not valid base64" });
+      }
+
+      // Parse to a list of row objects keyed by lowercased header.
+      let records: Record<string, string>[] = [];
+      try {
+        if (fmt === "xlsx") {
+          const XLSX = await import("xlsx");
+          const wb = XLSX.read(buffer, { type: "buffer" });
+          const firstSheetName = wb.SheetNames[0];
+          if (!firstSheetName) {
+            return res.status(400).json({ error: "xlsx contains no sheets" });
+          }
+          const sheet = wb.Sheets[firstSheetName];
+          const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+          records = raw.map((row) => {
+            const out: Record<string, string> = {};
+            for (const [k, v] of Object.entries(row)) {
+              out[k.toLowerCase().trim()] = v == null ? "" : String(v);
+            }
+            return out;
+          });
+        } else {
+          const { parse } = await import("csv-parse/sync");
+          const raw = parse(buffer, {
+            columns: (header: string[]) => header.map((h) => h.toLowerCase().trim()),
+            skip_empty_lines: true,
+            trim: true,
+            bom: true,
+          }) as Record<string, string>[];
+          records = raw;
+        }
+      } catch (parseErr) {
+        const msg = parseErr instanceof Error ? parseErr.message : "Unknown parse error";
+        return res.status(400).json({ error: `Failed to parse ${fmt} payload: ${msg}` });
+      }
+
+      if (records.length === 0) {
+        return res.status(400).json({ error: "No data rows found" });
+      }
+
+      const headerKeys = Object.keys(records[0]);
+      if (!headerKeys.includes("code") || !headerKeys.includes("price")) {
+        return res.status(400).json({ error: "Required columns 'code' and 'price' not found in header" });
+      }
+
+      const updated: string[] = [];
+      const unmatched: string[] = [];
+      const skipped_invalid_price: string[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < records.length; i++) {
+        const row = records[i];
+        const code = (row.code || "").toString().trim();
+        const rawPrice = (row.price ?? "").toString().trim();
+
+        if (!code) {
+          errors.push(`Row ${i + 2}: missing code`);
+          continue;
+        }
+
+        const cleanedPrice = rawPrice.replace(/[$,\s]/g, "");
+        const parsed = parseFloat(cleanedPrice);
+        if (!cleanedPrice || !Number.isFinite(parsed)) {
+          skipped_invalid_price.push(code);
+          continue;
+        }
+
+        try {
+          const existing = await storage.getProductByCode(code);
+          if (!existing) {
+            unmatched.push(code);
+            continue;
+          }
+          await storage.updateProduct(existing.id, { price: parsed.toFixed(2) });
+          updated.push(code);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Unknown error";
+          errors.push(`Row ${i + 2} (${code}): ${msg}`);
+        }
+      }
+
+      console.log(`[Price Import] updated=${updated.length} unmatched=${unmatched.length} skipped_invalid_price=${skipped_invalid_price.length} errors=${errors.length}`);
+
+      res.json({
+        updated: updated.length,
+        unmatched,
+        skipped_invalid_price,
+        errors,
+      });
+    } catch (error) {
+      console.error("Error in price import:", error);
+      res.status(500).json({ error: "Failed to import prices" });
     }
   });
 
@@ -1524,6 +1648,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbErrors: string[] = [];
       const productIdMap = new Map<string, string>(); // SKU -> product ID
 
+      console.log(`[Template Import] Price column not persisted — per ADR 0039 prices come from /api/admin/products-price-import only`);
+
       for (const mapping of processed.productMappings) {
         try {
           const { product, created } = await storage.upsertProduct({
@@ -1531,7 +1657,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             description: mapping.productDescription,
             category: '', // Leave empty - category not specified in CSV templates
             subcategory: mapping.variableType,
-            price: mapping.productPrice.toString(),
             active: 1,
           });
           
