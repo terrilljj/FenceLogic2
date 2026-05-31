@@ -441,6 +441,7 @@ export type PanelLayout = {
 // Span configuration
 export const spanConfigSchema = z.object({
   spanId: z.string(),
+  name: z.string().optional(), // Display-only section label (e.g. "North RHS"); not sent to the solver
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
   desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate

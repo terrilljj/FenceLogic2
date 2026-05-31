@@ -75,7 +75,61 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
           </AlertDescription>
         </Alert>
       )}
-      
+
+      {/* Gate position — the most-used controls, kept at the TOP of the gate config */}
+      <div className="space-y-2 pb-3 border-b border-border">
+        <Label className="text-sm font-medium">Gate Position</Label>
+        {config.hingeFrom === "glass" ? (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="font-semibold"
+                onClick={() => updateConfig({ position: Math.max(positionLimits.min, config.position - 1) })}
+                data-testid={`gate-${spanId}-move-left`}
+                disabled={config.position <= positionLimits.min}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1.5" />
+                Move Left
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="font-semibold"
+                onClick={() => updateConfig({ flipped: !config.flipped })}
+                data-testid={`gate-${spanId}-flip`}
+              >
+                <FlipHorizontal className="w-4 h-4 mr-1.5" />
+                Flip
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="font-semibold"
+                onClick={() => updateConfig({ position: Math.min(positionLimits.max, config.position + 1) })}
+                data-testid={`gate-${spanId}-move-right`}
+                disabled={config.position >= positionLimits.max}
+              >
+                <ChevronRight className="w-4 h-4 mr-1.5" />
+                Move Right
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Position:</span>
+              <span className="font-mono font-medium">Panel {config.position + 1}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Position:</span>
+            <span className="font-mono font-medium">
+              {config.position <= 0 ? "Start of Section" : "End of Section"}
+            </span>
+          </div>
+        )}
+      </div>
+
       <div className="space-y-3">
         <div className="space-y-2">
           <Label className="text-sm font-medium">Gate Hardware</Label>
@@ -249,9 +303,9 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                     console.log('Auto button clicked, calculatedHingePanelSize:', calculatedHingePanelSize);
                     if (calculatedHingePanelSize) {
                       console.log('Updating hinge panel to:', calculatedHingePanelSize);
-                      updateConfig({ 
-                        autoHingePanel: false,
-                        hingePanelSize: calculatedHingePanelSize 
+                      updateConfig({
+                        autoHingePanel: true,
+                        hingePanelSize: calculatedHingePanelSize
                       });
                     } else {
                       console.log('No calculatedHingePanelSize available!');
@@ -301,60 +355,6 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
             </div>
           )}
         </div>
-      </div>
-
-      <div className="space-y-3 pt-3 border-t border-border">
-        <Label className="text-sm font-medium">Gate Position Controls</Label>
-        {config.hingeFrom === "glass" && (
-          <>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => updateConfig({ flipped: !config.flipped })}
-                data-testid={`gate-${spanId}-flip`}
-              >
-                <FlipHorizontal className="w-4 h-4 mr-2" />
-                Flip Orientation
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => updateConfig({ position: Math.max(positionLimits.min, config.position - 1) })}
-                data-testid={`gate-${spanId}-move-left`}
-                disabled={config.position <= positionLimits.min}
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Move Left
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => updateConfig({ position: Math.min(positionLimits.max, config.position + 1) })}
-                data-testid={`gate-${spanId}-move-right`}
-                disabled={config.position >= positionLimits.max}
-              >
-                <ChevronRight className="w-4 h-4 mr-2" />
-                Move Right
-              </Button>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Position:</span>
-              <span className="font-mono font-medium">Panel {config.position + 1}</span>
-            </div>
-          </>
-        )}
-        {config.hingeFrom === "wall" && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Position:</span>
-            <span className="font-mono font-medium">
-              {config.position <= 0 ? "Start of Section" : "End of Section"}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

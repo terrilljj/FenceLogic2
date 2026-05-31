@@ -44,9 +44,11 @@ interface AppHeaderProps {
   onDownloadPDF?: () => void;
   isSaving?: boolean;
   productVariant?: ProductVariant;
+  /** Hide the header % bar when a step wizard already shows progress. */
+  showProgress?: boolean;
 }
 
-export function AppHeader({ progress, onSave, onLoad, onReset, onDownloadPDF, isSaving = false, productVariant }: AppHeaderProps) {
+export function AppHeader({ progress, onSave, onLoad, onReset, onDownloadPDF, isSaving = false, productVariant, showProgress = true }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
   const [, setLocation] = useLocation();
 
@@ -70,12 +72,14 @@ export function AppHeader({ progress, onSave, onLoad, onReset, onDownloadPDF, is
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-3 flex-1 max-w-md">
-            <Progress value={progress} className="flex-1" data-testid="progress-indicator" />
-            <span className="text-sm text-muted-foreground font-mono whitespace-nowrap">
-              {progress}%
-            </span>
-          </div>
+          {showProgress && (
+            <div className="hidden md:flex items-center gap-3 flex-1 max-w-md">
+              <Progress value={progress} className="flex-1" data-testid="progress-indicator" />
+              <span className="text-sm text-muted-foreground font-mono whitespace-nowrap">
+                {progress}%
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

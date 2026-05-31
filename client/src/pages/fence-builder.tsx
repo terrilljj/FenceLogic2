@@ -5,6 +5,12 @@ import { FenceVisualization } from "@/components/fence-visualization";
 import { ComponentList } from "@/components/component-list";
 import { AppHeader } from "@/components/app-header";
 import { ProductSelector } from "@/components/product-selector";
+import { SectionSwitcher } from "@/components/configure-blocks/section-switcher";
+import { WizardStepper, type WizardStep } from "@/components/configure-blocks/wizard/wizard-stepper";
+import { TipsPanel } from "@/components/configure-blocks/wizard/tips-panel";
+import { StepStyleMeasure } from "@/components/configure-blocks/wizard/step-style-measure";
+import { StepFinishing } from "@/components/configure-blocks/wizard/step-finishing";
+import { StepReview } from "@/components/configure-blocks/wizard/step-review";
 import { useToast } from "@/hooks/use-toast";
 import { FenceDesign, FenceShape, SpanConfig, SavedFenceDesign, ProductType, ProductVariant } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -53,9 +59,41 @@ const SHAPE_OPTIONS: { id: FenceShape; label: string }[] = [
   { id: "custom", label: "5+ Sections (Custom)" },
 ];
 
+// Oxworks-style 4-step wizard (glass-pool-spigots).
+const WIZARD_STEPS: WizardStep[] = [
+  { id: 1, title: "Style & Measure", subtitle: "Shape & lengths" },
+  { id: 2, title: "Configure", subtitle: "Each section" },
+  { id: 3, title: "Finishing", subtitle: "Spigots & finish" },
+  { id: 4, title: "Review", subtitle: "Component list" },
+];
+
+// Step 1 "Things to consider" — factual measuring guidance (not installer-voice).
+const STEP1_TIPS = [
+  {
+    title: "Measure to the centre line",
+    body: "Take each section's length along the centre line of the fence — about 100mm in from the slab or deck edge, where the glass actually sits on spigots.",
+  },
+  {
+    title: "Account for end gaps",
+    body: "Decide if you need a gap at the wall or corner at each end of a section. You set the exact left/right gaps in the next step.",
+  },
+  {
+    title: "Sections that meet",
+    body: "Where two sections join at a corner, only one of them needs an end gap — avoid double-counting the junction.",
+  },
+];
+const STEP1_FOOTNOTE = "Before installing a pool fence, consult a certifier, engineer or your local authority for site-specific requirements.";
+
 export default function FenceLogic() {
   const { toast } = useToast();
   const [activeSpanId, setActiveSpanId] = useState<string | undefined>();
+  // Oxworks-style side switcher: which section's accordion is shown (glass-pool-spigots).
+  const [selectedSpanId, setSelectedSpanId] = useState<string>("A");
+  const prevSpanCount = useRef(1);
+  // Set true right before an explicit "Add Section" so the new one is auto-selected.
+  const pendingSelectLast = useRef(false);
+  // Oxworks-style 4-step wizard: current step (glass-pool-spigots only).
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showProductMockup, setShowProductMockup] = useState(false);
@@ -78,7 +116,7 @@ export default function FenceLogic() {
       {
         spanId: "A",
         length: 5000,
-        maxPanelWidth: 1200, // Will be updated from calculator config
+        maxPanelWidth: 1800, // Default max panel (matches added sections); config may override
         desiredGap: 50,
         spigotMounting: "base-plate",
         spigotColor: "polished",
@@ -275,7 +313,8 @@ export default function FenceLogic() {
   const handleShapeChange = useCallback((shape: FenceShape) => {
     setDesign((prev) => {
       const defaultMaxPanel = calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800;
-      const newSpans = getSpansForShape(shape, prev.customSides, defaultMaxPanel);
+      // PRESERVE existing sections; only add/trim to match the new shape's count.
+      const newSpans = resizeSpans(prev.spans, shapeToCount(shape, prev.customSides), defaultMaxPanel);
       return { ...prev, shape, spans: newSpans };
     });
   }, [calculatorConfig]);
@@ -283,10 +322,35 @@ export default function FenceLogic() {
   const handleCustomSidesChange = useCallback((customSides: number) => {
     setDesign((prev) => {
       const defaultMaxPanel = calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800;
-      const newSpans = getSpansForShape(prev.shape, customSides, defaultMaxPanel);
+      const newSpans = resizeSpans(prev.spans, shapeToCount("custom", customSides), defaultMaxPanel);
       return { ...prev, customSides, spans: newSpans };
     });
   }, [calculatorConfig]);
+
+  // Step 1 "Add section": append one section, PRESERVING the rest, and keep the
+  // shape/customSides in sync so the shape selector reflects the new count.
+  const handleAddSectionStep1 = useCallback(() => {
+    setDesign((prev) => {
+      if (prev.spans.length >= 10) return prev;
+      const defaultMaxPanel = calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800;
+      const targetCount = prev.spans.length + 1;
+      const spans = resizeSpans(prev.spans, targetCount, defaultMaxPanel);
+      return { ...prev, spans, shape: countToShape(targetCount), customSides: Math.max(prev.customSides ?? 0, targetCount) };
+    });
+  }, [calculatorConfig]);
+
+  // Delete a section (keeps at least one). Re-letters the remaining sections so
+  // their ids stay contiguous A, B, C…; section names/config travel with them.
+  const handleDeleteSection = useCallback((spanId: string) => {
+    setDesign((prev) => {
+      if (prev.spans.length <= 1) return prev;
+      const relettered = prev.spans
+        .filter((s) => s.spanId !== spanId)
+        .map((s, i) => ({ ...s, spanId: String.fromCharCode(65 + i) }));
+      const count = relettered.length;
+      return { ...prev, spans: relettered, shape: countToShape(count), customSides: Math.min(10, Math.max(3, count)) };
+    });
+  }, []);
 
   const handleSpanUpdate = useCallback((spanId: string, updatedSpan: SpanConfig) => {
     setDesign((prev) => ({
@@ -360,6 +424,22 @@ export default function FenceLogic() {
     });
   }, [design.productVariant, toast]);
 
+  // Keep the side-switcher selection valid. We do NOT auto-jump to the last
+  // section when the count grows (that made Configure open on the last section
+  // after a shape change) — only when the user explicitly adds one via the
+  // switcher's "Add Section" (pendingSelectLast). Otherwise an invalid selection
+  // falls back to the FIRST section.
+  useEffect(() => {
+    const ids = design.spans.map((s) => s.spanId);
+    if (pendingSelectLast.current && ids.length > prevSpanCount.current) {
+      setSelectedSpanId(ids[ids.length - 1]);
+      pendingSelectLast.current = false;
+    } else if (!ids.includes(selectedSpanId)) {
+      setSelectedSpanId(ids[0] ?? "A");
+    }
+    prevSpanCount.current = ids.length;
+  }, [design.spans, selectedSpanId]);
+
   const handleSave = () => {
     saveDesignMutation.mutate(design);
     localStorage.removeItem("bhub-draft-v1");
@@ -429,6 +509,8 @@ export default function FenceLogic() {
       ],
     });
     setActiveSpanId(undefined);
+    setSelectedSpanId("A");
+    setCurrentStep(1);
     localStorage.removeItem("bhub-draft-v1");
     toast({
       title: "Design Reset",
@@ -518,6 +600,18 @@ export default function FenceLogic() {
     return Math.round((completed / total) * 100);
   }, [design]);
 
+  const isGlassSpigots = design.productVariant === "glass-pool-spigots";
+  // Wizard elevation rules (Oxworks): Step 2 (Configure) shows the ACTIVE section
+  // only; Step 4 (Review) shows ALL sections (height grows to fit). Steps 1 & 3
+  // (Style, Finishing) have no elevation. Other variants are unchanged (300px).
+  const activeVizSpan = design.spans.find((s) => s.spanId === selectedSpanId) ?? design.spans[0];
+  const showActiveOnly = isGlassSpigots && currentStep === 2;
+  // Top FIXED elevation strip: other variants always; wizard only on Configure (2).
+  // Finishing (3) and Review (4) render their elevation INSIDE the scroll area so a
+  // tall, all-sections render scrolls with the page instead of being clipped.
+  const showTopElevation = !isGlassSpigots || currentStep === 2;
+  const reviewVizHeight = Math.max(320, design.spans.length * 360);
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <AppHeader
@@ -528,6 +622,7 @@ export default function FenceLogic() {
         onDownloadPDF={downloadPDFHandler || undefined}
         isSaving={saveDesignMutation.isPending}
         productVariant={design.productVariant}
+        showProgress={!isGlassSpigots}
       />
 
       {showRestoredBanner && (
@@ -543,152 +638,305 @@ export default function FenceLogic() {
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 3D Visualization — fixed height strip */}
-        <div className="relative h-[300px] shrink-0 border-b border-card-border">
-          <FenceVisualization
-            design={design}
-            activeSpanId={activeSpanId}
-            onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
-          />
-        </div>
+        {/* Wizard step bar — glass-pool-spigots only (Oxworks model) */}
+        {isGlassSpigots && (
+          <div className="shrink-0 border-b border-card-border bg-card px-4 py-3">
+            <div className="mx-auto w-full max-w-6xl">
+              <WizardStepper
+                steps={WIZARD_STEPS}
+                currentStep={currentStep}
+                onStepClick={(n) => setCurrentStep(n)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Top FIXED elevation strip — other variants always; wizard only on Configure (2),
+            where it draws the active section. Finishing/Review render their own (in-scroll). */}
+        {showTopElevation && (
+          <div className="relative shrink-0 border-b border-card-border" style={{ height: 300 }}>
+            <FenceVisualization
+              design={design}
+              activeSpanId={isGlassSpigots ? (activeSpanId ?? selectedSpanId) : activeSpanId}
+              visibleSpanIds={showActiveOnly && activeVizSpan ? [activeVizSpan.spanId] : undefined}
+              onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
+            />
+          </div>
+        )}
 
         {/* Controls Panel — full width, scrollable */}
         <div className="flex-1 overflow-y-auto bg-card">
-          <div className="p-4 space-y-5">
-            {/* Compact meta-input row — Design name · Section length · Product · Shape.
-                Sits directly under the elevation; section grids continue below.
-                Section length only appears here for single-section designs; multi-section
-                designs keep length inside each section panel (they differ). */}
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${design.spans.length === 1 ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3`}>
-              {/* Design Name */}
-              <div className="space-y-1.5">
-                <Label htmlFor="design-name" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Design Name</Label>
-                <Input
-                  id="design-name"
-                  value={design.name}
-                  onChange={(e) => setDesign(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter design name"
-                  className="h-9 font-semibold"
-                  data-testid="input-design-name"
-                />
-              </div>
-
-              {/* Section Length — single-section designs only */}
-              {design.spans.length === 1 && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="section-length" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Section Length</Label>
-                  <div className="flex items-center gap-1">
-                    <Input
-                      id="section-length"
-                      type="number"
-                      value={design.spans[0].length}
-                      onChange={(e) => {
-                        const length = parseInt(e.target.value) || 0;
-                        const s = design.spans[0];
-                        handleSpanUpdate(s.spanId, { ...s, length });
+          <div className="mx-auto w-full max-w-6xl p-4 space-y-5">
+            {isGlassSpigots ? (
+              <>
+                {/* ── Step 1 — Style & Measure ─────────────────────────────── */}
+                {currentStep === 1 && (
+                  <div className="grid gap-4 lg:grid-cols-[1fr_320px] items-start">
+                    <StepStyleMeasure
+                      design={design}
+                      productLabel={productVariantLabel(design.productVariant)}
+                      onChangeProduct={() => setShowProductMockup(true)}
+                      onDesignNameChange={(name) => setDesign((prev) => ({ ...prev, name }))}
+                      onShapeChange={(shape) => handleShapeChange(shape)}
+                      onCustomSidesChange={(sides) => handleCustomSidesChange(sides)}
+                      onSpanLengthChange={(spanId, length) => {
+                        const s = design.spans.find((x) => x.spanId === spanId);
+                        if (s) handleSpanUpdate(spanId, { ...s, length });
                       }}
-                      min={0}
-                      max={50000}
-                      step={100}
-                      className="h-9"
-                      data-testid="meta-section-length"
+                      onSpanNameChange={(spanId, name) => {
+                        const s = design.spans.find((x) => x.spanId === spanId);
+                        if (s) handleSpanUpdate(spanId, { ...s, name });
+                      }}
+                      onAddSection={handleAddSectionStep1}
+                      onDeleteSection={handleDeleteSection}
+                      finish={(design.spans[0]?.spigotColor || "polished") as "polished" | "satin" | "black" | "white"}
+                      onFinishChange={(finish) => {
+                        setDesign((prev) => ({ ...prev, spans: prev.spans.map((s) => ({ ...s, spigotColor: finish })) }));
+                      }}
                     />
-                    <span className="text-xs text-muted-foreground">mm</span>
+                    <TipsPanel tips={STEP1_TIPS} footnote={STEP1_FOOTNOTE} />
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Product Type — compact, opens selector dialog */}
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Product Type</Label>
-                <button
-                  type="button"
-                  onClick={() => setShowProductMockup(true)}
-                  className="w-full h-9 flex items-center justify-between gap-2 px-3 rounded-md border border-primary/20 bg-primary/10 text-sm font-medium hover-elevate active-elevate-2"
-                  data-testid="button-change-product"
-                >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <Package className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="truncate">{productVariantLabel(design.productVariant)}</span>
-                  </span>
-                  <span className="text-xs text-primary flex-shrink-0">Change</span>
-                </button>
-              </div>
+                {/* ── Step 2 — Configure each side ─────────────────────────── */}
+                {currentStep === 2 && (() => {
+                  const activeSpan = design.spans.find((s) => s.spanId === selectedSpanId) ?? design.spans[0];
+                  return (
+                    <div className="grid gap-4 lg:grid-cols-[180px_1fr] items-start">
+                      <SectionSwitcher
+                        spans={design.spans.map((s) => ({ spanId: s.spanId, length: s.length, name: s.name }))}
+                        activeId={activeSpan.spanId}
+                        onSelect={setSelectedSpanId}
+                        onAdd={design.spans.length < 10 ? () => { pendingSelectLast.current = true; handleAddSection(); } : undefined}
+                        onDelete={handleDeleteSection}
+                      />
+                      <div
+                        onMouseEnter={() => setActiveSpanId(activeSpan.spanId)}
+                        onMouseLeave={() => setActiveSpanId(undefined)}
+                      >
+                        <SpanConfigPanel
+                          span={activeSpan}
+                          onUpdate={(updatedSpan) => handleSpanUpdate(activeSpan.spanId, updatedSpan)}
+                          productVariant={design.productVariant}
+                          calculatorConfig={calculatorConfig}
+                          showLeftGap={true}
+                          showRightGap={true}
+                          showSectionLength={false}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
 
-              {/* Fence Shape — compact selector */}
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Fence Shape</Label>
-                <Select value={design.shape} onValueChange={(v) => handleShapeChange(v as FenceShape)}>
-                  <SelectTrigger className="h-9 text-sm" data-testid="select-fence-shape">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SHAPE_OPTIONS.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {design.shape === "custom" && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <Label htmlFor="custom-sides" className="text-xs text-muted-foreground whitespace-nowrap">Sides (3–10)</Label>
-                    <Input
-                      id="custom-sides"
-                      type="number"
-                      min={3}
-                      max={10}
-                      value={design.customSides}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (value >= 3 && value <= 10) handleCustomSidesChange(value);
+                {/* ── Step 3 — Finishing touches ───────────────────────────── */}
+                {currentStep === 3 && (
+                  <div className="space-y-4">
+                    {/* Mini elevation of the highlighted section (click a card to change it) */}
+                    {activeVizSpan && (
+                      <div className="space-y-1">
+                        {design.spans.length > 1 && (
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Showing: {activeVizSpan.name?.trim() || `Section ${activeVizSpan.spanId}`}
+                          </p>
+                        )}
+                        <div className="relative h-[250px] overflow-hidden rounded-md border border-card-border">
+                          <FenceVisualization
+                            design={design}
+                            activeSpanId={activeVizSpan.spanId}
+                            visibleSpanIds={[activeVizSpan.spanId]}
+                            maxScale={0.08}
+                            onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <StepFinishing
+                      spans={design.spans}
+                      activeId={selectedSpanId}
+                      onSelect={setSelectedSpanId}
+                      onUpdateSpan={(spanId, updates) => {
+                        const s = design.spans.find((x) => x.spanId === spanId);
+                        if (s) handleSpanUpdate(spanId, { ...s, ...updates });
                       }}
-                      className="h-8 w-20 font-mono"
-                      data-testid="input-custom-sides"
                     />
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Section Configuration */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">Section Configuration</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddSection}
-                  data-testid="button-add-section"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Section
-                </Button>
-              </div>
+                {/* ── Step 4 — Review & Checkout ───────────────────────────── */}
+                {currentStep === 4 && (
+                  <div className="space-y-4">
+                    {/* Full all-sections elevation, in-scroll so tall designs scroll */}
+                    <div className="relative overflow-hidden rounded-md border border-card-border" style={{ height: reviewVizHeight }}>
+                      <FenceVisualization
+                        design={design}
+                        activeSpanId={activeSpanId ?? selectedSpanId}
+                        onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
+                      />
+                    </div>
+                    <StepReview
+                      components={components}
+                      onEmail={handleEmailQuote}
+                      onDownload={handleDownloadList}
+                    />
+                  </div>
+                )}
 
-              {design.spans.map((span, index) => (
-                <div
-                  key={span.spanId}
-                  onMouseEnter={() => setActiveSpanId(span.spanId)}
-                  onMouseLeave={() => setActiveSpanId(undefined)}
-                >
-                  <SpanConfigPanel
-                    span={span}
-                    onUpdate={(updatedSpan) => handleSpanUpdate(span.spanId, updatedSpan)}
-                    productVariant={design.productVariant}
-                    calculatorConfig={calculatorConfig}
-                    showLeftGap={true}
-                    showRightGap={true}
-                    showSectionLength={design.spans.length > 1}
-                  />
+                {/* Wizard footer — Back / Next */}
+                <div className="flex items-center justify-between gap-3 border-t border-card-border pt-4">
+                  <Button
+                    variant="outline"
+                    disabled={currentStep === 1}
+                    onClick={() => setCurrentStep((s) => Math.max(1, s - 1))}
+                    data-testid="wizard-back"
+                  >
+                    Back
+                  </Button>
+                  {currentStep < 4 ? (
+                    <Button onClick={() => setCurrentStep((s) => Math.min(4, s + 1))} data-testid="wizard-next">
+                      Next: {WIZARD_STEPS[currentStep]?.title}
+                    </Button>
+                  ) : (
+                    <Button onClick={handleEmailQuote} data-testid="wizard-finish">
+                      Email my plan
+                    </Button>
+                  )}
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <>
+                {/* ===== Other variants: existing single-page UI (unchanged behaviour) ===== */}
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${design.spans.length === 1 ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3`}>
+                  {/* Design Name */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="design-name" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Design Name</Label>
+                    <Input
+                      id="design-name"
+                      value={design.name}
+                      onChange={(e) => setDesign(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter design name"
+                      className="h-9 font-semibold"
+                      data-testid="input-design-name"
+                    />
+                  </div>
 
-            {/* Component List */}
-            <ComponentList
-              components={components}
-              onEmail={handleEmailQuote}
-              onDownload={handleDownloadList}
-            />
+                  {/* Section Length — single-section designs only */}
+                  {design.spans.length === 1 && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="section-length" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Section Length</Label>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          id="section-length"
+                          type="number"
+                          value={design.spans[0].length}
+                          onChange={(e) => {
+                            const length = parseInt(e.target.value) || 0;
+                            const s = design.spans[0];
+                            handleSpanUpdate(s.spanId, { ...s, length });
+                          }}
+                          min={0}
+                          max={30000}
+                          step={100}
+                          className="h-9"
+                          data-testid="meta-section-length"
+                        />
+                        <span className="text-xs text-muted-foreground">mm</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Product Type — compact, opens selector dialog */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Product Type</Label>
+                    <button
+                      type="button"
+                      onClick={() => setShowProductMockup(true)}
+                      className="w-full h-9 flex items-center justify-between gap-2 px-3 rounded-md border border-primary/20 bg-primary/10 text-sm font-medium hover-elevate active-elevate-2"
+                      data-testid="button-change-product"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <Package className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="truncate">{productVariantLabel(design.productVariant)}</span>
+                      </span>
+                      <span className="text-xs text-primary flex-shrink-0">Change</span>
+                    </button>
+                  </div>
+
+                  {/* Fence Shape — compact selector */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Fence Shape</Label>
+                    <Select value={design.shape} onValueChange={(v) => handleShapeChange(v as FenceShape)}>
+                      <SelectTrigger className="h-9 text-sm" data-testid="select-fence-shape">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SHAPE_OPTIONS.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {design.shape === "custom" && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <Label htmlFor="custom-sides" className="text-xs text-muted-foreground whitespace-nowrap">Sides (3–10)</Label>
+                        <Input
+                          id="custom-sides"
+                          type="number"
+                          min={3}
+                          max={10}
+                          value={design.customSides}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            if (value >= 3 && value <= 10) handleCustomSidesChange(value);
+                          }}
+                          className="h-8 w-20 font-mono"
+                          data-testid="input-custom-sides"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section Configuration */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base font-semibold">Section Configuration</h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddSection}
+                      data-testid="button-add-section"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Section
+                    </Button>
+                  </div>
+
+                  {design.spans.map((span, index) => (
+                    <div
+                      key={span.spanId}
+                      onMouseEnter={() => setActiveSpanId(span.spanId)}
+                      onMouseLeave={() => setActiveSpanId(undefined)}
+                    >
+                      <SpanConfigPanel
+                        span={span}
+                        onUpdate={(updatedSpan) => handleSpanUpdate(span.spanId, updatedSpan)}
+                        productVariant={design.productVariant}
+                        calculatorConfig={calculatorConfig}
+                        showLeftGap={true}
+                        showRightGap={true}
+                        showSectionLength={design.spans.length > 1}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Component List */}
+                <ComponentList
+                  components={components}
+                  onEmail={handleEmailQuote}
+                  onDownload={handleDownloadList}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -822,55 +1070,54 @@ export default function FenceLogic() {
   );
 }
 
-function getSpansForShape(shape: FenceShape, customSides?: number, defaultMaxPanel = 1800): SpanConfig[] {
-  const defaultSpan: Omit<SpanConfig, "spanId"> = {
+function createDefaultSpan(spanId: string, defaultMaxPanel = 1800): SpanConfig {
+  return {
+    spanId,
     length: 5000,
     maxPanelWidth: defaultMaxPanel,
     desiredGap: 50,
     spigotMounting: "base-plate",
     spigotColor: "polished",
     layoutMode: "auto-equalize",
-    leftGap: {
-      enabled: true,
-      position: "inside",
-      size: 25,
-    },
-    rightGap: {
-      enabled: true,
-      position: "inside",
-      size: 25,
-    },
+    leftGap: { enabled: true, position: "inside", size: 25 },
+    rightGap: { enabled: true, position: "inside", size: 25 },
   };
+}
 
+// How many sections a shape implies.
+function shapeToCount(shape: FenceShape, customSides?: number): number {
   switch (shape) {
-    case "inline":
-      return [{ ...defaultSpan, spanId: "A" }];
-    case "l-shape":
-      return [
-        { ...defaultSpan, spanId: "A" },
-        { ...defaultSpan, spanId: "B" },
-      ];
-    case "u-shape":
-      return [
-        { ...defaultSpan, spanId: "A" },
-        { ...defaultSpan, spanId: "B" },
-        { ...defaultSpan, spanId: "C" },
-      ];
-    case "enclosed":
-      return [
-        { ...defaultSpan, spanId: "A" },
-        { ...defaultSpan, spanId: "B" },
-        { ...defaultSpan, spanId: "C" },
-        { ...defaultSpan, spanId: "D" },
-      ];
-    case "custom":
-      const sides = customSides || 3;
-      return Array.from({ length: sides }, (_, i) => ({
-        ...defaultSpan,
-        spanId: String.fromCharCode(65 + i), // A, B, C, ...
-      }));
-    default:
-      return [{ ...defaultSpan, spanId: "A" }];
+    case "inline": return 1;
+    case "l-shape": return 2;
+    case "u-shape": return 3;
+    case "enclosed": return 4;
+    case "custom": return Math.max(1, customSides || 3);
+    default: return 1;
   }
+}
+
+// The shape that matches a given section count (≤4 named; otherwise custom).
+function countToShape(count: number): FenceShape {
+  if (count <= 1) return "inline";
+  if (count === 2) return "l-shape";
+  if (count === 3) return "u-shape";
+  if (count === 4) return "enclosed";
+  return "custom";
+}
+
+// Resize a span list to targetCount, PRESERVING existing sections (only append
+// new defaults or trim the tail). This is what stops a shape/sides change from
+// wiping sections the user already configured.
+function resizeSpans(existing: SpanConfig[], targetCount: number, defaultMaxPanel = 1800): SpanConfig[] {
+  if (targetCount <= existing.length) return existing.slice(0, Math.max(1, targetCount));
+  const result = [...existing];
+  for (let i = existing.length; i < targetCount; i++) {
+    result.push(createDefaultSpan(String.fromCharCode(65 + i), defaultMaxPanel));
+  }
+  return result;
+}
+
+function getSpansForShape(shape: FenceShape, customSides?: number, defaultMaxPanel = 1800): SpanConfig[] {
+  return resizeSpans([], shapeToCount(shape, customSides), defaultMaxPanel);
 }
 
