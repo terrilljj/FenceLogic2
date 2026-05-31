@@ -225,12 +225,14 @@ export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }:
     }
   };
 
-  // Expose download handler to parent component
+  // Expose download handler to parent component.
+  // Re-register when `design` changes so the handler PDFs the current design,
+  // not the mount-time snapshot. The parent stores it (does not invoke it).
   useEffect(() => {
     if (onDownloadPDFReady) {
       onDownloadPDFReady(handleDownloadPDF);
     }
-  }, [onDownloadPDFReady]);
+  }, [onDownloadPDFReady, design]);
 
   // Fallback: Browser-based PDF (old method)
   const handleDownloadPDFBrowser = () => {

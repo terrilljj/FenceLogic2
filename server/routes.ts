@@ -185,8 +185,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const quoteLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 30,
+    // The calculator quotes live as the user configures, so the cap must suit
+    // interactive use (client debounces to ~1 quote per settled change). Shorter
+    // window = quick recovery if ever tripped; higher max = real headroom.
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many quote requests, please try again later" },

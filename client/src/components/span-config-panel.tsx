@@ -27,7 +27,43 @@ interface SpanConfigPanelProps {
   calculatorConfig?: any;
   showLeftGap?: boolean;
   showRightGap?: boolean;
+  showSectionLength?: boolean;
 }
+
+// Contextual help shown beside the tabbed inputs (right panel). Tooltips are a
+// launch feature; product imagery is planned for v2.
+const TAB_HELP: Record<string, { title: string; points: string[] }> = {
+  dimensions: {
+    title: "Dimensions & Gaps",
+    points: [
+      "Max Panel Width caps the widest glass panel used across the run.",
+      "LHS / RHS Gap are the end gaps at walls or corners (default 25mm, up to 150mm).",
+      "Mid Gap is the spacing between adjacent panels.",
+    ],
+  },
+  spigots: {
+    title: "Spigots & Posts",
+    points: [
+      "Mounting: Base Plate (surface-fixed), Core Drilled (set into concrete), or Side Mounted.",
+      "Finish sets the spigot colour — Polished, Satin, Black or White.",
+    ],
+  },
+  gates: {
+    title: "Gates",
+    points: [
+      "Toggle Gate Required to add a gate to this section.",
+      "Set the hinge and latch sides, gate width, and position along the run.",
+    ],
+  },
+  rake: {
+    title: "Rake & Custom",
+    points: [
+      "Raked panels follow a slope — step-ups, retaining walls, or height changes.",
+      "Requires a max panel width of 1200mm or greater.",
+      "Set independent left and right rake heights.",
+    ],
+  },
+};
 
 export function SpanConfigPanel({
   span,
@@ -36,8 +72,10 @@ export function SpanConfigPanel({
   calculatorConfig,
   showLeftGap,
   showRightGap,
+  showSectionLength = true,
 }: SpanConfigPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [activeTab, setActiveTab] = useState("dimensions");
 
   // Determine if this is a semi-frameless variant
   const isSemiFrameless = productVariant === "semi-frameless-1000" || productVariant === "semi-frameless-1800";
@@ -527,10 +565,29 @@ export function SpanConfigPanel({
 
   return (
     <Card className="overflow-hidden" data-testid={`span-${span.spanId}`}>
-      <div className="flex items-center justify-between p-6 border-b border-card-border">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold">Section {span.spanId}</h3>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-card-border">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-base font-semibold whitespace-nowrap">Section {span.spanId}</h3>
           <InfoTooltip content="Configure this section's length, panel layout, gaps, gates, and special features. Each section can have custom panels, raked panels for slopes, and independently positioned gates." />
+          {isGlassSpigots && span.panelLayout && (
+            <span className="hidden md:flex items-center gap-1.5 ml-2 text-xs text-muted-foreground font-mono truncate">
+              <span>{span.length.toLocaleString()} mm</span>
+              <span>·</span>
+              <span>{span.panelLayout?.panels.length ?? 0} panels</span>
+              {span.gateConfig?.required && <><span>·</span><span>1 gate</span></>}
+              <span>·</span>
+              <span>{(span.panelLayout?.panels.length ?? 0) + 1} spigots</span>
+              <span>·</span>
+              <span className={cn(
+                "font-semibold",
+                Math.abs(variance) < 0.1 ? "text-green-600 dark:text-green-400" :
+                Math.abs(variance) <= 50 ? "text-amber-600 dark:text-amber-400" :
+                "text-red-600 dark:text-red-400"
+              )}>
+                {variance >= 0 ? "+" : ""}{variance.toFixed(1)} mm
+              </span>
+            </span>
+          )}
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -546,7 +603,7 @@ export function SpanConfigPanel({
       </div>
 
       {isExpanded && (
-        <div className="p-6 pt-6 space-y-6">
+        <div className="p-2.5 space-y-2">
           {/* Panel Layout Info - Hidden */}
           {!layoutValidation.valid && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 hidden" data-testid={`span-${span.spanId}-validation-error`}>
@@ -554,48 +611,32 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Section Length */}
-          <div className="space-y-2">
+          {/* Section Length — inline label + input.
+              Hidden when shown in the page-level meta row (single-section designs). */}
+          {showSectionLength && (
             <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium">Section Length</Label>
+              <Label className="text-sm font-medium whitespace-nowrap">Section Length</Label>
               <InfoTooltip content="Enter the total length of this fence section. The default end gap is 25mm for corner junctions. Maximum end gap is 150mm to allow for adding a post or other non-fence item into the section." />
+              <div className="flex items-center gap-1 w-40 ml-1">
+                <Input
+                  type="number"
+                  value={span.length}
+                  onChange={(e) => updateSpan({ length: parseInt(e.target.value) || 0 })}
+                  min={0}
+                  max={50000}
+                  step={100}
+                  className="h-8"
+                  data-testid={`span-${span.spanId}-length`}
+                />
+                <span className="text-xs text-muted-foreground">mm</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1 w-48">
-              <Input
-                type="number"
-                value={span.length}
-                onChange={(e) => updateSpan({ length: parseInt(e.target.value) || 0 })}
-                min={0}
-                max={50000}
-                step={100}
-                className="h-9"
-                data-testid={`span-${span.spanId}-length`}
-              />
-              <span className="text-sm text-muted-foreground">mm</span>
-            </div>
-          </div>
+          )}
 
           {/* ── Glass Pool Spigots: 4-column config grid ─────────────────────── */}
           {isGlassSpigots && (
             <>
-              {/* Summary stats bar */}
-              <div className="flex items-center gap-2 py-1.5 px-3 bg-muted/50 rounded-md text-xs text-muted-foreground font-mono border border-card-border flex-wrap">
-                <span>{span.length.toLocaleString()} mm</span>
-                <span>·</span>
-                <span>{span.panelLayout?.panels.length ?? 0} panels</span>
-                {span.gateConfig?.required && <><span>·</span><span>1 gate</span></>}
-                <span>·</span>
-                <span>{(span.panelLayout?.panels.length ?? 0) + 1} spigots</span>
-                <span>·</span>
-                <span className={cn(
-                  "font-semibold",
-                  Math.abs(variance) < 0.1 ? "text-green-600 dark:text-green-400" :
-                  Math.abs(variance) <= 50 ? "text-amber-600 dark:text-amber-400" :
-                  "text-red-600 dark:text-red-400"
-                )}>
-                  {variance >= 0 ? "+" : ""}{variance.toFixed(1)} mm
-                </span>
-              </div>
+              {/* Summary stats now live inline in the section header (above) to save vertical space. */}
 
               {/* 4-column grid — desktop (lg+).
                   If calculatorConfig has fields with displayColumn set, render data-driven columns.
@@ -607,10 +648,10 @@ export function SpanConfigPanel({
                   updateSpan={updateSpan}
                 />
               ) : (
-              <div className="hidden lg:grid grid-cols-4 divide-x divide-card-border border border-card-border rounded-md">
+              <div className="hidden grid-cols-4 divide-x divide-card-border border border-card-border rounded-md">
 
                 {/* Col 1: Dimensions & Gaps */}
-                <div className="p-3 space-y-3">
+                <div className="p-2.5 space-y-2">
                   <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Dimensions & Gaps</h5>
 
                   {isFieldEnabled("maxPanelMm") && (
@@ -670,7 +711,7 @@ export function SpanConfigPanel({
                 </div>
 
                 {/* Col 2: Spigots & Posts */}
-                <div className="p-3 space-y-3">
+                <div className="p-2.5 space-y-2">
                   <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Spigots & Posts</h5>
 
                   <div className="space-y-1">
@@ -710,7 +751,7 @@ export function SpanConfigPanel({
                 </div>
 
                 {/* Col 3: Gates */}
-                <div className="p-3 space-y-3">
+                <div className="p-2.5 space-y-2">
                   <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Gates</h5>
 
                   {isSectionEnabled("Gate") && gatesAllowed && (
@@ -761,7 +802,7 @@ export function SpanConfigPanel({
                 </div>
 
                 {/* Col 4: Rake & Custom Panels */}
-                <div className="p-3 space-y-3">
+                <div className="p-2.5 space-y-2">
                   <h5 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Rake & Custom</h5>
 
                   {isSectionEnabled("Raked Panel") && gatesAllowed && (
@@ -855,8 +896,31 @@ export function SpanConfigPanel({
               </div>
               )} {/* end fallback hardcoded grid */}
 
-              {/* Mobile Tabs — below lg */}
-              <Tabs defaultValue="dimensions" className="lg:hidden">
+              {/* Inputs (left, constrained) + contextual help / tooltips (right).
+                  Product imagery comes in v2. */}
+              <div className="grid lg:grid-cols-[2fr_1fr] gap-4 items-start">
+               <div className="space-y-3">
+                {/* Max Panel Width — always visible; it drives the whole panel layout */}
+                {isFieldEnabled("maxPanelMm") && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Max Panel Width</Label>
+                    <Select
+                      value={span.maxPanelWidth.toString()}
+                      onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
+                    >
+                      <SelectTrigger className="h-9 text-sm" data-testid={`span-${span.spanId}-max-panel-width`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((w) => (
+                          <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full grid grid-cols-4 h-9">
                   <TabsTrigger value="dimensions" className="text-xs">Dimensions</TabsTrigger>
                   <TabsTrigger value="spigots" className="text-xs">Spigots</TabsTrigger>
@@ -865,24 +929,6 @@ export function SpanConfigPanel({
                 </TabsList>
 
                 <TabsContent value="dimensions" className="space-y-3 pt-3">
-                  {isFieldEnabled("maxPanelMm") && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Max Panel Width</Label>
-                      <Select
-                        value={span.maxPanelWidth.toString()}
-                        onValueChange={(value) => updateSpan({ maxPanelWidth: parseInt(value) })}
-                      >
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((w) => (
-                            <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
                   {showLeftGap && isFieldEnabled("startGapMm") && (
                     <GapSlider
                       label="LHS Gap"
@@ -1079,7 +1125,30 @@ export function SpanConfigPanel({
                     </div>
                   )}
                 </TabsContent>
-              </Tabs>
+                </Tabs>
+               </div>
+
+               {/* Contextual help / tooltips for the active tab.
+                   Product images are a planned v2 enhancement. */}
+               <aside className="hidden lg:flex flex-col gap-3 rounded-md border border-card-border bg-muted/30 p-3 text-xs self-stretch">
+                 <div className="space-y-1.5">
+                   <h6 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                     {TAB_HELP[activeTab]?.title}
+                   </h6>
+                   <ul className="space-y-1 text-muted-foreground leading-relaxed">
+                     {TAB_HELP[activeTab]?.points.map((p, i) => (
+                       <li key={i} className="flex gap-1.5">
+                         <span className="text-primary">•</span>
+                         <span>{p}</span>
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
+                 <div className="mt-auto rounded-md border border-dashed border-card-border bg-background/50 p-3 text-center text-[10px] text-muted-foreground">
+                   Product images — coming in a future update
+                 </div>
+               </aside>
+              </div>
             </>
           )}
           {/* ── END glass-pool-spigots 4-column grid ───────────────────────────── */}
@@ -2811,8 +2880,8 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* Raked Panels - Moved to bottom */}
-          {isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
+          {/* Raked Panels - Moved to bottom (glass-pool-spigots shows Rake in the 4-col grid) */}
+          {!isGlassSpigots && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>

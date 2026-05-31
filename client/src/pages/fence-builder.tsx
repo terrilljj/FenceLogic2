@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { FenceShapeSelector } from "@/components/fence-shape-selector";
 import { SpanConfigPanel } from "@/components/span-config-panel";
 import { FenceVisualization } from "@/components/fence-visualization";
 import { ComponentList } from "@/components/component-list";
@@ -21,6 +20,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Package, Plus } from "lucide-react";
+
+const PRODUCT_VARIANT_LABELS: Record<string, string> = {
+  "glass-pool-spigots": "Glass Pool Fencing — Frameless with Spigots",
+  "glass-pool-channel": "Glass Pool Fencing — Channel",
+  "glass-bal-spigots": "Glass Balustrade — Frameless with Spigots",
+  "glass-bal-channel": "Glass Balustrade — Channel",
+  "glass-bal-standoffs": "Glass Balustrade — Standoffs",
+  "alu-pool-tubular": "Aluminium Pool Fencing — Tubular Flat Top",
+  "alu-pool-barr": "Aluminium Pool Fencing — BARR",
+  "alu-pool-blade": "Aluminium Pool Fencing — Blade",
+  "alu-pool-pik": "Aluminium Pool Fencing — PIK",
+  "alu-bal-barr": "Aluminium Balustrade — Barr",
+  "alu-bal-blade": "Aluminium Balustrade — Blade",
+  "alu-bal-visor": "Aluminium Balustrade — Visor",
+  "pvc-privacy": "PVC Fencing",
+  "general-zeus": "General Fencing — Zeus",
+  "general-blade": "General Fencing — Blade",
+  "general-barr": "General Fencing — Barr",
+};
+
+function productVariantLabel(variant: string): string {
+  return PRODUCT_VARIANT_LABELS[variant] || variant.replace(/-/g, " ");
+}
+
+// Page-level fence shapes — compact selector options (mirrors FenceShapeSelector labels)
+const SHAPE_OPTIONS: { id: FenceShape; label: string }[] = [
+  { id: "inline", label: "1 Section (Straight)" },
+  { id: "l-shape", label: "2 Sections (L-Shape)" },
+  { id: "u-shape", label: "3 Sections (U-Shape)" },
+  { id: "enclosed", label: "4 Sections (Enclosed)" },
+  { id: "custom", label: "5+ Sections (Custom)" },
+];
 
 export default function FenceLogic() {
   const { toast } = useToast();
@@ -108,14 +139,25 @@ export default function FenceLogic() {
     queryKey: ["/api/designs"],
   });
 
+  // Debounce the design used for the server quote. Without this, /api/quote fires on
+  // every keystroke / slider drag / layout recompute and quickly trips the server
+  // rate limiter (max 30/hr), which blanks the BOM. Settle for 500ms before quoting.
+  const [debouncedDesign, setDebouncedDesign] = useState(design);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedDesign(design), 500);
+    return () => clearTimeout(t);
+  }, [design]);
+
   // Fetch BOM components from server-side quote endpoint
   const { data: quoteData } = useQuery<{ components: Array<{ qty: number; description: string }> }>({
-    queryKey: ["/api/quote", design],
+    queryKey: ["/api/quote", debouncedDesign],
     queryFn: async () => {
-      const response = await apiRequest("POST", "/api/quote", { design });
+      const response = await apiRequest("POST", "/api/quote", { design: debouncedDesign });
       return response.json();
     },
-    enabled: design.spans.length > 0 && design.spans.some(s => s.length > 0),
+    enabled: debouncedDesign.spans.length > 0 && debouncedDesign.spans.some(s => s.length > 0),
+    // Keep the last good BOM visible during refetches / transient errors instead of blanking.
+    placeholderData: (prev) => prev,
   });
 
   // Fetch calculator config for current product variant (from fence styles)
@@ -506,81 +548,111 @@ export default function FenceLogic() {
           <FenceVisualization
             design={design}
             activeSpanId={activeSpanId}
-            onDownloadPDFReady={setDownloadPDFHandler}
+            onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
           />
         </div>
 
         {/* Controls Panel — full width, scrollable */}
         <div className="flex-1 overflow-y-auto bg-card">
-          <div className="p-6 space-y-6">
-            {/* Design Name */}
-            <div className="space-y-2">
-              <Label htmlFor="design-name" className="text-sm font-medium">Design Name</Label>
-              <Input
-                id="design-name"
-                value={design.name}
-                onChange={(e) => setDesign(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter design name"
-                className="text-lg font-semibold"
-                data-testid="input-design-name"
-              />
-            </div>
+          <div className="p-4 space-y-5">
+            {/* Compact meta-input row — Design name · Section length · Product · Shape.
+                Sits directly under the elevation; section grids continue below.
+                Section length only appears here for single-section designs; multi-section
+                designs keep length inside each section panel (they differ). */}
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${design.spans.length === 1 ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3`}>
+              {/* Design Name */}
+              <div className="space-y-1.5">
+                <Label htmlFor="design-name" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Design Name</Label>
+                <Input
+                  id="design-name"
+                  value={design.name}
+                  onChange={(e) => setDesign(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter design name"
+                  className="h-9 font-semibold"
+                  data-testid="input-design-name"
+                />
+              </div>
 
-            {/* Product Type Selector Banner */}
-            <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Package className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium">
-                    {design.productVariant === "glass-pool-spigots" && "Glass Pool Fencing - Frameless with Spigots"}
-                    {design.productVariant === "glass-pool-channel" && "Glass Pool Fencing - Channel"}
-                    {design.productVariant === "glass-bal-spigots" && "Glass Balustrade - Frameless with Spigots"}
-                    {design.productVariant === "glass-bal-channel" && "Glass Balustrade - Channel"}
-                    {design.productVariant === "glass-bal-standoffs" && "Glass Balustrade - Standoffs"}
-                    {design.productVariant === "alu-pool-tubular" && "Aluminium Pool Fencing - Tubular Flat Top"}
-                    {design.productVariant === "alu-pool-barr" && "Aluminium Pool Fencing - BARR"}
-                    {design.productVariant === "alu-pool-blade" && "Aluminium Pool Fencing - Blade"}
-                    {design.productVariant === "alu-pool-pik" && "Aluminium Pool Fencing - PIK"}
-                    {design.productVariant === "alu-bal-barr" && "Aluminium Balustrade - Barr"}
-                    {design.productVariant === "alu-bal-blade" && "Aluminium Balustrade - Blade"}
-                    {design.productVariant === "alu-bal-visor" && "Aluminium Balustrade - Visor"}
-                    {design.productVariant === "pvc-privacy" && "PVC Fencing"}
-                    {design.productVariant === "general-zeus" && "General Fencing - Zeus"}
-                    {design.productVariant === "general-blade" && "General Fencing - Blade"}
-                    {design.productVariant === "general-barr" && "General Fencing - Barr"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Click to switch between Glass Balustrade, Aluminium, and General Fencing options
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowProductMockup(true)}
-                    data-testid="button-change-product"
-                  >
-                    Change Product Type
-                  </Button>
+              {/* Section Length — single-section designs only */}
+              {design.spans.length === 1 && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="section-length" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Section Length</Label>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      id="section-length"
+                      type="number"
+                      value={design.spans[0].length}
+                      onChange={(e) => {
+                        const length = parseInt(e.target.value) || 0;
+                        const s = design.spans[0];
+                        handleSpanUpdate(s.spanId, { ...s, length });
+                      }}
+                      min={0}
+                      max={50000}
+                      step={100}
+                      className="h-9"
+                      data-testid="meta-section-length"
+                    />
+                    <span className="text-xs text-muted-foreground">mm</span>
+                  </div>
                 </div>
+              )}
+
+              {/* Product Type — compact, opens selector dialog */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Product Type</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowProductMockup(true)}
+                  className="w-full h-9 flex items-center justify-between gap-2 px-3 rounded-md border border-primary/20 bg-primary/10 text-sm font-medium hover-elevate active-elevate-2"
+                  data-testid="button-change-product"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <Package className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span className="truncate">{productVariantLabel(design.productVariant)}</span>
+                  </span>
+                  <span className="text-xs text-primary flex-shrink-0">Change</span>
+                </button>
+              </div>
+
+              {/* Fence Shape — compact selector */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Fence Shape</Label>
+                <Select value={design.shape} onValueChange={(v) => handleShapeChange(v as FenceShape)}>
+                  <SelectTrigger className="h-9 text-sm" data-testid="select-fence-shape">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SHAPE_OPTIONS.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {design.shape === "custom" && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <Label htmlFor="custom-sides" className="text-xs text-muted-foreground whitespace-nowrap">Sides (3–10)</Label>
+                    <Input
+                      id="custom-sides"
+                      type="number"
+                      min={3}
+                      max={10}
+                      value={design.customSides}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        if (value >= 3 && value <= 10) handleCustomSidesChange(value);
+                      }}
+                      className="h-8 w-20 font-mono"
+                      data-testid="input-custom-sides"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Shape Selector */}
-            <FenceShapeSelector
-              selected={design.shape}
-              customSides={design.customSides}
-              onShapeChange={handleShapeChange}
-              onCustomSidesChange={handleCustomSidesChange}
-            />
-
             {/* Section Configuration */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold mb-2">Section Configuration</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Configure each section of your fence
-                  </p>
-                </div>
+                <h2 className="text-base font-semibold">Section Configuration</h2>
                 <Button
                   variant="outline"
                   size="sm"
@@ -605,6 +677,7 @@ export default function FenceLogic() {
                     calculatorConfig={calculatorConfig}
                     showLeftGap={true}
                     showRightGap={true}
+                    showSectionLength={design.spans.length > 1}
                   />
                 </div>
               ))}

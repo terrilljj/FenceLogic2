@@ -60,23 +60,23 @@ export function GapSlider({
   };
 
   return (
-    <div className="space-y-3" data-testid={testId}>
+    <div className="space-y-1" data-testid={testId}>
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">{label}</Label>
+        <Label className="text-xs font-medium">{label}</Label>
         <div className="flex items-center gap-1">
           <Input
             type="text"
             value={inputValue}
             onChange={handleInputChange}
             onBlur={handleInputBlur}
-            className="w-16 h-8 text-sm font-mono text-right pr-1"
+            className="w-14 h-7 text-xs font-mono text-right pr-1"
             data-testid={`${testId}-text-input`}
           />
-          <span className="text-sm text-muted-foreground">mm</span>
+          <span className="text-xs text-muted-foreground">mm</span>
         </div>
       </div>
-      
-      <div className="relative pt-2">
+
+      <div className="relative">
         <Slider
           value={[localValue]}
           onValueChange={handleSliderChange}
@@ -86,10 +86,6 @@ export function GapSlider({
           className="w-full"
           data-testid={`${testId}-slider`}
         />
-        <div className="flex justify-between mt-2">
-          <span className="text-xs text-muted-foreground font-mono">{min}mm</span>
-          <span className="text-xs text-muted-foreground font-mono">{max}mm</span>
-        </div>
       </div>
     </div>
   );
