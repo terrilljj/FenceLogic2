@@ -2,17 +2,8 @@ import { Package, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FenceShapeSelector } from "@/components/fence-shape-selector";
 import { FenceDesign, FenceShape } from "@shared/schema";
-
-type Finish = "polished" | "satin" | "black" | "white";
-const FINISHES: { value: Finish; label: string }[] = [
-  { value: "polished", label: "Polished" },
-  { value: "satin", label: "Satin" },
-  { value: "black", label: "Black" },
-  { value: "white", label: "White" },
-];
 
 interface StepStyleMeasureProps {
   design: FenceDesign;
@@ -25,8 +16,6 @@ interface StepStyleMeasureProps {
   onSpanNameChange: (spanId: string, name: string) => void;
   onAddSection: () => void;
   onDeleteSection: (spanId: string) => void;
-  finish: Finish;
-  onFinishChange: (finish: Finish) => void;
 }
 
 /**
@@ -44,13 +33,11 @@ export function StepStyleMeasure({
   onSpanNameChange,
   onAddSection,
   onDeleteSection,
-  finish,
-  onFinishChange,
 }: StepStyleMeasureProps) {
   const canDelete = design.spans.length > 1;
   return (
     <div className="space-y-6" data-testid="step-style-measure">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="design-name" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Design Name</Label>
           <Input
@@ -76,17 +63,6 @@ export function StepStyleMeasure({
             </span>
             <span className="shrink-0 text-xs text-primary">Change</span>
           </button>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Spigot Finish</Label>
-          <Select value={finish} onValueChange={(v) => onFinishChange(v as Finish)}>
-            <SelectTrigger className="h-10 text-sm" data-testid="step1-finish">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FINISHES.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 

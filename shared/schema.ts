@@ -486,6 +486,9 @@ export const spanConfigSchema = z.object({
   hamptonsPostType: z.enum(["1-way", "2-way", "90-degree", "gate-post"]).optional(), // Hamptons post type
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
   spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
+  // Per-section substrate — drives the SF-1 fixings matrix (substrate × mounting) and the
+  // raised-domical cross-rule. Optional; solver treats unset as "concrete" (most common pool case).
+  spigotSubstrate: z.enum(["concrete", "timber", "steel"]).optional(),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems
   panelLayout: z.object({
     panels: z.array(z.number()),

@@ -28,7 +28,8 @@ const productCategories: ProductCategory[] = [
     name: "Glass Balustrade",
     description: "Glass balustrade systems for decks, balconies, and stairs",
     variants: [
-      { id: "glass-bal-spigots", name: "Frameless with Spigots" },
+      { id: "glass-bal-spigots-12mm", name: "Spigots — 12mm" },
+      { id: "glass-bal-spigots-15mm", name: "Spigots — 15mm" },
       { id: "glass-bal-channel", name: "Channel" },
       { id: "glass-bal-standoffs", name: "Standoffs" }
     ]

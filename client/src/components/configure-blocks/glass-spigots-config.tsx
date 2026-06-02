@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,51 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps } from "@shared/schema";
+import { cn } from "@/lib/utils";
 import { InfoTooltip } from "../info-tooltip";
 import { GateControls } from "../gate-controls";
 import { CustomPanelControls } from "../custom-panel-controls";
 import { GapSelect } from "./gap-select";
+import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
+import { PanelThumb } from "./panel-thumb";
+
+// Pool spigot families (SF-1 §2.1: 5 V1 families; Nova removed for pool).
+// imageSku = base-plated black variant (Rio has no black → satin).
+const POOL_FAMILIES: SpigotFamily[] = [
+  { value: "madrid-pool", label: "Madrid Pool", blurb: "Cost-effective pool workhorse.", imageSku: "POOLMAD-SBP-B" },
+  { value: "lifestyle", label: "Lifestyle", blurb: "Patented dual-friction.", imageSku: "LS-DF-SBP-B" },
+  { value: "rio", label: "Rio", blurb: "Round Ø50mm (no black).", imageSku: "RIO-SBP-S" },
+  { value: "insuluxe", label: "Insuluxe", blurb: "AS-3000 native thermal break.", imageSku: "INS-SBP-B" },
+  { value: "madrid", label: "Madrid", blurb: "Balustrade-rated casting.", imageSku: "MAD-SBP-B" },
+];
+// AS-3000 ON filters families to these (ADR 0044 hard rule).
+const AS3000_FAMILIES = ["madrid-pool", "madrid", "insuluxe"];
+
+// Per-family finish enums (SF-1 §2.1), mapped to the 4 schema-supported spigotColor
+// values. Matt White / White → "white". Insuluxe's Silver-Grey isn't representable in
+// the frozen spigotColor enum → deferred to the data pass (shown set is the supported
+// subset). Finish is chosen AFTER the family and filtered to it — no dead-ends.
+type Finish = "polished" | "satin" | "black" | "white";
+const FINISH_BY_FAMILY: Record<string, Finish[]> = {
+  "madrid-pool": ["polished", "satin", "black", "white"],
+  lifestyle: ["polished", "satin", "black"],
+  rio: ["polished", "satin", "white"],
+  insuluxe: ["black", "white"],
+  madrid: ["polished", "satin", "black", "white"],
+};
+const FINISH_LABEL: Record<Finish, string> = { polished: "Polished", satin: "Satin", black: "Black", white: "White" };
+const FINISH_SWATCH: Record<Finish, string> = {
+  polished: "bg-gradient-to-br from-zinc-100 to-zinc-400",
+  satin: "bg-zinc-400",
+  black: "bg-zinc-900",
+  white: "bg-white ring-1 ring-inset ring-zinc-300",
+};
+function defaultFinish(finishes: Finish[]): Finish {
+  return finishes.includes("polished") ? "polished" : finishes[0];
+}
+
+// Raked retaining-wall panel heights (SF-1 §2.2: 12NRP-{1400..1800}HT).
+const RAKE_HEIGHTS = ["1400", "1500", "1600", "1700", "1800"];
 
 interface GlassSpigotsConfigProps {
   span: SpanConfig;
@@ -55,6 +96,77 @@ function SectionNumber({ n, title }: { n: number; title: string }) {
 }
 
 /**
+ * "+ add" card for an optional panel add-on (gate / raked / custom). Collapsed = a
+ * tappable add button with a placeholder thumbnail (real product art drops in via
+ * the same storefront-image mechanism as the spigot family cards). Expanded = the
+ * add-on's own controls, with a Remove action. Reuses the existing handlers — no
+ * layout maths changes.
+ */
+function AddOnCard({
+  title,
+  addLabel,
+  blurb,
+  thumb,
+  added,
+  onAdd,
+  onRemove,
+  disabled,
+  disabledReason,
+  testId,
+  children,
+}: {
+  title: string;
+  addLabel: string;
+  blurb?: string;
+  thumb: ReactNode;
+  added: boolean;
+  onAdd: () => void;
+  onRemove: () => void;
+  disabled?: boolean;
+  disabledReason?: string;
+  testId: string;
+  children?: ReactNode;
+}) {
+  if (added) {
+    return (
+      <div className="w-full rounded-md border border-primary/40 bg-primary/5" data-testid={testId}>
+        <div className="flex items-center justify-between border-b border-primary/20 px-3 py-2">
+          <span className="flex items-center gap-2">
+            <span className="h-9 w-9 shrink-0">{thumb}</span>
+            <span className="text-sm font-semibold">{title}</span>
+          </span>
+          <Button type="button" variant="ghost" size="sm" onClick={onRemove} data-testid={`${testId}-remove`}>
+            Remove
+          </Button>
+        </div>
+        <div className="space-y-3 p-3">{children}</div>
+      </div>
+    );
+  }
+  return (
+    <div className={cn("w-[132px]", disabled && "opacity-60")} data-testid={testId}>
+      <button
+        type="button"
+        onClick={disabled ? undefined : onAdd}
+        disabled={disabled}
+        className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-md border border-card-border bg-card p-2 hover-elevate active-elevate-2 disabled:cursor-not-allowed"
+        data-testid={`${testId}-add`}
+      >
+        <span className="h-full w-full">{thumb}</span>
+      </button>
+      <Button type="button" size="sm" onClick={onAdd} disabled={disabled} className="mt-1.5 w-full" data-testid={`${testId}-add-btn`}>
+        <Plus className="mr-1 h-3.5 w-3.5" /> {addLabel}
+      </Button>
+      {disabled && disabledReason ? (
+        <p className="mt-1 text-[10px] leading-tight text-muted-foreground">{disabledReason}</p>
+      ) : blurb ? (
+        <p className="mt-1 text-[10px] leading-tight text-muted-foreground">{blurb}</p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * The Oxworks-style configure block for glass-pool-spigots. Operates entirely on
  * the shared `span` / `updateSpan` state and re-homes the EXISTING gate / raked /
  * custom-panel sub-components into a numbered accordion — no layout maths is
@@ -80,9 +192,6 @@ export function GlassSpigotsConfig({
   const rakedEnabled = isSectionEnabled("Raked Panel") && gatesAllowed;
   const customEnabled = isSectionEnabled("Custom Panel");
 
-  // Controlled accordion so expanding the Gate section auto-inserts a gate.
-  const [openSection, setOpenSection] = useState<string>("configure");
-
   const enableGate = () => {
     const gaps = getGateGaps("polaris", "glass");
     updateSpan({
@@ -105,6 +214,17 @@ export function GlassSpigotsConfig({
   };
   const disableGate = () => updateSpan({ gateConfig: undefined });
 
+  const rakedAdded = !!(span.leftRakedPanel?.enabled || span.rightRakedPanel?.enabled);
+  const enableRaked = () => updateSpan({ leftRakedPanel: { enabled: true, height: 1500 } });
+  const disableRaked = () =>
+    updateSpan({ leftRakedPanel: { enabled: false, height: 1500 }, rightRakedPanel: { enabled: false, height: 1500 } });
+
+  const customAdded = !!span.customPanel?.enabled;
+  const enableCustom = () =>
+    updateSpan({ customPanel: { enabled: true, width: Math.min(1200, span.maxPanelWidth), height: 1200, position: 0 } });
+  const disableCustom = () =>
+    updateSpan({ customPanel: { enabled: false, width: Math.min(1200, span.maxPanelWidth), height: 1200, position: 0 } });
+
   // Auto hinge sizing (default ON): keep the hinge panel matched to the optimal
   // size while autoHingePanel is true. Picking a size manually sets it false and
   // stops this. The optimal is independent of hingePanelSize, so no loop.
@@ -116,16 +236,33 @@ export function GlassSpigotsConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [optimalHingePanelSize, gc?.required, gc?.autoHingePanel, gc?.hingePanelSize]);
 
+  // Spigot family + AS-3000 (SF-1 / ADR 0044). AS-3000 ON filters the family list
+  // to Madrid Pool / Madrid / Insuluxe. Family is written to fieldValues for the solver.
+  const as3000 = span.fieldValues?.["as-3000"] === "true";
+  const poolFamilies = as3000 ? POOL_FAMILIES.filter((f) => AS3000_FAMILIES.includes(f.value)) : POOL_FAMILIES;
+  const currentFamily = span.fieldValues?.["spigot-family"] || "madrid-pool";
+  useEffect(() => {
+    if (!poolFamilies.some((f) => f.value === currentFamily)) {
+      updateSpan({ fieldValues: { ...span.fieldValues, "spigot-family": "madrid-pool" } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [as3000]);
+
+  // Finish is filtered to the chosen family. If the family changes and the current
+  // finish isn't offered (e.g. Rio has no black), fall back to the family default.
+  const familyFinishes = FINISH_BY_FAMILY[currentFamily] ?? (["polished", "satin", "black", "white"] as Finish[]);
+  const currentFinish = (span.spigotColor || "polished") as Finish;
+  useEffect(() => {
+    if (!familyFinishes.includes(currentFinish)) {
+      updateSpan({ spigotColor: defaultFinish(familyFinishes) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFamily]);
+
   return (
     <Accordion
-      type="single"
-      collapsible
-      value={openSection}
-      onValueChange={(v) => {
-        setOpenSection(v);
-        // Opening the Gate section auto-inserts a gate (owner request).
-        if (v === "gate" && !span.gateConfig?.required) enableGate();
-      }}
+      type="multiple"
+      defaultValue={["configure", "spigot", "addons"]}
       className="rounded-md border border-card-border"
     >
       {/* 1. Configure — compact dropdown row: Max Panel Width | LHS | Mid | RHS */}
@@ -205,148 +342,70 @@ export function GlassSpigotsConfig({
         </AccordionContent>
       </AccordionItem>
 
-      {/* 2. Gate */}
-      {gateEnabled && (
-        <AccordionItem value="gate" className="border-b border-card-border px-3">
-          <AccordionTrigger className="py-2.5 hover:no-underline" data-testid={`span-${span.spanId}-accordion-gate`}>
-            <SectionNumber n={2} title="Gate" />
-          </AccordionTrigger>
-          <AccordionContent className="space-y-3 pb-3">
-            {span.gateConfig?.required ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">A gate is added to this section.</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={disableGate}
-                    data-testid={`span-${span.spanId}-gate-remove`}
-                  >
-                    Remove gate
-                  </Button>
-                </div>
-                <GateControls
-                  config={span.gateConfig}
-                  spanId={span.spanId}
-                  onUpdate={(gateConfig) => updateSpan({ gateConfig: { ...gateConfig, postAdapterPlate: gateConfig.postAdapterPlate ?? false } })}
-                  calculatedHingePanelSize={optimalHingePanelSize}
-                  numPanels={span.panelLayout?.panels.length}
-                />
-              </>
-            ) : (
-              <Button
-                type="button"
-                onClick={enableGate}
-                data-testid={`span-${span.spanId}-gate-add`}
-              >
-                <Plus className="mr-1.5 h-4 w-4" /> Add a gate to this section
-              </Button>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      )}
-
-      {/* 3. Raked & Custom panels */}
-      {(rakedEnabled || customEnabled) && (
-        <AccordionItem value="raked" className="border-b border-card-border px-3">
-          <AccordionTrigger className="py-2.5 hover:no-underline" data-testid={`span-${span.spanId}-accordion-raked`}>
-            <SectionNumber n={3} title="Raked &amp; Custom" />
-          </AccordionTrigger>
-          <AccordionContent className="space-y-3 pb-3">
-            {rakedEnabled && (
-              <>
-                {span.maxPanelWidth < 1200 && (
-                  <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-                    Raked panels require max panel width ≥ 1200mm.
-                  </p>
-                )}
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Left Rake</Label>
-                  <Switch
-                    checked={span.leftRakedPanel?.enabled || false}
-                    disabled={span.maxPanelWidth < 1200}
-                    onCheckedChange={(enabled) => updateSpan({ leftRakedPanel: { enabled, height: 1500 } })}
-                    data-testid={`span-${span.spanId}-left-raked-toggle`}
-                  />
-                </div>
-                {span.leftRakedPanel?.enabled && (
-                  <Select
-                    value={span.leftRakedPanel.height.toString()}
-                    onValueChange={(v) => updateSpan({ leftRakedPanel: { ...span.leftRakedPanel!, height: parseInt(v) } })}
-                  >
-                    <SelectTrigger className="h-9 text-sm" data-testid={`span-${span.spanId}-left-raked-height`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1400">1400mm</SelectItem>
-                      <SelectItem value="1500">1500mm</SelectItem>
-                      <SelectItem value="1600">1600mm</SelectItem>
-                      <SelectItem value="1700">1700mm</SelectItem>
-                      <SelectItem value="1800">1800mm</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Right Rake</Label>
-                  <Switch
-                    checked={span.rightRakedPanel?.enabled || false}
-                    disabled={span.maxPanelWidth < 1200}
-                    onCheckedChange={(enabled) => updateSpan({ rightRakedPanel: { enabled, height: 1500 } })}
-                    data-testid={`span-${span.spanId}-right-raked-toggle`}
-                  />
-                </div>
-                {span.rightRakedPanel?.enabled && (
-                  <Select
-                    value={span.rightRakedPanel.height.toString()}
-                    onValueChange={(v) => updateSpan({ rightRakedPanel: { ...span.rightRakedPanel!, height: parseInt(v) } })}
-                  >
-                    <SelectTrigger className="h-9 text-sm" data-testid={`span-${span.spanId}-right-raked-height`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1400">1400mm</SelectItem>
-                      <SelectItem value="1500">1500mm</SelectItem>
-                      <SelectItem value="1600">1600mm</SelectItem>
-                      <SelectItem value="1700">1700mm</SelectItem>
-                      <SelectItem value="1800">1800mm</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </>
-            )}
-
-            {customEnabled && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Custom Panel</Label>
-                  <Switch
-                    checked={span.customPanel?.enabled || false}
-                    onCheckedChange={(enabled) => updateSpan({ customPanel: { enabled, width: Math.min(1200, span.maxPanelWidth), height: 1200, position: 0 } })}
-                    data-testid={`span-${span.spanId}-custom-panel-toggle`}
-                  />
-                </div>
-                {span.customPanel?.enabled && (
-                  <CustomPanelControls
-                    config={span.customPanel}
-                    spanId={span.spanId}
-                    onUpdate={(customPanel) => updateSpan({ customPanel })}
-                    numPanels={span.panelLayout?.panels.length || 1}
-                    maxPanelWidth={span.maxPanelWidth}
-                  />
-                )}
-              </div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      )}
-
-      {/* 4. Spigot */}
-      <AccordionItem value="spigot" className="px-3">
+      {/* 2. Spigot — kept near the top (owner request: simplest first choice). */}
+      <AccordionItem value="spigot" className="border-b border-card-border px-3">
         <AccordionTrigger className="py-2.5 hover:no-underline" data-testid={`span-${span.spanId}-accordion-spigot`}>
-          <SectionNumber n={4} title="Spigot" />
+          <SectionNumber n={2} title="Spigot" />
         </AccordionTrigger>
-        <AccordionContent className="pb-3">
+        <AccordionContent className="space-y-3 pb-3">
+          {/* AS-3000 compliance — filters the family list + sets the insulating default. */}
+          <div className="flex items-center justify-between rounded-md border border-card-border p-2.5">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs font-medium">AS-3000 compliance</Label>
+              <InfoTooltip content="Required within 1.25m of pool water (equipotential bonding). Limits the family choice to Madrid Pool, Madrid or Insuluxe and adds the insulating kit." />
+            </div>
+            <Switch
+              checked={as3000}
+              onCheckedChange={(on) => {
+                const next: Record<string, any> = { ...span.fieldValues, "as-3000": on ? "true" : "false" };
+                if (on && !AS3000_FAMILIES.includes(currentFamily)) next["spigot-family"] = "madrid-pool";
+                updateSpan({ fieldValues: next });
+              }}
+              data-testid={`span-${span.spanId}-as3000-toggle`}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">Spigot Family</Label>
+              <InfoTooltip content="The spigot system — they differ in profile, finish range and certification. Madrid Pool is the cost-effective default; Insuluxe is AS-3000 native." />
+            </div>
+            <SpigotFamilyPicker
+              families={poolFamilies}
+              value={currentFamily}
+              onSelect={(v) => updateSpan({ fieldValues: { ...span.fieldValues, "spigot-family": v } })}
+              spanId={span.spanId}
+            />
+          </div>
+
+          {/* Finish — filtered to the chosen family (SF-1 per-family enums). Family-first → finish. */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">Finish</Label>
+              <InfoTooltip content="Available finishes depend on the spigot family. When mixing earthed and un-earthed sections, choose Black on both so the covered and uncovered spigots match." />
+            </div>
+            <div className="flex flex-wrap gap-1.5" data-testid={`span-${span.spanId}-finish-picker`}>
+              {familyFinishes.map((f) => {
+                const active = f === currentFinish;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => updateSpan({ spigotColor: f })}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors hover-elevate active-elevate-2",
+                      active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-card-border",
+                    )}
+                    data-testid={`span-${span.spanId}-finish-${f}`}
+                  >
+                    <span className={cn("h-3.5 w-3.5 rounded-full", FINISH_SWATCH[f])} />
+                    {FINISH_LABEL[f]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Mounting</Label>
@@ -365,25 +424,135 @@ export function GlassSpigotsConfig({
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Finish</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Substrate</Label>
+                <InfoTooltip content="The surface the spigots fix to — sets the right fixings per section (concrete vs timber deck need different anchors). Each section can use a different substrate." />
+              </div>
               <Select
-                value={span.spigotColor || "polished"}
-                onValueChange={(v: "polished" | "satin" | "black" | "white") => updateSpan({ spigotColor: v })}
+                value={span.spigotSubstrate || "concrete"}
+                onValueChange={(v: "concrete" | "timber" | "steel") => updateSpan({ spigotSubstrate: v })}
               >
-                <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-color`}>
+                <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-substrate`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="polished">Polished</SelectItem>
-                  <SelectItem value="satin">Satin</SelectItem>
-                  <SelectItem value="black">Black</SelectItem>
-                  <SelectItem value="white">White</SelectItem>
+                  <SelectItem value="concrete">Concrete</SelectItem>
+                  <SelectItem value="timber">Timber deck</SelectItem>
+                  <SelectItem value="steel">Steel</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
         </AccordionContent>
       </AccordionItem>
+
+      {/* 3. Gate, raked & custom — "+ add" image-cards */}
+      {(gateEnabled || rakedEnabled || customEnabled) && (
+        <AccordionItem value="addons" className="px-3">
+          <AccordionTrigger className="py-2.5 hover:no-underline" data-testid={`span-${span.spanId}-accordion-addons`}>
+            <SectionNumber n={3} title="Gate, raked & custom" />
+          </AccordionTrigger>
+          <AccordionContent className="pb-3">
+            <div className="flex flex-wrap items-start gap-3">
+              {gateEnabled && (
+                <AddOnCard
+                  title="Gate"
+                  addLabel="add a gate"
+                  thumb={<PanelThumb variant="gate" label="900" sub="Gate" />}
+                  added={!!span.gateConfig?.required}
+                  onAdd={enableGate}
+                  onRemove={disableGate}
+                  testId={`span-${span.spanId}-addon-gate`}
+                >
+                  {span.gateConfig?.required && (
+                    <GateControls
+                      config={span.gateConfig}
+                      spanId={span.spanId}
+                      onUpdate={(gateConfig) => updateSpan({ gateConfig: { ...gateConfig, postAdapterPlate: gateConfig.postAdapterPlate ?? false } })}
+                      calculatedHingePanelSize={optimalHingePanelSize}
+                      numPanels={span.panelLayout?.panels.length}
+                    />
+                  )}
+                </AddOnCard>
+              )}
+
+              {rakedEnabled && (
+                <AddOnCard
+                  title="Raked panels"
+                  addLabel="add raked"
+                  thumb={<PanelThumb variant="raked-right" label="1200H" sub="Rake" />}
+                  added={rakedAdded}
+                  onAdd={enableRaked}
+                  onRemove={disableRaked}
+                  disabled={span.maxPanelWidth < 1200}
+                  disabledReason="Needs max panel width ≥ 1200mm."
+                  testId={`span-${span.spanId}-addon-raked`}
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    {(["left", "right"] as const).map((side) => {
+                      const panel = side === "left" ? span.leftRakedPanel : span.rightRakedPanel;
+                      const setPanel = (p: { enabled: boolean; height: number }) =>
+                        updateSpan(side === "left" ? { leftRakedPanel: p } : { rightRakedPanel: p });
+                      return (
+                        <div key={side} className="rounded-md border border-card-border p-2">
+                          <div className="mx-auto mb-2 h-20 w-20">
+                            <PanelThumb
+                              variant={side === "left" ? "raked-left" : "raked-right"}
+                              label={`${panel?.height ?? 1500}H`}
+                              sub="Rake"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs font-medium capitalize">{side} rake</Label>
+                            <Switch
+                              checked={panel?.enabled || false}
+                              onCheckedChange={(enabled) => setPanel({ enabled, height: panel?.height ?? 1500 })}
+                              data-testid={`span-${span.spanId}-${side}-raked-toggle`}
+                            />
+                          </div>
+                          {panel?.enabled && (
+                            <Select value={String(panel.height)} onValueChange={(v) => setPanel({ enabled: true, height: parseInt(v) })}>
+                              <SelectTrigger className="mt-2 h-8 text-xs" data-testid={`span-${span.spanId}-${side}-raked-height`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {RAKE_HEIGHTS.map((h) => <SelectItem key={h} value={h}>{h}mm</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </AddOnCard>
+              )}
+
+              {customEnabled && (
+                <AddOnCard
+                  title="Custom panel"
+                  addLabel="add custom"
+                  thumb={<PanelThumb variant="custom" label="1200" sub="Custom" />}
+                  added={customAdded}
+                  onAdd={enableCustom}
+                  onRemove={disableCustom}
+                  testId={`span-${span.spanId}-addon-custom`}
+                >
+                  {span.customPanel?.enabled && (
+                    <CustomPanelControls
+                      config={span.customPanel}
+                      spanId={span.spanId}
+                      onUpdate={(customPanel) => updateSpan({ customPanel })}
+                      numPanels={span.panelLayout?.panels.length || 1}
+                      maxPanelWidth={span.maxPanelWidth}
+                    />
+                  )}
+                </AddOnCard>
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      )}
+
     </Accordion>
   );
 }

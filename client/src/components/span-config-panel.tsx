@@ -18,6 +18,7 @@ import { AutoCalcPanelControls } from "./auto-calc-panel-controls";
 import { SemiFramelessPostConfig } from "./semi-frameless-post-config";
 import { InfoTooltip } from "./info-tooltip";
 import { GlassSpigotsConfig } from "./configure-blocks/glass-spigots-config";
+import { GlassBalSpigotsConfig } from "./configure-blocks/glass-bal-spigots-config";
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
@@ -44,6 +45,7 @@ export function SpanConfigPanel({
   const isSemiFrameless = productVariant === "semi-frameless-1000" || productVariant === "semi-frameless-1800";
 
   const isGlassSpigots = productVariant === "glass-pool-spigots";
+  const isGlassBalSpigots = productVariant.startsWith("glass-bal-spigots");
 
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
@@ -612,8 +614,20 @@ export function SpanConfigPanel({
             />
           )}
 
-          {/* Glass Balustrade Configuration - glass thickness and top rail */}
-          {(productVariant.startsWith("glass-bal-spigots") || productVariant === "glass-bal-channel" || productVariant === "glass-bal-standoffs") && (
+          {/* ── Glass Balustrade Spigots: same Oxworks accordion format (Configure/Spigot/Rail) ── */}
+          {isGlassBalSpigots && (
+            <GlassBalSpigotsConfig
+              span={span}
+              updateSpan={updateSpan}
+              productVariant={productVariant}
+              showLeftGap={showLeftGap}
+              showRightGap={showRightGap}
+            />
+          )}
+
+          {/* Glass Balustrade Configuration (channel + standoffs) - glass thickness and top rail.
+              glass-bal-spigots now uses the accordion above instead. */}
+          {(productVariant === "glass-bal-channel" || productVariant === "glass-bal-standoffs") && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Glass Balustrade Configuration</h4>
@@ -1567,7 +1581,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Gap Configurations - Hide for BARR, Blade, Tubular, Hamptons PVC, alu-bal-*, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
+          {!isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 {showLeftGap && isFieldEnabled("startGapMm") && (
@@ -1834,7 +1848,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, custom-frameless, semi-frameless, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && (isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) &&
+          {!isGlassSpigots && !isGlassBalSpigots && (isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) &&
            productVariant !== "alu-pool-barr" &&
            productVariant !== "alu-pool-blade" &&
            productVariant !== "alu-pool-tubular" &&
@@ -1908,7 +1922,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Hardware Configuration - Show channel, spigot, OR post based on product type (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant === "glass-pool-channel" ? (
+          {!isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant === "glass-pool-channel" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Channel Hardware</h4>
               <div className="space-y-3">
@@ -1937,7 +1951,7 @@ export function SpanConfigPanel({
                 </div>
               </div>
             </div>
-          ) : !isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !isSemiFrameless ? (
+          ) : !isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -2209,7 +2223,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Hardware Configuration - Moved to bottom (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless && productVariant === "glass-pool-channel" ? (
+          {!isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless && productVariant === "glass-pool-channel" ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Channel Hardware</h4>
               <div className="space-y-3">
@@ -2238,7 +2252,7 @@ export function SpanConfigPanel({
                 </div>
               </div>
             </div>
-          ) : !isGlassSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
+          ) : !isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">

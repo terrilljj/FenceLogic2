@@ -8,8 +8,8 @@ import { ProductSelector } from "@/components/product-selector";
 import { SectionSwitcher } from "@/components/configure-blocks/section-switcher";
 import { WizardStepper, type WizardStep } from "@/components/configure-blocks/wizard/wizard-stepper";
 import { TipsPanel } from "@/components/configure-blocks/wizard/tips-panel";
+import { STEP1_MEASURE_TIPS, STEP1_FOOTNOTE, STEP3_REVIEW_TIPS, step2Tips } from "@/components/configure-blocks/wizard/joe-tips";
 import { StepStyleMeasure } from "@/components/configure-blocks/wizard/step-style-measure";
-import { StepFinishing } from "@/components/configure-blocks/wizard/step-finishing";
 import { StepReview } from "@/components/configure-blocks/wizard/step-review";
 import { useToast } from "@/hooks/use-toast";
 import { FenceDesign, FenceShape, SpanConfig, SavedFenceDesign, ProductType, ProductVariant } from "@shared/schema";
@@ -31,6 +31,8 @@ const PRODUCT_VARIANT_LABELS: Record<string, string> = {
   "glass-pool-spigots": "Glass Pool Fencing — Frameless with Spigots",
   "glass-pool-channel": "Glass Pool Fencing — Channel",
   "glass-bal-spigots": "Glass Balustrade — Frameless with Spigots",
+  "glass-bal-spigots-12mm": "Glass Balustrade — Spigots (12mm)",
+  "glass-bal-spigots-15mm": "Glass Balustrade — Spigots (15mm)",
   "glass-bal-channel": "Glass Balustrade — Channel",
   "glass-bal-standoffs": "Glass Balustrade — Standoffs",
   "alu-pool-tubular": "Aluminium Pool Fencing — Tubular Flat Top",
@@ -61,28 +63,10 @@ const SHAPE_OPTIONS: { id: FenceShape; label: string }[] = [
 
 // Oxworks-style 4-step wizard (glass-pool-spigots).
 const WIZARD_STEPS: WizardStep[] = [
-  { id: 1, title: "Style & Measure", subtitle: "Shape & lengths" },
+  { id: 1, title: "Style & Measure", subtitle: "Shape, finish & lengths" },
   { id: 2, title: "Configure", subtitle: "Each section" },
-  { id: 3, title: "Finishing", subtitle: "Spigots & finish" },
-  { id: 4, title: "Review", subtitle: "Component list" },
+  { id: 3, title: "Review", subtitle: "Component list" },
 ];
-
-// Step 1 "Things to consider" — factual measuring guidance (not installer-voice).
-const STEP1_TIPS = [
-  {
-    title: "Measure to the centre line",
-    body: "Take each section's length along the centre line of the fence — about 100mm in from the slab or deck edge, where the glass actually sits on spigots.",
-  },
-  {
-    title: "Account for end gaps",
-    body: "Decide if you need a gap at the wall or corner at each end of a section. You set the exact left/right gaps in the next step.",
-  },
-  {
-    title: "Sections that meet",
-    body: "Where two sections join at a corner, only one of them needs an end gap — avoid double-counting the junction.",
-  },
-];
-const STEP1_FOOTNOTE = "Before installing a pool fence, consult a certifier, engineer or your local authority for site-specific requirements.";
 
 export default function FenceLogic() {
   const { toast } = useToast();
@@ -601,15 +585,19 @@ export default function FenceLogic() {
   }, [design]);
 
   const isGlassSpigots = design.productVariant === "glass-pool-spigots";
+  // Styles that run inside the Oxworks wizard (same format across them). Adding a
+  // style here routes it through the 4-step wizard; its Step-2 config comes from
+  // SpanConfigPanel (per-variant accordion).
+  const isWizardVariant = isGlassSpigots || design.productVariant.startsWith("glass-bal-spigots");
   // Wizard elevation rules (Oxworks): Step 2 (Configure) shows the ACTIVE section
   // only; Step 4 (Review) shows ALL sections (height grows to fit). Steps 1 & 3
   // (Style, Finishing) have no elevation. Other variants are unchanged (300px).
   const activeVizSpan = design.spans.find((s) => s.spanId === selectedSpanId) ?? design.spans[0];
-  const showActiveOnly = isGlassSpigots && currentStep === 2;
+  const showActiveOnly = isWizardVariant && currentStep === 2;
   // Top FIXED elevation strip: other variants always; wizard only on Configure (2).
   // Finishing (3) and Review (4) render their elevation INSIDE the scroll area so a
   // tall, all-sections render scrolls with the page instead of being clipped.
-  const showTopElevation = !isGlassSpigots || currentStep === 2;
+  const showTopElevation = !isWizardVariant || currentStep === 2;
   const reviewVizHeight = Math.max(320, design.spans.length * 360);
 
   return (
@@ -622,7 +610,7 @@ export default function FenceLogic() {
         onDownloadPDF={downloadPDFHandler || undefined}
         isSaving={saveDesignMutation.isPending}
         productVariant={design.productVariant}
-        showProgress={!isGlassSpigots}
+        showProgress={!isWizardVariant}
       />
 
       {showRestoredBanner && (
@@ -638,8 +626,8 @@ export default function FenceLogic() {
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Wizard step bar — glass-pool-spigots only (Oxworks model) */}
-        {isGlassSpigots && (
+        {/* Wizard step bar — wizard variants (Oxworks model) */}
+        {isWizardVariant && (
           <div className="shrink-0 border-b border-card-border bg-card px-4 py-3">
             <div className="mx-auto w-full max-w-6xl">
               <WizardStepper
@@ -651,23 +639,22 @@ export default function FenceLogic() {
           </div>
         )}
 
-        {/* Top FIXED elevation strip — other variants always; wizard only on Configure (2),
-            where it draws the active section. Finishing/Review render their own (in-scroll). */}
-        {showTopElevation && (
-          <div className="relative shrink-0 border-b border-card-border" style={{ height: 300 }}>
-            <FenceVisualization
-              design={design}
-              activeSpanId={isGlassSpigots ? (activeSpanId ?? selectedSpanId) : activeSpanId}
-              visibleSpanIds={showActiveOnly && activeVizSpan ? [activeVizSpan.spanId] : undefined}
-              onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
-            />
-          </div>
-        )}
-
-        {/* Controls Panel — full width, scrollable */}
+        {/* Controls Panel — full width, scrollable. The elevation lives INSIDE this
+            scroll container as a sticky strip, so it stays frozen at the top while the
+            config below it scrolls (wizard Configure draws the active section). */}
         <div className="flex-1 overflow-y-auto bg-card">
+          {showTopElevation && (
+            <div className="sticky top-0 z-20 border-b border-card-border bg-background" style={{ height: 300 }}>
+              <FenceVisualization
+                design={design}
+                activeSpanId={isWizardVariant ? (activeSpanId ?? selectedSpanId) : activeSpanId}
+                visibleSpanIds={showActiveOnly && activeVizSpan ? [activeVizSpan.spanId] : undefined}
+                onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
+              />
+            </div>
+          )}
           <div className="mx-auto w-full max-w-6xl p-4 space-y-5">
-            {isGlassSpigots ? (
+            {isWizardVariant ? (
               <>
                 {/* ── Step 1 — Style & Measure ─────────────────────────────── */}
                 {currentStep === 1 && (
@@ -689,12 +676,8 @@ export default function FenceLogic() {
                       }}
                       onAddSection={handleAddSectionStep1}
                       onDeleteSection={handleDeleteSection}
-                      finish={(design.spans[0]?.spigotColor || "polished") as "polished" | "satin" | "black" | "white"}
-                      onFinishChange={(finish) => {
-                        setDesign((prev) => ({ ...prev, spans: prev.spans.map((s) => ({ ...s, spigotColor: finish })) }));
-                      }}
                     />
-                    <TipsPanel tips={STEP1_TIPS} footnote={STEP1_FOOTNOTE} />
+                    <TipsPanel tips={STEP1_MEASURE_TIPS} footnote={STEP1_FOOTNOTE} />
                   </div>
                 )}
 
@@ -702,7 +685,7 @@ export default function FenceLogic() {
                 {currentStep === 2 && (() => {
                   const activeSpan = design.spans.find((s) => s.spanId === selectedSpanId) ?? design.spans[0];
                   return (
-                    <div className="grid gap-4 lg:grid-cols-[180px_1fr] items-start">
+                    <div className="grid gap-4 lg:grid-cols-[170px_1fr_300px] items-start">
                       <SectionSwitcher
                         spans={design.spans.map((s) => ({ spanId: s.spanId, length: s.length, name: s.name }))}
                         activeId={activeSpan.spanId}
@@ -724,46 +707,13 @@ export default function FenceLogic() {
                           showSectionLength={false}
                         />
                       </div>
+                      <TipsPanel tips={step2Tips(design.productVariant, activeSpan)} />
                     </div>
                   );
                 })()}
 
-                {/* ── Step 3 — Finishing touches ───────────────────────────── */}
+                {/* ── Step 3 — Review & Checkout ───────────────────────────── */}
                 {currentStep === 3 && (
-                  <div className="space-y-4">
-                    {/* Mini elevation of the highlighted section (click a card to change it) */}
-                    {activeVizSpan && (
-                      <div className="space-y-1">
-                        {design.spans.length > 1 && (
-                          <p className="text-xs font-medium text-muted-foreground">
-                            Showing: {activeVizSpan.name?.trim() || `Section ${activeVizSpan.spanId}`}
-                          </p>
-                        )}
-                        <div className="relative h-[250px] overflow-hidden rounded-md border border-card-border">
-                          <FenceVisualization
-                            design={design}
-                            activeSpanId={activeVizSpan.spanId}
-                            visibleSpanIds={[activeVizSpan.spanId]}
-                            maxScale={0.08}
-                            onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <StepFinishing
-                      spans={design.spans}
-                      activeId={selectedSpanId}
-                      onSelect={setSelectedSpanId}
-                      onUpdateSpan={(spanId, updates) => {
-                        const s = design.spans.find((x) => x.spanId === spanId);
-                        if (s) handleSpanUpdate(spanId, { ...s, ...updates });
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* ── Step 4 — Review & Checkout ───────────────────────────── */}
-                {currentStep === 4 && (
                   <div className="space-y-4">
                     {/* Full all-sections elevation, in-scroll so tall designs scroll */}
                     <div className="relative overflow-hidden rounded-md border border-card-border" style={{ height: reviewVizHeight }}>
@@ -773,11 +723,14 @@ export default function FenceLogic() {
                         onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
                       />
                     </div>
-                    <StepReview
-                      components={components}
-                      onEmail={handleEmailQuote}
-                      onDownload={handleDownloadList}
-                    />
+                    <div className="grid gap-4 lg:grid-cols-[1fr_300px] items-start">
+                      <StepReview
+                        components={components}
+                        onEmail={handleEmailQuote}
+                        onDownload={handleDownloadList}
+                      />
+                      <TipsPanel title="Before you order" tips={STEP3_REVIEW_TIPS} />
+                    </div>
                   </div>
                 )}
 
@@ -791,8 +744,8 @@ export default function FenceLogic() {
                   >
                     Back
                   </Button>
-                  {currentStep < 4 ? (
-                    <Button onClick={() => setCurrentStep((s) => Math.min(4, s + 1))} data-testid="wizard-next">
+                  {currentStep < 3 ? (
+                    <Button onClick={() => setCurrentStep((s) => Math.min(3, s + 1))} data-testid="wizard-next">
                       Next: {WIZARD_STEPS[currentStep]?.title}
                     </Button>
                   ) : (
@@ -1047,10 +1000,13 @@ export default function FenceLogic() {
           <ProductSelector 
             currentVariant={design.productVariant}
             onSelectVariant={(type, variant) => {
+              const ptsMax = ptsMaxPanelFor(variant);
               setDesign((prev) => ({
                 ...prev,
                 productType: type,
                 productVariant: variant,
+                // Default max panel to the style's PTS spec (not the generic 1800).
+                spans: ptsMax ? prev.spans.map((s) => ({ ...s, maxPanelWidth: ptsMax })) : prev.spans,
               }));
               setShowProductMockup(false);
               
@@ -1068,6 +1024,14 @@ export default function FenceLogic() {
       </Dialog>
     </div>
   );
+}
+
+// PTS-derived max panel width per style (overrides the generic 1800 default).
+// glass-bal-spigots: 12mm → 1500mm, 15mm → 1400mm (PTS-002/PTS-007 max span).
+function ptsMaxPanelFor(variant: string): number | undefined {
+  if (variant === "glass-bal-spigots-15mm") return 1400;
+  if (variant === "glass-bal-spigots-12mm" || variant === "glass-bal-spigots") return 1500;
+  return undefined;
 }
 
 function createDefaultSpan(spanId: string, defaultMaxPanel = 1800): SpanConfig {
