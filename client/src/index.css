@@ -326,3 +326,32 @@
     inset: -1px;
   }
 }
+/* Always-visible scrollbar for the desktop config scroll panel (Baymard: internal
+   scroll regions MUST have a visible scrollbar — macOS overlay scrollbars hide by
+   default, so users can't tell the area scrolls). Applies wherever the element
+   actually overflows; inert on mobile where the panel doesn't scroll. */
+@layer utilities {
+  /* Firefox only — in Chrome, the standard scrollbar-width property OVERRIDES the
+     ::-webkit-scrollbar styles below and keeps macOS overlay (hidden) scrollbars. */
+  @supports (-moz-appearance: none) {
+    .scrollbar-always {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--muted-foreground) / 0.4) hsl(var(--muted));
+    }
+  }
+  .scrollbar-always::-webkit-scrollbar {
+    width: 12px;
+  }
+  .scrollbar-always::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 6px;
+  }
+  .scrollbar-always::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.4);
+    border-radius: 6px;
+    border: 2px solid hsl(var(--muted));
+  }
+  .scrollbar-always::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.6);
+  }
+}

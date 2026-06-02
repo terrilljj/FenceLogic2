@@ -84,11 +84,22 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   }
 
   if (as3000) {
-    tips.push({
-      title: "AS 3000 earthing on",
-      body:
-        "With AS 3000 compliance on I've filtered to the non-conductive spigot families — that's the safe set around pool electrical zones.",
-    });
+    // Operator-authored earthing guidance (locked-scope §3, verbatim).
+    tips.push(
+      {
+        title: "Cheapest earthing-compliant option",
+        body: "Pool Madrid spigots with insulating covers.",
+      },
+      {
+        title: "Exposed or high-wind and unprotected?",
+        body: "Step up to Madrid balustrade spigots with the insulating covers.",
+      },
+      {
+        title: "Only part of the fence near the water?",
+        body:
+          "Earthing's only required within 1.25m of the water. If just one section sits in that arm's-reach zone, run Pool Madrid + covers on that section and standard Madrid on the rest — do it all in black so the covered and uncovered sections match.",
+      },
+    );
   }
 
   tips.push({
@@ -96,6 +107,47 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
     body:
       "Base-plate suits fixing onto existing pavers or a finished slab. Core-fill needs at least 100mm of solid concrete — too shallow and the spigot won't hold under load.",
   });
+
+  // ── Spigot section: substrate / mounting (SF-1 fixings matrix) ──
+  if (isPool) {
+    const substrate = span.spigotSubstrate || "concrete";
+    const mounting = span.spigotMounting || "base-plate";
+    if (substrate === "timber") {
+      tips.push({
+        title: "Fixing to a timber deck",
+        body:
+          "Base-plated spigots on a deck need structural timber underneath — joists or solid bearers, not just decking boards. Countersunk batten screws do the holding.",
+      });
+    } else if (substrate === "steel") {
+      tips.push({
+        title: "Fixing to steel",
+        body:
+          "Steel takes threaded-rod fixings without a chemical anchor. Check the steel section underneath is rated for the point loads of a glass fence.",
+      });
+    } else if (mounting === "core-drilled") {
+      tips.push({
+        title: "Core-drill grout",
+        body:
+          "Core-drilled spigots get grouted in — allow a 10kg bag per ten spigots plus a spare. On a hot day keep the holes shaded and the mixing water cold.",
+      });
+    }
+  }
+
+  // ── Add-ons section: raked / custom panels ──
+  if (span.leftRakedPanel?.enabled || span.rightRakedPanel?.enabled) {
+    tips.push({
+      title: "Raked panels",
+      body:
+        "Rakes step the fence up retaining walls and level changes. They're a fixed 1200 wide — the height you pick is the tall edge, and the top slopes down to standard panel height.",
+    });
+  }
+  if (span.customPanel?.enabled) {
+    tips.push({
+      title: "Custom panels",
+      body:
+        "A custom panel is cut to your exact size rather than the stock 50mm steps — handy for closing an awkward gap. Expect a longer lead time than stock panels.",
+    });
+  }
 
   if (gateOn) {
     tips.push({

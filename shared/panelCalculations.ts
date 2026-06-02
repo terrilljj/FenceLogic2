@@ -174,8 +174,43 @@ export function calculatePanelLayout(
     
     // Build variable panel array
     let variablePanels: number[] = [];
-    
-    if (numVariablePanels > 0) {
+
+    // HINGE-MATCH RULE (owner, 2026-06-02): with a glass-to-glass gate, the hinge
+    // panel and the standard panels must read as ONE family of glass — at most 2
+    // distinct widths across {hinge, standards}, exactly 50mm apart (e.g. hinge
+    // 1600 with standards 1600/1650, never a third size). Matched layouts are
+    // strongly preferred in scoring; when the geometry makes a match impossible
+    // (the hinge size is user-fixed), the equalized fallback below still runs so
+    // a layout is always produced.
+    let hingeMatched = false;
+
+    if (numVariablePanels > 0 && hasGate && !isWallMounted && gateConfig) {
+      const h = gateConfig.hingePanelSize;
+      let best: number[] | null = null;
+      let bestDiff = Infinity;
+      // Candidate second size: same as hinge, one 50mm step up, one step down.
+      for (const alt of [h, h + PANEL_INCREMENT, h - PANEL_INCREMENT]) {
+        if (h < MIN_PANEL || h > MAX_PANEL || alt < MIN_PANEL || alt > MAX_PANEL) continue;
+        const kMax = alt === h ? 0 : numVariablePanels;
+        for (let k = 0; k <= kMax; k++) {
+          const total = (numVariablePanels - k) * h + k * alt;
+          // Panels may undershoot the target (gaps absorb up to ~100mm across the
+          // run, validated later) but never overshoot past the 2mm rounding allowance.
+          const diff = totalVariablePanelWidth - total;
+          if (diff < -2 || diff > 100) continue;
+          if (Math.abs(diff) < bestDiff) {
+            bestDiff = Math.abs(diff);
+            best = [...Array(numVariablePanels - k).fill(h), ...Array(k).fill(alt)];
+          }
+        }
+      }
+      if (best) {
+        variablePanels = best;
+        hingeMatched = true;
+      }
+    }
+
+    if (numVariablePanels > 0 && !hingeMatched) {
       // Use equalizePanels to distribute panels on 50mm grid
       const equalizeResult = equalizePanels({
         targetMm: totalVariablePanelWidth,
@@ -404,8 +439,13 @@ export function calculatePanelLayout(
         const hasRequiredComponents = (hasGate || hasCustomPanel) ? (numGatePanels + numCustomPanels > 0 ? 0 : 1000) : 0;
         const panelSizeScore = -Math.max(...finalPanels);
         const gapDiffPenalty = Math.abs(actualGap - targetGap) * 10;
+        // HINGE-MATCH RULE: a gate layout whose standard panels don't form a 2-size,
+        // 50mm-apart family with the hinge panel always loses to one that does.
+        // 50000 dwarfs every other score component, so matched layouts win whenever
+        // one exists; if none exists, the best unmatched layout still returns.
+        const hingeMatchPenalty = (hasGate && !isWallMounted && numVariablePanels > 0 && !hingeMatched) ? 50000 : 0;
         // Increased panel count penalty from 100 to 500 to strongly prefer fewer panels
-        const score = hasRequiredComponents + totalPanels * 500 + panelSizeScore + gapDiffPenalty;
+        const score = hasRequiredComponents + totalPanels * 500 + panelSizeScore + gapDiffPenalty + hingeMatchPenalty;
         
         if (score < bestScore) {
           bestScore = score;

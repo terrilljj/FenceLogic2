@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Box, Layers, Download } from "lucide-react";
@@ -17,11 +17,15 @@ interface FenceVisualizationProps {
 export function FenceVisualization({ design, activeSpanId, visibleSpanIds, maxScale = 0.15, onDownloadPDFReady }: FenceVisualizationProps) {
   // Render-only filter: draw a subset of sections (e.g. the active run on the
   // configure step) without changing the design used for PDF/export.
+  // Memoized on visibleKey (stable string), NOT visibleSpanIds (a fresh array each
+  // parent render) — otherwise renderDesign gets a new identity every render and the
+  // canvas draw effect below re-runs (bitmap reset + full redraw) on every re-render.
   const visibleKey = visibleSpanIds?.join(",") ?? "";
-  const renderDesign: FenceDesign =
-    visibleSpanIds && visibleSpanIds.length > 0
-      ? { ...design, spans: design.spans.filter((s) => visibleSpanIds.includes(s.spanId)) }
-      : design;
+  const renderDesign: FenceDesign = useMemo(() => {
+    if (!visibleKey) return design;
+    const ids = visibleKey.split(",");
+    return { ...design, spans: design.spans.filter((s) => ids.includes(s.spanId)) };
+  }, [design, visibleKey]);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -1092,8 +1096,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillText("127mm", currentX + scaledPanelWidth, groundLevel + 20);
         
       } else if (isLeftRaked || isRightRaked) {
-        // Glass panels - raked
-        ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
+        // Glass panels - raked. Distinct AMBER so raked panels read differently from
+        // standard (blue) / gate (purple) / hinge (green) / custom (orange) at a glance.
+        ctx.fillStyle = "#f7ecc3";
         ctx.globalAlpha = 1;
         // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
         // For left raked: high on left (400mm), slopes down on right
@@ -1119,8 +1124,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         }
         ctx.closePath();
         ctx.fill();
-        
-        ctx.strokeStyle = isHinge ? "#a4e8b8" : isGate ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
+
+        // Amber border to match the raked fill
+        ctx.strokeStyle = "#e3d194";
         ctx.lineWidth = 1.5;
         ctx.stroke();
       } else {
@@ -1145,8 +1151,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.textAlign = "center";
       
       // For semi-frameless, show panel size and opening width - positioned at ¼ points
+      // Raked panels are ALWAYS 1200 wide — their variable is HEIGHT, so the label
+      // shows the user-selected height (e.g. "1500H"), not the width.
       let widthLabel = `${currentPanelWidth}${isRaked ? 'H' : ''}`;
-      if (isSemiFrameless) {
+      if (isLeftRaked || isRightRaked) {
+        widthLabel = `${isLeftRaked ? leftRaked : rightRaked}H`;
+      } else if (isSemiFrameless) {
         widthLabel = `${currentPanelWidth}`; // Just the panel size number
       } else if (isCustom && span.customPanel?.enabled) {
         widthLabel = `${currentPanelWidth}x${span.customPanel.height}`;

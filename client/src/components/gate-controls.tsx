@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { ArrowLeftRight, FlipHorizontal, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, TriangleAlert, Info } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, FlipHorizontal, Info, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getGateGaps, HingeType, LatchType } from "@shared/schema";
-import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { cn } from "@/lib/utils";
+import { InfoTooltip } from "./info-tooltip";
 
 interface GateConfig {
   required: boolean;
@@ -34,16 +35,30 @@ interface GateControlsProps {
   numPanels?: number; // Number of panels in the span for position limits
 }
 
+// Gate hardware as PHOTO cards (image-17 flow). The choice locks the hinge brand —
+// Master Range gate panels have drilled bolt holes, Soft Close panels have a hinge
+// cutout, so cross-pairing is physically impossible (SF-1 hard rule).
+// Placeholder tiles show the SKU until VITE_STOREFRONT_IMAGE_BASE provides photos
+// (same mechanism as the spigot family cards).
+const HARDWARE_CARDS: { value: "polaris" | "master"; label: string; blurb: string; imageSku: string }[] = [
+  { value: "polaris", label: "Soft Close", blurb: "Polaris / Atlantic self-closing hinges.", imageSku: "PSC-125GG-B" },
+  { value: "master", label: "Master Range", blurb: "Budget select; manual-close hinge set.", imageSku: "MR-GGH-B" },
+];
+const IMAGE_BASE = (import.meta as any).env?.VITE_STOREFRONT_IMAGE_BASE as string | undefined;
+function hardwareImageSrc(sku: string): string | undefined {
+  if (!IMAGE_BASE) return undefined;
+  return `${IMAGE_BASE}/_next/image?url=/products/${sku}.png&w=256&q=75`;
+}
+
 export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSize, numPanels = 1 }: GateControlsProps) {
   const [hingeWarningAcknowledged, setHingeWarningAcknowledged] = useState(false);
-  const { data: featureFlags } = useFeatureFlags();
 
   const updateConfig = (updates: Partial<GateConfig>) => {
     // Automatically update gaps when hardware or hingeFrom changes
     const newHardware = updates.hardware ?? config.hardware;
     const newHingeFrom = updates.hingeFrom ?? config.hingeFrom;
     const gaps = getGateGaps(newHardware, newHingeFrom);
-    
+
     onUpdate({ ...config, ...updates, ...gaps });
   };
 
@@ -66,12 +81,15 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
 
   return (
     <div className="space-y-4 bg-muted/30 rounded-md p-4" data-testid={`gate-controls-${spanId}`}>
-      {/* Feature flag banner: Show when auto hinge sizing is disabled */}
-      {featureFlags && !featureFlags.HINGE_AUTO_ENABLED && config.hingeFrom === "glass" && (
-        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30" data-testid={`hinge-auto-disabled-banner-${spanId}`}>
-          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">
-            Auto hinge sizing is off. Enter hinge panel width explicitly.
+      {/* Auto hinge state — reflects the ACTUAL gate config (auto is the default).
+          Picking a size from the Hinge Panel dropdown turns auto off; the Auto
+          button turns it back on. (Not tied to the HINGE_AUTO_ENABLED env flag —
+          that only affects a server resolve edge case, not this UI.) */}
+      {config.hingeFrom === "glass" && config.autoHingePanel && (
+        <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30" data-testid={`hinge-auto-on-banner-${spanId}`}>
+          <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-sm text-green-900 dark:text-green-100">
+            Hinge panel auto-sizes to match your glass panels. Pick a size below to override.
           </AlertDescription>
         </Alert>
       )}
@@ -84,7 +102,7 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
             <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
-                variant="secondary"
+                variant="default"
                 className="font-semibold"
                 onClick={() => updateConfig({ position: Math.max(positionLimits.min, config.position - 1) })}
                 data-testid={`gate-${spanId}-move-left`}
@@ -95,7 +113,7 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="default"
                 className="font-semibold"
                 onClick={() => updateConfig({ flipped: !config.flipped })}
                 data-testid={`gate-${spanId}-flip`}
@@ -105,7 +123,7 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="default"
                 className="font-semibold"
                 onClick={() => updateConfig({ position: Math.min(positionLimits.max, config.position + 1) })}
                 data-testid={`gate-${spanId}-move-right`}
@@ -131,32 +149,59 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
       </div>
 
       <div className="space-y-3">
-        <div className="space-y-2">
+        {/* Gate hardware — PHOTO cards (image-17 flow). The choice locks the hinge brand. */}
+        <div className="space-y-1.5">
           <Label className="text-sm font-medium">Gate Hardware</Label>
-          <Select
-            value={config.hardware}
-            onValueChange={(hardware: "master" | "polaris") => {
-              // Check if current gate size is valid for new hardware type
-              const validSizes = hardware === "polaris" ? polarisGateSizes : masterGateSizes;
-              const currentSizeValid = validSizes.includes(config.gateSize);
-              
-              // If current size is invalid, use default for new hardware type
-              const newGateSize = currentSizeValid ? config.gateSize : (hardware === "polaris" ? 900 : 890);
-              
-              updateConfig({ hardware, gateSize: newGateSize });
-            }}
-          >
-            <SelectTrigger data-testid={`gate-${spanId}-hardware`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="master">Master Range</SelectItem>
-              <SelectItem value="polaris">Polaris/Atlantic</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid max-w-md grid-cols-2 gap-2.5" data-testid={`gate-${spanId}-hardware`}>
+            {HARDWARE_CARDS.map((hw) => {
+              const isActive = config.hardware === hw.value;
+              const img = hardwareImageSrc(hw.imageSku);
+              return (
+                <button
+                  key={hw.value}
+                  type="button"
+                  onClick={() => {
+                    // Keep gate size valid for the newly chosen hardware type
+                    const validSizes = hw.value === "polaris" ? polarisGateSizes : masterGateSizes;
+                    const newGateSize = validSizes.includes(config.gateSize)
+                      ? config.gateSize
+                      : hw.value === "polaris" ? 900 : 890;
+                    updateConfig({ hardware: hw.value, gateSize: newGateSize });
+                  }}
+                  className={cn(
+                    "flex flex-col gap-1.5 rounded-md border p-2 text-left transition-colors hover-elevate active-elevate-2",
+                    isActive ? "border-primary/50 bg-primary/5 ring-2 ring-primary" : "border-card-border bg-card",
+                  )}
+                  data-testid={`gate-${spanId}-hardware-${hw.value}`}
+                >
+                  <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded bg-muted text-center">
+                    {img ? (
+                      <img src={img} alt={hw.label} className="h-full w-full object-contain" loading="lazy" />
+                    ) : (
+                      <span className="px-1 text-[9px] leading-tight text-muted-foreground">
+                        image soon
+                        <br />
+                        <span className="font-mono">{hw.imageSku}</span>
+                      </span>
+                    )}
+                    {isActive && (
+                      <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold">{hw.label}</p>
+                    <p className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">{hw.blurb}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {/* Row 1 (image-17): Hinge Type | Latch To | Latch Type — options follow the brand */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-2">
             <Label className="text-sm font-medium">Hinge Type</Label>
             <Select
@@ -183,6 +228,22 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
           </div>
 
           <div className="space-y-2">
+            <Label className="text-sm font-medium">Latch To</Label>
+            <Select
+              value={config.latchTo}
+              onValueChange={(latchTo: "glass" | "wall") => updateConfig({ latchTo })}
+            >
+              <SelectTrigger data-testid={`gate-${spanId}-latch-to`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="glass">Glass</SelectItem>
+                <SelectItem value="wall">Wall/Post</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label className="text-sm font-medium">Latch Type</Label>
             <Select
               value={config.latchType || "glass-to-glass"}
@@ -201,28 +262,15 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
           </div>
         </div>
 
-        {config.hardware === "polaris" && (
-          <div className="flex items-center gap-2 bg-muted/30 rounded-md p-3">
-            <Checkbox
-              id={`post-adapter-${spanId}`}
-              checked={config.postAdapterPlate ?? false}
-              onCheckedChange={(checked) => updateConfig({ postAdapterPlate: checked === true })}
-              data-testid={`gate-${spanId}-post-adapter`}
-            />
-            <label htmlFor={`post-adapter-${spanId}`} className="text-sm font-medium cursor-pointer flex-1">
-              Add Post Adapter Plate
-            </label>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
+        {/* Row 2 (image-17): Hinge From | Gate Size | Hinge Panel (glass-to-glass only) */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-2">
             <Label className="text-sm font-medium">Hinge From</Label>
             <Select
               value={config.hingeFrom}
               onValueChange={(hingeFrom: "glass" | "wall") => {
                 const updates: Partial<GateConfig> = { hingeFrom };
-                
+
                 if (hingeFrom === "wall" && config.hingeFrom !== "wall") {
                   // Switching to wall mode: save glass position and normalize to 0 or 1
                   updates.savedGlassPosition = config.position;
@@ -232,7 +280,7 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                   updates.position = config.savedGlassPosition ?? config.position;
                   updates.savedGlassPosition = undefined;
                 }
-                
+
                 updateConfig(updates);
               }}
             >
@@ -246,24 +294,6 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Latch To</Label>
-            <Select
-              value={config.latchTo}
-              onValueChange={(latchTo: "glass" | "wall") => updateConfig({ latchTo })}
-            >
-              <SelectTrigger data-testid={`gate-${spanId}-latch-to`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="glass">Glass</SelectItem>
-                <SelectItem value="wall">Wall/Post</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label className="text-sm font-medium">Gate Size</Label>
             <Select
@@ -294,21 +324,21 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
           {config.hingeFrom === "glass" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Hinge Panel</Label>
+                <Label className="text-sm font-medium">
+                  Hinge Panel{config.autoHingePanel ? " (auto)" : ""}
+                </Label>
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
+                  variant={config.autoHingePanel ? "default" : "outline"}
                   onClick={() => {
-                    console.log('Auto button clicked, calculatedHingePanelSize:', calculatedHingePanelSize);
                     if (calculatedHingePanelSize) {
-                      console.log('Updating hinge panel to:', calculatedHingePanelSize);
                       updateConfig({
                         autoHingePanel: true,
                         hingePanelSize: calculatedHingePanelSize
                       });
                     } else {
-                      console.log('No calculatedHingePanelSize available!');
+                      updateConfig({ autoHingePanel: true });
                     }
                   }}
                   data-testid={`gate-${spanId}-auto-hinge-button`}
@@ -320,9 +350,9 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
               <Select
                 value={config.hingePanelSize.toString()}
                 onValueChange={(value) => {
-                  updateConfig({ 
-                    autoHingePanel: false, 
-                    hingePanelSize: parseInt(value) 
+                  updateConfig({
+                    autoHingePanel: false,
+                    hingePanelSize: parseInt(value)
                   });
                 }}
               >
@@ -355,6 +385,23 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
             </div>
           )}
         </div>
+
+        {/* Add Post Adapter Plate — image-17 rule: ONLY for Soft Close (Polaris/Atlantic)
+            hinged to a wall or post. Not needed for glass-to-glass or Master Range. */}
+        {config.hardware === "polaris" && config.hingeFrom === "wall" && (
+          <div className="flex items-center gap-2 bg-muted/30 rounded-md p-3">
+            <Checkbox
+              id={`post-adapter-${spanId}`}
+              checked={config.postAdapterPlate ?? false}
+              onCheckedChange={(checked) => updateConfig({ postAdapterPlate: checked === true })}
+              data-testid={`gate-${spanId}-post-adapter`}
+            />
+            <label htmlFor={`post-adapter-${spanId}`} className="text-sm font-medium cursor-pointer flex-1">
+              Add Post Adapter Plate
+            </label>
+            <InfoTooltip content="Only required when hinging to 50–60mm square posts. Not needed for walls or larger posts." />
+          </div>
+        )}
       </div>
     </div>
   );

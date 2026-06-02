@@ -78,11 +78,20 @@ export default function FenceLogic() {
   const pendingSelectLast = useRef(false);
   // Oxworks-style 4-step wizard: current step (glass-pool-spigots only).
   const [currentStep, setCurrentStep] = useState<number>(1);
+  // Desktop (lg+) config scroller — the ONE scrolling region in the locked app shell.
+  // Mobile has no inner scroller (the document scrolls), so this ref is inert there.
+  const configScrollRef = useRef<HTMLDivElement>(null);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showProductMockup, setShowProductMockup] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   const [downloadPDFHandler, setDownloadPDFHandler] = useState<(() => void) | null>(null);
+  // MUST be a stable identity. An inline arrow here re-triggers FenceVisualization's
+  // registration effect every render, whose setState re-renders this page, looping
+  // forever (~85 full canvas redraws/sec) and killing scroll performance.
+  const handleDownloadPDFReady = useCallback((handler: () => void) => {
+    setDownloadPDFHandler(() => handler);
+  }, []);
 
   // Get URL params for pre-selecting product
   const urlParams = new URLSearchParams(window.location.search);
@@ -584,6 +593,14 @@ export default function FenceLogic() {
     return Math.round((completed / total) * 100);
   }, [design]);
 
+  // Landing mid-scroll on a step change reads as "the layout is broken" — always
+  // start a step (or a newly selected section) from the top. Desktop scrolls the
+  // config panel; mobile scrolls the document — resetting both covers both modes.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    configScrollRef.current?.scrollTo({ top: 0 });
+  }, [currentStep, selectedSpanId]);
+
   const isGlassSpigots = design.productVariant === "glass-pool-spigots";
   // Styles that run inside the Oxworks wizard (same format across them). Adding a
   // style here routes it through the 4-step wizard; its Step-2 config comes from
@@ -601,7 +618,15 @@ export default function FenceLogic() {
   const reviewVizHeight = Math.max(320, design.spans.length * 360);
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    // HYBRID SCROLL MODEL (operator-approved 2026-06-02, research-backed):
+    //  • Desktop (lg+): Tesla-style app shell. The page is LOCKED (h-screen +
+    //    overflow-hidden); header/stepper/elevation are fixed; the config region
+    //    below the elevation is the single scroller with an always-visible
+    //    scrollbar. Exactly one scroll context — not nested scrolling.
+    //  • Mobile (<lg): the DOCUMENT scrolls naturally and the elevation is sticky
+    //    against the viewport top. Internal scroll boxes are a documented touch
+    //    anti-pattern (Baymard "inline scroll areas"), so none exist on mobile.
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col bg-background">
       <AppHeader
         progress={progress}
         onSave={handleSave}
@@ -611,6 +636,7 @@ export default function FenceLogic() {
         isSaving={saveDesignMutation.isPending}
         productVariant={design.productVariant}
         showProgress={!isWizardVariant}
+        sticky={false}
       />
 
       {showRestoredBanner && (
@@ -625,35 +651,46 @@ export default function FenceLogic() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Wizard step bar — wizard variants (Oxworks model) */}
-        {isWizardVariant && (
-          <div className="shrink-0 border-b border-card-border bg-card px-4 py-3">
-            <div className="mx-auto w-full max-w-6xl">
-              <WizardStepper
-                steps={WIZARD_STEPS}
-                currentStep={currentStep}
-                onStepClick={(n) => setCurrentStep(n)}
-              />
-            </div>
+      {/* Wizard step bar — wizard variants (Oxworks model). Scrolls away with the
+          header so the pinned elevation + config get the full viewport. */}
+      {isWizardVariant && (
+        <div className="border-b border-card-border bg-card px-4 py-3">
+          <div className="mx-auto w-full max-w-[1600px]">
+            <WizardStepper
+              steps={WIZARD_STEPS}
+              currentStep={currentStep}
+              onStepClick={(n) => setCurrentStep(n)}
+            />
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Controls Panel — full width, scrollable. The elevation lives INSIDE this
-            scroll container as a sticky strip, so it stays frozen at the top while the
-            config below it scrolls (wizard Configure draws the active section). */}
-        <div className="flex-1 overflow-y-auto bg-card">
-          {showTopElevation && (
-            <div className="sticky top-0 z-20 border-b border-card-border bg-background" style={{ height: 300 }}>
-              <FenceVisualization
-                design={design}
-                activeSpanId={isWizardVariant ? (activeSpanId ?? selectedSpanId) : activeSpanId}
-                visibleSpanIds={showActiveOnly && activeVizSpan ? [activeVizSpan.spanId] : undefined}
-                onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
-              />
-            </div>
-          )}
-          <div className="mx-auto w-full max-w-6xl p-4 space-y-5">
+      {/* Frozen elevation.
+          Desktop: a fixed flex row in the locked shell (cannot move, ever).
+          Mobile: sticky against the viewport top while the document scrolls. */}
+      {showTopElevation && (
+        <div className="sticky top-0 z-20 lg:static shrink-0 border-b border-card-border bg-background h-[180px] lg:h-[300px] xl:h-[380px]">
+          <FenceVisualization
+            design={design}
+            activeSpanId={isWizardVariant ? (activeSpanId ?? selectedSpanId) : activeSpanId}
+            visibleSpanIds={showActiveOnly && activeVizSpan ? [activeVizSpan.spanId] : undefined}
+            // Let the drawing fill the strip (width/height bounds still apply) instead
+            // of the artificial 0.15 "mini render" cap — kills the dead space around
+            // the elevation on wide screens.
+            maxScale={0.25}
+            onDownloadPDFReady={handleDownloadPDFReady}
+          />
+        </div>
+      )}
+
+      {/* Config region.
+          Desktop: THE scroller (always-visible scrollbar; page itself is locked).
+          Mobile: flows in the document; the document scrolls. */}
+      <div
+        ref={configScrollRef}
+        className="flex-1 bg-card lg:min-h-0 lg:overflow-y-auto scrollbar-always"
+      >
+          <div className="mx-auto w-full max-w-[1600px] p-4 space-y-5">
             {isWizardVariant ? (
               <>
                 {/* ── Step 1 — Style & Measure ─────────────────────────────── */}
@@ -685,7 +722,7 @@ export default function FenceLogic() {
                 {currentStep === 2 && (() => {
                   const activeSpan = design.spans.find((s) => s.spanId === selectedSpanId) ?? design.spans[0];
                   return (
-                    <div className="grid gap-4 lg:grid-cols-[170px_1fr_300px] items-start">
+                    <div className="grid gap-4 lg:grid-cols-[170px_1fr_300px] xl:grid-cols-[200px_1fr_340px] items-start">
                       <SectionSwitcher
                         spans={design.spans.map((s) => ({ spanId: s.spanId, length: s.length, name: s.name }))}
                         activeId={activeSpan.spanId}
@@ -720,7 +757,7 @@ export default function FenceLogic() {
                       <FenceVisualization
                         design={design}
                         activeSpanId={activeSpanId ?? selectedSpanId}
-                        onDownloadPDFReady={(handler) => setDownloadPDFHandler(() => handler)}
+                        onDownloadPDFReady={handleDownloadPDFReady}
                       />
                     </div>
                     <div className="grid gap-4 lg:grid-cols-[1fr_300px] items-start">
@@ -891,7 +928,6 @@ export default function FenceLogic() {
               </>
             )}
           </div>
-        </div>
       </div>
 
       {/* Load Design Dialog */}

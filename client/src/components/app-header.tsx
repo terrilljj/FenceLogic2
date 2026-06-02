@@ -46,14 +46,16 @@ interface AppHeaderProps {
   productVariant?: ProductVariant;
   /** Hide the header % bar when a step wizard already shows progress. */
   showProgress?: boolean;
+  /** When false, the header scrolls away with the page (lets another element own the viewport top, e.g. a sticky elevation). */
+  sticky?: boolean;
 }
 
-export function AppHeader({ progress, onSave, onLoad, onReset, onDownloadPDF, isSaving = false, productVariant, showProgress = true }: AppHeaderProps) {
+export function AppHeader({ progress, onSave, onLoad, onReset, onDownloadPDF, isSaving = false, productVariant, showProgress = true, sticky = true }: AppHeaderProps) {
   const { theme, setTheme } = useTheme();
   const [, setLocation] = useLocation();
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
+    <header className={`border-b border-border bg-background/95 backdrop-blur-sm ${sticky ? "sticky top-0 z-50" : ""}`}>
       <div className="flex items-center justify-between p-4 gap-6">
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center gap-3">

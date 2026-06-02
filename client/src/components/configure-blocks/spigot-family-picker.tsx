@@ -33,7 +33,7 @@ function familyImageSrc(sku: string): string | undefined {
  */
 export function SpigotFamilyPicker({ families, value, onSelect, spanId }: SpigotFamilyPickerProps) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3" data-testid={`span-${spanId}-spigot-family-picker`}>
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5" data-testid={`span-${spanId}-spigot-family-picker`}>
       {families.map((f) => {
         const isActive = f.value === value;
         const img = familyImageSrc(f.imageSku);

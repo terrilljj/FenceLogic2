@@ -444,61 +444,82 @@ export function SpanConfigPanel({
 
   const layoutValidation = validatePanelLayout();
 
-  // Calculate optimal hinge panel size for Auto button
+  // Calculate optimal hinge panel size for Auto.
+  // HINGE-MATCH RULE (owner, 2026-06-02): the hinge panel and standard panels must
+  // form a single glass family — at most 2 distinct widths, exactly 50mm apart.
+  // Auto therefore runs the REAL layout algorithm (which enforces that rule) for
+  // each candidate hinge size and picks the one whose layout is most uniform —
+  // instead of comparing against a theoretical average that ignores the 50mm grid.
   const calculateOptimalHingePanelSize = (): number | undefined => {
     if (!span.gateConfig?.required || span.gateConfig.hingeFrom !== "glass") {
       return undefined;
     }
-    
+
     // Valid hinge panel sizes
     const validHingeSizes = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
-    
+
     const leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
     const rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
     const endGaps = leftEndGap + rightEndGap;
-    
-    const effectiveLength = span.length - endGaps;
-    const gateSize = span.gateConfig.gateSize;
-    const hingeGap = span.gateConfig.hingeGap || 20;
-    const latchGap = span.gateConfig.latchGap || 20;
-    const desiredGap = span.desiredGap;
-    
-    // Fixed components: gate + hinge gap + latch gap
-    const fixedGateAssembly = gateSize + hingeGap + latchGap;
-    const remainingSpace = effectiveLength - fixedGateAssembly;
-    
-    // Calculate how many standard panels will fit with max panel width
-    const maxPanelWidth = span.maxPanelWidth || 1400;
-    const minPanelWidth = 300;
-    
-    // Try different hinge sizes and find the one that gives best balanced layout
+
     let bestHingeSize = 1200; // default
     let bestScore = Infinity;
-    
+
     for (const hingeSize of validHingeSizes) {
-      // Space after hinge panel and its gap
-      const spaceAfterHinge = remainingSpace - hingeSize - desiredGap;
-      
-      // Calculate number of standard panels needed (ensure no panel exceeds max)
-      const numStandardPanels = Math.max(1, Math.ceil(spaceAfterHinge / (maxPanelWidth + desiredGap)));
-      
-      // Calculate average standard panel size
-      const totalGapsBetweenStandards = (numStandardPanels - 1) * desiredGap;
-      const spaceForStandards = spaceAfterHinge - totalGapsBetweenStandards;
-      const avgStandardSize = spaceForStandards / numStandardPanels;
-      
-      // Check if configuration is valid
-      if (avgStandardSize >= minPanelWidth && avgStandardSize <= maxPanelWidth) {
-        // Score: prefer panels closer to each other in size (balanced layout)
-        const sizeDiff = Math.abs(hingeSize - avgStandardSize);
-        
-        if (sizeDiff < bestScore) {
-          bestScore = sizeDiff;
-          bestHingeSize = hingeSize;
-        }
+      const layout = calculatePanelLayout(
+        span.length,
+        endGaps,
+        span.desiredGap,
+        span.maxPanelWidth,
+        span.leftRakedPanel?.enabled || false,
+        span.rightRakedPanel?.enabled || false,
+        {
+          required: true,
+          gateSize: span.gateConfig.gateSize,
+          hingePanelSize: hingeSize,
+          position: span.gateConfig.position,
+          flipped: span.gateConfig.flipped,
+          hingeFrom: span.gateConfig.hingeFrom,
+          hingeGap: span.gateConfig.hingeGap,
+          latchGap: span.gateConfig.latchGap,
+        },
+        span.customPanel?.enabled ? {
+          enabled: span.customPanel.enabled,
+          width: span.customPanel.width,
+          height: span.customPanel.height,
+          position: span.customPanel.position,
+        } : undefined
+      );
+
+      if (!layout.panels.length || !layout.panelTypes) continue;
+
+      // Score, in priority order:
+      //  1. Rule compliance — worst difference between hinge and any standard panel
+      //     (0 = all glass identical, 50 = within the rule, >50 = rule broken).
+      //  2. Fewer panels — a 1300 hinge with 4 panels beats a 600 hinge with 7.
+      //  3. Gaps closest to the user's target gap.
+      //
+      // PRIORITY ORDER (owner-corrected 2026-06-02): rule compliance is a HARD
+      // constraint, not the goal. Among rule-compliant candidates, FEWER (= larger)
+      // panels win — a 1600 hinge giving 6 big panels beats a 1300 hinge giving 7
+      // smaller ones, even though the all-1300 layout is "more equal".
+      const standards = layout.panels.filter((_, i) => layout.panelTypes![i] === "standard");
+      const maxDiff = standards.length > 0
+        ? Math.max(...standards.map((p) => Math.abs(p - hingeSize)))
+        : 0;
+      const ruleBroken = maxDiff > 50;
+      const score =
+        (ruleBroken ? 1_000_000 : 0) +
+        layout.panels.length * 1000 +
+        maxDiff +
+        Math.abs(layout.averageGap - span.desiredGap) / 100;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestHingeSize = hingeSize;
       }
     }
-    
+
     return bestHingeSize;
   };
   

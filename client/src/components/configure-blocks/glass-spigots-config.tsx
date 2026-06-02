@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from "react";
-import { Plus } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Pencil, Plus } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -83,14 +83,27 @@ const TIP = {
   midGap: "Target gap between adjacent panels. Panels adjust their width to accommodate this across the section.",
 };
 
-/** Numbered, single-open accordion for the spigot's number badge. */
-function SectionNumber({ n, title }: { n: number; title: string }) {
+/** Numbered accordion header: badge + title + a live one-line summary of the section's
+ *  current choices, with an explicit "edit" affordance. The summary + edit chip hide
+ *  while the section is expanded (progressive disclosure — collapsed rows read as
+ *  completed choices, e.g. "Madrid Pool · Polished · Base Plate · Concrete  ✎ edit"). */
+function SectionHeader({ n, title, summary }: { n: number; title: string; summary?: string }) {
   return (
-    <span className="flex items-center gap-2">
+    <span className="flex min-w-0 flex-1 items-center gap-2 pr-2">
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
         {n}
       </span>
-      <span className="text-sm font-medium">{title}</span>
+      <span className="shrink-0 text-sm font-medium">{title}</span>
+      {summary && (
+        <>
+          <span className="acc-summary min-w-0 flex-1 truncate text-left text-xs text-muted-foreground">
+            {summary}
+          </span>
+          <span className="acc-summary ml-auto flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
+            <Pencil className="h-3 w-3" /> edit
+          </span>
+        </>
+      )}
     </span>
   );
 }
@@ -233,8 +246,12 @@ export function GlassSpigotsConfig({
     if (gc?.required && gc.autoHingePanel && optimalHingePanelSize && gc.hingePanelSize !== optimalHingePanelSize) {
       updateSpan({ gateConfig: { ...gc, hingePanelSize: optimalHingePanelSize } });
     }
+    // span.panelLayout is a dep on purpose: the layout-recalc effect can clobber this
+    // update in the same flush (it spreads a stale span). Each layout write re-fires
+    // this effect so it re-applies until hinge === optimal — convergence is guaranteed
+    // because optimal does not depend on the current hinge size.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [optimalHingePanelSize, gc?.required, gc?.autoHingePanel, gc?.hingePanelSize]);
+  }, [optimalHingePanelSize, gc?.required, gc?.autoHingePanel, gc?.hingePanelSize, span.panelLayout]);
 
   // Spigot family + AS-3000 (SF-1 / ADR 0044). AS-3000 ON filters the family list
   // to Madrid Pool / Madrid / Insuluxe. Family is written to fieldValues for the solver.
@@ -259,16 +276,46 @@ export function GlassSpigotsConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFamily]);
 
+  // PROGRESSIVE DISCLOSURE (owner "top-1%" requirement): every sub-section starts
+  // COLLAPSED to a one-line summary of its current choices (defaults are sensible).
+  // Expanding is an explicit "edit"; choosing a spigot family auto-collapses again.
+  const [openSections, setOpenSections] = useState<string[]>([]);
+  const collapseSection = (section: string) => setOpenSections((prev) => prev.filter((s) => s !== section));
+
+  // Live summaries shown in the collapsed section headers.
+  const familyLabel = POOL_FAMILIES.find((f) => f.value === currentFamily)?.label ?? currentFamily;
+  const mountingLabel =
+    ({ "base-plate": "Base Plate", "core-drilled": "Core Drilled", "side-mounted": "Side Mounted" } as Record<string, string>)[
+      span.spigotMounting || "base-plate"
+    ];
+  const substrateLabel =
+    ({ concrete: "Concrete", timber: "Timber deck", steel: "Steel" } as Record<string, string>)[span.spigotSubstrate || "concrete"];
+  const spigotSummary = [familyLabel, FINISH_LABEL[currentFinish], mountingLabel, substrateLabel, as3000 ? "AS-3000" : null]
+    .filter(Boolean)
+    .join(" · ");
+  const configureSummary = `${span.maxPanelWidth}mm max panel · gaps ${span.leftGap?.enabled ? span.leftGap.size : 0} / ${span.desiredGap} / ${span.rightGap?.enabled ? span.rightGap.size : 0}`;
+  const addonItems = [
+    span.gateConfig?.required ? `Gate ${span.gateConfig.gateSize}` : null,
+    span.leftRakedPanel?.enabled ? `Left rake ${span.leftRakedPanel.height}H` : null,
+    span.rightRakedPanel?.enabled ? `Right rake ${span.rightRakedPanel.height}H` : null,
+    span.customPanel?.enabled ? `Custom ${span.customPanel.width}×${span.customPanel.height}` : null,
+  ].filter(Boolean);
+  const addonsSummary = addonItems.length ? addonItems.join(" · ") : "None — open to add a gate, raked or custom panel";
+
   return (
     <Accordion
       type="multiple"
-      defaultValue={["configure", "spigot", "addons"]}
+      value={openSections}
+      onValueChange={setOpenSections}
       className="rounded-md border border-card-border"
     >
       {/* 1. Configure — compact dropdown row: Max Panel Width | LHS | Mid | RHS */}
       <AccordionItem value="configure" className="border-b border-card-border px-3">
-        <AccordionTrigger className="py-2.5 hover:no-underline" data-testid={`span-${span.spanId}-accordion-configure`}>
-          <SectionNumber n={1} title="Configure" />
+        <AccordionTrigger
+          className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden"
+          data-testid={`span-${span.spanId}-accordion-configure`}
+        >
+          <SectionHeader n={1} title="Configure" summary={configureSummary} />
         </AccordionTrigger>
         <AccordionContent className="pb-3">
           <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
@@ -344,8 +391,11 @@ export function GlassSpigotsConfig({
 
       {/* 2. Spigot — kept near the top (owner request: simplest first choice). */}
       <AccordionItem value="spigot" className="border-b border-card-border px-3">
-        <AccordionTrigger className="py-2.5 hover:no-underline" data-testid={`span-${span.spanId}-accordion-spigot`}>
-          <SectionNumber n={2} title="Spigot" />
+        <AccordionTrigger
+          className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden"
+          data-testid={`span-${span.spanId}-accordion-spigot`}
+        >
+          <SectionHeader n={2} title="Spigot" summary={spigotSummary} />
         </AccordionTrigger>
         <AccordionContent className="space-y-3 pb-3">
           {/* AS-3000 compliance — filters the family list + sets the insulating default. */}
@@ -373,7 +423,12 @@ export function GlassSpigotsConfig({
             <SpigotFamilyPicker
               families={poolFamilies}
               value={currentFamily}
-              onSelect={(v) => updateSpan({ fieldValues: { ...span.fieldValues, "spigot-family": v } })}
+              onSelect={(v) => {
+                updateSpan({ fieldValues: { ...span.fieldValues, "spigot-family": v } });
+                // Progressive disclosure: family is THE choice — collapse back to the
+                // summary line. Finish/mounting/substrate stay editable via "edit".
+                collapseSection("spigot");
+              }}
               spanId={span.spanId}
             />
           </div>
@@ -449,8 +504,11 @@ export function GlassSpigotsConfig({
       {/* 3. Gate, raked & custom — "+ add" image-cards */}
       {(gateEnabled || rakedEnabled || customEnabled) && (
         <AccordionItem value="addons" className="px-3">
-          <AccordionTrigger className="py-2.5 hover:no-underline" data-testid={`span-${span.spanId}-accordion-addons`}>
-            <SectionNumber n={3} title="Gate, raked & custom" />
+          <AccordionTrigger
+            className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden"
+            data-testid={`span-${span.spanId}-accordion-addons`}
+          >
+            <SectionHeader n={3} title="Gate, raked & custom" summary={addonsSummary} />
           </AccordionTrigger>
           <AccordionContent className="pb-3">
             <div className="flex flex-wrap items-start gap-3">
