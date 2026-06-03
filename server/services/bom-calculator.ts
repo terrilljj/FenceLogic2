@@ -246,104 +246,110 @@ export function calculateComponents(
 
       return;
     }
-    // Blade Fencing
+    // Blade Fencing — full component emission (SF-5 / PTS-021 / inputs spec 2026-05-26).
+    // Black only (no finish picker); single 50×50 post family (no cross-range borrow —
+    // Blade inline IS 50×50, so corners + gates reuse the same post); FastFit brackets
+    // (no cap, no shroud); substrate drives post/cover/fixing; D&D gate kit is one SKU.
+    // The configure wizard shows all of this as hardware cards; this block is what makes
+    // the actual quote BOM match (the old block emitted only panels + posts).
     else if (isBladeFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
-      const bladeHeight = span.bladeHeight || "1200mm";
-      const bladeFinish = span.bladeFinish || "satin-black";
-      const bladePostType = span.bladePostType || "welded-base-plate";
-
-      const panelSpecs: Record<string, { width: number; height: number; sku: string }> = {
-        "1000mm": { width: 1700, height: 1000, sku: "BLADE-1000" },
-        "1200mm": { width: 2200, height: 1200, sku: "BLADE-1200" },
-      };
-      const spec = panelSpecs[bladeHeight];
-
-      const finishName = bladeFinish === "satin-black" ? "Satin Black (CN150A)" : "Pearl White (GA078A)";
-      const finishSku = bladeFinish === "satin-black" ? "CN150A" : "GA078A";
+      const STOCK_W = 2200;
+      const finishName = "Satin Black";
+      const substrate = (span.fieldValues?.["blade-substrate"] as string) || "decking";
+      const basePlated = substrate === "decking" || substrate === "concrete-slab";
+      const coreDrilled = substrate === "core-drilled";
 
       const panelTypes = span.panelLayout.panelTypes || [];
+
+      // 1. Panels (real storefront SKUs) — standard / cut. (Gate panel in the gate block.)
       span.panelLayout.panels.forEach((panelWidth: number, index: number) => {
         const panelType = panelTypes[index] || "standard";
-
-        if (panelType === "gate") {
+        if (panelType === "gate") return;
+        if (panelWidth === STOCK_W) {
           pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'gate', stock_width: String(spec.width), height: bladeHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `Blade Gate Panel ${bladeHeight} x ${panelWidth}mm (${finishName})`,
-              sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
-            },
-          );
-        } else if (panelWidth === spec.width) {
-          pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'standard', stock_width: String(spec.width), height: bladeHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `Blade Panel ${bladeHeight} x ${spec.width}mm (${finishName})`,
-              sku: `${spec.sku}-${spec.width}-${finishSku}`,
-            },
+            1, 'panel',
+            { type: 'standard', stock_width: String(STOCK_W), height: '1200mm', cut_width: String(panelWidth), finish: 'B' },
+            { description: `Blade Panel 2200 x 1200mm (${finishName})`, sku: `BLA-PNL-2200-1200-B` },
           );
         } else {
           pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'cut', stock_width: String(spec.width), height: bladeHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `Blade Panel ${bladeHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
-              sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
-            },
+            1, 'panel',
+            { type: 'cut', stock_width: String(STOCK_W), height: '1200mm', cut_width: String(panelWidth), finish: 'B' },
+            { description: `Blade Panel 1200H, cut to ${panelWidth}mm from 2200mm (${finishName})`, sku: `BLA-PNL-2200-1200-B` },
           );
         }
       });
 
-      const numPosts = span.panelLayout.gaps.length;
-      if (bladePostType === "welded-base-plate") {
+      const nonGatePanels = span.panelLayout.panels.filter((_: number, i: number) => (panelTypes[i] || "standard") !== "gate").length;
+      const hasGate = gatesAllowed && !!span.gateConfig?.required;
+      const numPosts = span.panelLayout.gaps.length;   // all posts are the same 50×50 family (incl. gate/corner)
+
+      // 2. FastFit brackets — 1 kit per panel (Blade-specific, no cap).
+      if (nonGatePanels > 0) {
         pushSlotOrFallback(
-          numPosts,
-          'post',
-          { height: '1300', finish: finishSku, mounting: 'welded-base-plate' },
-          {
-            description: `Blade 50x50mm Welded Base Plate Post 1300mm (${finishName})`,
-            sku: `BLADE-POST-WBP-1300-${finishSku}`,
-          },
-        );
-      } else {
-        const postLength = bladeHeight === "1200mm" ? 2400 : 1800;
-        pushSlotOrFallback(
-          numPosts,
-          'post',
-          { height: String(postLength), finish: finishSku, mounting: 'standard' },
-          {
-            description: `Blade 50x50mm Standard Post ${postLength}mm (${finishName})`,
-            sku: `BLADE-POST-STD-${postLength}-${finishSku}`,
-          },
+          nonGatePanels, 'bracket',
+          { type: 'fastfit', finish: 'B' },
+          { description: `Blade FastFit Open Bracket 4-pack (${finishName})`, sku: `FF-BH-OPEN-4PK-B` },
         );
       }
 
-      if (gatesAllowed && span.gateConfig?.required) {
-        const gateHeight = spec.height;
-        const gateWidth = span.gateConfig.gateSize || 975;
+      // 3. Posts + covers (substrate-driven). One 50×50 family — same SKU at corners/gates.
+      if (numPosts > 0) {
+        if (basePlated) {
+          pushSlotOrFallback(
+            numPosts, 'post',
+            { height: '1300', finish: 'B', mounting: 'base-plate' },
+            { description: `Blade 50×50 1300mm Base Plate Post (${finishName})`, sku: `SS-1300-BP-B` },
+          );
+          pushSlotOrFallback(
+            numPosts, 'post-cover',
+            { type: 'domical', finish: 'B' },
+            { description: `Blade 50×50 Domical Cover (${finishName})`, sku: `SS-DC-B` },
+          );
+        } else {
+          pushSlotOrFallback(
+            numPosts, 'post',
+            { height: '1800', finish: 'B', mounting: 'standard' },
+            { description: `Blade 50×50 1800mm Post (${finishName})`, sku: `SS-1800-B` },
+          );
+          if (coreDrilled) {
+            pushSlotOrFallback(
+              numPosts, 'post-cover',
+              { type: 'dress-ring', finish: 'B' },
+              { description: `Blade 50×50 Dress Ring (${finishName})`, sku: `XP-DR-B` },
+            );
+          }
+        }
+      }
 
+      // 4. Gate — panel + D&D bundled kit (Black, single SKU). Gate posts share the
+      //    inline 50×50 family (already counted in numPosts above).
+      if (hasGate) {
         pushSlotOrFallback(
-          1,
-          'hinge-set',
-          { gate_type: 'blade', height: String(gateHeight), width: String(gateWidth) },
-          {
-            description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
-            sku: `DD-HINGE-BLADE-${gateHeight}-${gateWidth}`,
-          },
+          1, 'panel',
+          { type: 'gate', height: '1200mm', width: String(span.gateConfig.gateSize || 975), finish: 'B' },
+          { description: `Blade Gate 975 x 1200mm (${finishName})`, sku: `BLA-GATE-0975-1200-B` },
         );
-
         pushSlotOrFallback(
-          1,
-          'latch-set',
-          { gate_type: 'blade', height: String(gateHeight), width: String(gateWidth) },
-          {
-            description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Blade Gate`,
-            sku: `DD-LATCH-BLADE-${gateHeight}-${gateWidth}`,
-          },
+          1, 'gate-hardware',
+          { gate_type: 'blade', finish: 'B' },
+          { description: `D&D Magna-Latch + TruClose Hinge Kit (Black, pool compliant)`, sku: `ML-TL-TC-H-AT` },
+        );
+      }
+
+      // 5. Fixings (substrate-driven, PTS-021): decking CSK 1 pack / 4 posts;
+      //    core-drilled Setfast grout 1 bag / 15 posts (+1 spare); else customer-sourced.
+      if (substrate === "decking" && numPosts > 0) {
+        pushSlotOrFallback(
+          Math.ceil(numPosts / 4), 'fixing',
+          { type: 'csk', substrate: 'decking' },
+          { description: `M10 x 100mm Countersunk Batten Screws 4-pack`, sku: `CSK-100-4PK` },
+        );
+      } else if (coreDrilled && numPosts > 0) {
+        pushSlotOrFallback(
+          Math.ceil(numPosts / 15) + (spanIndex === 0 ? 1 : 0), 'grout',
+          { type: 'setfast' },
+          { description: `Setfast Non-Shrink Grout 10kg (incl. spare)`, sku: `GROUT-SETFAST-10KG` },
         );
       }
 
