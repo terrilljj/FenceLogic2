@@ -1859,19 +1859,66 @@ export function calculateTubularPanelLayout(
   layoutMode: "full-panels-cut-end" | "equally-spaced",
   hasGate: boolean = false,
   gateSize: number = 1000,
-  gatePosition: number = 0
+  gatePosition: number = 0,
+  gateCentreFromLeft?: number | null
 ): PanelLayout {
   const TUBULAR_WIDTHS = {
     "2450mm": 2450,
     "3000mm": 3000,
   };
-  
+
   const standardPanelWidth = TUBULAR_WIDTHS[tubularPanelWidth];
   const post = 50; // 50mm square posts reduce span
   const MIN_PANEL = 200;
   const GATE_ALLOWANCE = 25; // Aluminium gate allowance
   // gateSize = clear opening (1000mm), actual gate panel = gateSize - GATE_ALLOWANCE
-  
+
+  // ── CENTRE MODE (owner 2026-06-03 — parity with the glass + Blade + BARR gates) ──
+  // The gate's CENTRE line is pinned at gateCentreFromLeft mm from the left end. The
+  // run splits at the gate; each side solves independently as a no-gate run.
+  if (hasGate && gateCentreFromLeft != null) {
+    const half = gateSize / 2;
+    const minCentre = post + half;
+    const maxCentre = spanLength - post - half;
+    const centre = Math.max(minCentre, Math.min(maxCentre, gateCentreFromLeft));
+    const leftRunLength = centre - half;
+    const rightRunLength = spanLength - centre - half;
+
+    const solveSide = (len: number): PanelLayout => {
+      if (len < post * 2 + MIN_PANEL) {
+        return {
+          panels: [],
+          gaps: len > 0 ? [len] : [0],
+          totalPanelWidth: 0,
+          totalGapWidth: Math.max(0, len),
+          averageGap: Math.max(0, len),
+          panelTypes: [],
+        };
+      }
+      return calculateTubularPanelLayout(len, tubularHeight, tubularPanelWidth, layoutMode, false, gateSize, 0);
+    };
+
+    const left = solveSide(leftRunLength);
+    const right = solveSide(rightRunLength);
+
+    const panels = [...left.panels, gateSize, ...right.panels];
+    const panelTypes: PanelType[] = [
+      ...((left.panelTypes ?? left.panels.map(() => "standard")) as PanelType[]),
+      "gate",
+      ...((right.panelTypes ?? right.panels.map(() => "standard")) as PanelType[]),
+    ];
+    const gaps = [...left.gaps, ...right.gaps];
+
+    return {
+      panels,
+      gaps,
+      totalPanelWidth: panels.reduce((sum, p) => sum + p, 0),
+      totalGapWidth: gaps.reduce((sum, g) => sum + g, 0),
+      averageGap: gaps.length > 0 ? gaps.reduce((sum, g) => sum + g, 0) / gaps.length : 0,
+      panelTypes,
+    };
+  }
+
   if (layoutMode === "full-panels-cut-end") {
     // Mode 1: Full panels + cut end
     if (hasGate) {

@@ -148,3 +148,36 @@ Blade timber-deck full-set, Blade core-drilled-gate (8/8). SERVER change → dev
 
 NOTE: the Blade BOM fix lands on the BARR branch (Blade wizard already merged in PR #38 with
 the BOM gap). Operator to decide at merge whether to split it into its own PR off main.
+
+## Flat Top Tubular (alu-pool-tubular) — BUILT 2026-06-04 (awaiting operator hands-on round)
+
+Vault sources (all read in full): sf-03-alu-pool-tubular-walk.md, alu-pool-tubular-calculator-inputs-spec.md.
+The most complex alu pool style. Built on the Blade/BARR visual template + full BOM emission.
+
+### Facts
+- **3 finishes: Black (B) / White (W) / Monument (MN)** — finish drives every SKU + range prefix.
+- **3000mm panel is Black-only**; White/Monument run 2450mm. Black gets a width selector (2450/3000);
+  the wide 3000 panel = fewer posts, cheaper per metre. Panels SS-FTP-2450-{B/W/MN} / SS-FTP-3000-B.
+- **Cross-range White posts/covers**: Black/Monument use Six Star SS-; White borrows Xpress XP-
+  (XP-1300-BP-W / XP-1800-FP-W posts, XP-DC-2P-W cover). Six Star never made a white post/cover.
+- **Shrouds = the bracket-equivalent**: SS-BH4-{finish} standard kit × 1 per panel.
+- **Horizontal swivel shrouds at ANGLED corners**: SS-BSWIV-HORIZ-{finish} × 4 per angled corner
+  (square 90° corners handled by the standard kit). Wizard has an "Angled corners" stepper.
+  Vertical swivel shroud + raked panels = V2 (not emitted).
+- Posts: SS-1300-BP-{B/MN}/XP-1300-BP-W (base-plate) / SS-1800-{B/MN}/XP-1800-FP-W (in-ground, core).
+  Caps included. Domical covers base-plated only.
+- **Finish-asymmetric gate hardware (Path C)**: B/MN = ML-TL-TC-H-AT (1 bundled kit); White =
+  ML-TL-W + TC-H-AT-2L-W (2 SKUs). Gate panel SS-FTG-0975-{finish}.
+- Fixings: decking SS-TS-100-{finish} tek screws × N posts; core grout CEIL(N/10)+1 spare
+  (tubular = 10 posts/bag, vs Blade/BARR 15 — per the tubular inputs spec; SF-5 flagged this
+  inconsistency for operator back-prop, unresolved); concrete-slab/in-ground customer-sourced.
+- Server: calculateTubularPanelLayout += gateCentreFromLeft (centre mode, glass parity); 50mm post.
+- BOM (server) rewritten to emit the full list (was panels + posts only). Dev server restart required.
+
+### Storefront blockers (operator batch-apply session, SF-3 D-010 cluster)
+- White cluster not placed: XP-DC-2P-W, TC-H-AT-2L-W, ML-TL-W (+ may need products rows).
+- Ghost-finish placements to clean (SS-TS-100-G/S, XP-DR-G), Primrose stale (D-009).
+
+### Open flags for operator
+- Grout 10/bag (tubular) vs 15/bag (Blade/BARR) — same post/hole; operator to reconcile.
+- Angled-corner swivel input is a manual stepper (V1) — matches inputs spec "number of corners" field.

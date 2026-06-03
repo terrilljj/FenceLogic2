@@ -67,57 +67,125 @@ describe("aluminium branches — slot resolution with template-literal fallback"
     });
   });
 
-  describe("alu-pool-tubular", () => {
+  describe("alu-pool-tubular — full BOM", () => {
+    it("Black timber deck: panels, shroud kits, posts, domical covers, tek screws", () => {
+      const design = makeAluminiumDesign("alu-pool-tubular", [2450, 2450], {
+        tubularHeight: "1200mm", tubularFinish: "black", tubularPanelWidth: "2450mm",
+        fieldValues: { "tubular-substrate": "decking" },
+      });
+      const skus = calculateComponents(design, [], []).map(c => c.sku);
+      expect(skus).toContain("SS-FTP-2450-B");     // panels
+      expect(skus).toContain("SS-BH4-B");          // shroud kits (bracket-equivalent)
+      expect(skus).toContain("SS-1300-BP-B");      // base-plate posts
+      expect(skus).toContain("SS-DC-B");           // domical covers
+      expect(skus).toContain("CSK-100-4PK");       // countersunk decking screws
+    });
+
+    it("Black 3000mm wide panel is emitted when chosen", () => {
+      const design = makeAluminiumDesign("alu-pool-tubular", [3000, 3000], {
+        tubularHeight: "1200mm", tubularFinish: "black", tubularPanelWidth: "3000mm",
+        fieldValues: { "tubular-substrate": "decking" },
+      });
+      const skus = calculateComponents(design, [], []).map(c => c.sku);
+      expect(skus).toContain("SS-FTP-3000-B");
+    });
+
+    it("White uses cross-range XP- posts/covers and 2-SKU gate hardware", () => {
+      const design = makeAluminiumDesign("alu-pool-tubular", [2450, 975, 2450], {
+        tubularHeight: "1200mm", tubularFinish: "white", tubularPanelWidth: "2450mm",
+        fieldValues: { "tubular-substrate": "decking" },
+        gateConfig: { required: true, gateSize: 975, position: 1, flipped: false,
+          hardware: "polaris", hingeFrom: "glass", latchTo: "glass", hingeGap: 20, latchGap: 20 },
+      });
+      (design.spans[0] as any).panelLayout.panelTypes = ["standard", "gate", "standard"];
+      const skus = calculateComponents(design, [], []).map(c => c.sku);
+      expect(skus).toContain("SS-FTP-2450-W");     // white panels
+      expect(skus).toContain("XP-1300-BP-W");      // cross-range white posts
+      expect(skus).toContain("XP-DC-2P-W");        // cross-range white domical cover
+      expect(skus).toContain("SS-FTG-0975-W");     // white gate panel
+      expect(skus).toContain("ML-TL-W");           // white latch (separate)
+      expect(skus).toContain("TC-H-AT-2L-W");      // white hinge pair (separate)
+      expect(skus).not.toContain("ML-TL-TC-H-AT"); // no bundled kit in white
+    });
+
+    it("Monument uses SS- posts and the Black bundled gate kit", () => {
+      const design = makeAluminiumDesign("alu-pool-tubular", [2450, 975, 2450], {
+        tubularHeight: "1200mm", tubularFinish: "monument", tubularPanelWidth: "2450mm",
+        fieldValues: { "tubular-substrate": "decking" },
+        gateConfig: { required: true, gateSize: 975, position: 1, flipped: false,
+          hardware: "polaris", hingeFrom: "glass", latchTo: "glass", hingeGap: 20, latchGap: 20 },
+      });
+      (design.spans[0] as any).panelLayout.panelTypes = ["standard", "gate", "standard"];
+      const skus = calculateComponents(design, [], []).map(c => c.sku);
+      expect(skus).toContain("SS-FTP-2450-MN");    // monument panels
+      expect(skus).toContain("SS-1300-BP-MN");     // monument SS posts
+      expect(skus).toContain("SS-DC-MN");          // monument cover
+      expect(skus).toContain("ML-TL-TC-H-AT");     // bundled kit (B/MN)
+    });
+
+    it("emits horizontal swivel shrouds at angled corners", () => {
+      const design = makeAluminiumDesign("alu-pool-tubular", [2450, 2450], {
+        tubularHeight: "1200mm", tubularFinish: "black", tubularPanelWidth: "2450mm",
+        fieldValues: { "tubular-substrate": "decking", "tubular-angled-corners": "2" },
+      });
+      const swivel = calculateComponents(design, [], []).find(c => c.sku === "SS-BSWIV-HORIZ-B");
+      expect(swivel).toBeDefined();
+      expect(swivel?.qty).toBe(8);                 // 4 per angled corner × 2
+    });
+  });
+
+  describe("alu-pool-tubular — slot resolution", () => {
     it("emits real slot SKU when 'panel' slot matches discriminators", () => {
       const products = [
         {
-          id: "p-tub-2400",
-          code: "TUB-FT-2400-BLK",
-          description: "Tubular Flat Top 1200H × 2400W, Black",
+          id: "p-tub-2450",
+          code: "SS-FTP-2450-B",
+          description: "Flat Top Panel 2450 × 1200, Black",
           price: "250",
         },
       ];
+      // BOM now sends real SKUs + finish code B/W/MN + 2450 stock (the wizard's model).
       const slots: SlotMapping[] = [
         {
-          internalId: "TUB-FT-2400-BLK",
+          internalId: "SS-FTP-2450-B",
           fieldName: "panel",
-          productId: "p-tub-2400",
-          label: "Tubular 1200 stock",
+          productId: "p-tub-2450",
+          label: "Flat Top 2450 stock",
           discriminatorAttributes: {
             type: "standard",
-            stock_width: "2400",
+            stock_width: "2450",
             height: "1200mm",
-            cut_width: "2400",
-            finish: "BLACK",
+            cut_width: "2450",
+            finish: "B",
           },
         },
       ];
 
-      const design = makeAluminiumDesign("alu-pool-tubular", [2400], {
+      const design = makeAluminiumDesign("alu-pool-tubular", [2450], {
         tubularHeight: "1200mm",
         tubularFinish: "black",
-        tubularPanelWidth: "2400mm",
-        tubularPostType: "welded-base-plate",
+        tubularPanelWidth: "2450mm",
+        fieldValues: { "tubular-substrate": "decking" },
       });
 
       const components = calculateComponents(design, slots, products);
-      const panelComp = components.find(c => c.sku === "TUB-FT-2400-BLK");
+      const panelComp = components.find(c => c.sku === "SS-FTP-2450-B");
       expect(panelComp).toBeDefined();
-      expect(panelComp?.description).toBe("Tubular Flat Top 1200H × 2400W, Black");
+      expect(panelComp?.description).toBe("Flat Top Panel 2450 × 1200, Black");
     });
 
-    it("falls back to template-literal SKU when no slot exists", () => {
-      const design = makeAluminiumDesign("alu-pool-tubular", [2400], {
+    it("falls back to the real storefront SKU when no slot exists", () => {
+      const design = makeAluminiumDesign("alu-pool-tubular", [2450], {
         tubularHeight: "1200mm",
         tubularFinish: "black",
-        tubularPanelWidth: "2400mm",
-        tubularPostType: "welded-base-plate",
+        tubularPanelWidth: "2450mm",
+        fieldValues: { "tubular-substrate": "decking" },
       });
 
       const components = calculateComponents(design, [], []);
-      const panelComp = components.find(c => c.sku === "TUBULAR-1200mm-2400-BLACK");
+      const panelComp = components.find(c => c.sku === "SS-FTP-2450-B");
       expect(panelComp).toBeDefined();
-      expect(panelComp?.description).toContain("Tubular Flat Top Panel 1200mm x 2400mm");
+      expect(panelComp?.description).toContain("Flat Top Panel 2450 x 1200mm");
     });
   });
 

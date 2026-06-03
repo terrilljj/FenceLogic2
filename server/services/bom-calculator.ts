@@ -530,111 +530,131 @@ export function calculateComponents(
 
       return;
     }
-    // Tubular Flat Top
+    // Tubular Flat Top — full component emission (SF-3 / PTS-024 / inputs spec 2026-05-25
+    // + SF-3 Path C lock). 3 finishes {Black, White, Monument}; finish drives every SKU
+    // and the range prefix (White borrows the Xpress XP- range; Black/Monument use Six
+    // Star SS-). 3000mm stock is Black-only. Shrouds are the tubular bracket-equivalent
+    // (SS-BH4 kit per panel); horizontal swivel shrouds at angled corners. Gate hardware
+    // is finish-asymmetric: B/MN = 1 bundled D&D kit, White = 2 separate SKUs.
     else if (isTubularFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
-      const tubularHeight = span.tubularHeight || "1200mm";
       const tubularFinish = span.tubularFinish || "black";
-      const tubularPanelWidth = span.tubularPanelWidth || "2400mm";
-      const tubularPostType = span.tubularPostType || "welded-base-plate";
-
-      const panelWidths: Record<string, number> = {
-        "2400mm": 2400,
-        "2450mm": 2450,
-        "3000mm": 3000,
-      };
-      const standardWidth = panelWidths[tubularPanelWidth];
-
-      const finishNames: Record<string, string> = {
-        "black": "Black",
-        "white": "White",
-        "monument": "Monument Grey",
-      };
-      const finishName = finishNames[tubularFinish];
-      const finishSku = tubularFinish.toUpperCase();
+      const code = tubularFinish === "black" ? "B" : tubularFinish === "white" ? "W" : "MN";
+      const finishName = tubularFinish === "black" ? "Black" : tubularFinish === "white" ? "White" : "Monument";
+      const isWhite = code === "W";
+      const substrate = (span.fieldValues?.["tubular-substrate"] as string) || "decking";
+      const basePlated = substrate === "decking" || substrate === "concrete-slab";
+      const coreDrilled = substrate === "core-drilled";
+      // Stock width: White/Monument are 2450 only; Black may use 2450 or 3000.
+      const stockWidth = (code === "B" && span.tubularPanelWidth === "3000mm") ? 3000 : 2450;
 
       const panelTypes = span.panelLayout.panelTypes || [];
+
+      // 1. Panels (real storefront SKUs) — standard / cut. (Gate panel in the gate block.)
       span.panelLayout.panels.forEach((panelWidth: number, index: number) => {
         const panelType = panelTypes[index] || "standard";
-
-        if (panelType === "gate") {
+        if (panelType === "gate") return;
+        const panelSku = stockWidth === 3000 ? `SS-FTP-3000-B` : `SS-FTP-2450-${code}`;
+        if (panelWidth === stockWidth) {
           pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'gate', stock_width: String(standardWidth), height: tubularHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `Tubular Flat Top Gate Panel ${tubularHeight} x ${panelWidth}mm (${finishName})`,
-              sku: `TUBULAR-GATE-${tubularHeight}-${panelWidth}-${finishSku}`,
-            },
-          );
-        } else if (panelWidth === standardWidth) {
-          pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'standard', stock_width: String(standardWidth), height: tubularHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `Tubular Flat Top Panel ${tubularHeight} x ${standardWidth}mm (${finishName})`,
-              sku: `TUBULAR-${tubularHeight}-${standardWidth}-${finishSku}`,
-            },
+            1, 'panel',
+            { type: 'standard', stock_width: String(stockWidth), height: '1200mm', cut_width: String(panelWidth), finish: code },
+            { description: `Flat Top Panel ${stockWidth} x 1200mm (${finishName})`, sku: panelSku },
           );
         } else {
           pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'cut', stock_width: String(standardWidth), height: tubularHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `Tubular Flat Top Panel ${tubularHeight} x ${panelWidth}mm (Cut from ${standardWidth}mm, ${finishName})`,
-              sku: `TUBULAR-CUT-${tubularHeight}-${panelWidth}-${finishSku}`,
-            },
+            1, 'panel',
+            { type: 'cut', stock_width: String(stockWidth), height: '1200mm', cut_width: String(panelWidth), finish: code },
+            { description: `Flat Top Panel 1200H, cut to ${panelWidth}mm from ${stockWidth}mm (${finishName})`, sku: panelSku },
           );
         }
       });
 
+      const nonGatePanels = span.panelLayout.panels.filter((_: number, i: number) => (panelTypes[i] || "standard") !== "gate").length;
+      const hasGate = gatesAllowed && !!span.gateConfig?.required;
       const numPosts = span.panelLayout.gaps.length;
-      if (tubularPostType === "welded-base-plate") {
+      const angledCorners = parseInt(String(span.fieldValues?.["tubular-angled-corners"] ?? "0"), 10) || 0;
+
+      // 2. Standard shroud kits — 1 per panel (the tubular bracket-equivalent).
+      if (nonGatePanels > 0) {
         pushSlotOrFallback(
-          numPosts,
-          'post',
-          { height: '1280', finish: finishSku, mounting: 'welded-base-plate' },
-          {
-            description: `Tubular Welded Base Plate Post 1280mm (${finishName})`,
-            sku: `TUBULAR-POST-WBP-1280-${finishSku}`,
-          },
-        );
-      } else {
-        const postLength = tubularHeight === "900mm" ? 1800 : 1800;
-        pushSlotOrFallback(
-          numPosts,
-          'post',
-          { height: String(postLength), finish: finishSku, mounting: 'standard' },
-          {
-            description: `Tubular Standard Post ${postLength}mm (${finishName})`,
-            sku: `TUBULAR-POST-STD-${postLength}-${finishSku}`,
-          },
+          nonGatePanels, 'shroud-kit',
+          { type: 'standard', finish: code },
+          { description: `Flat Top Shroud Kit 4-pack (${finishName})`, sku: `SS-BH4-${code}` },
         );
       }
 
-      if (gatesAllowed && span.gateConfig?.required) {
-        const gateHeight = tubularHeight === "1200mm" ? 1200 : 900;
-        const gateWidth = span.gateConfig.gateSize || 975;
-
+      // 3. Horizontal swivel shrouds — 4 per ANGLED (non-90°) corner (single-unit SKU).
+      if (angledCorners > 0) {
         pushSlotOrFallback(
-          1,
-          'hinge-set',
-          { gate_type: 'tubular', height: String(gateHeight), width: String(gateWidth) },
-          {
-            description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
-            sku: `DD-HINGE-TUBULAR-${gateHeight}-${gateWidth}`,
-          },
+          angledCorners * 4, 'shroud-swivel',
+          { type: 'horizontal', finish: code },
+          { description: `Flat Top Horizontal Swivel Shroud (${finishName})`, sku: `SS-BSWIV-HORIZ-${code}` },
         );
+      }
 
+      // 4. Posts (substrate-driven, cross-range White) + domical covers (base-plated only).
+      if (numPosts > 0) {
+        if (basePlated) {
+          pushSlotOrFallback(
+            numPosts, 'post',
+            { height: '1300', finish: code, mounting: 'base-plate' },
+            { description: `Flat Top 1300mm Base Plate Post (${finishName})`, sku: isWhite ? `XP-1300-BP-W` : `SS-1300-BP-${code}` },
+          );
+          pushSlotOrFallback(
+            numPosts, 'post-cover',
+            { type: 'domical', finish: code },
+            { description: `Flat Top Domical Cover (${finishName})`, sku: isWhite ? `XP-DC-2P-W` : `SS-DC-${code}` },
+          );
+        } else {
+          pushSlotOrFallback(
+            numPosts, 'post',
+            { height: '1800', finish: code, mounting: 'standard' },
+            { description: `Flat Top 1800mm Post (${finishName})`, sku: isWhite ? `XP-1800-FP-W` : `SS-1800-${code}` },
+          );
+        }
+      }
+
+      // 5. Gate — panel + finish-asymmetric D&D hardware (Path C).
+      if (hasGate) {
         pushSlotOrFallback(
-          1,
-          'latch-set',
-          { gate_type: 'tubular', height: String(gateHeight), width: String(gateWidth) },
-          {
-            description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm Tubular Gate`,
-            sku: `DD-LATCH-TUBULAR-${gateHeight}-${gateWidth}`,
-          },
+          1, 'panel',
+          { type: 'gate', height: '1200mm', width: String(span.gateConfig.gateSize || 975), finish: code },
+          { description: `Flat Top Gate 975 x 1200mm (${finishName})`, sku: `SS-FTG-0975-${code}` },
+        );
+        if (isWhite) {
+          pushSlotOrFallback(
+            1, 'gate-latch',
+            { gate_type: 'tubular', finish: 'W' },
+            { description: `D&D Magna-Latch Top Pull Lockable Latch (White)`, sku: `ML-TL-W` },
+          );
+          pushSlotOrFallback(
+            1, 'gate-hinge',
+            { gate_type: 'tubular', finish: 'W' },
+            { description: `D&D TruClose Self-Closing Hinge Pair (White)`, sku: `TC-H-AT-2L-W` },
+          );
+        } else {
+          pushSlotOrFallback(
+            1, 'gate-hardware',
+            { gate_type: 'tubular', finish: code },
+            { description: `D&D Magna-Latch + TruClose Hinge Kit (Black, pool compliant)`, sku: `ML-TL-TC-H-AT` },
+          );
+        }
+      }
+
+      // 6. Fixings — decking CSK 1 pack / 4 posts (operator ruling 2026-06-04, consistent
+      //    with Blade + BARR); core grout 1 bag / 10 posts (+1 spare; tubular is 10/bag);
+      //    concrete-slab + in-ground customer-sourced.
+      if (substrate === "decking" && numPosts > 0) {
+        pushSlotOrFallback(
+          Math.ceil(numPosts / 4), 'fixing',
+          { type: 'csk', substrate: 'decking' },
+          { description: `M10 x 100mm Countersunk Batten Screws 4-pack`, sku: `CSK-100-4PK` },
+        );
+      } else if (coreDrilled && numPosts > 0) {
+        pushSlotOrFallback(
+          Math.ceil(numPosts / 10) + (spanIndex === 0 ? 1 : 0), 'grout',
+          { type: 'setfast' },
+          { description: `Setfast Non-Shrink Grout 10kg (incl. spare)`, sku: `GROUT-SETFAST-10KG` },
         );
       }
 
