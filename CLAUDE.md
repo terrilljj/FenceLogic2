@@ -33,11 +33,27 @@ Powered by SolveLogic — a configurable BOM solver engine.
 
 ## Architecture decisions — DO NOT DEVIATE
 - BOM assembly MUST move server-side
-- Products NEVER go to client browser
 - Email gate MUST be enforced server-side
 - All /api/admin/* routes need auth middleware before handlers
 - POST /api/quote is the single endpoint: layout + BOM + lead capture
-- Response from /api/quote contains descriptions only, NO supplier SKUs
+
+## SKU / price exposure — UPDATED 2026-05-31 (owner decision, supersedes old "no SKU to client" rule)
+- SKUs and RETAIL prices are PUBLIC on the storefront (`/products/[cat]/[sub]/[sku]`
+  URLs + public `products.json` feed, no auth gate). Treating them as secret in the
+  calculator was redundant. The calculator MAY reference SKU-keyed assets (e.g. product
+  images from the storefront) and MAY show SKU/retail price on screen.
+- The retained protection is NOT secrecy — it is: never ship the full product+slot
+  catalog or the BOM assembly recipe (config → kit + quantities) to the client as one
+  machine-readable dump. Keep the solver server-side (correctness + defensibility).
+- If a non-retail price tier (trade/cost/margin) ever exists, THAT stays server-side.
+
+## Output & lead capture — owner policy (LEAD QUALITY, not secrecy)
+- Full deliverable (design + full SKU list + prices, packaged/downloadable) is EMAIL-ONLY:
+  it is SENT to the entered address so a real, deliverable inbox is required (a bounce =
+  tyre-kicker, not a lead). Do NOT render the full priced SKU plan on screen just because
+  an email was typed.
+- On screen: design/elevation + a BOM PREVIEW (descriptions). Full priced SKU plan → email.
+- The downloadable PDF is a PREVIEW — it must NOT contain the full SKU list + prices.
 
 ## Git workflow
 - Never commit directly to main

@@ -11,6 +11,7 @@ import { pdfRouter } from "./routes/pdf";
 import adminConfigRouter from "./routes/adminConfig";
 import adminSheetsRouter from "./routes/adminSheets";
 import { calculateComponents, stripSkus } from "./services/bom-calculator";
+import { computeSpanLayout } from "./services/layout/layout-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all fence designs for the current session
@@ -185,8 +186,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const quoteLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 30,
+    // The calculator quotes live as the user configures, so the cap must suit
+    // interactive use (client debounces to ~1 quote per settled change). Shorter
+    // window = quick recovery if ever tripped; higher max = real headroom.
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many quote requests, please try again later" },
@@ -198,6 +202,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many email requests, please try again later" },
+  });
+
+  // Panel layout endpoint — the layout solver runs SERVER-SIDE ONLY (IP protection).
+  // The client posts a span's raw configuration and receives only the computed result
+  // (panel widths/gaps/types + optimal hinge size). Fires on every settled config
+  // change (client debounces), so the cap is generous but still bounded.
+  const layoutLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 600,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many layout requests, please try again later" },
+  });
+
+  app.post("/api/layout", layoutLimiter, (req, res) => {
+    try {
+      const { productVariant, gatesAllowed, span } = req.body ?? {};
+      if (!productVariant || !span || typeof span.length !== "number") {
+        return res.status(400).json({ error: "Invalid layout request" });
+      }
+      const result = computeSpanLayout({ productVariant, gatesAllowed: !!gatesAllowed, span });
+      res.json(result);
+    } catch (error) {
+      console.error("Layout computation failed:", error);
+      res.status(500).json({ error: "Layout computation failed" });
+    }
   });
 
   // Server-side BOM quote endpoint — the single entry point for BOM assembly.

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { composeFenceSegments, CompositionInput } from "../../shared/calc/compose";
+import { composeFenceSegments, CompositionInput } from "../services/layout/calc/compose";
 
 describe("Regression Tests - Visual 5000mm Scenario", () => {
   describe("R1 - 5000mm with gate on LEFT (GLASS_TO_GLASS)", () => {

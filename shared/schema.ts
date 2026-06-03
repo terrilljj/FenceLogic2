@@ -441,6 +441,7 @@ export type PanelLayout = {
 // Span configuration
 export const spanConfigSchema = z.object({
   spanId: z.string(),
+  name: z.string().optional(), // Display-only section label (e.g. "North RHS"); not sent to the solver
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
   desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate
@@ -484,7 +485,13 @@ export const spanConfigSchema = z.object({
   hamptonsLayoutMode: z.enum(["full-panels-cut-end", "equally-spaced"]).optional(), // Hamptons panel layout mode
   hamptonsPostType: z.enum(["1-way", "2-way", "90-degree", "gate-post"]).optional(), // Hamptons post type
   spigotMounting: z.enum(["base-plate", "core-drilled", "side-mounted"]).default("base-plate"),
-  spigotColor: z.enum(["polished", "satin", "black", "white"]).default("polished"),
+  // "silver-grey" is Insuluxe-only (SF-1 §2.1 finish enum {B, SG, W}). Additive enum
+  // value — spans are stored as JSON so no migration; the slot solver reads fieldValues,
+  // not this legacy field, so BOM resolution is unaffected until the data pass maps it.
+  spigotColor: z.enum(["polished", "satin", "black", "white", "silver-grey"]).default("polished"),
+  // Per-section substrate — drives the SF-1 fixings matrix (substrate × mounting) and the
+  // raised-domical cross-rule. Optional; solver treats unset as "concrete" (most common pool case).
+  spigotSubstrate: z.enum(["concrete", "timber", "steel"]).optional(),
   channelMounting: z.enum(["wall", "ground"]).optional(), // For glass channel systems
   panelLayout: z.object({
     panels: z.array(z.number()),
@@ -530,6 +537,11 @@ export const spanConfigSchema = z.object({
     hingeGap: z.number(), // Gap on hinge side (varies by hardware and mounting)
     latchGap: z.number(), // Gap on latch side (varies by hardware and mounting)
     postAdapterPlate: z.boolean().default(false), // For Polaris/Atlantic: adds post adapter plate
+    // Precise gate placement (owner 2026-06-03): distance from the LEFT end of the run
+    // to the gate's CENTRE line (mm). When set, the run is split at the gate and each
+    // side is solved independently — e.g. centring a gate on a path to the pool.
+    // Undefined = position the gate by panel index (Move Left/Right) as before.
+    centreFromLeft: z.number().optional(),
   }).optional(),
   leftRakedPanel: z.object({
     enabled: z.boolean(),
@@ -928,6 +940,11 @@ export type InsertStyleFieldConstraint = z.infer<typeof insertStyleFieldConstrai
 export type StyleFieldConstraint = typeof styleFieldConstraints.$inferSelect;
 
 // Helper function to get gate gaps based on hardware and mounting type
+// Stock hinge-panel widths (12NH-* / 12NPH-* glass). The hinge panel is a STOCK item:
+// 600mm smallest, 1800mm largest, in these specific widths only. Used by the gate UI
+// dropdown (client) and the layout solver (server).
+export const STOCK_HINGE_PANEL_SIZES = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
+
 export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall"): { hingeGap: number; latchGap: number } {
   if (hardware === "master") {
     if (hingeFrom === "wall") {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { adviseEndGap, isEndGapFeasible, findClosestFeasibleEndGap } from '../../shared/calc/endgapAdvisor';
-import { CompositionInput } from '../../shared/calc/compose';
+import { adviseEndGap, isEndGapFeasible, findClosestFeasibleEndGap } from '../services/layout/calc/endgapAdvisor';
+import { CompositionInput } from '../services/layout/calc/compose';
 
 describe('EndGap Advisor', () => {
   describe('adviseEndGap', () => {

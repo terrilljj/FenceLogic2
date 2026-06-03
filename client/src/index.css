@@ -16,7 +16,7 @@
 
   --background: 210 4% 98%;
 
-  --foreground: 210 20% 12%;
+  --foreground: 214 33% 17%; /* BarrierHub navy (#1D2939) */
 
   --border: 210 12% 88%;
 
@@ -32,9 +32,9 @@
 
   --sidebar-border: 210 10% 86%;
 
-  --sidebar-primary: 210 85% 45%;
+  --sidebar-primary: 40 50% 57%; /* BarrierHub gold (#C9A45C) */
 
-  --sidebar-primary-foreground: 210 85% 98%;
+  --sidebar-primary-foreground: 40 50% 98%;
 
   --sidebar-accent: 210 12% 88%;
 
@@ -48,9 +48,9 @@
 
   --popover-border: 210 10% 84%;
 
-  --primary: 210 85% 45%;
+  --primary: 40 50% 57%; /* BarrierHub gold (#C9A45C) */
 
-  --primary-foreground: 210 85% 98%;
+  --primary-foreground: 40 50% 98%;
 
   --secondary: 210 8% 90%;
 
@@ -69,7 +69,7 @@
   --destructive-foreground: 0 75% 98%;
 
   --input: 210 18% 75%;
-  --ring: 210 85% 45%;
+  --ring: 40 50% 57%;
   --chart-1: 210 85% 35%;
   --chart-2: 280 65% 40%;
   --chart-3: 142 70% 35%;
@@ -150,9 +150,9 @@
 
   --sidebar-border: 210 15% 20%;
 
-  --sidebar-primary: 210 95% 65%;
+  --sidebar-primary: 40 55% 62%;
 
-  --sidebar-primary-foreground: 210 95% 10%;
+  --sidebar-primary-foreground: 40 50% 10%;
 
   --sidebar-accent: 210 18% 20%;
 
@@ -166,9 +166,9 @@
 
   --popover-border: 210 15% 24%;
 
-  --primary: 210 95% 65%;
+  --primary: 40 55% 62%; /* BarrierHub gold, dark-mode variant */
 
-  --primary-foreground: 210 95% 10%;
+  --primary-foreground: 40 50% 10%;
 
   --secondary: 210 16% 22%;
 
@@ -187,7 +187,7 @@
   --destructive-foreground: 210 10% 98%;
 
   --input: 210 18% 40%;
-  --ring: 210 95% 65%;
+  --ring: 40 55% 62%;
   --chart-1: 210 95% 70%;
   --chart-2: 280 75% 68%;
   --chart-3: 142 70% 65%;
@@ -324,5 +324,34 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
+  }
+}
+/* Always-visible scrollbar for the desktop config scroll panel (Baymard: internal
+   scroll regions MUST have a visible scrollbar — macOS overlay scrollbars hide by
+   default, so users can't tell the area scrolls). Applies wherever the element
+   actually overflows; inert on mobile where the panel doesn't scroll. */
+@layer utilities {
+  /* Firefox only — in Chrome, the standard scrollbar-width property OVERRIDES the
+     ::-webkit-scrollbar styles below and keeps macOS overlay (hidden) scrollbars. */
+  @supports (-moz-appearance: none) {
+    .scrollbar-always {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--muted-foreground) / 0.4) hsl(var(--muted));
+    }
+  }
+  .scrollbar-always::-webkit-scrollbar {
+    width: 12px;
+  }
+  .scrollbar-always::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 6px;
+  }
+  .scrollbar-always::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.4);
+    border-radius: 6px;
+    border: 2px solid hsl(var(--muted));
+  }
+  .scrollbar-always::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.6);
   }
 }

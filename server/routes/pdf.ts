@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { FenceDesign } from '../../shared/schema.js';
 import { createPdfDocument, renderQuotePdf } from '../pdf/render.js';
 import { calculateComponents, stripSkus } from '../services/bom-calculator.js';
+import { storage } from '../storage.js';
 
 export const pdfRouter = Router();
 
@@ -14,8 +15,33 @@ pdfRouter.post('/designs/pdf', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Missing or invalid design data' });
     }
 
-    // Compute BOM server-side (same as POST /api/quote)
-    const components = calculateComponents(design);
+    // Compute BOM server-side — load slot mappings + products exactly as
+    // POST /api/quote does, so the PDF BOM matches the on-screen BOM.
+    // Without these, every slot lookup misses and the PDF falls back to
+    // generic descriptions that diverge from the quote.
+    const [slotMappings, products] = await Promise.all([
+      design.productVariant
+        ? storage.getAllSlotsByVariant(design.productVariant)
+        : Promise.resolve([]),
+      storage.getAllProducts(),
+    ]);
+
+    const slotData = slotMappings.map(s => ({
+      internalId: s.internalId,
+      fieldName: s.fieldName,
+      productId: s.productId,
+      label: s.label,
+      discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
+    }));
+
+    const productData = products.map(p => ({
+      id: p.id,
+      code: p.code,
+      description: p.description,
+      price: p.price,
+    }));
+
+    const components = calculateComponents(design, slotData, productData);
     const bom = stripSkus(components);
 
     // Build PDF

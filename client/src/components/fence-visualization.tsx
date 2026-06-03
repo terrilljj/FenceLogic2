@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Box, Layers, Download } from "lucide-react";
@@ -7,10 +7,25 @@ import { FenceDesign } from "@shared/schema";
 interface FenceVisualizationProps {
   design: FenceDesign;
   activeSpanId?: string;
+  /** When set, only these spans are DRAWN (PDF/export still use the full design). */
+  visibleSpanIds?: string[];
+  /** Caps the elevation draw scale — lower = smaller "mini" render. Default 0.15. */
+  maxScale?: number;
   onDownloadPDFReady?: (handler: () => void) => void;
 }
 
-export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }: FenceVisualizationProps) {
+export function FenceVisualization({ design, activeSpanId, visibleSpanIds, maxScale = 0.15, onDownloadPDFReady }: FenceVisualizationProps) {
+  // Render-only filter: draw a subset of sections (e.g. the active run on the
+  // configure step) without changing the design used for PDF/export.
+  // Memoized on visibleKey (stable string), NOT visibleSpanIds (a fresh array each
+  // parent render) — otherwise renderDesign gets a new identity every render and the
+  // canvas draw effect below re-runs (bitmap reset + full redraw) on every re-render.
+  const visibleKey = visibleSpanIds?.join(",") ?? "";
+  const renderDesign: FenceDesign = useMemo(() => {
+    if (!visibleKey) return design;
+    const ids = visibleKey.split(",");
+    return { ...design, spans: design.spans.filter((s) => ids.includes(s.spanId)) };
+  }, [design, visibleKey]);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -163,19 +178,19 @@ export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }:
       objectsToRemove.forEach((obj) => sceneRef.current!.remove(obj));
 
       // Render new fence
-      renderFence(sceneRef.current, design, activeSpanId);
+      renderFence(sceneRef.current, renderDesign, activeSpanId);
     }
-  }, [design, activeSpanId, webglError, viewMode]);
+  }, [design, renderDesign, activeSpanId, webglError, viewMode, visibleKey]);
 
   useEffect(() => {
     if ((viewMode === "2d" || viewMode === "elevation") && canvasRef.current) {
       if (viewMode === "2d") {
-        render2DView(canvasRef.current, design, activeSpanId);
+        render2DView(canvasRef.current, renderDesign, activeSpanId);
       } else {
-        renderElevationView(canvasRef.current, design, activeSpanId);
+        renderElevationView(canvasRef.current, renderDesign, activeSpanId, maxScale);
       }
     }
-  }, [design, activeSpanId, viewMode]);
+  }, [design, renderDesign, activeSpanId, viewMode, visibleKey, maxScale]);
 
   const handleResetView = () => {
     if (cameraRef.current && viewMode === "3d") {
@@ -225,12 +240,14 @@ export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }:
     }
   };
 
-  // Expose download handler to parent component
+  // Expose download handler to parent component.
+  // Re-register when `design` changes so the handler PDFs the current design,
+  // not the mount-time snapshot. The parent stores it (does not invoke it).
   useEffect(() => {
     if (onDownloadPDFReady) {
       onDownloadPDFReady(handleDownloadPDF);
     }
-  }, [onDownloadPDFReady]);
+  }, [onDownloadPDFReady, design]);
 
   // Fallback: Browser-based PDF (old method)
   const handleDownloadPDFBrowser = () => {
@@ -477,12 +494,6 @@ export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }:
         </div>
       )}
 
-      {viewMode === "elevation" && (
-        <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-md p-3 text-sm">
-          <p className="text-muted-foreground">Side elevation view</p>
-        </div>
-      )}
-
       {webglError && viewMode === "3d" && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center p-8">
@@ -498,7 +509,7 @@ export function FenceVisualization({ design, activeSpanId, onDownloadPDFReady }:
   );
 }
 
-function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpanId?: string) {
+function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, activeSpanId?: string, maxScale: number = 0.15) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
@@ -527,13 +538,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
   // Calculate scaling - each span gets its own horizontal section
   const longestSpan = Math.max(...design.spans.map(span => span.length));
-  const scale = Math.min((rect.width - 150) / longestSpan, 0.15);
-  
+
   // Drawing constants
   const panelHeight = 1200; // 1200mm standard height (fallback)
   const startX = 100;
-  
-  // Find max panel height including raked panels, custom panels, and auto-calc config
+
+  // Find max panel height including raked panels, custom panels, and auto-calc config.
+  // Computed BEFORE the scale so the scale can also be bounded by the box height.
   let maxPanelHeight = panelHeight;
   design.spans.forEach(span => {
     // Check auto-calc config panel height (for custom-frameless)
@@ -550,6 +561,16 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       maxPanelHeight = span.customPanel.height;
     }
   });
+
+  // Scale: bounded by width, the maxScale cap, AND the available HEIGHT so a tall
+  // raked/custom section shrinks to fit instead of clipping the bottom gap labels.
+  const numRenderSpans = Math.max(1, design.spans.length);
+  const widthScale = (rect.width - 150) / longestSpan;
+  const heightScale = Math.min(
+    (rect.height - 103 - (numRenderSpans - 1) * 250) / maxPanelHeight,
+    (rect.height - (numRenderSpans - 1) * 80 - 103) / (numRenderSpans * maxPanelHeight),
+  );
+  const scale = Math.max(0.02, Math.min(widthScale, maxScale, heightScale));
   
   // Dynamic vertical spacing based on tallest panel to ensure panels don't overlap
   const spanVerticalSpacing = Math.max(250, (maxPanelHeight * scale) + 80);
@@ -583,13 +604,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
     // Calculate Y position for this span (stacked vertically)
     const groundLevel = startY + (spanIndex * spanVerticalSpacing);
-    let currentX = startX;
+    // Centre the fence horizontally in the canvas (fall back to left margin if it's
+    // wider than the canvas). The section label stays pinned at the far left.
+    const spanContentWidth = span.length * scale;
+    const drawStartX = Math.max(startX, (rect.width - spanContentWidth) / 2);
+    let currentX = drawStartX;
 
     // Draw section label - cleaner typography
     ctx.fillStyle = isActive ? "#3b82f6" : "#374151";
     ctx.font = "600 15px Inter";
     ctx.textAlign = "left";
-    ctx.fillText(`Section ${span.spanId}`, 10, groundLevel - 100);
+    ctx.fillText(span.name?.trim() || `Section ${span.spanId}`, 10, groundLevel - 100);
     
     // Total section length (under the section label) - cleaner
     ctx.fillStyle = "#6b7280";
@@ -619,8 +644,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
-    } else if (span.gateConfig?.required) {
-      // Override end gaps based on gate configuration (glass fencing only)
+    } else if (span.gateConfig?.required && span.gateConfig.centreFromLeft == null) {
+      // Override end gaps based on gate configuration (glass fencing only).
+      // Skipped when the gate is CENTRED (centreFromLeft set): the gate sits mid-run
+      // regardless of its position index, so the real left/right end gaps apply.
       const latchGap = span.gateConfig.latchGap || 9;
       const hingeGap = span.gateConfig.hingeGap || 9;
       
@@ -667,8 +694,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     ctx.strokeStyle = "#c0c0c0";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(startX - 20, groundLevel + spigotGap);
-    ctx.lineTo(startX + (span.length * scale) + 20, groundLevel + spigotGap);
+    ctx.moveTo(drawStartX - 20, groundLevel + spigotGap);
+    ctx.lineTo(drawStartX + (span.length * scale) + 20, groundLevel + spigotGap);
     ctx.stroke();
 
     // Draw left gap if present
@@ -1071,8 +1098,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillText("127mm", currentX + scaledPanelWidth, groundLevel + 20);
         
       } else if (isLeftRaked || isRightRaked) {
-        // Glass panels - raked
-        ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
+        // Glass panels - raked. Distinct AMBER so raked panels read differently from
+        // standard (blue) / gate (purple) / hinge (green) / custom (orange) at a glance.
+        ctx.fillStyle = "#f7ecc3";
         ctx.globalAlpha = 1;
         // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
         // For left raked: high on left (400mm), slopes down on right
@@ -1098,8 +1126,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         }
         ctx.closePath();
         ctx.fill();
-        
-        ctx.strokeStyle = isHinge ? "#a4e8b8" : isGate ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
+
+        // Amber border to match the raked fill
+        ctx.strokeStyle = "#e3d194";
         ctx.lineWidth = 1.5;
         ctx.stroke();
       } else {
@@ -1114,55 +1143,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
       }
 
-      // Panel width dimension line with arrows
-      const dimLineY = groundLevel + 35;
-      ctx.strokeStyle = "#666";
-      ctx.lineWidth = 1;
-      
-      // Horizontal dimension line
-      ctx.beginPath();
-      ctx.moveTo(currentX, dimLineY);
-      ctx.lineTo(currentX + scaledPanelWidth, dimLineY);
-      ctx.stroke();
-      
-      // Left arrow
-      ctx.beginPath();
-      ctx.moveTo(currentX, dimLineY);
-      ctx.lineTo(currentX + 5, dimLineY - 3);
-      ctx.lineTo(currentX + 5, dimLineY + 3);
-      ctx.closePath();
-      ctx.fillStyle = "#666";
-      ctx.fill();
-      
-      // Right arrow
-      ctx.beginPath();
-      ctx.moveTo(currentX + scaledPanelWidth, dimLineY);
-      ctx.lineTo(currentX + scaledPanelWidth - 5, dimLineY - 3);
-      ctx.lineTo(currentX + scaledPanelWidth - 5, dimLineY + 3);
-      ctx.closePath();
-      ctx.fill();
-      
-      // Vertical tick marks
-      ctx.beginPath();
-      ctx.moveTo(currentX, groundLevel + 30);
-      ctx.lineTo(currentX, dimLineY + 5);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(currentX + scaledPanelWidth, groundLevel + 30);
-      ctx.lineTo(currentX + scaledPanelWidth, dimLineY + 5);
-      ctx.stroke();
-
-      // Panel width dimension label - skip for semi-frameless (shown on panel itself)
-      if (!isSemiFrameless) {
-        ctx.fillStyle = "#374151";
-        ctx.font = "600 11px Inter";
-        ctx.textAlign = "center";
-        ctx.fillText(
-          `${currentPanelWidth}`,
-          currentX + scaledPanelWidth / 2,
-          dimLineY + 16
-        );
-      }
+      // Panel width is annotated ONCE — on the glass panel itself (below).
+      // The lower dimension strip carries GAP numbers only (left/between/right),
+      // so the panel size is not repeated. (Owner gripe: elevation must not duplicate panel size.)
 
       // Panel width label on the panel itself - number and type
       ctx.fillStyle = "#000000";
@@ -1170,8 +1153,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.textAlign = "center";
       
       // For semi-frameless, show panel size and opening width - positioned at ¼ points
+      // Raked panels are ALWAYS 1200 wide — their variable is HEIGHT, so the label
+      // shows the user-selected height (e.g. "1500H"), not the width.
       let widthLabel = `${currentPanelWidth}${isRaked ? 'H' : ''}`;
-      if (isSemiFrameless) {
+      if (isLeftRaked || isRightRaked) {
+        widthLabel = `${isLeftRaked ? leftRaked : rightRaked}H`;
+      } else if (isSemiFrameless) {
         widthLabel = `${currentPanelWidth}`; // Just the panel size number
       } else if (isCustom && span.customPanel?.enabled) {
         widthLabel = `${currentPanelWidth}x${span.customPanel.height}`;
@@ -1470,7 +1457,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     if (design.productVariant === "semi-frameless-1800") {
       const midRailHeight = 1000 * scale; // Mid-rail at 1000mm from ground
       const railHeight = 4; // Rail thickness
-      const railStartX = startX + (leftGapSize * scale);
+      const railStartX = drawStartX + (leftGapSize * scale);
       const railEndX = currentX - (rightGapSize * scale);
       const railY = groundLevel - midRailHeight;
       
@@ -1505,7 +1492,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       // Rail runs across the entire span length at the top of panels
       const railY = groundLevel - (maxPanelHeight * scale) - 5; // 5px above panels for visibility
       const railHeight = 3; // Thin rail
-      const railStartX = startX + (leftGapSize * scale);
+      const railStartX = drawStartX + (leftGapSize * scale);
       const railEndX = currentX - (rightGapSize * scale);
       
       // Draw rail with a distinct color based on material
@@ -1541,7 +1528,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       const channelHeight = 50 * scale;  // Channel height
       const channelDepth = 80 * scale;   // Channel depth/thickness
       const channelGap = 50 * scale;     // 50mm gap below glass (same as spigot)
-      const channelStartX = startX + scaledLeftGap;
+      const channelStartX = drawStartX + scaledLeftGap;
       const channelEndX = currentX;
       const channelWidth = channelEndX - channelStartX;
       

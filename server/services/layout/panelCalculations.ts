@@ -1,4 +1,4 @@
-import { PanelLayout, PanelType } from "./schema";
+import { PanelLayout, PanelType } from "@shared/schema";
 import { equalizePanels } from "./calc/equalize";
 
 /**
@@ -32,13 +32,22 @@ export function calculatePanelLayout(
     hingeFrom?: "glass" | "wall";
     hingeGap?: number;
     latchGap?: number;
+    /** When false, the hinge panel is a deliberate manual size (e.g. a narrow hinge to
+     *  position the gate) and the HINGE-MATCH RULE is disabled — standard panels
+     *  equalise independently. Undefined/true = rule applies (match panel sizes). */
+    autoHingePanel?: boolean;
   },
   customPanelConfig?: {
     enabled: boolean;
     width: number;
     height: number;
     position: number;
-  }
+  },
+  /** Hinge-match hint for centred-gate sub-runs: the hinge panel arrives as
+   *  customPanelConfig (there is no gate in the sub-run), and this is its width.
+   *  Variable panels then prefer the {width, ±50mm} family — same owner rule as
+   *  the gateConfig path. */
+  matchPanelWidth?: number
 ): PanelLayout {
   const effectiveLength = spanLength - endGaps;
   const MIN_PANEL = 200;
@@ -81,8 +90,9 @@ export function calculatePanelLayout(
   
   const totalFixedPanelSpace = rakedPanelSpace + gateSpace + customPanelSpace;
 
-  // Single panel case (no raked panels, no gate)
-  if (numRakedPanels === 0 && !hasGate && effectiveLength >= MIN_PANEL && effectiveLength <= MAX_PANEL) {
+  // Single panel case (no raked panels, no gate, no custom panel — a custom/fixed
+  // panel must go through the main loop so it keeps its type and width).
+  if (numRakedPanels === 0 && !hasGate && !hasCustomPanel && effectiveLength >= MIN_PANEL && effectiveLength <= MAX_PANEL) {
     const roundedPanel = Math.round(effectiveLength / PANEL_INCREMENT) * PANEL_INCREMENT;
     if (roundedPanel === effectiveLength) {
       return {
@@ -124,7 +134,16 @@ export function calculatePanelLayout(
   const minVariablePanels = (numRakedPanels === 0 && !hasGate && !hasCustomPanel) ? 2 : 0;
   const maxSpaceForVariables = effectiveLength - totalFixedPanelSpace;
   const maxPossibleVariablePanels = Math.floor(maxSpaceForVariables / MIN_PANEL);
-  
+
+  // TWO PASSES (owner bug 2026-06-03: mid gap 99 on a 5m run returned NO layout):
+  // Pass 1 (strict) keeps the historical behaviour — panels must leave at least the
+  // requested gap space, so any input that worked before produces the exact same
+  // layout. Pass 2 (relaxed) runs ONLY when pass 1 finds nothing: panels are allowed
+  // to overshoot the requested gap space (gaps land BELOW the target), growing onto
+  // the 50mm grid so the per-gap cap (99mm) is still respected.
+  for (const relaxed of [false, true]) {
+  if (relaxed && bestLayout) break;
+
   // Try different numbers of variable panels
   for (let numVariablePanels = minVariablePanels; numVariablePanels <= maxPossibleVariablePanels; numVariablePanels++) {
     const numGatePanels = hasGate ? (isWallMounted ? 1 : 2) : 0; // Wall-mounted: 1 panel, Glass-to-glass: 2 panels
@@ -174,8 +193,54 @@ export function calculatePanelLayout(
     
     // Build variable panel array
     let variablePanels: number[] = [];
-    
-    if (numVariablePanels > 0) {
+
+    // HINGE-MATCH RULE (owner, 2026-06-02): with a glass-to-glass gate, the hinge
+    // panel and the standard panels must read as ONE family of glass — at most 2
+    // distinct widths across {hinge, standards}, exactly 50mm apart (e.g. hinge
+    // 1600 with standards 1600/1650, never a third size). Matched layouts are
+    // strongly preferred in scoring; when the geometry makes a match impossible
+    // (the hinge size is user-fixed), the equalized fallback below still runs so
+    // a layout is always produced.
+    let hingeMatched = false;
+
+    // The rule is OFF when the hinge size is a deliberate manual choice (autoHingePanel
+    // === false) — e.g. a narrow hinge panel used to position the gate. Standards then
+    // equalise independently instead of shrinking to match the hinge.
+    const hingeMatchApplies = hasGate && !isWallMounted && gateConfig !== undefined && gateConfig.autoHingePanel !== false;
+    // Same rule for a centred-gate hinge sub-run (hinge passed as a fixed custom panel).
+    const matchTargetWidth = hingeMatchApplies && gateConfig ? gateConfig.hingePanelSize : matchPanelWidth;
+
+    if (numVariablePanels > 0 && matchTargetWidth !== undefined) {
+      const h = matchTargetWidth;
+      let best: number[] | null = null;
+      let bestDiff = Infinity;
+      // Panels may undershoot the target (gaps absorb the difference, validated later)
+      // but never overshoot past the 2mm rounding allowance. The gate path keeps its
+      // historical 100mm allowance; the sub-run path is bounded by what its gaps can
+      // genuinely absorb so a matched-but-invalid candidate can't shadow a valid
+      // equalized one at the same panel count.
+      const maxUndershoot = hasGate ? 100 : Math.min(100, numGaps * (MAX_GAP - targetGap) + 2);
+      // Candidate second size: same as hinge, one 50mm step up, one step down.
+      for (const alt of [h, h + PANEL_INCREMENT, h - PANEL_INCREMENT]) {
+        if (h < MIN_PANEL || h > MAX_PANEL || alt < MIN_PANEL || alt > MAX_PANEL) continue;
+        const kMax = alt === h ? 0 : numVariablePanels;
+        for (let k = 0; k <= kMax; k++) {
+          const total = (numVariablePanels - k) * h + k * alt;
+          const diff = totalVariablePanelWidth - total;
+          if (diff < -2 || diff > maxUndershoot) continue;
+          if (Math.abs(diff) < bestDiff) {
+            bestDiff = Math.abs(diff);
+            best = [...Array(numVariablePanels - k).fill(h), ...Array(k).fill(alt)];
+          }
+        }
+      }
+      if (best) {
+        variablePanels = best;
+        hingeMatched = true;
+      }
+    }
+
+    if (numVariablePanels > 0 && !hingeMatched) {
       // Use equalizePanels to distribute panels on 50mm grid
       const equalizeResult = equalizePanels({
         targetMm: totalVariablePanelWidth,
@@ -248,6 +313,21 @@ export function calculatePanelLayout(
       }
     }
     
+    // RELAXED pass only: the equalized/matched panels undershoot the target-gap space.
+    // If that leaves more gap space than the gaps can legally hold (numGaps × 99mm),
+    // grow panels by 50mm increments until the gaps come back inside the cap.
+    if (relaxed && numVariablePanels > 0 && variablePanels.length > 0) {
+      let gapSpace = effectiveLength - totalFixedPanelSpace - variablePanels.reduce((s, p) => s + p, 0);
+      let guard = 0;
+      while (gapSpace > numGaps * MAX_GAP && guard < 200) {
+        const growable = variablePanels.findIndex((p) => p + PANEL_INCREMENT <= MAX_PANEL);
+        if (growable === -1) break;
+        variablePanels[growable] += PANEL_INCREMENT;
+        gapSpace -= PANEL_INCREMENT;
+        guard++;
+      }
+    }
+
     // Assemble final panel array with raked panels and gate in correct positions
     let finalPanels: number[] = [];
     let panelTypes: PanelType[] = [];
@@ -341,9 +421,10 @@ export function calculatePanelLayout(
     // If actualTotalGapWidth < totalGapWidth, panels are too big and will create negative variance
     const gapDeficit = totalGapWidth - actualTotalGapWidth;
     
-    // STRICT: Only accept configurations where we have AT LEAST the required gap space
-    // Allow max 2mm deficit for floating point rounding errors only
-    if (gapDeficit > 2) {
+    // STRICT pass: only accept configurations with AT LEAST the required gap space
+    // (max 2mm deficit for floating point rounding). The RELAXED pass allows panels
+    // to eat into the requested gap space — gaps simply end up smaller than asked.
+    if (!relaxed && gapDeficit > 2) {
       continue; // Panels are too large, skip this configuration
     }
     
@@ -352,8 +433,14 @@ export function calculatePanelLayout(
     // Increased tolerance to account for panel equalization rounding (up to 100mm variance is acceptable)
     const tolerance = 100;
     
-    if (actualTotalGapWidth >= totalGapWidth - 2 && Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance) {
-      const actualGap = actualTotalGapWidth / numGaps;
+    const gapSpaceAcceptable = relaxed
+      ? actualTotalGapWidth >= 0
+      : actualTotalGapWidth >= totalGapWidth - 2 && Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance;
+
+    if (gapSpaceAcceptable) {
+      // Guard the zero-gap case (a single fixed/custom panel filling the run exactly):
+      // 0/0 = NaN would wrongly fail the gap-range check below.
+      const actualGap = numGaps > 0 ? actualTotalGapWidth / numGaps : 0;
       
       if (actualGap >= MIN_GAP && actualGap <= MAX_GAP) {
         // VALIDATE GATE GAPS FIRST (before scoring)
@@ -404,8 +491,13 @@ export function calculatePanelLayout(
         const hasRequiredComponents = (hasGate || hasCustomPanel) ? (numGatePanels + numCustomPanels > 0 ? 0 : 1000) : 0;
         const panelSizeScore = -Math.max(...finalPanels);
         const gapDiffPenalty = Math.abs(actualGap - targetGap) * 10;
+        // HINGE-MATCH RULE: a gate layout whose standard panels don't form a 2-size,
+        // 50mm-apart family with the hinge panel always loses to one that does.
+        // 50000 dwarfs every other score component, so matched layouts win whenever
+        // one exists; if none exists, the best unmatched layout still returns.
+        const hingeMatchPenalty = (matchTargetWidth !== undefined && numVariablePanels > 0 && !hingeMatched) ? 50000 : 0;
         // Increased panel count penalty from 100 to 500 to strongly prefer fewer panels
-        const score = hasRequiredComponents + totalPanels * 500 + panelSizeScore + gapDiffPenalty;
+        const score = hasRequiredComponents + totalPanels * 500 + panelSizeScore + gapDiffPenalty + hingeMatchPenalty;
         
         if (score < bestScore) {
           bestScore = score;
@@ -551,6 +643,8 @@ export function calculatePanelLayout(
     }
   }
 
+  } // end strict→relaxed pass loop
+
   return bestLayout || {
     panels: [],
     gaps: [],
@@ -558,6 +652,313 @@ export function calculatePanelLayout(
     totalGapWidth: 0,
     averageGap: 0,
   };
+}
+
+// Stock hinge-panel widths come from @shared/schema (the UI dropdown also needs them).
+import { STOCK_HINGE_PANEL_SIZES } from "@shared/schema";
+
+/**
+ * GATE CENTRE OVERRIDE (owner 2026-06-03) — places a glass-to-glass gate so its
+ * CENTRE line sits at (or within ~25mm of) `centreFromLeft` mm from the left end of
+ * the run (e.g. centring the gate on a path to the pool). The run is SPLIT at the
+ * gate and each side is solved as an independent sub-run, then stitched together:
+ *
+ *   [left panels (+hinge)] [hinge/latch gap] [GATE] [latch/hinge gap] [right panels]
+ *
+ * Hinge side follows `flipped` (true = hinge LEFT of gate). The hinge panel is
+ * ALWAYS a stock width (STOCK_HINGE_PANEL_SIZES):
+ *  • match ON (autoHingePanel !== false): the solver tries each stock width and keeps
+ *    the one whose side solves best (fewest panels, hinge closest to its neighbours).
+ *  • match OFF: the user's manual hinge width is used as-is.
+ *
+ * MICRO-OFFSET SEARCH: fixed end gaps + hardware gaps mean a side's glass space can
+ * fall off the 50mm panel grid (flipping swaps the 8mm hinge gap for the 9mm latch
+ * gap, which alone breaks clean layouts). The solver may shift the centre by up to
+ * ±25mm — invisible at fence scale — to keep both sides clean, and the UI readout
+ * shows the ACHIEVED centre so the display stays truthful.
+ *
+ * Returns null only when no placement within ±200mm of the request is buildable —
+ * callers then fall back to panel-index positioning so the calculator never breaks.
+ */
+export function calculateCentredGateLayout(params: {
+  spanLength: number;
+  leftEndGap: number;
+  rightEndGap: number;
+  desiredGap: number;
+  maxPanelWidth: number;
+  hasLeftRaked?: boolean;
+  hasRightRaked?: boolean;
+  gateConfig: {
+    gateSize: number;
+    hingePanelSize: number;
+    flipped: boolean;
+    hingeGap: number;
+    latchGap: number;
+    autoHingePanel?: boolean;
+    centreFromLeft: number;
+  };
+  customPanelConfig?: {
+    enabled: boolean;
+    width: number;
+    height: number;
+    position: number;
+  };
+}): PanelLayout | null {
+  const {
+    spanLength,
+    leftEndGap,
+    rightEndGap,
+    desiredGap,
+    maxPanelWidth,
+    hasLeftRaked = false,
+    hasRightRaked = false,
+    gateConfig,
+    customPanelConfig,
+  } = params;
+  const { gateSize, hingePanelSize, flipped, hingeGap, latchGap, centreFromLeft } = gateConfig;
+  const MIN_PANEL = 200;
+
+  const hingeOnLeft = flipped; // flipped=true → hinge LEFT of gate
+  const matchOn = gateConfig.autoHingePanel !== false;
+
+  // Gap between the gate and each neighbour: hinge gap on the hinge side, latch gap
+  // on the other.
+  const leftInnerGap = hingeOnLeft ? hingeGap : latchGap;
+  const rightInnerGap = hingeOnLeft ? latchGap : hingeGap;
+
+  // ── Core solver for one (centre, hinge width) combination ──────────────────────
+  const solveAt = (centre: number, hingeWidth: number): PanelLayout | null => {
+    const gateLeftEdge = centre - gateSize / 2;
+    const gateRightEdge = centre + gateSize / 2;
+
+    if (gateLeftEdge < leftEndGap + MIN_PANEL || gateRightEdge > spanLength - rightEndGap - MIN_PANEL) {
+      return null;
+    }
+
+    const solveSide = (side: "left" | "right"): { layout: PanelLayout; hingeIndex: number | null } | null => {
+      const isHingeSide = (side === "left") === hingeOnLeft;
+      const subSpan = side === "left" ? gateLeftEdge : spanLength - gateRightEdge;
+      const subEndGaps = side === "left" ? leftEndGap + leftInnerGap : rightInnerGap + rightEndGap;
+      const rakedLeft = side === "left" ? hasLeftRaked : false;
+      const rakedRight = side === "right" ? hasRightRaked : false;
+      // V1: a user custom panel joins the RIGHT sub-run (and never the hinge side —
+      // the hinge itself occupies the fixed-panel slot there).
+      const userCustom = side === "right" && customPanelConfig?.enabled ? customPanelConfig : undefined;
+
+      if (isHingeSide) {
+        // The hinge is ALWAYS a stock-width fixed panel at the gate-adjacent edge
+        // (re-using the custom-panel mechanism, relabelled to "hinge" after solving).
+        if (userCustom) return null;
+        const hingeAsFixed = {
+          enabled: true,
+          width: hingeWidth,
+          height: 1200,
+          position: side === "left" ? 9999 : 0,
+        };
+        // matchOn → the standards beside the hinge prefer the {hinge, ±50mm} family.
+        const layout = calculatePanelLayout(
+          subSpan, subEndGaps, desiredGap, maxPanelWidth, rakedLeft, rakedRight,
+          undefined, hingeAsFixed, matchOn ? hingeWidth : undefined,
+        );
+        if (!layout.panels.length) return null;
+        const types = layout.panelTypes ?? [];
+        const hingeIndex = types.findIndex((t, i) => t === "custom" && layout.panels[i] === hingeWidth);
+        if (hingeIndex === -1) return null;
+        return { layout, hingeIndex };
+      }
+
+      const layout = calculatePanelLayout(subSpan, subEndGaps, desiredGap, maxPanelWidth, rakedLeft, rakedRight, undefined, userCustom);
+      if (!layout.panels.length) return null;
+      return { layout, hingeIndex: null };
+    };
+
+    const left = solveSide("left");
+    const right = solveSide("right");
+    if (!left || !right) return null;
+
+    // Relabel hinge panels and stitch the two sides around the gate.
+    const leftTypes: PanelType[] = [...(left.layout.panelTypes ?? left.layout.panels.map(() => "standard" as PanelType))];
+    const rightTypes: PanelType[] = [...(right.layout.panelTypes ?? right.layout.panels.map(() => "standard" as PanelType))];
+    if (left.hingeIndex !== null) leftTypes[left.hingeIndex] = "hinge";
+    if (right.hingeIndex !== null) rightTypes[right.hingeIndex] = "hinge";
+
+    const panels = [...left.layout.panels, gateSize, ...right.layout.panels];
+    const panelTypes: PanelType[] = [...leftTypes, "gate", ...rightTypes];
+    const gaps = [...left.layout.gaps, leftInnerGap, rightInnerGap, ...right.layout.gaps];
+
+    const totalPanelWidth = panels.reduce((s, p) => s + p, 0);
+    const totalGapWidth = gaps.reduce((s, g) => s + g, 0);
+
+    return {
+      panels,
+      gaps,
+      totalPanelWidth,
+      totalGapWidth,
+      averageGap: gaps.length ? totalGapWidth / gaps.length : 0,
+      panelTypes,
+    };
+  };
+
+  // ── Candidates ──────────────────────────────────────────────────────────────────
+  // Hinge widths: stock list (match ON, solver picks the best) or the manual width.
+  const minStock = STOCK_HINGE_PANEL_SIZES[0];
+  const maxStock = STOCK_HINGE_PANEL_SIZES[STOCK_HINGE_PANEL_SIZES.length - 1];
+  const hingeCandidates = matchOn
+    ? STOCK_HINGE_PANEL_SIZES
+    : [Math.max(minStock, Math.min(maxStock, hingePanelSize))];
+
+  // Clamp the requested centre into the physically viable range FIRST, so actions
+  // like flipping near an end shift the gate the minimum necessary distance (to fit
+  // the hinge panel) instead of failing and teleporting back to panel positioning.
+  const hingeSideMin = matchOn ? minStock : Math.max(minStock, Math.min(maxStock, hingePanelSize));
+  const latchSideMin = 450; // plain sub-run: two minimum panels + a gap (or one panel when grid-exact)
+  const minViableCentre =
+    leftEndGap + (hingeOnLeft ? hingeSideMin : latchSideMin) + leftInnerGap + gateSize / 2;
+  const maxViableCentre =
+    spanLength - rightEndGap - (hingeOnLeft ? latchSideMin : hingeSideMin) - rightInnerGap - gateSize / 2;
+  if (minViableCentre > maxViableCentre) return null; // run too short for a centred gate at all
+  const targetCentre = Math.max(minViableCentre, Math.min(maxViableCentre, centreFromLeft));
+
+  // Centre offset candidates (the solver may shift the centre slightly; the scoring
+  // prefers FEWER PANELS first, then the smallest shift, and the UI readout always
+  // shows the achieved centre):
+  //  1. 0 and the shifts that put each side's glass space onto the 50mm grid.
+  //  2. The shifts (≤100mm) that let the hinge side be a SINGLE stock hinge panel —
+  //     flipping a gate must never fragment one clean panel into two (owner, ss21-23).
+  //     ±100mm is the worst-case distance to a stock hinge width (stock sizes are up
+  //     to 200mm apart: 600 → 800 → 1000); clean glass beats exact position.
+  const leftFixed = leftEndGap + leftInnerGap;
+  const rightFixed = rightInnerGap + rightEndGap;
+  const rL = (((targetCentre - gateSize / 2 - leftFixed) % 50) + 50) % 50;
+  const rR = (((spanLength - (targetCentre + gateSize / 2) - rightFixed) % 50) + 50) % 50;
+  const candidateOffsets: number[] = [0, -rL, 50 - rL, rR, rR - 50];
+
+  const hingeSideSpace = hingeOnLeft
+    ? targetCentre - gateSize / 2 - leftFixed
+    : spanLength - (targetCentre + gateSize / 2) - rightFixed;
+  for (const stockWidth of hingeCandidates) {
+    const delta = stockWidth - hingeSideSpace;
+    // Growing the hinge side moves the centre right when the hinge is on the left,
+    // and left when the hinge is on the right.
+    candidateOffsets.push(hingeOnLeft ? delta : -delta);
+  }
+
+  //  3. The shifts that let the hinge side be exactly TWO family panels (hinge + one
+  //     standard within 50mm) with a clean target gap. Without these the candidate grid
+  //     can skip past the only offsets where a 2-piece hinge side satisfies the
+  //     hinge-match rule (e.g. a ~1930mm hinge side: [850+1000H] on the grid offsets,
+  //     but [950+1000H] only at +72).
+  for (const stockWidth of hingeCandidates) {
+    for (const std of [stockWidth - 50, stockWidth, stockWidth + 50]) {
+      if (std < MIN_PANEL || std > maxPanelWidth) continue;
+      const delta = stockWidth + std + desiredGap - hingeSideSpace;
+      candidateOffsets.push(hingeOnLeft ? delta : -delta);
+    }
+  }
+
+  const rawOffsets = candidateOffsets.map((d) => Math.round(d));
+  const microOffsets = rawOffsets.filter((d, i) => Math.abs(d) <= 100 && rawOffsets.indexOf(d) === i);
+
+  // ── Evaluate every (offset, hinge width) candidate, then choose in TWO TIERS ──────
+  // The tiers reconcile two owner rules that a single score cannot (ss20-24):
+  //  • "Don't skip stock hinge sizes / honour where I put the gate" → small drift must
+  //    beat far-side panel-count optimisation (a 4→3 panel saving on the far side never
+  //    justifies extra drift).
+  //  • "Never split glass unnecessarily (700+750 where one 1550 fits)" → making a side
+  //    WHOLE (one piece of glass instead of several) justifies drift.
+  // The reconciling concept is SPLIT PENALTY: the number of sides that are more than
+  // one piece of glass. Wider drift is taken only when it makes a side whole — never
+  // merely to reduce a side from N to N-1 pieces (N-1 ≥ 2).
+  // TIER 1 (|offset| ≤ 25mm — visually "where the user put it"): fewest split sides,
+  // then fewest pieces of glass, then no slivers, then smallest drift.
+  // TIER 2 (|offset| ≤ ~100mm): consulted ONLY when it has fewer split sides than the
+  // tier-1 best — e.g. flipping near a stock-hinge boundary (ss21-23) or a latch space
+  // a few cm over the max panel width.
+  type Candidate = {
+    layout: PanelLayout;
+    offset: number;
+    splitSides: number;
+    glassPieces: number;
+    sliverPenalty: number;
+    hingeMatchExcess: number;
+    hingeWidth: number;
+  };
+  const candidates: Candidate[] = [];
+
+  const collect = (offset: number) => {
+    for (const hingeWidth of hingeCandidates) {
+      const layout = solveAt(targetCentre + offset, hingeWidth);
+      if (!layout || !layout.panelTypes) continue;
+      const types = layout.panelTypes;
+      const gateIdx = types.indexOf("gate");
+      const leftPieces = gateIdx;
+      const rightPieces = layout.panels.length - gateIdx - 1;
+      const glassPanels = layout.panels.filter((_, i) => types[i] !== "gate");
+      // Hinge-match rule (owner): the hinge panel and the standard panels BESIDE IT
+      // must stay within one 50mm step (e.g. 1600 hinge with 1600/1650 standards —
+      // never a 600 hinge next to 1700s). A hinge alone on its side is exempt: its
+      // width is dictated by the available space (image 25).
+      const hingeSidePanels = hingeOnLeft ? layout.panels.slice(0, gateIdx) : layout.panels.slice(gateIdx + 1);
+      const worstDeviation = hingeSidePanels.reduce((m, p) => Math.max(m, Math.abs(p - hingeWidth)), 0);
+      candidates.push({
+        layout,
+        offset,
+        splitSides: (leftPieces > 1 ? 1 : 0) + (rightPieces > 1 ? 1 : 0),
+        glassPieces: glassPanels.length,
+        sliverPenalty: glassPanels.reduce((s, p) => s + Math.max(0, 500 - p), 0),
+        hingeMatchExcess: Math.max(0, worstDeviation - 50),
+        hingeWidth,
+      });
+    }
+  };
+
+  for (const offset of microOffsets) collect(offset);
+
+  // Coarse fallback: nothing buildable near the request — walk outward so the gate
+  // sticks as close as possible instead of teleporting back to panel positioning.
+  if (!candidates.length) {
+    for (const offset of [-50, 50, -100, 100, -150, 150, -200, 200]) {
+      collect(offset);
+      if (candidates.length) break;
+    }
+  }
+  if (!candidates.length) return null;
+
+  // Score (lower = better): whole sides → fewest pieces → no slivers → hinge matches
+  // its neighbours → least drift → largest hinge panel.
+  const score = (c: Candidate) =>
+    c.splitSides * 100000000 +
+    c.glassPieces * 1000000 +
+    c.sliverPenalty * 1000 +
+    c.hingeMatchExcess * 100 +
+    Math.abs(c.offset) -
+    c.hingeWidth / 100;
+
+  // TIER 1: best candidate at "where the user put it".
+  const tier1 = candidates
+    .filter((c) => Math.abs(c.offset) <= 25)
+    .sort((a, b) => score(a) - score(b));
+  const best1 = tier1.length ? tier1[0] : null;
+
+  // TIER 2: best candidate overall (wider drift allowed).
+  const best2 = [...candidates].sort((a, b) => score(a) - score(b))[0];
+
+  if (!best1) return best2.layout;
+
+  // Take the wider drift ONLY if it fixes something tier 1 cannot:
+  //  • a side becomes whole (one piece of glass instead of several), or
+  //  • a hinge-match violation is resolved (without costing pieces or creating slivers).
+  // Never for a mere far-side panel-count saving — that re-introduces the 1500-skip bug.
+  const makesASideWhole = best2.splitSides < best1.splitSides;
+  const fixesHingeMatch =
+    best2.splitSides === best1.splitSides &&
+    best2.hingeMatchExcess < best1.hingeMatchExcess &&
+    best2.glassPieces <= best1.glassPieces &&
+    best2.sliverPenalty <= best1.sliverPenalty;
+  if (makesASideWhole || fixesHingeMatch) {
+    return best2.layout;
+  }
+  return best1.layout;
 }
 
 /**

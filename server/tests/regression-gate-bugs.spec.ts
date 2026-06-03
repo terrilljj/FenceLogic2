@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { resolveSelectionToProductsCore } from "../services/resolve";
-import { calculatePanelLayout } from "../../shared/panelCalculations";
-import { equalizePanels } from "../../shared/calc/equalize";
+import { calculatePanelLayout } from "../services/layout/panelCalculations";
+import { equalizePanels } from "../services/layout/calc/equalize";
 import type { ProductUIConfig, Product } from "@shared/schema";
 
 /**
