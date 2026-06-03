@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupShopifyRoutes } from "./shopify-routes";
@@ -12,10 +13,22 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 // Trust proxy for cookies to work in Replit iframe
 app.set("trust proxy", 1);
 
+// SECURITY: the session secret signs the cookies that carry admin authentication.
+// It must never be a value that lives in the repository. If SESSION_SECRET is not
+// set, fall back to a random per-boot secret: the app keeps working (sessions just
+// reset on restart) but cookies can never be forged from a known string.
+const sessionSecret = process.env.SESSION_SECRET ?? randomBytes(32).toString("hex");
+if (!process.env.SESSION_SECRET) {
+  console.warn(
+    "[SECURITY] SESSION_SECRET is not set — using a random per-boot secret. " +
+    "Sessions will not survive restarts. Set SESSION_SECRET to silence this warning.",
+  );
+}
+
 // Session configuration with sameSite: "none" for iframe support
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "fence-logic-admin-secret-key-change-in-production",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
