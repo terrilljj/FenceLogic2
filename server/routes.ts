@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import rateLimit from "express-rate-limit";
+import { timingSafeEqual } from "crypto";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertFenceDesignSchema, insertProductSchema, insertProductUIConfigSchema, insertCategorySchema, insertSubcategorySchema, PANEL_SIZE_REGISTRY, getAvailablePanelSizes, type ProductVariant } from "@shared/schema";
@@ -202,6 +203,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many email requests, please try again later" },
+  });
+
+  // Admin login attempts: strict cap to block credential brute-forcing. A human
+  // admin mistyping a password a few times stays well under this.
+  const adminLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many login attempts, please try again later" },
   });
 
   // Panel layout endpoint — the layout solver runs SERVER-SIDE ONLY (IP protection).
@@ -900,18 +911,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin authentication endpoints
-  app.post("/api/admin/login", async (req, res) => {
+  app.post("/api/admin/login", adminLoginLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
-      
-      const adminUsername = process.env.ADMIN_USERNAME || "admin";
-      const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-      
+
+      // SECURITY: admin credentials MUST come from environment variables — there is
+      // deliberately NO fallback. Without ADMIN_USERNAME + ADMIN_PASSWORD set, admin
+      // login is disabled entirely (previously this fell back to admin/admin123).
+      const adminUsername = process.env.ADMIN_USERNAME;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminUsername || !adminPassword) {
+        console.error(
+          "[SECURITY] Admin login attempted but ADMIN_USERNAME/ADMIN_PASSWORD are not set. " +
+          "Set both environment variables to enable admin access.",
+        );
+        return res.status(503).json({
+          success: false,
+          message: "Admin login is not configured on this server",
+        });
+      }
+
       // Trim whitespace from inputs
-      const trimmedUsername = username?.trim();
-      const trimmedPassword = password?.trim();
-      
-      if (trimmedUsername === adminUsername && trimmedPassword === adminPassword) {
+      const trimmedUsername = (username ?? "").trim();
+      const trimmedPassword = (password ?? "").trim();
+
+      // Constant-time comparison so response timing can't leak how much of a
+      // guess was correct.
+      const safeEqual = (a: string, b: string) => {
+        const bufA = Buffer.from(a);
+        const bufB = Buffer.from(b);
+        return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+      };
+
+      if (safeEqual(trimmedUsername, adminUsername) && safeEqual(trimmedPassword, adminPassword)) {
         if (req.session) {
           req.session.isAdmin = true;
           res.json({ success: true, message: "Login successful" });
@@ -2233,105 +2265,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Meta routes
   app.use("/api/meta", metaCategoryPathsRouter);
 
-  // ── Notion-powered dashboard endpoints ──────────────────────────
-  const NOTION_KEY = process.env.NOTION_API_KEY;
-  const NOTION_DBS: Record<string, string> = {
-    projects: "17f5dd87-015b-4be5-9f04-0b1892fba6ca",
-    finance: "940118f42d0b408badf49c4f0cf609c1",
-    health: "5480d47b71b5460ba888323199ced17d",
-    lifeAdmin: "e11d25b31fca44d390322312862a3cfc",
-  };
-
-  async function queryNotionDB(dbId: string) {
-    const res = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${NOTION_KEY}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ page_size: 100 }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Notion ${res.status}: ${text}`);
-    }
-    return (await res.json() as any).results;
-  }
-
-  function extractPageProps(page: any) {
-    const props: Record<string, any> = {};
-    for (const [key, val] of Object.entries(page.properties) as any) {
-      if (val.type === "title") props[key] = val.title?.[0]?.plain_text || "";
-      else if (val.type === "rich_text") props[key] = val.rich_text?.[0]?.plain_text || "";
-      else if (val.type === "select") props[key] = val.select?.name || "";
-      else if (val.type === "multi_select") props[key] = (val.multi_select || []).map((s: any) => s.name);
-      else if (val.type === "number") props[key] = val.number;
-      else if (val.type === "checkbox") props[key] = val.checkbox;
-      else if (val.type === "date") props[key] = val.date?.start || "";
-      else if (val.type === "status") props[key] = val.status?.name || "";
-      else if (val.type === "formula") {
-        if (val.formula.type === "number") props[key] = val.formula.number;
-        else if (val.formula.type === "string") props[key] = val.formula.string;
-        else props[key] = val.formula[val.formula.type];
-      }
-      else if (val.type === "url") props[key] = val.url || "";
-      else if (val.type === "email") props[key] = val.email || "";
-      else if (val.type === "phone_number") props[key] = val.phone_number || "";
-      else props[key] = null;
-    }
-    props._id = page.id;
-    return props;
-  }
-
-  app.get("/api/dashboard", async (_req, res) => {
-    if (!NOTION_KEY) return res.status(500).json({ error: "NOTION_API_KEY not set" });
-    try {
-      const [projects, finance, health, lifeAdmin] = await Promise.all([
-        queryNotionDB(NOTION_DBS.projects),
-        queryNotionDB(NOTION_DBS.finance),
-        queryNotionDB(NOTION_DBS.health),
-        queryNotionDB(NOTION_DBS.lifeAdmin),
-      ]);
-      res.json({
-        projects: projects.map(extractPageProps),
-        finance: finance.map(extractPageProps),
-        health: health.map(extractPageProps),
-        lifeAdmin: lifeAdmin.map(extractPageProps),
-      });
-    } catch (err: any) {
-      console.error("[Dashboard] Notion error:", err.message);
-      res.status(502).json({ error: err.message });
-    }
-  });
-
-  app.post("/api/personal/:type", async (req, res) => {
-    if (!NOTION_KEY) return res.status(500).json({ error: "NOTION_API_KEY not set" });
-    const dbId = NOTION_DBS[req.params.type as keyof typeof NOTION_DBS];
-    if (!dbId) return res.status(400).json({ error: "Invalid type" });
-    try {
-      const { properties } = req.body;
-      if (!properties) return res.status(400).json({ error: "Missing properties" });
-
-      const notionRes = await fetch("https://api.notion.com/v1/pages", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${NOTION_KEY}`,
-          "Notion-Version": "2022-06-28",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ parent: { database_id: dbId }, properties }),
-      });
-      if (!notionRes.ok) {
-        const text = await notionRes.text();
-        return res.status(notionRes.status).json({ error: text });
-      }
-      res.json({ success: true, page: (await notionRes.json() as any).id });
-    } catch (err: any) {
-      console.error("[Dashboard] Create error:", err.message);
-      res.status(500).json({ error: err.message });
-    }
-  });
+  // NOTE (2026-06-03): the Notion personal-dashboard endpoints (/api/dashboard,
+  // /api/personal/:type) that used to live here were removed — they belonged to a
+  // separate personal project, exposed the owner's private Notion databases with no
+  // auth, and were never part of the fence calculator.
 
   const httpServer = createServer(app);
 

@@ -23,13 +23,30 @@ Powered by SolveLogic — a configurable BOM solver engine.
 - PostgreSQL + Drizzle ORM (server/db/)
 - TanStack Query, Tailwind, Radix UI
 
-## CRITICAL SECURITY ISSUES — fix in this order
-1. BOM assembly is client-side ($K function) — move to POST /api/quote
-2. GET /api/products/lookup is public — DELETE this endpoint
-3. POST /api/email-quote has no rate limiting — add express-rate-limit
-4. Admin endpoints have no server-side auth — add requireAdminAuth middleware
-5. GET /api/debug/* exists in production — delete it
-6. GET /api/designs returns all designs — bind to session
+## SECURITY STATUS — audited 2026-06-03 (original critical list RESOLVED)
+All six original critical issues are fixed:
+1. ✅ BOM assembly server-side (POST /api/quote); layout solver server-side (POST /api/layout)
+2. ✅ GET /api/products/lookup deleted
+3. ✅ POST /api/email-quote rate-limited (3/hour); /api/quote and /api/layout also limited
+4. ✅ All /api/admin/* and /api/products* routes behind requireAdmin (server/middleware/auth.ts)
+5. ✅ GET /api/debug/* routes removed (stale refs remain in client/src/lib/adminCoverage.ts
+   and server/scripts/qa-gate.ts — harmless, they just 404)
+6. ✅ GET /api/designs bound to session (storage.getFenceDesignsBySession)
+
+Fixed in the 2026-06-03 audit (fix/api-security-hardening):
+7. ✅ Admin login: NO hardcoded credential fallback (was admin/admin123). ADMIN_USERNAME
+   and ADMIN_PASSWORD env vars are REQUIRED for admin access — login returns 503 without
+   them. Timing-safe comparison + rate limit (10 attempts / 15 min).
+8. ✅ Session secret: NO hardcoded fallback. SESSION_SECRET env var, or random per-boot.
+9. ✅ Personal Notion dashboard endpoints (/api/dashboard, /api/personal/:type) DELETED —
+   they belonged to a different project and exposed private data with no auth.
+
+## REQUIRED PRODUCTION ENV VARS (set in Replit Secrets)
+- DATABASE_URL    (existing)
+- ADMIN_USERNAME  (admin UI login — admin login is DISABLED if unset)
+- ADMIN_PASSWORD  (admin UI login — admin login is DISABLED if unset)
+- SESSION_SECRET  (cookie signing — random per-boot fallback if unset; sessions
+                   then reset on every restart/deploy)
 
 ## Architecture decisions — DO NOT DEVIATE
 - BOM assembly MUST move server-side
@@ -62,12 +79,17 @@ Powered by SolveLogic — a configurable BOM solver engine.
 - Open a PR after each branch — Replit auto-deploys on merge to main
 
 ## Verification commands after every server change
+(dev server may run on PORT=5173 locally; adjust as needed)
 curl http://localhost:5000/api/products/lookup
-  → Should be 404 after fix (currently 200 — CRITICAL)
+  → 404 (endpoint deleted)
 curl http://localhost:5000/api/admin/products
-  → Should be 401 without session
+  → 401 without session
 curl http://localhost:5000/api/debug/ui-config/glass-pool-spigots/coverage
-  → Should be 404 after fix
+  → 404 (debug routes deleted)
+curl http://localhost:5000/api/dashboard
+  → 404 (personal Notion endpoints deleted)
+curl -X POST http://localhost:5000/api/admin/login -H "Content-Type: application/json" -d '{"username":"admin","password":"admin123"}'
+  → 401 or 503 — the old default credentials must NEVER work
 
 ## DO NOT CHANGE without explicit instruction
 - Panel layout algorithm (server-side, working correctly)
