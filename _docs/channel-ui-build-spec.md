@@ -128,3 +128,15 @@ Adds on top of the pool channel block:
 - Browser harness: /tmp/fl2-browser (playwright-core, channel:'chrome', headless)
 - Dev server: `export $(cat .env | xargs) && PORT=5173 npm run dev` — RESTART after server-side changes (tsx doesn't hot-reload)
 - Workflow: never commit without operator approval; operator hands-on round before merge
+
+## Standoff Balustrade (glass-bal-standoffs) — OPERATOR SPEC 2026-06-03 (for task #3)
+
+Proportions (operator screenshot, image 29):
+- Glass is **1280mm high total**; the **lower 200mm is face-fixed to the structure**
+  (below FFL), so **height above FFL = 1080mm**
+- Elevation: glass extends ~200mm BELOW the floor line; that lower band is where the
+  standoffs fix through the glass into the structure face
+- Standoffs: **2 rows in the lower 200mm band** (per the screenshot: 3 per row = 6 per
+  panel — verify count rule per panel width with operator)
+- Top rail (35-Series) across the top, same rail logic as other balustrade styles
+- No gates, no raked panels (balustrade)
