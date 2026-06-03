@@ -129,14 +129,31 @@ Adds on top of the pool channel block:
 - Dev server: `export $(cat .env | xargs) && PORT=5173 npm run dev` — RESTART after server-side changes (tsx doesn't hot-reload)
 - Workflow: never commit without operator approval; operator hands-on round before merge
 
-## Standoff Balustrade (glass-bal-standoffs) — OPERATOR SPEC 2026-06-03 (for task #3)
+## Standoff Balustrade (glass-bal-standoffs) — task #3 build rules
+### Source: SF-16 walk + inputs spec (vault, extracted 2026-06-03) + operator image 29
 
-Proportions (operator screenshot, image 29):
-- Glass is **1280mm high total**; the **lower 200mm is face-fixed to the structure**
-  (below FFL), so **height above FFL = 1080mm**
-- Elevation: glass extends ~200mm BELOW the floor line; that lower band is where the
-  standoffs fix through the glass into the structure face
-- Standoffs: **2 rows in the lower 200mm band** (per the screenshot: 3 per row = 6 per
-  panel — verify count rule per panel width with operator)
-- Top rail (35-Series) across the top, same rail logic as other balustrade styles
-- No gates, no raked panels (balustrade)
+OPERATOR GEOMETRY (image 29 — NOT in the vault docs, operator-supplied):
+- Glass 1280mm total; lower 200mm face-fixed to the structure below FFL → 1080mm above FFL
+- Elevation: glass extends 200mm below floor line; standoffs sit in that lower band
+
+DOC-VERIFIED RULES (no guessing — from the vault docs):
+
+1. STANDOFF COUNT: read from panel SKU hole count — 400–750mm panels = 4 standoffs;
+   800–1200mm = 6 standoffs. Body dia 50mm.
+2. VARIANTS: Adjustable (V1 default: GSA-5030-P, 50×30 Polished) GSA-5030/5045-{B,MW,P,S};
+   Fixed: GS5020{B,P,S}, GS5030-{B,MW,P,S}, GS5050{B,P,S}. One body type per job.
+   Finishes: Polished (default)/Satin/Black/White(limited).
+3. FIXINGS (1 per standoff): Timber direct GS115LAG (default) | through-cladding GS160LAG.
+   Concrete direct GS120ROD + SOUD-CA1400 × CEIL(n/20) | through-cladding GS150ROD + CEIL(n/15).
+   Steel drill-and-tap GS120ROD | through-steel MAD-TILT-M12-BALKIT. Substrate REQUIRED (no default).
+4. GLASS: 14 widths 400,500,600,700,750,800,850,900,950,1000,1050,1100,1150,1200 ×
+   1280mm × 15mm, SKU 1280S-{width}.
+5. TOP RAIL: 35-Series, default BLACK. SER35-R5800-{B,M,MW,SA} bundles 15mm rubber + end caps.
+   CEIL(len/5800) rails; J-SA inline joiners; J90-SA corners; VJA-SA other angles; HJA-SA height
+   change. Wall terms: Free (default) / WB-{finish} / WBEXT-{finish}; Mill+external → WBEXT-S.
+   Interlinking rule: ≥3 panels ≥1m → self-supporting, else must wall-terminate both ends.
+6. INPUTS + DEFAULTS: standoff body Adjustable / depth 30 / finish Polished; rail Black;
+   wall terms Free; fall height 1m–5m (>5m = REFUSE, V2 redirect); substrate required;
+   cladding Direct; spares 0.
+7. EXCLUSIONS V1: gates, raked, wall-return, AS-3000 kit, 38mm standoffs, packing washers,
+   per-section body mixing, rail offcut optimisation, >5m.
