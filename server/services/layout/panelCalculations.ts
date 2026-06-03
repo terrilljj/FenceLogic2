@@ -1369,7 +1369,8 @@ export function calculateBladePanelLayout(
   layoutMode: "full-panels-cut-end" | "equally-spaced",
   hasGate: boolean = false,
   gateSize: number = 1000,
-  gatePosition: number = 0
+  gatePosition: number = 0,
+  gateCentreFromLeft?: number | null
 ): PanelLayout {
   const BLADE_SPECS = {
     "1000mm": { panelWidth: 1700, postAllowance: 50 },
@@ -1382,7 +1383,59 @@ export function calculateBladePanelLayout(
   const MIN_PANEL = 200;
   const GATE_ALLOWANCE = 25; // Aluminium gate allowance
   // gateSize = clear opening (1000mm), actual gate panel = gateSize - GATE_ALLOWANCE
-  
+
+  // ── CENTRE MODE (owner 2026-06-03 — parity with the glass gates) ────────────────
+  // The gate's CENTRE line is pinned at gateCentreFromLeft mm from the left end of
+  // the section. The run splits at the gate and each side solves independently as
+  // its own no-gate blade run (the side runs include the gate's hinge/latch posts).
+  if (hasGate && gateCentreFromLeft != null) {
+    const half = gateSize / 2;
+    // The gate (+ its two posts) must stay inside the run.
+    const minCentre = post + half;
+    const maxCentre = spanLength - post - half;
+    const centre = Math.max(minCentre, Math.min(maxCentre, gateCentreFromLeft));
+    const leftRunLength = centre - half; // left end → gate's left edge (incl. gate's left post)
+    const rightRunLength = spanLength - centre - half; // gate's right edge → right end
+
+    // A side too short for [post]+[MIN_PANEL]+[post] carries no panels — just the
+    // space before/after the gate (rendered as an oversized gap).
+    const solveSide = (len: number): PanelLayout => {
+      if (len < post * 2 + MIN_PANEL) {
+        return {
+          panels: [],
+          gaps: len > 0 ? [len] : [0],
+          totalPanelWidth: 0,
+          totalGapWidth: Math.max(0, len),
+          averageGap: Math.max(0, len),
+          panelTypes: [],
+        };
+      }
+      return calculateBladePanelLayout(len, bladeHeight, layoutMode, false, gateSize, 0);
+    };
+
+    const left = solveSide(leftRunLength);
+    const right = solveSide(rightRunLength);
+
+    // Merge: left's trailing gap is the gate's left post; right's leading gap is the
+    // gate's right post. gaps.length stays panels.length + 1.
+    const panels = [...left.panels, gateSize, ...right.panels];
+    const panelTypes: PanelType[] = [
+      ...((left.panelTypes ?? left.panels.map(() => "standard")) as PanelType[]),
+      "gate",
+      ...((right.panelTypes ?? right.panels.map(() => "standard")) as PanelType[]),
+    ];
+    const gaps = [...left.gaps, ...right.gaps];
+
+    return {
+      panels,
+      gaps,
+      totalPanelWidth: panels.reduce((sum, p) => sum + p, 0),
+      totalGapWidth: gaps.reduce((sum, g) => sum + g, 0),
+      averageGap: gaps.length > 0 ? gaps.reduce((sum, g) => sum + g, 0) / gaps.length : 0,
+      panelTypes,
+    };
+  }
+
   if (layoutMode === "full-panels-cut-end") {
     // Mode 1: Full standard panels + cut end piece
     

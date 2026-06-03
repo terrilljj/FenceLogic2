@@ -271,6 +271,9 @@ export function computeSpanLayout(request: LayoutRequest): LayoutResponse {
       !!hasGate,
       hasGate ? span.gateConfig?.gateSize || 975 : undefined,
       hasGate ? span.gateConfig?.position || 0 : 0,
+      // Centre mode (owner 2026-06-03): pin the gate's centre line at a measurement
+      // from the left end — same dual-mode behaviour as the glass gates.
+      hasGate ? span.gateConfig?.centreFromLeft : undefined,
     );
   } else if (productVariant === "alu-pool-barr") {
     const hasGate = gatesAllowed && span.gateConfig?.required;

@@ -113,6 +113,76 @@ export function computeSectionCutPlans(
   return plans;
 }
 
+// ── Discrete panel cutting (aluminium panels: Blade / BARR) ─────────────────────
+// Unlike linear stock (channel/rail), aluminium panels are welded units: a cut panel
+// is cut DOWN from one stock panel (or from a big-enough offcut) — pieces cannot be
+// joined. Offcuts from earlier cuts are reused automatically for later, narrower
+// panels (best-fit), in design order — same auto-optimise philosophy as the channel.
+
+export interface PanelCutPlan {
+  id: string;
+  /** Stock panels used whole (no cut). */
+  fullPanels: number;
+  /** New stock panels cut down (one cut each). */
+  cutPanels: number;
+  /** The cut widths produced from new stock panels. */
+  cutWidthsMm: number[];
+  /** Cuts served from earlier sections' offcuts instead of new stock. */
+  claimedOffcuts: OffcutRef[];
+  /** Usable offcuts this section leaves for later sections. */
+  offcutsOutMm: number[];
+}
+
+export function panelCutPlans(
+  sections: Array<{ id: string; label: string; panelWidthsMm: number[] }>,
+  stockWidthMm: number,
+): Map<string, PanelCutPlan> {
+  const plans = new Map<string, PanelCutPlan>();
+  let pool: OffcutRef[] = [];
+
+  for (const section of sections) {
+    const plan: PanelCutPlan = {
+      id: section.id,
+      fullPanels: 0,
+      cutPanels: 0,
+      cutWidthsMm: [],
+      claimedOffcuts: [],
+      offcutsOutMm: [],
+    };
+
+    for (const w of section.panelWidthsMm) {
+      if (w >= stockWidthMm) {
+        plan.fullPanels++;
+        continue;
+      }
+      // Best fit: the smallest available offcut that can still serve this cut.
+      const candidates = pool.filter((o) => o.lengthMm >= w).sort((a, b) => a.lengthMm - b.lengthMm);
+      if (candidates.length) {
+        const used = candidates[0];
+        pool = pool.filter((o) => o !== used);
+        plan.claimedOffcuts.push(used);
+        const remainder = used.lengthMm - w;
+        if (remainder >= MIN_USABLE_OFFCUT_MM) {
+          pool.push({ fromId: section.id, fromLabel: section.label, lengthMm: remainder });
+          plan.offcutsOutMm.push(remainder);
+        }
+      } else {
+        plan.cutPanels++;
+        plan.cutWidthsMm.push(w);
+        const remainder = stockWidthMm - w;
+        if (remainder >= MIN_USABLE_OFFCUT_MM) {
+          pool.push({ fromId: section.id, fromLabel: section.label, lengthMm: remainder });
+          plan.offcutsOutMm.push(remainder);
+        }
+      }
+    }
+
+    plans.set(section.id, plan);
+  }
+
+  return plans;
+}
+
 // ── Channel-specific wrapper ─────────────────────────────────────────────────────
 
 export const CHANNEL_STOCK_MM = 4200;
