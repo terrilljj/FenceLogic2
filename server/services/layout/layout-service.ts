@@ -298,6 +298,8 @@ export function computeSpanLayout(request: LayoutRequest): LayoutResponse {
       !!hasGate,
       hasGate ? span.gateConfig?.gateSize || 975 : undefined,
       hasGate ? span.gateConfig?.position || 0 : 0,
+      // Centre mode (owner 2026-06-03): gate centre pinned from the left end.
+      hasGate ? span.gateConfig?.centreFromLeft : undefined,
     );
   } else if (productVariant === "alu-bal-barr") {
     layout = calculateBarrPanelLayout(

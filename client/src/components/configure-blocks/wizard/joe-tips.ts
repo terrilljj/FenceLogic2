@@ -61,6 +61,7 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const isStandoffs = productVariant === "glass-bal-standoffs";
   const isBlade = productVariant === "alu-pool-blade";
   const isBarr = productVariant === "alu-pool-barr";
+  const isTubular = productVariant === "alu-pool-tubular";
   const is15 = productVariant.includes("15mm");
   const is12 = productVariant.includes("12mm");
   const as3000 = fv["as-3000"] === "true";
@@ -68,7 +69,52 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const softClose = span.gateConfig?.hardware === "polaris";
   const railOn = span.handrail?.enabled === true;
 
-  if (isBarr) {
+  if (isTubular) {
+    tips.push({
+      title: "Flat Top tubular — the budget pick",
+      body:
+        "Round-tube pickets on horizontal rails, dropped onto 50×50mm posts with shrouds. It's the most affordable pool-compliant fence — forgiving to install, and the panels just need cutting between pickets, never through one.",
+    });
+    const tubFinish = (span.tubularFinish as string) || "black";
+    if (tubFinish === "black") {
+      tips.push({
+        title: "Black gets the wide panel",
+        body:
+          "Only Black runs the 3000mm panel — fewer posts and cheaper per metre on a long run. White and Monument are the 2450mm panel. If budget's the driver and you don't mind black, the wide panel is the cheapest way to fence a pool.",
+      });
+    } else {
+      tips.push({
+        title: "White & Monument posts",
+        body:
+          "Six Star doesn't make posts in white or monument, so we pull them from the Xpress range — same 50×50 size, matched finish. Nothing for you to do; the calculator swaps the SKU automatically.",
+      });
+    }
+    const tubSubstrate = (fv["tubular-substrate"] as string) || "decking";
+    if (tubSubstrate === "core-drilled") {
+      tips.push({
+        title: "Core-drilling tubular",
+        body:
+          "Core-drilled posts get grouted in — one 10kg bag covers about 10 posts, and we add a spare. Keep the holes shaded and the mixing water cold on a hot day.",
+      });
+    }
+    tips.push({
+      title: "Angled corners need swivel shrouds",
+      body:
+        "A square 90° corner is handled by the standard shroud kit. Only angled corners need the swivel shrouds — count how many angled corners your run has and we'll add four per corner.",
+    });
+    tips.push({
+      title: "Posts near the water",
+      body:
+        "Aluminium posts within 1.25m of the pool water need to be earthed by an electrician (AS 3000). Most fences sit outside that zone — measure from the waterline, not the coping.",
+    });
+    if (gateOn) {
+      tips.push({
+        title: "Tubular gate compliance",
+        body:
+          "Self-closing, self-latching D&D hardware rated to 30kg — Black and Monument ship it as one kit, white as two boxes. Hang the gate to swing away from the pool, latch 1500mm up, and avoid hanging it off a corner post.",
+      });
+    }
+  } else if (isBarr) {
     tips.push({
       title: "How BARR fencing works",
       body:
@@ -281,7 +327,7 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
 
   // Glass-gate compliance tip (the soft-close framing is glass hinge hardware —
   // Blade has its own D&D gate tip above).
-  if (gateOn && !isBlade && !isBarr) {
+  if (gateOn && !isBlade && !isBarr && !isTubular) {
     tips.push({
       title: "Gate compliance",
       body:

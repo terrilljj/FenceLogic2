@@ -22,6 +22,7 @@ import { GlassBalSpigotsConfig } from "./configure-blocks/glass-bal-spigots-conf
 import { GlassBalStandoffsConfig } from "./configure-blocks/glass-bal-standoffs-config";
 import { AluPoolBladeConfig } from "./configure-blocks/alu-pool-blade-config";
 import { AluPoolBarrConfig } from "./configure-blocks/alu-pool-barr-config";
+import { AluPoolTubularConfig } from "./configure-blocks/alu-pool-tubular-config";
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
@@ -65,6 +66,9 @@ export function SpanConfigPanel({
   // BARR Pool Fence — wizard accordion (Configure/Posts & Substrate/Gate). B/W finishes,
   // cross-range 50×50 corner/gate posts (BARR's 25mm post face can't take the hardware).
   const isAluPoolBarr = productVariant === "alu-pool-barr";
+  // Flat Top Tubular — wizard accordion. 3 finishes (3000mm Black-only), cross-range
+  // White posts, shrouds, swivel shrouds at angled corners, finish-asymmetric gate.
+  const isAluPoolTubular = productVariant === "alu-pool-tubular";
 
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
@@ -549,189 +553,13 @@ export function SpanConfigPanel({
             />
           )}
 
-          {/* Tubular Flat Top Configuration - appears right after section length */}
-          {productVariant === "alu-pool-tubular" && (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold">Tubular Flat Top Configuration</h4>
-                <InfoTooltip content="Tubular Flat Top fencing features 16mm diameter round vertical tubes with 38×25mm top and bottom rails. Panel widths are 2450mm (standard) or 3000mm (large). Choose panel height, width, layout mode, and post type for your installation." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Panel Height</Label>
-                  <Select
-                    value={span.tubularHeight || "1200mm"}
-                    onValueChange={(value) => updateSpan({ tubularHeight: value as "1200mm" | "900mm" })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-tubular-height`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1200mm">1200mm (Pool Fencing)</SelectItem>
-                      <SelectItem value="900mm">900mm (Non-Pool)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Finish</Label>
-                  <Select
-                    value={span.tubularFinish || "black"}
-                    onValueChange={(value) => updateSpan({ tubularFinish: value as "black" | "white" | "monument" })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-tubular-finish`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="black">Black</SelectItem>
-                      <SelectItem value="white">White</SelectItem>
-                      <SelectItem value="monument">Monument Grey</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Panel Width</Label>
-                <Select
-                  value={span.tubularPanelWidth || "2450mm"}
-                  onValueChange={(value) => updateSpan({ tubularPanelWidth: value as "2450mm" | "3000mm" })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-tubular-panel-width`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2450mm">2450mm (Standard)</SelectItem>
-                    <SelectItem value="3000mm">3000mm (Large)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Select the standard panel width for your fence layout
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Label className="text-sm font-medium">Layout Mode</Label>
-                  <InfoTooltip content="Full Panels + Cut End: Uses full standard panels (2450mm or 3000mm based on selection) with a cut panel at the end. Equally Spaced: Cuts all panels to equal widths for uniform appearance. Both modes accommodate 50mm posts between panels." />
-                </div>
-                <Select
-                  value={span.tubularLayoutMode || "full-panels-cut-end"}
-                  onValueChange={(value) => updateSpan({ tubularLayoutMode: value as "full-panels-cut-end" | "equally-spaced" })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-tubular-layout-mode`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full-panels-cut-end">Full Panels + Cut End</SelectItem>
-                    <SelectItem value="equally-spaced">Equally Spaced (All Cut)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {(span.tubularLayoutMode || "full-panels-cut-end") === "full-panels-cut-end" 
-                    ? "Uses full standard panels with a cut panel at the end (minimum 200mm)" 
-                    : "Cuts all panels to equal widths for uniform appearance"}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Post Type</Label>
-                <Select
-                  value={span.tubularPostType || "welded-base-plate"}
-                  onValueChange={(value) => updateSpan({ tubularPostType: value as "welded-base-plate" | "standard" })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-tubular-post-type`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="welded-base-plate">Welded Base Plate (1280mm)</SelectItem>
-                    <SelectItem value="standard">Standard (1800mm/2500mm)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {(span.tubularPostType || "welded-base-plate") === "welded-base-plate" 
-                    ? "Bolted down base plates for concrete surfaces" 
-                    : "Inground, wall, or core drilled mounting"}
-                </p>
-              </div>
-
-              {/* Tubular Gate Configuration - same as BARR/Blade (position only) */}
-              {gatesAllowed && (
-                <div className="space-y-3 pt-4 border-t border-card-border">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">Gate Required</Label>
-                    <Switch
-                      checked={span.gateConfig?.required || false}
-                      onCheckedChange={(required) => {
-                        if (required) {
-                          updateSpan({
-                            gateConfig: {
-                              required: true,
-                              hardware: "master",
-                              hingeFrom: "wall",
-                              latchTo: "wall",
-                              hingeType: "wall-to-glass",
-                              latchType: "glass-to-wall",
-                              gateSize: 975,
-                              hingePanelSize: 0,
-                              autoHingePanel: false,
-                              position: 0,
-                              flipped: false,
-                              postAdapterPlate: false,
-                              hingeGap: 0,
-                              latchGap: 0,
-                            },
-                          });
-                        } else {
-                          updateSpan({ gateConfig: undefined });
-                        }
-                      }}
-                      data-testid={`span-${span.spanId}-gate-toggle`}
-                    />
-                  </div>
-
-                  {span.gateConfig?.required && (
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Gate Position</Label>
-                        <Select
-                          value={(span.gateConfig.position || 0).toString()}
-                          onValueChange={(value) => updateSpan({ 
-                            gateConfig: {
-                              ...span.gateConfig!,
-                              position: parseInt(value)
-                            }
-                          })}
-                        >
-                          <SelectTrigger data-testid={`span-${span.spanId}-gate-position`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(() => {
-                              const numPanels = span.panelLayout?.panels.filter(p => span.panelLayout?.panelTypes?.[span.panelLayout.panels.indexOf(p)] !== "gate").length || 3;
-                              const positions = [];
-                              for (let i = 0; i <= numPanels; i++) {
-                                if (i === 0) {
-                                  positions.push(<SelectItem key={i} value={i.toString()}>Start (before panel 1)</SelectItem>);
-                                } else if (i === numPanels) {
-                                  positions.push(<SelectItem key={i} value={i.toString()}>End (after panel {numPanels})</SelectItem>);
-                                } else {
-                                  positions.push(<SelectItem key={i} value={i.toString()}>Between panel {i} and {i + 1}</SelectItem>);
-                                }
-                              }
-                              return positions;
-                            })()}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">
-                          Choose where to position the gate within this section
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          {/* ── Flat Top Tubular: Oxworks accordion (Configure/Posts & Substrate/Gate) ── */}
+          {isAluPoolTubular && (
+            <AluPoolTubularConfig
+              span={span}
+              updateSpan={updateSpan}
+              allSpans={allSpans}
+            />
           )}
 
           {/* Hamptons PVC Configuration - appears right after section length */}
