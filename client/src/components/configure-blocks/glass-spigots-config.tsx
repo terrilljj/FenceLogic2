@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Pencil, Plus } from "lucide-react";
+import { Check, Pencil, Plus } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { InfoTooltip } from "../info-tooltip";
 import { GateControls } from "../gate-controls";
 import { CustomPanelControls } from "../custom-panel-controls";
 import { GapSelect } from "./gap-select";
-import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
+import { SpigotFamilyPicker, familyImageSrc, type SpigotFamily } from "./spigot-family-picker";
 import { PanelThumb } from "./panel-thumb";
 
 // Pool spigot families (SF-1 §2.1: 5 V1 families; Nova removed for pool).
@@ -26,24 +26,30 @@ const POOL_FAMILIES: SpigotFamily[] = [
 // AS-3000 ON filters families to these (ADR 0044 hard rule).
 const AS3000_FAMILIES = ["madrid-pool", "madrid", "insuluxe"];
 
-// Per-family finish enums (SF-1 §2.1), mapped to the 4 schema-supported spigotColor
-// values. Matt White / White → "white". Insuluxe's Silver-Grey isn't representable in
-// the frozen spigotColor enum → deferred to the data pass (shown set is the supported
-// subset). Finish is chosen AFTER the family and filtered to it — no dead-ends.
-type Finish = "polished" | "satin" | "black" | "white";
+// Per-family finish enums (SF-1 §2.1), mapped to the schema spigotColor values.
+// Matt White / White → "white". Silver Grey is Insuluxe-only (SF-1 {B, SG, W}).
+// Finish is chosen AFTER the family and filtered to it — no dead-ends.
+export type Finish = "polished" | "satin" | "black" | "white" | "silver-grey";
 const FINISH_BY_FAMILY: Record<string, Finish[]> = {
   "madrid-pool": ["polished", "satin", "black", "white"],
   lifestyle: ["polished", "satin", "black"],
   rio: ["polished", "satin", "white"],
-  insuluxe: ["black", "white"],
+  insuluxe: ["black", "silver-grey", "white"],
   madrid: ["polished", "satin", "black", "white"],
 };
-const FINISH_LABEL: Record<Finish, string> = { polished: "Polished", satin: "Satin", black: "Black", white: "White" };
-const FINISH_SWATCH: Record<Finish, string> = {
+export const FINISH_LABEL: Record<Finish, string> = {
+  polished: "Polished",
+  satin: "Satin",
+  black: "Black",
+  white: "White",
+  "silver-grey": "Silver Grey",
+};
+export const FINISH_SWATCH: Record<Finish, string> = {
   polished: "bg-gradient-to-br from-zinc-100 to-zinc-400",
   satin: "bg-zinc-400",
   black: "bg-zinc-900",
   white: "bg-white ring-1 ring-inset ring-zinc-300",
+  "silver-grey": "bg-gradient-to-br from-slate-300 to-slate-400",
 };
 function defaultFinish(finishes: Finish[]): Finish {
   return finishes.includes("polished") ? "polished" : finishes[0];
@@ -51,6 +57,46 @@ function defaultFinish(finishes: Finish[]): Finish {
 
 // Raked retaining-wall panel heights (SF-1 §2.2: 12NRP-{1400..1800}HT).
 const RAKE_HEIGHTS = ["1400", "1500", "1600", "1700", "1800"];
+
+// COVER MATRIX (operator 2026-06-03, SKUs from _reports/calc-csv-gen-2026-05-29):
+// core-drilled spigots take DRESS RINGS, base-plated take DOMICAL COVERS — but the
+// variant range is PER FAMILY. Madrid has flat/raised rings and slim/high domes;
+// Insuluxe has exactly one of each, so the UI shows "included" instead of a choice.
+// `slim: true` marks variants blocked by the protruding-rod rule (base-plate on
+// concrete/steel needs the taller cover).
+type CoverOption = { value: string; label: string; blurb: string; sku: string; slim?: boolean };
+const MADRID_COVERS: { dress: CoverOption[]; dome: CoverOption[] } = {
+  dress: [
+    { value: "dress-flat", label: "Flat dress ring", blurb: "Slim ring, sits flush around the spigot.", sku: "MAD-DR-P" },
+    { value: "dress-raised", label: "Raised dress ring", blurb: "Taller ring for an uneven surface.", sku: "MAD-DR-RAISED-P" },
+  ],
+  dome: [
+    { value: "dome-slim", label: "Slimline domical", blurb: "Low 12mm dome over the base plate.", sku: "MAD-SDC-P", slim: true },
+    { value: "dome-high", label: "High domical", blurb: "22mm dome — clears rod fixings.", sku: "MAD-HDC-P" },
+  ],
+};
+const COVER_MATRIX: Record<string, { dress: CoverOption[]; dome: CoverOption[] }> = {
+  "madrid-pool": MADRID_COVERS,
+  madrid: MADRID_COVERS,
+  lifestyle: {
+    dress: [
+      { value: "dress-flat", label: "Flat dress ring", blurb: "Slim ring, sits flush around the spigot.", sku: "LS-DR-P" },
+      { value: "dress-raised", label: "Raised dress ring", blurb: "Taller ring for an uneven surface.", sku: "LS-DR-RAISED-P" },
+    ],
+    dome: [{ value: "dome-high", label: "Domical cover", blurb: "Square-profile dome over the base plate.", sku: "LS-DC-P" }],
+  },
+  rio: {
+    dress: [
+      { value: "dress-flat", label: "Flat dress ring", blurb: "Ø90mm flat ring around the spigot.", sku: "RIO-DR-P" },
+      { value: "dress-raised", label: "Domed dress ring", blurb: "Ø102mm domed ring.", sku: "RIO-SDC-P" },
+    ],
+    dome: [{ value: "dome-high", label: "High domical", blurb: "27mm dome over the base plate.", sku: "RIO-HDC-P" }],
+  },
+  insuluxe: {
+    dress: [{ value: "dress-flat", label: "Dress ring", blurb: "Conceals the Insuluxe spigot base.", sku: "INS-DR-B" }],
+    dome: [{ value: "dome-high", label: "High domical", blurb: "26mm two-part dome cover.", sku: "INS-HDC-B" }],
+  },
+};
 
 interface GlassSpigotsConfigProps {
   span: SpanConfig;
@@ -80,7 +126,8 @@ const TIP = {
     "The widest glass panel used across this section. The layout fits as many panels as possible up to this width, then equalises the remaining panels.",
   lhsGap: "End gap at the wall or corner on the left. Default 25mm; up to 150mm to allow fitting a post or junction.",
   rhsGap: "End gap at the wall or corner on the right. Default 25mm; up to 150mm to allow fitting a post or junction.",
-  midGap: "Target gap between adjacent panels. Panels adjust their width to accommodate this across the section.",
+  midGap:
+    "The actual gap between adjacent panels. Glass comes in 50mm width steps, so the achievable gap moves in steps of 50mm divided by the number of gaps — the steppers jump between achievable values.",
 };
 
 /** Numbered accordion header: badge + title + a live one-line summary of the section's
@@ -283,18 +330,90 @@ export function GlassSpigotsConfig({
   const [openSections, setOpenSections] = useState<string[]>(["configure", "spigot", "addons"]);
   const collapseSection = (section: string) => setOpenSections((prev) => prev.filter((s) => s !== section));
 
+  // Substrate → mounting → covers → fixings flow (SF-1 §2.4 install logic):
+  //  • Only CONCRETE can be core-drilled — timber decks and steel are base-plate only.
+  //  • Base-plate rod fixings on concrete/steel protrude, so the RAISED/HIGH cover
+  //    variant is required (flat dress ring / slim domical won't sit flush).
+  //  • Fixings are auto-included per substrate × mounting (shown, not chosen).
+  const substrate = (span.spigotSubstrate || "concrete") as "concrete" | "timber" | "steel";
+  const mounting = span.spigotMounting === "core-drilled" && substrate === "concrete" ? "core-drilled" : "base-plate";
+  const needsRaisedCover = mounting === "base-plate" && (substrate === "concrete" || substrate === "steel");
+
+  // COVERS: category follows the mounting (core-drill → dress rings; base-plate →
+  // domical covers); the variant range comes from the per-family COVER_MATRIX.
+  // Cross-rule: base-plate rods on concrete/steel protrude → slim variants disabled.
+  // A family with a single variant shows "included" instead of a fake choice.
+  const coverCategory = mounting === "core-drilled" ? "dress" : "dome";
+  const coverOptions = (COVER_MATRIX[currentFamily] ?? MADRID_COVERS)[coverCategory].map((o) => ({
+    ...o,
+    disabled: !!o.slim && needsRaisedCover,
+    disabledReason: "Won't clear the rod fixings on concrete/steel.",
+  }));
+  const enabledCovers = coverOptions.filter((o) => !o.disabled);
+  const defaultCover = enabledCovers[0]?.value ?? coverOptions[0].value;
+  const storedCover = span.fieldValues?.["spigot-cover"] as string | undefined;
+  const spigotCover = storedCover && enabledCovers.some((o) => o.value === storedCover) ? storedCover : defaultCover;
+  const selectedCover = coverOptions.find((o) => o.value === spigotCover) ?? coverOptions[0];
+  const fixingsInfo =
+    mounting === "core-drilled"
+      ? "Pourable grout — 1 bag per 10 spigots plus a spare. No mechanical fixings."
+      : substrate === "concrete"
+        ? "M10×120mm stainless threaded rods (1 pack per spigot) + chemical anchor (1 per 6 spigots)."
+        : substrate === "timber"
+          ? "100mm countersunk batten screws (1 pack per spigot). Fix into joists or solid bearers."
+          : "M10×120mm stainless threaded rods (1 pack per spigot). No chemical anchor needed for steel.";
+
+  // Gate hardware (hinges + latches) finish: match the spigot finish, or pick one.
+  const hardwareFinish = (span.fieldValues?.["hardware-finish"] as string) || "match";
+
+  // MID GAP truth (owner 2026-06-03): panels sit on a 50mm grid, so the mid gap can
+  // only take values 50/M apart (M = number of mid gaps). The control shows the
+  // ACTUAL achieved gap from the layout and its steppers jump between achievable
+  // values — from 83mm with one gap, down lands on 33 (one panel grows 50mm).
+  const midGaps = (() => {
+    const gaps = [...(span.panelLayout?.gaps ?? [])];
+    if (span.gateConfig?.required) {
+      // Hardware gaps (hinge/latch) are fixed by the gate — exclude from the mid-gap set.
+      for (const hw of [span.gateConfig.hingeGap, span.gateConfig.latchGap]) {
+        const i = gaps.findIndex((g) => Math.abs(g - hw) < 0.01);
+        if (i >= 0) gaps.splice(i, 1);
+      }
+    }
+    return gaps;
+  })();
+  const actualMidGap = midGaps.length ? Math.round(midGaps[0] * 10) / 10 : span.desiredGap;
+  const midGapStep = 50 / Math.max(1, midGaps.length);
+
+  // The gate's ACTUAL centre distance from the left end (live, from the built layout).
+  // Drives the centre-mode Gate Position controls: Move Left/Right nudge it, the
+  // readout shows it, panels re-solve dynamically.
+  const actualGateCentre = (() => {
+    if (!span.gateConfig?.required || !span.panelLayout?.panels?.length) return undefined;
+    const types = span.panelLayout.panelTypes ?? [];
+    let x = span.leftGap?.enabled ? span.leftGap.size : 0;
+    for (let i = 0; i < span.panelLayout.panels.length; i++) {
+      if (types[i] === "gate") return Math.round((x + span.panelLayout.panels[i] / 2) * 10) / 10;
+      x += span.panelLayout.panels[i] + (span.panelLayout.gaps[i] ?? 0);
+    }
+    return undefined;
+  })();
+
   // Live summaries shown in the collapsed section headers.
   const familyLabel = POOL_FAMILIES.find((f) => f.value === currentFamily)?.label ?? currentFamily;
-  const mountingLabel =
-    ({ "base-plate": "Base Plate", "core-drilled": "Core Drilled", "side-mounted": "Side Mounted" } as Record<string, string>)[
-      span.spigotMounting || "base-plate"
-    ];
+  const mountingLabel = mounting === "core-drilled" ? "Core Drilled" : "Base Plate";
   const substrateLabel =
-    ({ concrete: "Concrete", timber: "Timber deck", steel: "Steel" } as Record<string, string>)[span.spigotSubstrate || "concrete"];
-  const spigotSummary = [familyLabel, FINISH_LABEL[currentFinish], mountingLabel, substrateLabel, as3000 ? "AS-3000" : null]
+    ({ concrete: "Concrete", timber: "Timber deck", steel: "Steel" } as Record<string, string>)[substrate];
+  const spigotSummary = [
+    familyLabel,
+    FINISH_LABEL[currentFinish],
+    substrateLabel,
+    mountingLabel,
+    selectedCover.label,
+    as3000 ? "AS-3000" : null,
+  ]
     .filter(Boolean)
     .join(" · ");
-  const configureSummary = `${span.maxPanelWidth}mm max panel · gaps ${span.leftGap?.enabled ? span.leftGap.size : 0} / ${span.desiredGap} / ${span.rightGap?.enabled ? span.rightGap.size : 0}`;
+  const configureSummary = `${span.maxPanelWidth}mm max panel · gaps ${span.leftGap?.enabled ? span.leftGap.size : 0} / ${actualMidGap} / ${span.rightGap?.enabled ? span.rightGap.size : 0}`;
   const addonItems = [
     span.gateConfig?.required ? `Gate ${span.gateConfig.gateSize}` : null,
     span.leftRakedPanel?.enabled ? `Left rake ${span.leftRakedPanel.height}H` : null,
@@ -348,8 +467,8 @@ export function GlassSpigotsConfig({
                 value={span.leftGap?.enabled ? span.leftGap.size : 0}
                 onChange={(size) => updateSpan({ leftGap: size > 0 ? { enabled: true, position: "inside", size } : undefined })}
                 min={0}
-                max={150}
-                step={5}
+                max={99}
+                step={1}
                 tooltip={TIP.lhsGap}
                 testId={`span-${span.spanId}-left-gap`}
               />
@@ -358,11 +477,11 @@ export function GlassSpigotsConfig({
             {isFieldEnabled("betweenGapMm") && (
               <GapSelect
                 label="Mid Gap"
-                value={span.desiredGap}
+                value={actualMidGap}
                 onChange={(desiredGap) => updateSpan({ desiredGap })}
                 min={0}
                 max={99}
-                step={5}
+                step={midGapStep}
                 tooltip={TIP.midGap}
                 testId={`span-${span.spanId}-gap-select`}
               />
@@ -374,8 +493,8 @@ export function GlassSpigotsConfig({
                 value={span.rightGap?.enabled ? span.rightGap.size : 0}
                 onChange={(size) => updateSpan({ rightGap: size > 0 ? { enabled: true, position: "inside", size } : undefined })}
                 min={0}
-                max={150}
-                step={5}
+                max={99}
+                step={1}
                 tooltip={TIP.rhsGap}
                 testId={`span-${span.spanId}-right-gap`}
               />
@@ -462,31 +581,23 @@ export function GlassSpigotsConfig({
             </div>
           </div>
 
+          {/* Substrate FIRST — it determines which mountings are possible (SF-1 §2.4). */}
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Mounting</Label>
-              <Select
-                value={span.spigotMounting || "base-plate"}
-                onValueChange={(v: "base-plate" | "core-drilled" | "side-mounted") => updateSpan({ spigotMounting: v })}
-              >
-                <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-mounting`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="base-plate">Base Plate</SelectItem>
-                  <SelectItem value="core-drilled">Core Drilled</SelectItem>
-                  <SelectItem value="side-mounted">Side Mounted</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1">
                 <Label className="text-xs text-muted-foreground">Substrate</Label>
-                <InfoTooltip content="The surface the spigots fix to — sets the right fixings per section (concrete vs timber deck need different anchors). Each section can use a different substrate." />
+                <InfoTooltip content="The surface the spigots fix to. Concrete can be core-drilled or base-plated; timber decks and steel must be base-plated. Each section can use a different substrate." />
               </div>
               <Select
-                value={span.spigotSubstrate || "concrete"}
-                onValueChange={(v: "concrete" | "timber" | "steel") => updateSpan({ spigotSubstrate: v })}
+                value={substrate}
+                onValueChange={(v: "concrete" | "timber" | "steel") => {
+                  // Timber/steel can't be core-drilled — switch to base-plate automatically.
+                  const updates: Partial<SpanConfig> = { spigotSubstrate: v };
+                  if (v !== "concrete" && span.spigotMounting === "core-drilled") {
+                    updates.spigotMounting = "base-plate";
+                  }
+                  updateSpan(updates);
+                }}
               >
                 <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-substrate`}>
                   <SelectValue />
@@ -498,6 +609,112 @@ export function GlassSpigotsConfig({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Mounting — options filtered by substrate (core-drill needs concrete). */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Mounting</Label>
+                <InfoTooltip content="Core-drill drops the spigot into a grouted hole in concrete. Base-plate bolts onto the finished surface — the only option for timber decks and steel." />
+              </div>
+              <Select
+                value={mounting}
+                onValueChange={(v: "base-plate" | "core-drilled") => updateSpan({ spigotMounting: v })}
+              >
+                <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-mounting`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="base-plate">Base Plate</SelectItem>
+                  {substrate === "concrete" && <SelectItem value="core-drilled">Core Drilled</SelectItem>}
+                </SelectContent>
+              </Select>
+              {substrate !== "concrete" && (
+                <p className="text-[10px] leading-tight text-muted-foreground">Core-drill needs solid concrete.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Covers — category follows the mounting (core-drill → dress rings;
+              base-plate → domical covers); variant range is per family (COVER_MATRIX).
+              Families with a single variant show it as "included" — no fake choice. */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">
+                Spigot Covers — {mounting === "core-drilled" ? "core-drilled spigots take dress rings" : "base-plated spigots take domical covers"}
+              </Label>
+              <InfoTooltip content="Covers hide the spigot base. Core-drilled spigots sit into the ground, so a dress ring covers the entry. Base-plated spigots have a visible plate and bolts, so a domical cover hides the lot. Finished to match your spigot finish." />
+            </div>
+            {coverOptions.length === 1 ? (
+              /* Single variant for this family — show as included, not a choice. */
+              <div
+                className="flex max-w-md items-center gap-2.5 rounded-md border border-card-border bg-muted/30 p-2.5"
+                data-testid={`span-${span.spanId}-cover-included`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded bg-muted text-center">
+                  {familyImageSrc(selectedCover.sku) ? (
+                    <img src={familyImageSrc(selectedCover.sku)} alt={selectedCover.label} className="h-full w-full object-contain" loading="lazy" />
+                  ) : (
+                    <span className="px-0.5 font-mono text-[7px] leading-tight text-muted-foreground">{selectedCover.sku}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold">{selectedCover.label} included</p>
+                  <p className="text-[10px] leading-tight text-muted-foreground">
+                    {selectedCover.blurb} Finished to match your spigots.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid max-w-md grid-cols-2 gap-2.5" data-testid={`span-${span.spanId}-cover-picker`}>
+                {coverOptions.map((opt) => {
+                  const active = spigotCover === opt.value;
+                  const img = familyImageSrc(opt.sku);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={opt.disabled}
+                      onClick={() => !opt.disabled && updateSpan({ fieldValues: { ...span.fieldValues, "spigot-cover": opt.value } })}
+                      className={cn(
+                        "flex flex-col gap-1.5 rounded-md border p-2 text-left transition-colors hover-elevate active-elevate-2",
+                        active ? "border-primary/50 bg-primary/5 ring-2 ring-primary" : "border-card-border bg-card",
+                        opt.disabled && "cursor-not-allowed opacity-50",
+                      )}
+                      data-testid={`span-${span.spanId}-cover-${opt.value}`}
+                    >
+                      <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded bg-muted text-center">
+                        {img ? (
+                          <img src={img} alt={opt.label} className="h-full w-full object-contain" loading="lazy" />
+                        ) : (
+                          <span className="px-1 text-[9px] leading-tight text-muted-foreground">
+                            image soon
+                            <br />
+                            <span className="font-mono">{opt.sku}</span>
+                          </span>
+                        )}
+                        {active && (
+                          <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                            <Check className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-semibold">{opt.label}</p>
+                        <p className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
+                          {opt.disabled ? opt.disabledReason : opt.blurb}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Fixings — auto-included per substrate × mounting (informational, not a choice). */}
+          <div className="rounded-md border border-card-border bg-muted/30 p-2.5" data-testid={`span-${span.spanId}-fixings-info`}>
+            <p className="text-[11px] font-semibold">Fixings included ({substrateLabel.toLowerCase()} · {mountingLabel.toLowerCase()})</p>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">{fixingsInfo}</p>
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -524,13 +741,67 @@ export function GlassSpigotsConfig({
                   testId={`span-${span.spanId}-addon-gate`}
                 >
                   {span.gateConfig?.required && (
-                    <GateControls
-                      config={span.gateConfig}
-                      spanId={span.spanId}
-                      onUpdate={(gateConfig) => updateSpan({ gateConfig: { ...gateConfig, postAdapterPlate: gateConfig.postAdapterPlate ?? false } })}
-                      calculatedHingePanelSize={optimalHingePanelSize}
-                      numPanels={span.panelLayout?.panels.length}
-                    />
+                    <>
+                      <GateControls
+                        config={span.gateConfig}
+                        spanId={span.spanId}
+                        onUpdate={(gateConfig) => updateSpan({ gateConfig: { ...gateConfig, postAdapterPlate: gateConfig.postAdapterPlate ?? false } })}
+                        calculatedHingePanelSize={optimalHingePanelSize}
+                        numPanels={span.panelLayout?.panels.length}
+                        actualGateCentre={actualGateCentre}
+                        spanLengthMm={span.length}
+                        leftEndGapMm={span.leftGap?.enabled ? span.leftGap.size : 0}
+                        rightEndGapMm={span.rightGap?.enabled ? span.rightGap.size : 0}
+                      />
+
+                      {/* Hinge & latch finish — match the spigot finish (default) or pick
+                          a finish for the gate hardware. Stored in fieldValues so the
+                          solver pass can map it to the brand-specific SKU suffix. */}
+                      <div className="space-y-1.5 rounded-md border border-card-border p-2.5" data-testid={`span-${span.spanId}-hardware-finish`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs font-medium">Hinge &amp; latch finish</Label>
+                            <InfoTooltip content="The finish of the gate hinges and latch. Matching the spigot finish keeps all the hardware consistent; pick a finish here to contrast instead." />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              Match spigots ({FINISH_LABEL[currentFinish]})
+                            </span>
+                            <Switch
+                              checked={hardwareFinish === "match"}
+                              onCheckedChange={(on) =>
+                                updateSpan({
+                                  fieldValues: { ...span.fieldValues, "hardware-finish": on ? "match" : currentFinish },
+                                })
+                              }
+                              data-testid={`span-${span.spanId}-hardware-finish-match`}
+                            />
+                          </div>
+                        </div>
+                        {hardwareFinish !== "match" && (
+                          <div className="flex flex-wrap gap-1.5" data-testid={`span-${span.spanId}-hardware-finish-picker`}>
+                            {(["polished", "satin", "black", "white"] as Finish[]).map((f) => {
+                              const active = hardwareFinish === f;
+                              return (
+                                <button
+                                  key={f}
+                                  type="button"
+                                  onClick={() => updateSpan({ fieldValues: { ...span.fieldValues, "hardware-finish": f } })}
+                                  className={cn(
+                                    "flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors hover-elevate active-elevate-2",
+                                    active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-card-border",
+                                  )}
+                                  data-testid={`span-${span.spanId}-hardware-finish-${f}`}
+                                >
+                                  <span className={cn("h-3.5 w-3.5 rounded-full", FINISH_SWATCH[f])} />
+                                  {FINISH_LABEL[f]}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
                 </AddOnCard>
               )}

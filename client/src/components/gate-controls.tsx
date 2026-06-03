@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, FlipHorizontal, Info, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getGateGaps, HingeType, LatchType } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,9 @@ interface GateConfig {
   hingeGap: number;
   latchGap: number;
   postAdapterPlate?: boolean;
+  /** Distance (mm) from the LEFT end of the run to the gate's centre line. When set,
+   *  the run splits at the gate and each side solves independently. */
+  centreFromLeft?: number;
 }
 
 interface GateControlsProps {
@@ -33,6 +37,14 @@ interface GateControlsProps {
   onUpdate: (config: GateConfig) => void;
   calculatedHingePanelSize?: number; // Auto-calculated hinge panel size when auto is enabled
   numPanels?: number; // Number of panels in the span for position limits
+  /** The gate's ACTUAL centre distance (mm) from the left end, computed from the live
+   *  layout. When provided, Gate Position runs in CENTRE MODE: Move Left/Right nudge
+   *  the centre by 50mm and the readout/panels update live. */
+  actualGateCentre?: number;
+  /** Run length + end gaps (mm) — used to bound how far the gate centre can travel. */
+  spanLengthMm?: number;
+  leftEndGapMm?: number;
+  rightEndGapMm?: number;
 }
 
 // Gate hardware as PHOTO cards (image-17 flow). The choice locks the hinge brand —
@@ -50,8 +62,50 @@ function hardwareImageSrc(sku: string): string | undefined {
   return `${IMAGE_BASE}/_next/image?url=/products/${sku}.png&w=256&q=75`;
 }
 
-export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSize, numPanels = 1 }: GateControlsProps) {
+export function GateControls({
+  config,
+  spanId,
+  onUpdate,
+  calculatedHingePanelSize,
+  numPanels = 1,
+  actualGateCentre,
+  spanLengthMm,
+  leftEndGapMm = 25,
+  rightEndGapMm = 25,
+}: GateControlsProps) {
   const [hingeWarningAcknowledged, setHingeWarningAcknowledged] = useState(false);
+
+  // ── CENTRE MODE (owner 2026-06-03 v2): the gate centre is a LIVE measurement.
+  // Move Left/Right nudge it by 50mm; typing jumps straight to a value; the panels
+  // re-solve and the readout updates dynamically. Available whenever the parent
+  // supplies the actual centre (glass-pool-spigots); other variants keep the old
+  // panel-index positioning.
+  const centreMode = actualGateCentre !== undefined && config.hingeFrom === "glass";
+  const CENTRE_STEP = 50;
+
+  // Conservative travel limits so a nudge never lands somewhere the solver can't
+  // build (each side needs its hinge/latch gap + room for glass).
+  const hingeOnLeft = config.flipped;
+  const sideMinSpace = (isHingeSide: boolean) =>
+    isHingeSide
+      ? (config.autoHingePanel !== false ? 450 : config.hingePanelSize + 50) + config.hingeGap
+      : 450 + config.latchGap;
+  const minCentre = Math.ceil(leftEndGapMm + sideMinSpace(hingeOnLeft) + config.gateSize / 2);
+  const maxCentre = Math.floor((spanLengthMm ?? 0) - rightEndGapMm - sideMinSpace(!hingeOnLeft) - config.gateSize / 2);
+
+  const clampCentre = (n: number) => Math.max(minCentre, Math.min(maxCentre, Math.round(n)));
+  const currentCentre = config.centreFromLeft ?? actualGateCentre ?? 0;
+  const nudgeCentre = (dir: 1 | -1) => {
+    onUpdate({ ...config, centreFromLeft: clampCentre(currentCentre + dir * CENTRE_STEP) });
+  };
+
+  // Live centre readout — shows the ACTUAL built centre; editable. Focused-aware so
+  // the solver's adjustments never overwrite mid-typing.
+  const [centreText, setCentreText] = useState(String(Math.round(actualGateCentre ?? 0)));
+  const [centreFocused, setCentreFocused] = useState(false);
+  useEffect(() => {
+    if (!centreFocused && actualGateCentre !== undefined) setCentreText(String(Math.round(actualGateCentre)));
+  }, [actualGateCentre, centreFocused]);
 
   const updateConfig = (updates: Partial<GateConfig>) => {
     // Automatically update gaps when hardware or hingeFrom changes
@@ -81,15 +135,15 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
 
   return (
     <div className="space-y-4 bg-muted/30 rounded-md p-4" data-testid={`gate-controls-${spanId}`}>
-      {/* Auto hinge state — reflects the ACTUAL gate config (auto is the default).
-          Picking a size from the Hinge Panel dropdown turns auto off; the Auto
-          button turns it back on. (Not tied to the HINGE_AUTO_ENABLED env flag —
-          that only affects a server resolve edge case, not this UI.) */}
+      {/* Match-panel-size state — reflects the ACTUAL gate config (ON is the default).
+          Toggle OFF to set a manual hinge size (e.g. a narrow hinge panel that places
+          the gate exactly where you need it) — the other panels then size independently. */}
       {config.hingeFrom === "glass" && config.autoHingePanel && (
         <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30" data-testid={`hinge-auto-on-banner-${spanId}`}>
           <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
           <AlertDescription className="text-sm text-green-900 dark:text-green-100">
-            Hinge panel auto-sizes to match your glass panels. Pick a size below to override.
+            Hinge panel matches your glass panel sizes. Turn off "Match panel size" to set it
+            manually — the other panels will then size independently.
           </AlertDescription>
         </Alert>
       )}
@@ -104,9 +158,13 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                 type="button"
                 variant="default"
                 className="font-semibold"
-                onClick={() => updateConfig({ position: Math.max(positionLimits.min, config.position - 1) })}
+                onClick={() =>
+                  centreMode
+                    ? nudgeCentre(-1)
+                    : updateConfig({ position: Math.max(positionLimits.min, config.position - 1) })
+                }
                 data-testid={`gate-${spanId}-move-left`}
-                disabled={config.position <= positionLimits.min}
+                disabled={centreMode ? currentCentre - CENTRE_STEP < minCentre : config.position <= positionLimits.min}
               >
                 <ChevronLeft className="w-4 h-4 mr-1.5" />
                 Move Left
@@ -125,18 +183,75 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                 type="button"
                 variant="default"
                 className="font-semibold"
-                onClick={() => updateConfig({ position: Math.min(positionLimits.max, config.position + 1) })}
+                onClick={() =>
+                  centreMode
+                    ? nudgeCentre(1)
+                    : updateConfig({ position: Math.min(positionLimits.max, config.position + 1) })
+                }
                 data-testid={`gate-${spanId}-move-right`}
-                disabled={config.position >= positionLimits.max}
+                disabled={centreMode ? currentCentre + CENTRE_STEP > maxCentre : config.position >= positionLimits.max}
               >
                 <ChevronRight className="w-4 h-4 mr-1.5" />
                 Move Right
               </Button>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Position:</span>
-              <span className="font-mono font-medium">Panel {config.position + 1}</span>
-            </div>
+
+            {centreMode ? (
+              /* LIVE gate-centre measurement: shows where the gate's centre line actually
+                 sits; Move Left/Right shift it 50mm per click; type a number to jump
+                 straight there (e.g. centring on a path). Panels re-solve dynamically. */
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Gate centre:</span>
+                <div className="relative w-28">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={centreText}
+                    onFocus={() => setCentreFocused(true)}
+                    onChange={(e) => {
+                      setCentreText(e.target.value);
+                      const n = parseInt(e.target.value, 10);
+                      if (!Number.isNaN(n)) updateConfig({ centreFromLeft: clampCentre(n) });
+                    }}
+                    onBlur={() => {
+                      setCentreFocused(false);
+                      const n = parseInt(centreText, 10);
+                      if (!Number.isNaN(n)) {
+                        const clamped = clampCentre(n);
+                        updateConfig({ centreFromLeft: clamped });
+                        setCentreText(String(clamped));
+                      } else if (actualGateCentre !== undefined) {
+                        setCentreText(String(Math.round(actualGateCentre)));
+                      }
+                    }}
+                    className="h-8 w-full rounded-md border border-input bg-background pr-9 text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    data-testid={`gate-${spanId}-centre-from-left`}
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+                    mm
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">from the left end</span>
+                {config.centreFromLeft !== undefined && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => updateConfig({ centreFromLeft: undefined })}
+                    data-testid={`gate-${spanId}-centre-clear`}
+                  >
+                    Reset
+                  </Button>
+                )}
+                <InfoTooltip content="The distance from the left end of this section to the centre line of the gate. Move Left/Right shifts it 50mm at a time; type a measurement to place it exactly — e.g. centring the gate on a path to the pool. The panels each side re-size automatically." />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Position:</span>
+                <span className="font-mono font-medium">Panel {config.position + 1}</span>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex items-center gap-2 text-sm">
@@ -323,32 +438,29 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
 
           {config.hingeFrom === "glass" && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">
-                  Hinge Panel{config.autoHingePanel ? " (auto)" : ""}
-                </Label>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={config.autoHingePanel ? "default" : "outline"}
-                  onClick={() => {
-                    if (calculatedHingePanelSize) {
-                      updateConfig({
-                        autoHingePanel: true,
-                        hingePanelSize: calculatedHingePanelSize
-                      });
-                    } else {
-                      updateConfig({ autoHingePanel: true });
-                    }
-                  }}
-                  data-testid={`gate-${spanId}-auto-hinge-button`}
-                  className="h-7 text-xs"
-                >
-                  Auto
-                </Button>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm font-medium">Hinge Panel</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Match panel size</span>
+                  <Switch
+                    checked={config.autoHingePanel}
+                    onCheckedChange={(on) => {
+                      if (on && calculatedHingePanelSize) {
+                        // Back to matching: re-optimise the hinge to suit the panel range.
+                        updateConfig({ autoHingePanel: true, hingePanelSize: calculatedHingePanelSize });
+                      } else {
+                        // Manual mode: keep the current size; the dropdown below unlocks and
+                        // the other panels size independently of the hinge.
+                        updateConfig({ autoHingePanel: on });
+                      }
+                    }}
+                    data-testid={`gate-${spanId}-match-panel-toggle`}
+                  />
+                </div>
               </div>
               <Select
                 value={config.hingePanelSize.toString()}
+                disabled={config.autoHingePanel}
                 onValueChange={(value) => {
                   updateConfig({
                     autoHingePanel: false,
@@ -367,6 +479,11 @@ export function GateControls({ config, spanId, onUpdate, calculatedHingePanelSiz
                   ))}
                 </SelectContent>
               </Select>
+              {!config.autoHingePanel && (
+                <p className="text-[11px] leading-tight text-muted-foreground">
+                  Manual hinge size — the other panels in the run size independently.
+                </p>
+              )}
               {config.hingePanelSize < 1000 && (
                 <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md mt-2" data-testid={`gate-${spanId}-hinge-warning`}>
                   <Checkbox

@@ -644,8 +644,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       const gaps = span.panelLayout.gaps;
       leftGapSize = gaps[0]; // First gap
       rightGapSize = gaps[gaps.length - 1]; // Last gap
-    } else if (span.gateConfig?.required) {
-      // Override end gaps based on gate configuration (glass fencing only)
+    } else if (span.gateConfig?.required && span.gateConfig.centreFromLeft == null) {
+      // Override end gaps based on gate configuration (glass fencing only).
+      // Skipped when the gate is CENTRED (centreFromLeft set): the gate sits mid-run
+      // regardless of its position index, so the real left/right end gaps apply.
       const latchGap = span.gateConfig.latchGap || 9;
       const hingeGap = span.gateConfig.hingeGap || 9;
       

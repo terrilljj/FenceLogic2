@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { SpanConfig, getGateGaps, ProductVariant } from "@shared/schema";
-import { calculatePanelLayout, calculateBarrPanelLayout, calculateBladePanelLayout, calculateTubularPanelLayout, calculateHamptonsPanelLayout } from "@shared/panelCalculations";
+import { calculatePanelLayout, calculateCentredGateLayout, calculateBarrPanelLayout, calculateBladePanelLayout, calculateTubularPanelLayout, calculateHamptonsPanelLayout } from "@shared/panelCalculations";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
@@ -297,9 +297,52 @@ export function SpanConfigPanel({
       // Use the configured hinge panel size (default 1200mm)
       const effectiveHingePanelSize = span.gateConfig?.hingePanelSize || 1200;
 
+      // GATE CENTRE OVERRIDE: when the user has pinned the gate's centre line to a
+      // distance from the left end (e.g. centring on a path), split the run at the
+      // gate and solve each side independently. Falls back to the normal layout if
+      // the requested centre is unworkable.
+      let centredLayout = null;
+      if (
+        gatesAllowed &&
+        span.gateConfig?.required &&
+        span.gateConfig.hingeFrom !== "wall" &&
+        span.gateConfig.centreFromLeft != null
+      ) {
+        // Try the requested centre first; if the solver can't build it exactly, walk
+        // outward in 50mm steps so the gate "sticks" as close as possible instead of
+        // teleporting back to panel-index positioning.
+        for (const offset of [0, -50, 50, -100, 100, -150, 150, -200, 200]) {
+          centredLayout = calculateCentredGateLayout({
+            spanLength: span.length,
+            leftEndGap,
+            rightEndGap,
+            desiredGap: span.desiredGap,
+            maxPanelWidth: span.maxPanelWidth,
+            hasLeftRaked: span.leftRakedPanel?.enabled || false,
+            hasRightRaked: span.rightRakedPanel?.enabled || false,
+            gateConfig: {
+              gateSize: span.gateConfig.gateSize,
+              hingePanelSize: effectiveHingePanelSize,
+              flipped: span.gateConfig.flipped,
+              hingeGap: span.gateConfig.hingeGap ?? 8,
+              latchGap: span.gateConfig.latchGap ?? 9,
+              autoHingePanel: span.gateConfig.autoHingePanel,
+              centreFromLeft: span.gateConfig.centreFromLeft + offset,
+            },
+            customPanelConfig: span.customPanel?.enabled ? {
+              enabled: span.customPanel.enabled,
+              width: span.customPanel.width,
+              height: span.customPanel.height,
+              position: span.customPanel.position,
+            } : undefined,
+          });
+          if (centredLayout) break;
+        }
+      }
+
       // Calculate final panel layout with the configured hinge panel size
       // Only include gate config if gates are allowed for this product variant
-      layout = calculatePanelLayout(
+      layout = centredLayout ?? calculatePanelLayout(
         span.length,
         endGaps,
         span.desiredGap,
@@ -315,6 +358,9 @@ export function SpanConfigPanel({
           hingeFrom: span.gateConfig.hingeFrom,
           hingeGap: span.gateConfig.hingeGap,
           latchGap: span.gateConfig.latchGap,
+          // Manual hinge size (match OFF) disables the hinge-match rule so the
+          // remaining panels equalise independently.
+          autoHingePanel: span.gateConfig.autoHingePanel,
         } : undefined,
         span.customPanel?.enabled ? {
           enabled: span.customPanel.enabled,
@@ -337,6 +383,7 @@ export function SpanConfigPanel({
       span.leftGap, span.rightGap, 
       span.leftRakedPanel, span.rightRakedPanel, 
       span.gateConfig?.required, span.gateConfig?.gateSize, span.gateConfig?.hingePanelSize,
+      span.gateConfig?.autoHingePanel, span.gateConfig?.centreFromLeft,
       span.gateConfig?.position, span.gateConfig?.flipped, span.gateConfig?.hingeFrom, span.gateConfig?.latchTo,
       span.gateConfig?.hingeGap, span.gateConfig?.latchGap,
       span.gateConfig?.savedGlassPosition,
@@ -482,6 +529,7 @@ export function SpanConfigPanel({
           hingeFrom: span.gateConfig.hingeFrom,
           hingeGap: span.gateConfig.hingeGap,
           latchGap: span.gateConfig.latchGap,
+          autoHingePanel: true, // computing the auto-match value — rule applies
         },
         span.customPanel?.enabled ? {
           enabled: span.customPanel.enabled,

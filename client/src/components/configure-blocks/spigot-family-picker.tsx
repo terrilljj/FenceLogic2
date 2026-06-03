@@ -21,7 +21,7 @@ interface SpigotFamilyPickerProps {
 // Optimised storefront image, only when a production base URL is configured.
 // Until then each card shows a labelled placeholder keyed to the family's SKU.
 const IMAGE_BASE = (import.meta as any).env?.VITE_STOREFRONT_IMAGE_BASE as string | undefined;
-function familyImageSrc(sku: string): string | undefined {
+export function familyImageSrc(sku: string): string | undefined {
   if (!IMAGE_BASE) return undefined;
   return `${IMAGE_BASE}/_next/image?url=/products/${sku}.png&w=256&q=75`;
 }
