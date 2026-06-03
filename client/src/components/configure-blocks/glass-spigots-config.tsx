@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps } from "@shared/schema";
-import { channelCutPlans, CHANNEL_PINS_PER_JOIN, CHANNEL_PIN_PACK_SIZE } from "@/lib/cut-plan";
+import { channelCutPlans, computeSectionCutPlans, CHANNEL_PINS_PER_JOIN, CHANNEL_PIN_PACK_SIZE } from "@/lib/cut-plan";
 import { cn } from "@/lib/utils";
 import { InfoTooltip } from "../info-tooltip";
 import { GateControls } from "../gate-controls";
@@ -280,14 +280,31 @@ export function GlassSpigotsConfig({
   allSpans,
   productVariant = "glass-pool-spigots",
 }: GlassSpigotsConfigProps) {
-  // CHANNEL MODE (glass-pool-channel): VersaTilt channel system replaces the spigot
-  // ecosystem — no family picker, no covers, channel finish {Black, Satin Anodised},
-  // M12 fixings per substrate. Glass/gates/raked/custom logic is untouched.
-  const isChannel = productVariant === "glass-pool-channel";
+  // CHANNEL MODE: VersaTilt channel system replaces the spigot ecosystem — no family
+  // picker, no covers, channel finish {Black, Satin Anodised}, M12 fixings per
+  // substrate. Glass/gates/raked/custom logic is untouched.
+  //  • glass-pool-channel: 12mm × 1200mm pool glass, gates allowed.
+  //  • glass-bal-channel:  15mm × 1000mm balustrade glass, NO gates/raked, + Rail
+  //    section. Operator ruling 2026-06-03 (_docs/channel-ui-build-spec.md): pool
+  //    channel carried over verbatim + 35-Series rail (finish auto-matched) +
+  //    friction plates at 300mm centres.
+  const isBalChannel = productVariant === "glass-bal-channel";
+  const isChannel = productVariant === "glass-pool-channel" || isBalChannel;
+  // Glass spec per mode: pool = 12mm × 1200mm; bal channel = 15mm × 1000mm (PTS-003).
+  const glassThicknessMm = isBalChannel ? 15 : GLASS_THICKNESS_MM;
+  const glassHeightMm = isBalChannel ? 1000 : STANDARD_PANEL_HEIGHT_MM;
+  // PTS-003 max span for the 15mm bal channel: 1400mm (pool styles go to 2000mm).
+  const maxPanelCapMm = isBalChannel ? 1400 : 2000;
   const standardPanelWidth = span.panelLayout?.panels?.length
     ? Math.max(...span.panelLayout.panels)
     : span.maxPanelWidth;
-  const weightKg = panelWeightKg(standardPanelWidth, STANDARD_PANEL_HEIGHT_MM, GLASS_THICKNESS_MM);
+  const weightKg = panelWeightKg(standardPanelWidth, glassHeightMm, glassThicknessMm);
+
+  // Keep max panel within the PTS cap (e.g. arriving from a generic-1800 default).
+  useEffect(() => {
+    if (span.maxPanelWidth > maxPanelCapMm) updateSpan({ maxPanelWidth: maxPanelCapMm });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxPanelCapMm, span.maxPanelWidth]);
 
   const gateEnabled = isSectionEnabled("Gate") && gatesAllowed;
   const rakedEnabled = isSectionEnabled("Raked Panel") && gatesAllowed;
@@ -368,7 +385,7 @@ export function GlassSpigotsConfig({
   // user sees everything that's configurable. Collapsing kicks in as choices are
   // made — picking a spigot family collapses that section to its one-line summary,
   // and any section can be collapsed/expanded via its header.
-  const [openSections, setOpenSections] = useState<string[]>(["configure", "spigot", "addons"]);
+  const [openSections, setOpenSections] = useState<string[]>(["configure", "spigot", "addons", "rail"]);
   const collapseSection = (section: string) => setOpenSections((prev) => prev.filter((s) => s !== section));
 
   // Substrate → mounting → covers → fixings flow (SF-1 §2.4 install logic):
@@ -502,6 +519,60 @@ export function GlassSpigotsConfig({
   ]
     .filter(Boolean)
     .join(" · ");
+
+  // ── RAIL (glass-bal-channel only): 35-Series top rail, 5800mm stock. Finish is
+  // AUTO-MATCHED to the channel finish (operator ruling: Black→Black, SA→SA — no
+  // independent rail finish input). Same cut-plan engine as the channel (offcuts
+  // from earlier sections reused automatically).
+  const RAIL_STOCK_MM = 5800;
+  const railFinish: "black" | "satin" = channelFinish === "black" ? "black" : "satin";
+  const railFinishLabel = channelFinish === "black" ? "Black" : "Satin Anodised";
+  const rail = span.handrail;
+  // Top rail defaults ON for balustrade. enabled:false is respected (deliberate off).
+  useEffect(() => {
+    if (isBalChannel && span.handrail === undefined) {
+      updateSpan({
+        handrail: {
+          enabled: true,
+          type: "series-35x35",
+          material: "anodised-aluminium",
+          finish: railFinish,
+          startTermination: "end-cap",
+          endTermination: "end-cap",
+        },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBalChannel, span.spanId, span.handrail === undefined]);
+  // Keep the rail finish matched when the channel finish changes.
+  useEffect(() => {
+    if (isBalChannel && rail?.enabled && rail.finish !== railFinish) {
+      updateSpan({ handrail: { ...rail, finish: railFinish } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBalChannel, railFinish, rail?.enabled]);
+  // Rail cut plan across all sections (5800mm stock, rail-enabled sections only).
+  const railPlanRaw = isBalChannel
+    ? computeSectionCutPlans(
+        designSpans.map((s) => ({
+          id: s.spanId,
+          label: s.name?.trim() || `Section ${s.spanId}`,
+          runsMm: s.handrail?.enabled === false ? [] : [s.length],
+        })),
+        RAIL_STOCK_MM,
+      ).get(span.spanId)
+    : undefined;
+  const railPlan = {
+    fullLengths: railPlanRaw?.fullLengths ?? 0,
+    joins: railPlanRaw?.joins ?? 0,
+    offcutOut: railPlanRaw?.offcutOutMm ?? 0,
+    claimed: railPlanRaw?.claimedOffcuts ?? [],
+  };
+  const railSummary = rail?.enabled
+    ? ["35 Series", railFinishLabel, `${railPlan.fullLengths} × 5800mm`, railPlan.claimed.length ? "offcut reused" : null]
+        .filter(Boolean)
+        .join(" · ")
+    : "No top rail";
   const configureSummary = `${span.maxPanelWidth}mm max panel · gaps ${span.leftGap?.enabled ? span.leftGap.size : 0} / ${actualMidGap} / ${span.rightGap?.enabled ? span.rightGap.size : 0}`;
   const addonItems = [
     span.gateConfig?.required ? `Gate ${span.gateConfig.gateSize}` : null,
@@ -542,7 +613,7 @@ export function GlassSpigotsConfig({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.from({ length: 37 }, (_, i) => 200 + i * 50).map((w) => (
+                    {Array.from({ length: (maxPanelCapMm - 200) / 50 + 1 }, (_, i) => 200 + i * 50).map((w) => (
                       <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
                     ))}
                   </SelectContent>
@@ -593,7 +664,7 @@ export function GlassSpigotsConfig({
           {/* Panel weight — computed (area × thickness × density), not stored. */}
           <p className="mt-2.5 text-xs text-muted-foreground" data-testid={`span-${span.spanId}-panel-weight`}>
             Panel weight ≈ <span className="font-semibold text-foreground">{weightKg.toFixed(1)} kg</span>{" "}
-            per {standardPanelWidth}×{STANDARD_PANEL_HEIGHT_MM}mm panel ({GLASS_THICKNESS_MM}mm glass)
+            per {standardPanelWidth}×{glassHeightMm}mm panel ({glassThicknessMm}mm glass)
           </p>
         </AccordionContent>
       </AccordionItem>
@@ -947,8 +1018,9 @@ export function GlassSpigotsConfig({
       </AccordionItem>
       )}
 
-      {/* 3. Gate, raked & custom — "+ add" image-cards */}
-      {(gateEnabled || rakedEnabled || customEnabled) && (
+      {/* 3. Gate, raked & custom — "+ add" image-cards. Pool styles only: balustrade
+          has no gates and no raked panels (operator rule, cross-style). */}
+      {!isBalChannel && (gateEnabled || rakedEnabled || customEnabled) && (
         <AccordionItem value="addons" className="px-3">
           <AccordionTrigger
             className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden"
@@ -1107,6 +1179,155 @@ export function GlassSpigotsConfig({
                 </AddOnCard>
               )}
             </div>
+          </AccordionContent>
+        </AccordionItem>
+      )}
+
+      {/* 3. Rail — glass-bal-channel only: 35-Series top rail (the single V1 rail
+          family). Finish auto-matches the channel finish; 5800mm stock lengths with
+          the same automatic cross-section cut optimisation as the channel. */}
+      {isBalChannel && (
+        <AccordionItem value="rail" className="px-3">
+          <AccordionTrigger
+            className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden"
+            data-testid={`span-${span.spanId}-accordion-rail`}
+          >
+            <SectionHeader n={3} title="Rail" summary={railSummary} />
+          </AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">Top Mounted Rail</Label>
+                <InfoTooltip content="35-Series top rail (35×35mm anodised aluminium) — the handrail for the channel system. Standard 5800mm lengths, optimised across sections to reduce wastage." />
+              </div>
+              <Switch
+                checked={rail?.enabled || false}
+                onCheckedChange={(enabled) => {
+                  if (enabled) {
+                    updateSpan({
+                      handrail: rail
+                        ? { ...rail, enabled: true, type: "series-35x35", material: "anodised-aluminium", finish: railFinish }
+                        : {
+                            enabled: true,
+                            type: "series-35x35",
+                            material: "anodised-aluminium",
+                            finish: railFinish,
+                            startTermination: "end-cap",
+                            endTermination: "end-cap",
+                          },
+                    });
+                  } else {
+                    updateSpan({ handrail: rail ? { ...rail, enabled: false } : undefined });
+                  }
+                }}
+                data-testid={`span-${span.spanId}-top-rail-toggle`}
+              />
+            </div>
+
+            {rail?.enabled && (
+              <div className="space-y-3">
+                {/* 35 Series is the single V1 rail family; finish auto-matches the channel
+                    (operator ruling: Black→Black, Satin Anodised→Satin Anodised). */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Rail</Label>
+                    <div
+                      className="flex h-8 items-center rounded-md border border-card-border bg-muted/30 px-3 text-xs text-muted-foreground"
+                      data-testid={`span-${span.spanId}-rail-type`}
+                    >
+                      35×35mm (Series 35) · Anodised Aluminium
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs text-muted-foreground">Finish</Label>
+                      <InfoTooltip content="The rail finish automatically matches your channel finish — a Black channel gets a Black rail, a Satin Anodised channel gets a Satin Anodised rail." />
+                    </div>
+                    <div
+                      className="flex h-8 items-center gap-2 rounded-md border border-card-border bg-muted/30 px-3 text-xs text-muted-foreground"
+                      data-testid={`span-${span.spanId}-rail-finish`}
+                    >
+                      <span
+                        className={cn(
+                          "h-3.5 w-3.5 rounded-full border border-black/10",
+                          channelFinish === "black" ? "bg-zinc-900" : "bg-gradient-to-br from-zinc-300 to-zinc-400",
+                        )}
+                      />
+                      {railFinishLabel} (matches channel)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rail terminations per end — same enum as the bal spigots Rail accordion. */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Start Termination</Label>
+                    <Select
+                      value={rail.startTermination || "end-cap"}
+                      onValueChange={(t) =>
+                        updateSpan({
+                          handrail: { ...rail, startTermination: t as "end-cap" | "wall-tie" | "90-degree" | "adjustable-corner" },
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-rail-start-termination`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="end-cap">End Cap</SelectItem>
+                        <SelectItem value="wall-tie">Wall Tie</SelectItem>
+                        <SelectItem value="90-degree">90° Corner</SelectItem>
+                        <SelectItem value="adjustable-corner">Adjustable Corner</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">End Termination</Label>
+                    <Select
+                      value={rail.endTermination || "end-cap"}
+                      onValueChange={(t) =>
+                        updateSpan({
+                          handrail: { ...rail, endTermination: t as "end-cap" | "wall-tie" | "90-degree" | "adjustable-corner" },
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-rail-end-termination`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="end-cap">End Cap</SelectItem>
+                        <SelectItem value="wall-tie">Wall Tie</SelectItem>
+                        <SelectItem value="90-degree">90° Corner</SelectItem>
+                        <SelectItem value="adjustable-corner">Adjustable Corner</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Rail lengths & offcut reuse — 5800mm stock, same cut-plan engine as the channel. */}
+                <div className="rounded-md border border-card-border bg-muted/30 p-2.5" data-testid={`span-${span.spanId}-rail-usage`}>
+                  <p className="text-[11px] font-semibold">Rail for this section</p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {railPlan.fullLengths} × 5800mm length{railPlan.fullLengths === 1 ? "" : "s"}
+                    {railPlan.claimed.length > 0
+                      ? ` + ${railPlan.claimed
+                          .map((o) => `${o.lengthMm.toLocaleString()}mm offcut from ${o.fromLabel}`)
+                          .join(" + ")} (reused automatically)`
+                      : ""}
+                    {railPlan.joins > 0
+                      ? ` · ${railPlan.joins} join${railPlan.joins > 1 ? "s" : ""} (1 inline joiner per join)`
+                      : " · no joins"}
+                    {` · Offcut left over: ${railPlan.offcutOut.toLocaleString()}mm`}
+                  </p>
+                  {railPlan.claimed.length > 0 && (
+                    <p className="mt-1 text-[11px] font-medium text-primary">
+                      Cut optimisation: reusing offcuts saved {railPlan.claimed.length} extra length
+                      {railPlan.claimed.length > 1 ? "s" : ""} of rail on this section.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </AccordionContent>
         </AccordionItem>
       )}

@@ -514,7 +514,11 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   if (!ctx) return;
 
   // Check product type
-  const isChannelSystem = design.productVariant === "glass-pool-channel";
+  // Channel systems: pool (12mm) + balustrade 15mm — same VersaTilt channel drawing.
+  // The one elevation difference is friction-plate spacing (operator ruling 2026-06-03):
+  // pool = 150mm end setback / 500mm max centres; bal = 25mm setback / 300mm centres.
+  const isBalChannel = design.productVariant === "glass-bal-channel";
+  const isChannelSystem = design.productVariant === "glass-pool-channel" || isBalChannel;
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
   const isTubularFencing = design.productVariant === "alu-pool-tubular";
@@ -1618,10 +1622,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         }
       }
 
-      // 2. Pressure-plate clamps — PER PANEL (they grip the glass), all measures to
-      //    centre: 150mm from each panel end, max 500mm between clamp centres.
-      const CLAMP_END_SETBACK_MM = 150;
-      const CLAMP_MAX_SPACING_MM = 500;
+      // 2. Pressure-plate clamps (friction plates) — PER PANEL (they grip the glass),
+      //    all measures to centre. Spacing rule per variant (operator ruling 2026-06-03):
+      //    • Pool channel (12mm): 150mm from each panel end, max 500mm between centres.
+      //    • Bal channel (15mm):  25mm setback + 100mm-wide plate → 75mm first centre,
+      //      300mm max between centres (VER-PPKIT-15MM geometric formula, SF-10).
+      const CLAMP_END_SETBACK_MM = isBalChannel ? 75 : 150;
+      const CLAMP_MAX_SPACING_MM = isBalChannel ? 300 : 500;
       const clampW = Math.max(6, 80 * scale);
       const clampH = Math.max(5, 56 * scale);
       // Plate base ~29mm above the fixing surface; the glass sits 8mm higher again,
@@ -1633,7 +1640,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         const lastCentre = panel.widthMm - CLAMP_END_SETBACK_MM;
         const innerSpan = lastCentre - firstCentre;
         // Raked panels: ALWAYS 4 friction clamps (operator rule). Standard panels:
-        // 150mm end setback, ≤500mm between centres.
+        // end setback + max spacing between centres per the variant rule above.
         const nGaps = panel.isRaked ? 3 : Math.max(1, Math.ceil(innerSpan / CLAMP_MAX_SPACING_MM));
         const centres: number[] = [];
         if (innerSpan === 0) {
