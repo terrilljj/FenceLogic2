@@ -37,6 +37,36 @@ function makeAluminiumDesign(
 }
 
 describe("aluminium branches — slot resolution with template-literal fallback", () => {
+  describe("alu-pool-blade", () => {
+    it("emits the full hardware set on a timber deck (FastFit brackets, covers, fixings)", () => {
+      const design = makeAluminiumDesign("alu-pool-blade", [2200, 2200], {
+        bladeHeight: "1200mm",
+        fieldValues: { "blade-substrate": "decking" },
+      });
+      const skus = calculateComponents(design, [], []).map(c => c.sku);
+      expect(skus).toContain("BLA-PNL-2200-1200-B");       // panels
+      expect(skus).toContain("SS-1300-BP-B");               // base-plate posts
+      expect(skus).toContain("SS-DC-B");                    // domical covers
+      expect(skus).toContain("FF-BH-OPEN-4PK-B");           // FastFit brackets
+      expect(skus).toContain("CSK-100-4PK");                // countersunk decking screws
+    });
+
+    it("emits the D&D bundled kit (one SKU) and grout on a core-drilled gate run", () => {
+      const design = makeAluminiumDesign("alu-pool-blade", [2200, 975, 2200], {
+        bladeHeight: "1200mm",
+        fieldValues: { "blade-substrate": "core-drilled" },
+        gateConfig: { required: true, gateSize: 975, position: 1, flipped: false,
+          hardware: "polaris", hingeFrom: "glass", latchTo: "glass", hingeGap: 20, latchGap: 20 },
+      });
+      (design.spans[0] as any).panelLayout.panelTypes = ["standard", "gate", "standard"];
+      const skus = calculateComponents(design, [], []).map(c => c.sku);
+      expect(skus).toContain("BLA-GATE-0975-1200-B");       // gate panel
+      expect(skus).toContain("ML-TL-TC-H-AT");              // D&D bundled kit (Black, 1 SKU)
+      expect(skus).toContain("XP-DR-B");                    // core-drilled dress rings
+      expect(skus).toContain("GROUT-SETFAST-10KG");         // grout
+    });
+  });
+
   describe("alu-pool-tubular", () => {
     it("emits real slot SKU when 'panel' slot matches discriminators", () => {
       const products = [
