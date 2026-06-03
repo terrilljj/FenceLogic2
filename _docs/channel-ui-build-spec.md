@@ -91,6 +91,15 @@ Section 3. **Gate, raked & custom** — IDENTICAL to spigots (gate hardware/hing
 "The VersaTilt channel in 15mm uses the SAME logic as the pool fence channel but adds
 rail, and the friction plates are at 300mm centres."
 
+### Bal channel 15mm physical proportions (OPERATOR RULING 2026-06-03, second ruling)
+
+"The glass for 15mm channel is 1000mm high; when in channel, finished glass height is
+1035mm, plus the rail."
+- **Glass: 1000mm high**, sits INSIDE the channel, base **35mm above the floor**
+  → finished glass height = **1035mm** (vs pool's 1200mm glass / 37mm base / 1237mm).
+- **35-Series rail (35mm) sits on the glass top edge** → finished height = **1070mm**.
+- Elevation draws all three: 1000mm panels, 35mm in-channel offset, 35mm rail bar.
+
 Build = pool channel wizard carried over verbatim, with exactly these changes:
 1. + Rail section (35-Series top rail — reuse the Rail accordion from glass-bal-spigots-config.tsx;
    rail finish auto-matches channel finish B→B / SA→SA)
