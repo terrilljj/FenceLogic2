@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getGateGaps, HingeType, LatchType } from "@shared/schema";
+import { STOCK_HINGE_PANEL_SIZES } from "@shared/panelCalculations";
 import { cn } from "@/lib/utils";
 import { InfoTooltip } from "./info-tooltip";
 
@@ -75,13 +76,19 @@ export function GateControls({
 }: GateControlsProps) {
   const [hingeWarningAcknowledged, setHingeWarningAcknowledged] = useState(false);
 
-  // ── CENTRE MODE (owner 2026-06-03 v2): the gate centre is a LIVE measurement.
-  // Move Left/Right nudge it by 50mm; typing jumps straight to a value; the panels
-  // re-solve and the readout updates dynamically. Available whenever the parent
-  // supplies the actual centre (glass-pool-spigots); other variants keep the old
-  // panel-index positioning.
-  const centreMode = actualGateCentre !== undefined && config.hingeFrom === "glass";
-  const CENTRE_STEP = 50;
+  // ── GATE PLACEMENT, DUAL MODE (owner 2026-06-03):
+  //  • STANDARD — the solver places the gate by panel position for the best panel
+  //    sizes; Move Left/Right shift it one panel at a time.
+  //  • SET POSITION — the gate centre is pinned to a measurement; Move Left/Right
+  //    nudge it 50mm at a time, typing jumps straight there, panels work around it.
+  // The toggle is available whenever the parent supplies the live actual centre
+  // (glass-pool-spigots); other variants keep the old panel-index positioning.
+  const centreCapable = actualGateCentre !== undefined && config.hingeFrom === "glass";
+  const definedMode = centreCapable && config.centreFromLeft !== undefined;
+  // 100mm per click — matches the stock hinge-panel spacing, so every click lands on
+  // a new clean gate position (50mm steps fell between stock positions and were
+  // swallowed by the solver).
+  const CENTRE_STEP = 100;
 
   // Conservative travel limits so a nudge never lands somewhere the solver can't
   // build (each side needs its hinge/latch gap + room for glass).
@@ -95,8 +102,13 @@ export function GateControls({
 
   const clampCentre = (n: number) => Math.max(minCentre, Math.min(maxCentre, Math.round(n)));
   const currentCentre = config.centreFromLeft ?? actualGateCentre ?? 0;
+  // Nudges work from the ACHIEVED centre (what the user sees) — the stored request can
+  // drift from it after flips/clamps, which made clicks "catch up" invisibly. The +1mm
+  // directional bias resolves ties between two equally-near clean positions in the
+  // direction of travel, so every click produces a visible move.
+  const nudgeBase = actualGateCentre ?? currentCentre;
   const nudgeCentre = (dir: 1 | -1) => {
-    onUpdate({ ...config, centreFromLeft: clampCentre(currentCentre + dir * CENTRE_STEP) });
+    onUpdate({ ...config, centreFromLeft: clampCentre(nudgeBase + dir * (CENTRE_STEP + 1)) });
   };
 
   // Live centre readout — shows the ACTUAL built centre; editable. Focused-aware so
@@ -153,18 +165,46 @@ export function GateControls({
         <Label className="text-sm font-medium">Gate Position</Label>
         {config.hingeFrom === "glass" ? (
           <>
+            {/* Placement mode toggle — Standard (solver-optimised) | Set position (pinned centre) */}
+            {centreCapable && (
+              <div className="flex w-fit overflow-hidden rounded-md border border-input">
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ centreFromLeft: undefined })}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium transition-colors",
+                    !definedMode ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover-elevate",
+                  )}
+                  data-testid={`gate-${spanId}-mode-standard`}
+                >
+                  Standard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ centreFromLeft: clampCentre(actualGateCentre ?? minCentre) })}
+                  className={cn(
+                    "border-l border-input px-3 py-1.5 text-xs font-medium transition-colors",
+                    definedMode ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover-elevate",
+                  )}
+                  data-testid={`gate-${spanId}-mode-defined`}
+                >
+                  Set position
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
                 variant="default"
                 className="font-semibold"
                 onClick={() =>
-                  centreMode
+                  definedMode
                     ? nudgeCentre(-1)
                     : updateConfig({ position: Math.max(positionLimits.min, config.position - 1) })
                 }
                 data-testid={`gate-${spanId}-move-left`}
-                disabled={centreMode ? currentCentre - CENTRE_STEP < minCentre : config.position <= positionLimits.min}
+                disabled={definedMode ? nudgeBase - CENTRE_STEP < minCentre : config.position <= positionLimits.min}
               >
                 <ChevronLeft className="w-4 h-4 mr-1.5" />
                 Move Left
@@ -184,19 +224,19 @@ export function GateControls({
                 variant="default"
                 className="font-semibold"
                 onClick={() =>
-                  centreMode
+                  definedMode
                     ? nudgeCentre(1)
                     : updateConfig({ position: Math.min(positionLimits.max, config.position + 1) })
                 }
                 data-testid={`gate-${spanId}-move-right`}
-                disabled={centreMode ? currentCentre + CENTRE_STEP > maxCentre : config.position >= positionLimits.max}
+                disabled={definedMode ? nudgeBase + CENTRE_STEP > maxCentre : config.position >= positionLimits.max}
               >
                 <ChevronRight className="w-4 h-4 mr-1.5" />
                 Move Right
               </Button>
             </div>
 
-            {centreMode ? (
+            {definedMode ? (
               /* LIVE gate-centre measurement: shows where the gate's centre line actually
                  sits; Move Left/Right shift it 50mm per click; type a number to jump
                  straight there (e.g. centring on a path). Panels re-solve dynamically. */
@@ -232,24 +272,17 @@ export function GateControls({
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">from the left end</span>
-                {config.centreFromLeft !== undefined && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => updateConfig({ centreFromLeft: undefined })}
-                    data-testid={`gate-${spanId}-centre-clear`}
-                  >
-                    Reset
-                  </Button>
-                )}
-                <InfoTooltip content="The distance from the left end of this section to the centre line of the gate. Move Left/Right shifts it 50mm at a time; type a measurement to place it exactly — e.g. centring the gate on a path to the pool. The panels each side re-size automatically." />
+                <InfoTooltip content="The distance from the left end of this section to the centre line of the gate. Move Left/Right shifts it 50mm at a time; type a measurement to place it exactly — e.g. centring the gate on a path to the pool. The panels each side re-size automatically. Switch back to Standard to let the calculator place the gate for the best panel sizes." />
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Position:</span>
                 <span className="font-mono font-medium">Panel {config.position + 1}</span>
+                {centreCapable && actualGateCentre !== undefined && (
+                  <span className="text-xs text-muted-foreground">
+                    · gate centre ≈ {Math.round(actualGateCentre)}mm from the left end
+                  </span>
+                )}
               </div>
             )}
           </>
@@ -472,7 +505,8 @@ export function GateControls({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800].map((size) => (
+                  {/* Stock hinge panel widths only — 600mm smallest, 1800mm largest. */}
+                  {STOCK_HINGE_PANEL_SIZES.map((size) => (
                     <SelectItem key={size} value={size.toString()}>
                       {size}mm
                     </SelectItem>

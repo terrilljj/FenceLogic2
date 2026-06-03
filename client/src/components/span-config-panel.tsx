@@ -308,36 +308,32 @@ export function SpanConfigPanel({
         span.gateConfig.hingeFrom !== "wall" &&
         span.gateConfig.centreFromLeft != null
       ) {
-        // Try the requested centre first; if the solver can't build it exactly, walk
-        // outward in 50mm steps so the gate "sticks" as close as possible instead of
-        // teleporting back to panel-index positioning.
-        for (const offset of [0, -50, 50, -100, 100, -150, 150, -200, 200]) {
-          centredLayout = calculateCentredGateLayout({
-            spanLength: span.length,
-            leftEndGap,
-            rightEndGap,
-            desiredGap: span.desiredGap,
-            maxPanelWidth: span.maxPanelWidth,
-            hasLeftRaked: span.leftRakedPanel?.enabled || false,
-            hasRightRaked: span.rightRakedPanel?.enabled || false,
-            gateConfig: {
-              gateSize: span.gateConfig.gateSize,
-              hingePanelSize: effectiveHingePanelSize,
-              flipped: span.gateConfig.flipped,
-              hingeGap: span.gateConfig.hingeGap ?? 8,
-              latchGap: span.gateConfig.latchGap ?? 9,
-              autoHingePanel: span.gateConfig.autoHingePanel,
-              centreFromLeft: span.gateConfig.centreFromLeft + offset,
-            },
-            customPanelConfig: span.customPanel?.enabled ? {
-              enabled: span.customPanel.enabled,
-              width: span.customPanel.width,
-              height: span.customPanel.height,
-              position: span.customPanel.position,
-            } : undefined,
-          });
-          if (centredLayout) break;
-        }
+        // The solver itself searches micro-offsets (≤25mm) and stock hinge widths, and
+        // walks outward up to ±200mm if needed — a single call does it all.
+        centredLayout = calculateCentredGateLayout({
+          spanLength: span.length,
+          leftEndGap,
+          rightEndGap,
+          desiredGap: span.desiredGap,
+          maxPanelWidth: span.maxPanelWidth,
+          hasLeftRaked: span.leftRakedPanel?.enabled || false,
+          hasRightRaked: span.rightRakedPanel?.enabled || false,
+          gateConfig: {
+            gateSize: span.gateConfig.gateSize,
+            hingePanelSize: effectiveHingePanelSize,
+            flipped: span.gateConfig.flipped,
+            hingeGap: span.gateConfig.hingeGap ?? 8,
+            latchGap: span.gateConfig.latchGap ?? 9,
+            autoHingePanel: span.gateConfig.autoHingePanel,
+            centreFromLeft: span.gateConfig.centreFromLeft,
+          },
+          customPanelConfig: span.customPanel?.enabled ? {
+            enabled: span.customPanel.enabled,
+            width: span.customPanel.width,
+            height: span.customPanel.height,
+            position: span.customPanel.position,
+          } : undefined,
+        });
       }
 
       // Calculate final panel layout with the configured hinge panel size

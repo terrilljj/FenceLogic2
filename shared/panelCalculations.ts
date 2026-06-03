@@ -85,8 +85,9 @@ export function calculatePanelLayout(
   
   const totalFixedPanelSpace = rakedPanelSpace + gateSpace + customPanelSpace;
 
-  // Single panel case (no raked panels, no gate)
-  if (numRakedPanels === 0 && !hasGate && effectiveLength >= MIN_PANEL && effectiveLength <= MAX_PANEL) {
+  // Single panel case (no raked panels, no gate, no custom panel — a custom/fixed
+  // panel must go through the main loop so it keeps its type and width).
+  if (numRakedPanels === 0 && !hasGate && !hasCustomPanel && effectiveLength >= MIN_PANEL && effectiveLength <= MAX_PANEL) {
     const roundedPanel = Math.round(effectiveLength / PANEL_INCREMENT) * PANEL_INCREMENT;
     if (roundedPanel === effectiveLength) {
       return {
@@ -426,7 +427,9 @@ export function calculatePanelLayout(
       : actualTotalGapWidth >= totalGapWidth - 2 && Math.abs(actualTotalGapWidth - totalGapWidth) <= tolerance;
 
     if (gapSpaceAcceptable) {
-      const actualGap = actualTotalGapWidth / numGaps;
+      // Guard the zero-gap case (a single fixed/custom panel filling the run exactly):
+      // 0/0 = NaN would wrongly fail the gap-range check below.
+      const actualGap = numGaps > 0 ? actualTotalGapWidth / numGaps : 0;
       
       if (actualGap >= MIN_GAP && actualGap <= MAX_GAP) {
         // VALIDATE GATE GAPS FIRST (before scoring)
@@ -641,21 +644,34 @@ export function calculatePanelLayout(
 }
 
 /**
+ * Stock hinge-panel widths (12NH-* / 12NPH-* glass). The hinge panel is a STOCK item:
+ * 600mm smallest, 1800mm largest, in these specific widths only — never an arbitrary
+ * 50mm-grid value. Shared by the UI dropdown and the centred-gate solver.
+ */
+export const STOCK_HINGE_PANEL_SIZES = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
+
+/**
  * GATE CENTRE OVERRIDE (owner 2026-06-03) — places a glass-to-glass gate so its
- * CENTRE line sits exactly `centreFromLeft` mm from the left end of the run (e.g.
- * centring the gate on a path to the pool). The run is SPLIT at the gate and each
- * side is solved as an independent sub-run, then stitched back together:
+ * CENTRE line sits at (or within ~25mm of) `centreFromLeft` mm from the left end of
+ * the run (e.g. centring the gate on a path to the pool). The run is SPLIT at the
+ * gate and each side is solved as an independent sub-run, then stitched together:
  *
  *   [left panels (+hinge)] [hinge/latch gap] [GATE] [latch/hinge gap] [right panels]
  *
- * Hinge side follows `flipped` (true = hinge LEFT of gate). The hinge panel:
- *  • match ON (autoHingePanel !== false): the gate-adjacent edge panel of the hinge
- *    side IS the hinge — it equalises with its own side, so it always matches.
- *  • match OFF: the hinge is a fixed panel of hingePanelSize.
+ * Hinge side follows `flipped` (true = hinge LEFT of gate). The hinge panel is
+ * ALWAYS a stock width (STOCK_HINGE_PANEL_SIZES):
+ *  • match ON (autoHingePanel !== false): the solver tries each stock width and keeps
+ *    the one whose side solves best (fewest panels, hinge closest to its neighbours).
+ *  • match OFF: the user's manual hinge width is used as-is.
  *
- * Returns null when the requested centre is unworkable (gate too close to an end,
- * hinge doesn't fit, a side can't be solved) — callers fall back to the normal
- * panel-index positioning so the calculator never breaks.
+ * MICRO-OFFSET SEARCH: fixed end gaps + hardware gaps mean a side's glass space can
+ * fall off the 50mm panel grid (flipping swaps the 8mm hinge gap for the 9mm latch
+ * gap, which alone breaks clean layouts). The solver may shift the centre by up to
+ * ±25mm — invisible at fence scale — to keep both sides clean, and the UI readout
+ * shows the ACHIEVED centre so the display stays truthful.
+ *
+ * Returns null only when no placement within ±200mm of the request is buildable —
+ * callers then fall back to panel-index positioning so the calculator never breaks.
  */
 export function calculateCentredGateLayout(params: {
   spanLength: number;
@@ -695,15 +711,6 @@ export function calculateCentredGateLayout(params: {
   const { gateSize, hingePanelSize, flipped, hingeGap, latchGap, centreFromLeft } = gateConfig;
   const MIN_PANEL = 200;
 
-  const gateLeftEdge = centreFromLeft - gateSize / 2;
-  const gateRightEdge = centreFromLeft + gateSize / 2;
-
-  // The gate must sit fully inside the run with room for at least a minimum panel
-  // (or the hinge) on each side.
-  if (gateLeftEdge < leftEndGap + MIN_PANEL || gateRightEdge > spanLength - rightEndGap - MIN_PANEL) {
-    return null;
-  }
-
   const hingeOnLeft = flipped; // flipped=true → hinge LEFT of gate
   const matchOn = gateConfig.autoHingePanel !== false;
 
@@ -712,77 +719,167 @@ export function calculateCentredGateLayout(params: {
   const leftInnerGap = hingeOnLeft ? hingeGap : latchGap;
   const rightInnerGap = hingeOnLeft ? latchGap : hingeGap;
 
-  const solveSide = (side: "left" | "right"): { layout: PanelLayout; hingeIndex: number | null } | null => {
-    const isHingeSide = (side === "left") === hingeOnLeft;
-    const subSpan = side === "left" ? gateLeftEdge : spanLength - gateRightEdge;
-    const subEndGaps = side === "left" ? leftEndGap + leftInnerGap : rightInnerGap + rightEndGap;
-    const rakedLeft = side === "left" ? hasLeftRaked : false;
-    const rakedRight = side === "right" ? hasRightRaked : false;
-    // V1: a user custom panel joins the RIGHT sub-run (and not on the hinge side in
-    // manual-hinge mode, where the custom slot is used by the hinge itself).
-    const userCustom = side === "right" && customPanelConfig?.enabled ? customPanelConfig : undefined;
+  // ── Core solver for one (centre, hinge width) combination ──────────────────────
+  const solveAt = (centre: number, hingeWidth: number): PanelLayout | null => {
+    const gateLeftEdge = centre - gateSize / 2;
+    const gateRightEdge = centre + gateSize / 2;
 
-    if (isHingeSide && !matchOn) {
-      // MANUAL hinge: place it as a fixed panel at the gate-adjacent edge of this side
-      // (re-using the custom-panel mechanism, relabelled to "hinge" after solving).
-      if (userCustom) return null; // custom + manual hinge on the same side — unsupported, fall back
-      const hingeAsFixed = {
-        enabled: true,
-        width: hingePanelSize,
-        height: 1200,
-        position: side === "left" ? 9999 : 0,
-      };
-      const layout = calculatePanelLayout(subSpan, subEndGaps, desiredGap, maxPanelWidth, rakedLeft, rakedRight, undefined, hingeAsFixed);
-      if (!layout.panels.length) return null;
-      const types = layout.panelTypes ?? [];
-      const hingeIndex = types.findIndex((t, i) => t === "custom" && layout.panels[i] === hingePanelSize);
-      if (hingeIndex === -1) return null;
-      return { layout, hingeIndex };
+    if (gateLeftEdge < leftEndGap + MIN_PANEL || gateRightEdge > spanLength - rightEndGap - MIN_PANEL) {
+      return null;
     }
 
-    const layout = calculatePanelLayout(subSpan, subEndGaps, desiredGap, maxPanelWidth, rakedLeft, rakedRight, undefined, userCustom);
-    if (!layout.panels.length) return null;
+    const solveSide = (side: "left" | "right"): { layout: PanelLayout; hingeIndex: number | null } | null => {
+      const isHingeSide = (side === "left") === hingeOnLeft;
+      const subSpan = side === "left" ? gateLeftEdge : spanLength - gateRightEdge;
+      const subEndGaps = side === "left" ? leftEndGap + leftInnerGap : rightInnerGap + rightEndGap;
+      const rakedLeft = side === "left" ? hasLeftRaked : false;
+      const rakedRight = side === "right" ? hasRightRaked : false;
+      // V1: a user custom panel joins the RIGHT sub-run (and never the hinge side —
+      // the hinge itself occupies the fixed-panel slot there).
+      const userCustom = side === "right" && customPanelConfig?.enabled ? customPanelConfig : undefined;
 
-    if (isHingeSide) {
-      // MATCH ON: the gate-adjacent edge panel becomes the hinge (it equalised with
-      // its own side, so it matches by construction). Skip non-standard edge panels.
-      const types = layout.panelTypes ?? layout.panels.map(() => "standard" as PanelType);
-      let hingeIndex = side === "left" ? layout.panels.length - 1 : 0;
-      const step = side === "left" ? -1 : 1;
-      while (hingeIndex >= 0 && hingeIndex < layout.panels.length && types[hingeIndex] !== "standard") {
-        hingeIndex += step;
+      if (isHingeSide) {
+        // The hinge is ALWAYS a stock-width fixed panel at the gate-adjacent edge
+        // (re-using the custom-panel mechanism, relabelled to "hinge" after solving).
+        if (userCustom) return null;
+        const hingeAsFixed = {
+          enabled: true,
+          width: hingeWidth,
+          height: 1200,
+          position: side === "left" ? 9999 : 0,
+        };
+        const layout = calculatePanelLayout(subSpan, subEndGaps, desiredGap, maxPanelWidth, rakedLeft, rakedRight, undefined, hingeAsFixed);
+        if (!layout.panels.length) return null;
+        const types = layout.panelTypes ?? [];
+        const hingeIndex = types.findIndex((t, i) => t === "custom" && layout.panels[i] === hingeWidth);
+        if (hingeIndex === -1) return null;
+        return { layout, hingeIndex };
       }
-      if (hingeIndex < 0 || hingeIndex >= layout.panels.length) return null;
-      return { layout, hingeIndex };
+
+      const layout = calculatePanelLayout(subSpan, subEndGaps, desiredGap, maxPanelWidth, rakedLeft, rakedRight, undefined, userCustom);
+      if (!layout.panels.length) return null;
+      return { layout, hingeIndex: null };
+    };
+
+    const left = solveSide("left");
+    const right = solveSide("right");
+    if (!left || !right) return null;
+
+    // Relabel hinge panels and stitch the two sides around the gate.
+    const leftTypes: PanelType[] = [...(left.layout.panelTypes ?? left.layout.panels.map(() => "standard" as PanelType))];
+    const rightTypes: PanelType[] = [...(right.layout.panelTypes ?? right.layout.panels.map(() => "standard" as PanelType))];
+    if (left.hingeIndex !== null) leftTypes[left.hingeIndex] = "hinge";
+    if (right.hingeIndex !== null) rightTypes[right.hingeIndex] = "hinge";
+
+    const panels = [...left.layout.panels, gateSize, ...right.layout.panels];
+    const panelTypes: PanelType[] = [...leftTypes, "gate", ...rightTypes];
+    const gaps = [...left.layout.gaps, leftInnerGap, rightInnerGap, ...right.layout.gaps];
+
+    const totalPanelWidth = panels.reduce((s, p) => s + p, 0);
+    const totalGapWidth = gaps.reduce((s, g) => s + g, 0);
+
+    return {
+      panels,
+      gaps,
+      totalPanelWidth,
+      totalGapWidth,
+      averageGap: gaps.length ? totalGapWidth / gaps.length : 0,
+      panelTypes,
+    };
+  };
+
+  // ── Candidates ──────────────────────────────────────────────────────────────────
+  // Hinge widths: stock list (match ON, solver picks the best) or the manual width.
+  const minStock = STOCK_HINGE_PANEL_SIZES[0];
+  const maxStock = STOCK_HINGE_PANEL_SIZES[STOCK_HINGE_PANEL_SIZES.length - 1];
+  const hingeCandidates = matchOn
+    ? STOCK_HINGE_PANEL_SIZES
+    : [Math.max(minStock, Math.min(maxStock, hingePanelSize))];
+
+  // Clamp the requested centre into the physically viable range FIRST, so actions
+  // like flipping near an end shift the gate the minimum necessary distance (to fit
+  // the hinge panel) instead of failing and teleporting back to panel positioning.
+  const hingeSideMin = matchOn ? minStock : Math.max(minStock, Math.min(maxStock, hingePanelSize));
+  const latchSideMin = 450; // plain sub-run: two minimum panels + a gap (or one panel when grid-exact)
+  const minViableCentre =
+    leftEndGap + (hingeOnLeft ? hingeSideMin : latchSideMin) + leftInnerGap + gateSize / 2;
+  const maxViableCentre =
+    spanLength - rightEndGap - (hingeOnLeft ? latchSideMin : hingeSideMin) - rightInnerGap - gateSize / 2;
+  if (minViableCentre > maxViableCentre) return null; // run too short for a centred gate at all
+  const targetCentre = Math.max(minViableCentre, Math.min(maxViableCentre, centreFromLeft));
+
+  // Centre offset candidates (the solver may shift the centre slightly; the scoring
+  // prefers FEWER PANELS first, then the smallest shift, and the UI readout always
+  // shows the achieved centre):
+  //  1. 0 and the shifts that put each side's glass space onto the 50mm grid.
+  //  2. The shifts (≤100mm) that let the hinge side be a SINGLE stock hinge panel —
+  //     flipping a gate must never fragment one clean panel into two (owner, ss21-23).
+  //     ±100mm is the worst-case distance to a stock hinge width (stock sizes are up
+  //     to 200mm apart: 600 → 800 → 1000); clean glass beats exact position.
+  const leftFixed = leftEndGap + leftInnerGap;
+  const rightFixed = rightInnerGap + rightEndGap;
+  const rL = (((targetCentre - gateSize / 2 - leftFixed) % 50) + 50) % 50;
+  const rR = (((spanLength - (targetCentre + gateSize / 2) - rightFixed) % 50) + 50) % 50;
+  const candidateOffsets: number[] = [0, -rL, 50 - rL, rR, rR - 50];
+
+  const hingeSideSpace = hingeOnLeft
+    ? targetCentre - gateSize / 2 - leftFixed
+    : spanLength - (targetCentre + gateSize / 2) - rightFixed;
+  for (const stockWidth of hingeCandidates) {
+    const delta = stockWidth - hingeSideSpace;
+    // Growing the hinge side moves the centre right when the hinge is on the left,
+    // and left when the hinge is on the right.
+    candidateOffsets.push(hingeOnLeft ? delta : -delta);
+  }
+
+  const rawOffsets = candidateOffsets.map((d) => Math.round(d));
+  const microOffsets = rawOffsets.filter((d, i) => Math.abs(d) <= 100 && rawOffsets.indexOf(d) === i);
+
+  // ── Search: best (offset, hinge width), scored by panel count → hinge match → offset ──
+  let best: PanelLayout | null = null;
+  let bestScore = Infinity;
+  const consider = (offset: number) => {
+    for (const hingeWidth of hingeCandidates) {
+      const layout = solveAt(targetCentre + offset, hingeWidth);
+      if (!layout || !layout.panelTypes) continue;
+      // Score, in priority order (smaller = better):
+      //  1. HINGE SIDE stays one piece — fragmenting it (1 panel → 2) is the cardinal
+      //     sin (owner ss21-23).
+      //  2. No slivers — glass under 500mm is heavily penalised (500mm is the
+      //     accepted minimum; 350mm slabs are not).
+      //  3. Smallest drift from the requested centre — an exact-fit 1500 hinge beats
+      //     a 1600 hinge that needs 100mm of drift, and Move clicks always respond.
+      //  4. Tie-breaks: fewer total pieces, then the larger hinge.
+      const types = layout.panelTypes;
+      const gateIdx = types.indexOf("gate");
+      const hingeSidePieces = hingeOnLeft ? gateIdx : layout.panels.length - gateIdx - 1;
+      const glassPanels = layout.panels.filter((_, i) => types[i] !== "gate");
+      const sliverPenalty = glassPanels.reduce((s, p) => s + Math.max(0, 500 - p), 0);
+      const score =
+        hingeSidePieces * 1000000 +
+        sliverPenalty * 1000 +
+        Math.abs(offset) * 100 +
+        layout.panels.length * 10 -
+        hingeWidth / 100;
+      if (score < bestScore) {
+        bestScore = score;
+        best = layout;
+      }
     }
-    return { layout, hingeIndex: null };
   };
 
-  const left = solveSide("left");
-  const right = solveSide("right");
-  if (!left || !right) return null;
+  for (const offset of microOffsets) consider(offset);
 
-  // Relabel hinge panels and stitch the two sides around the gate.
-  const leftTypes: PanelType[] = [...(left.layout.panelTypes ?? left.layout.panels.map(() => "standard" as PanelType))];
-  const rightTypes: PanelType[] = [...(right.layout.panelTypes ?? right.layout.panels.map(() => "standard" as PanelType))];
-  if (left.hingeIndex !== null) leftTypes[left.hingeIndex] = "hinge";
-  if (right.hingeIndex !== null) rightTypes[right.hingeIndex] = "hinge";
+  // Coarse fallback: nothing buildable within ±25mm — walk outward in 50mm steps so
+  // the gate sticks near the request instead of teleporting back to panel positioning.
+  if (!best) {
+    for (const offset of [-50, 50, -100, 100, -150, 150, -200, 200]) {
+      consider(offset);
+      if (best) break;
+    }
+  }
 
-  const panels = [...left.layout.panels, gateSize, ...right.layout.panels];
-  const panelTypes: PanelType[] = [...leftTypes, "gate", ...rightTypes];
-  const gaps = [...left.layout.gaps, leftInnerGap, rightInnerGap, ...right.layout.gaps];
-
-  const totalPanelWidth = panels.reduce((s, p) => s + p, 0);
-  const totalGapWidth = gaps.reduce((s, g) => s + g, 0);
-
-  return {
-    panels,
-    gaps,
-    totalPanelWidth,
-    totalGapWidth,
-    averageGap: gaps.length ? totalGapWidth / gaps.length : 0,
-    panelTypes,
-  };
+  return best;
 }
 
 /**
