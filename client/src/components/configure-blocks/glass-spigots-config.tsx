@@ -276,10 +276,11 @@ export function GlassSpigotsConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFamily]);
 
-  // PROGRESSIVE DISCLOSURE (owner "top-1%" requirement): every sub-section starts
-  // COLLAPSED to a one-line summary of its current choices (defaults are sensible).
-  // Expanding is an explicit "edit"; choosing a spigot family auto-collapses again.
-  const [openSections, setOpenSections] = useState<string[]>([]);
+  // PROGRESSIVE DISCLOSURE (owner-tuned): sections start EXPANDED so a first-time
+  // user sees everything that's configurable. Collapsing kicks in as choices are
+  // made — picking a spigot family collapses that section to its one-line summary,
+  // and any section can be collapsed/expanded via its header.
+  const [openSections, setOpenSections] = useState<string[]>(["configure", "spigot", "addons"]);
   const collapseSection = (section: string) => setOpenSections((prev) => prev.filter((s) => s !== section));
 
   // Live summaries shown in the collapsed section headers.
