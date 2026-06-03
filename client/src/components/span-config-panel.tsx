@@ -21,6 +21,7 @@ import { GlassSpigotsConfig } from "./configure-blocks/glass-spigots-config";
 import { GlassBalSpigotsConfig } from "./configure-blocks/glass-bal-spigots-config";
 import { GlassBalStandoffsConfig } from "./configure-blocks/glass-bal-standoffs-config";
 import { AluPoolBladeConfig } from "./configure-blocks/alu-pool-blade-config";
+import { AluPoolBarrConfig } from "./configure-blocks/alu-pool-barr-config";
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
@@ -61,6 +62,9 @@ export function SpanConfigPanel({
   const isGlassBalStandoffs = productVariant === "glass-bal-standoffs";
   // Blade Pool Fence — wizard accordion (Configure/Posts & Substrate/Gate). Black only.
   const isAluPoolBlade = productVariant === "alu-pool-blade";
+  // BARR Pool Fence — wizard accordion (Configure/Posts & Substrate/Gate). B/W finishes,
+  // cross-range 50×50 corner/gate posts (BARR's 25mm post face can't take the hardware).
+  const isAluPoolBarr = productVariant === "alu-pool-barr";
 
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
@@ -536,6 +540,15 @@ export function SpanConfigPanel({
             />
           )}
 
+          {/* ── BARR Pool Fence: Oxworks accordion (Configure/Posts & Substrate/Gate) ── */}
+          {isAluPoolBarr && (
+            <AluPoolBarrConfig
+              span={span}
+              updateSpan={updateSpan}
+              allSpans={allSpans}
+            />
+          )}
+
           {/* Tubular Flat Top Configuration - appears right after section length */}
           {productVariant === "alu-pool-tubular" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
@@ -643,175 +656,6 @@ export function SpanConfigPanel({
               </div>
 
               {/* Tubular Gate Configuration - same as BARR/Blade (position only) */}
-              {gatesAllowed && (
-                <div className="space-y-3 pt-4 border-t border-card-border">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">Gate Required</Label>
-                    <Switch
-                      checked={span.gateConfig?.required || false}
-                      onCheckedChange={(required) => {
-                        if (required) {
-                          updateSpan({
-                            gateConfig: {
-                              required: true,
-                              hardware: "master",
-                              hingeFrom: "wall",
-                              latchTo: "wall",
-                              hingeType: "wall-to-glass",
-                              latchType: "glass-to-wall",
-                              gateSize: 975,
-                              hingePanelSize: 0,
-                              autoHingePanel: false,
-                              position: 0,
-                              flipped: false,
-                              postAdapterPlate: false,
-                              hingeGap: 0,
-                              latchGap: 0,
-                            },
-                          });
-                        } else {
-                          updateSpan({ gateConfig: undefined });
-                        }
-                      }}
-                      data-testid={`span-${span.spanId}-gate-toggle`}
-                    />
-                  </div>
-
-                  {span.gateConfig?.required && (
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Gate Position</Label>
-                        <Select
-                          value={(span.gateConfig.position || 0).toString()}
-                          onValueChange={(value) => updateSpan({ 
-                            gateConfig: {
-                              ...span.gateConfig!,
-                              position: parseInt(value)
-                            }
-                          })}
-                        >
-                          <SelectTrigger data-testid={`span-${span.spanId}-gate-position`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(() => {
-                              const numPanels = span.panelLayout?.panels.filter(p => span.panelLayout?.panelTypes?.[span.panelLayout.panels.indexOf(p)] !== "gate").length || 3;
-                              const positions = [];
-                              for (let i = 0; i <= numPanels; i++) {
-                                if (i === 0) {
-                                  positions.push(<SelectItem key={i} value={i.toString()}>Start (before panel 1)</SelectItem>);
-                                } else if (i === numPanels) {
-                                  positions.push(<SelectItem key={i} value={i.toString()}>End (after panel {numPanels})</SelectItem>);
-                                } else {
-                                  positions.push(<SelectItem key={i} value={i.toString()}>Between panel {i} and {i + 1}</SelectItem>);
-                                }
-                              }
-                              return positions;
-                            })()}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">
-                          Choose where to position the gate within this section
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* BARR Fencing Configuration - appears right after section length */}
-          {productVariant === "alu-pool-barr" && (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold">BARR Panel Configuration</h4>
-                <InfoTooltip content="BARR fencing features 50×25mm vertical aluminium pickets with horizontal rails passing through punched holes. Panel widths vary by height: 1000mm = 1733mm wide, 1200mm = 2205mm wide, 1800mm = 1969mm wide. Choose layout mode and post type for your installation." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium">Panel Height</Label>
-                    <InfoTooltip content="Panel height determines the panel width. 1000mm height = 1733mm wide panels, 1200mm height = 2205mm wide panels, 1800mm height = 1969mm wide panels." />
-                  </div>
-                  <Select
-                    value={span.barrHeight || "1200mm"}
-                    onValueChange={(value) => updateSpan({ barrHeight: value as "1000mm" | "1200mm" | "1800mm" })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-barr-height`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1000mm">1000mm (1733mm wide panels)</SelectItem>
-                      <SelectItem value="1200mm">1200mm (2205mm wide panels)</SelectItem>
-                      <SelectItem value="1800mm">1800mm (1969mm wide panels)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Finish</Label>
-                  <Select
-                    value={span.barrFinish || "satin-black"}
-                    onValueChange={(value) => updateSpan({ barrFinish: value as "satin-black" | "pearl-white" })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-barr-finish`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="satin-black">Satin Black (CN150A)</SelectItem>
-                      <SelectItem value="pearl-white">Pearl White (GA078A)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <Label className="text-sm font-medium">Layout Mode</Label>
-                  <InfoTooltip content="Full Panels + Cut End: Uses full standard panels (1733mm/2205mm/1969mm based on height) with a cut panel at the end. Equally Spaced: Cuts all panels to equal widths for uniform appearance. Both modes accommodate 25mm posts between panels." />
-                </div>
-                <Select
-                  value={span.barrLayoutMode || "full-panels-cut-end"}
-                  onValueChange={(value) => updateSpan({ barrLayoutMode: value as "full-panels-cut-end" | "equally-spaced" })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-barr-layout-mode`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full-panels-cut-end">Full Panels + Cut End</SelectItem>
-                    <SelectItem value="equally-spaced">Equally Spaced (All Cut)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {(span.barrLayoutMode || "full-panels-cut-end") === "full-panels-cut-end" 
-                    ? "Uses full standard panels with a cut panel at the end (minimum 200mm)" 
-                    : "Cuts all panels to equal widths for uniform appearance"}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Post Type</Label>
-                <Select
-                  value={span.barrPostType || "welded-base-plate"}
-                  onValueChange={(value) => updateSpan({ barrPostType: value as "welded-base-plate" | "standard" })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-barr-post-type`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="welded-base-plate">Welded Base Plate (1280mm)</SelectItem>
-                    <SelectItem value="standard">Standard (1800mm/2500mm)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {(span.barrPostType || "welded-base-plate") === "welded-base-plate" 
-                    ? "Bolted down base plates for concrete surfaces" 
-                    : "Inground, wall, or core drilled mounting"}
-                </p>
-              </div>
-
-              {/* BARR Gate Configuration - post-mounted with position only */}
               {gatesAllowed && (
                 <div className="space-y-3 pt-4 border-t border-card-border">
                   <div className="flex items-center justify-between">
