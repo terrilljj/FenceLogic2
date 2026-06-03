@@ -1,4 +1,4 @@
-import { composeFenceSegments } from '../../shared/calc/compose';
+import { composeFenceSegments } from '../services/layout/calc/compose';
 
 const result = composeFenceSegments({
   runLengthMm: 3000,

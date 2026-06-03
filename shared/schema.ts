@@ -940,6 +940,11 @@ export type InsertStyleFieldConstraint = z.infer<typeof insertStyleFieldConstrai
 export type StyleFieldConstraint = typeof styleFieldConstraints.$inferSelect;
 
 // Helper function to get gate gaps based on hardware and mounting type
+// Stock hinge-panel widths (12NH-* / 12NPH-* glass). The hinge panel is a STOCK item:
+// 600mm smallest, 1800mm largest, in these specific widths only. Used by the gate UI
+// dropdown (client) and the layout solver (server).
+export const STOCK_HINGE_PANEL_SIZES = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
+
 export function getGateGaps(hardware: GateHardware, hingeFrom: "glass" | "wall"): { hingeGap: number; latchGap: number } {
   if (hardware === "master") {
     if (hingeFrom === "wall") {

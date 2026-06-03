@@ -4,7 +4,7 @@
  */
 
 import { calculatePanelLayout } from '../panelCalculations';
-import { PanelLayout } from '../schema';
+import { PanelLayout } from '@shared/schema';
 import { buildSegmentSequence, validateSegmentComposition, Segment } from './gaps';
 import { equalizePanels, findFeasibleN, equalizePanelsExact } from './equalize';
 import {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { composeFenceSegments } from '../../shared/calc/compose';
-import type { CompositionInput } from '../../shared/calc/compose';
+import { composeFenceSegments } from '../services/layout/calc/compose';
+import type { CompositionInput } from '../services/layout/calc/compose';
 
 describe('Frameless Custom Panel Feature', () => {
   const baseInput: CompositionInput = {

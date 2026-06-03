@@ -1,4 +1,4 @@
-import { PanelLayout, PanelType } from "./schema";
+import { PanelLayout, PanelType } from "@shared/schema";
 import { equalizePanels } from "./calc/equalize";
 
 /**
@@ -643,12 +643,8 @@ export function calculatePanelLayout(
   };
 }
 
-/**
- * Stock hinge-panel widths (12NH-* / 12NPH-* glass). The hinge panel is a STOCK item:
- * 600mm smallest, 1800mm largest, in these specific widths only — never an arbitrary
- * 50mm-grid value. Shared by the UI dropdown and the centred-gate solver.
- */
-export const STOCK_HINGE_PANEL_SIZES = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
+// Stock hinge-panel widths come from @shared/schema (the UI dropdown also needs them).
+import { STOCK_HINGE_PANEL_SIZES } from "@shared/schema";
 
 /**
  * GATE CENTRE OVERRIDE (owner 2026-06-03) — places a glass-to-glass gate so its

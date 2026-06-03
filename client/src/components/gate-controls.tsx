@@ -6,8 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getGateGaps, HingeType, LatchType } from "@shared/schema";
-import { STOCK_HINGE_PANEL_SIZES } from "@shared/panelCalculations";
+import { getGateGaps, HingeType, LatchType, STOCK_HINGE_PANEL_SIZES } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { InfoTooltip } from "./info-tooltip";
 

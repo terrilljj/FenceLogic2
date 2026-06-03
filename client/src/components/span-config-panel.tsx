@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { SpanConfig, getGateGaps, ProductVariant } from "@shared/schema";
-import { calculatePanelLayout, calculateCentredGateLayout, calculateBarrPanelLayout, calculateBladePanelLayout, calculateTubularPanelLayout, calculateHamptonsPanelLayout } from "@shared/panelCalculations";
+import { apiRequest } from "@/lib/queryClient";
 import { GapSlider } from "./gap-slider";
 import { NumericInput } from "./numeric-input";
 import { GateControls } from "./gate-controls";
@@ -147,8 +147,18 @@ export function SpanConfigPanel({
   };
 
   // Calculate panel layout whenever relevant parameters change
+  // ── SERVER-SIDE LAYOUT (IP protection, owner 2026-06-03) ────────────────────────
+  // The layout solver runs on the server only. The client posts this span's raw
+  // configuration to POST /api/layout (debounced) and receives just the RESULT:
+  // panel widths/gaps/types + the optimal hinge size. While a request is in flight,
+  // `isCalculating` drives the "Calculating…" indicators.
+  const [optimalHingePanelSize, setOptimalHingePanelSize] = useState<number | undefined>(undefined);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const layoutRequestId = useRef(0);
+
   useEffect(() => {
-    // Handle fully custom layout mode - convert customLayout to panelLayout for visualization
+    // Fully-custom layout: a pure format conversion of user-entered widths — no
+    // solver involved, so it stays local for instant feedback.
     if (span.layoutMode === "fully-custom" && span.customLayout) {
       const customPanels = span.customLayout.panels.map(p => p.widthMm);
       const customGaps = span.customLayout.gaps.map(g => g.beforeMm);
@@ -171,210 +181,63 @@ export function SpanConfigPanel({
       return;
     }
 
-    // Handle auto-calc layout mode - panelLayout is managed by AutoCalcPanelControls component
-    // This useEffect only handles other layout modes (fully-custom, standard panel calculations)
+    // auto-calc layout: panelLayout is managed by AutoCalcPanelControls.
     if (span.layoutMode === "auto-calc") {
-      // panelLayout is set by AutoCalcPanelControls onUpdate handler with proper remainder distribution
       return;
     }
 
-    let layout;
-
-    // Blade fencing uses a different calculation
-    if (productVariant === "alu-pool-blade") {
-      // Get Blade specifications
-      const bladeHeight = span.bladeHeight || "1200mm";
-      const layoutMode = span.bladeLayoutMode || "full-panels-cut-end";
-      const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
-      const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
-
-      layout = calculateBladePanelLayout(
-        span.length,
-        bladeHeight,
-        layoutMode,
-        hasGate,
-        gateSize,
-        gatePosition
-      );
-    } 
-    // BARR fencing uses a different calculation
-    else if (productVariant === "alu-pool-barr") {
-      // Get BARR specifications
-      const barrHeight = span.barrHeight || "1200mm";
-      const layoutMode = span.barrLayoutMode || "full-panels-cut-end";
-      const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
-      const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
-
-      layout = calculateBarrPanelLayout(
-        span.length,
-        barrHeight,
-        layoutMode,
-        hasGate,
-        gateSize,
-        gatePosition
-      );
-    } 
-    // Tubular Flat Top uses a different calculation
-    else if (productVariant === "alu-pool-tubular") {
-      // Get Tubular specifications
-      const tubularHeight = span.tubularHeight || "1200mm";
-      const tubularPanelWidth = span.tubularPanelWidth || "2450mm";
-      const layoutMode = span.tubularLayoutMode || "full-panels-cut-end";
-      const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 975) : undefined;
-      const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
-
-      layout = calculateTubularPanelLayout(
-        span.length,
-        tubularHeight,
-        tubularPanelWidth,
-        layoutMode,
-        hasGate,
-        gateSize,
-        gatePosition
-      );
-    }
-    // Aluminium Balustrade — BARR (reuses BARR panel-width specs; gates not allowed for bal- variants)
-    else if (productVariant === "alu-bal-barr") {
-      const balBarrHeight = (span.balBarrPanelHeight || "1000mm") as "1000mm" | "1200mm";
-      layout = calculateBarrPanelLayout(
-        span.length,
-        balBarrHeight,
-        "full-panels-cut-end",
-        false,
-        undefined,
-        0
-      );
-    }
-    // Aluminium Balustrade — Blade (1700×1000 only; black only)
-    else if (productVariant === "alu-bal-blade") {
-      layout = calculateBladePanelLayout(
-        span.length,
-        "1000mm",
-        "full-panels-cut-end",
-        false,
-        undefined,
-        0
-      );
-    }
-    // Hamptons PVC uses a different calculation
-    else if (productVariant.startsWith("pvc-hamptons-")) {
-      // Get Hamptons PVC specifications
-      const hamptonsStyle = productVariant.replace("pvc-hamptons-", "") as "full-privacy" | "combo" | "vertical-paling" | "semi-privacy" | "3rail";
-      const layoutMode = span.hamptonsLayoutMode || "full-panels-cut-end";
-      const hasGate = gatesAllowed && span.gateConfig?.required;
-      const gateSize = hasGate ? (span.gateConfig?.gateSize || 1000) : undefined;
-      const gatePosition = hasGate ? (span.gateConfig?.position || 0) : 0;
-
-      layout = calculateHamptonsPanelLayout(
-        span.length,
-        hamptonsStyle,
-        layoutMode,
-        hasGate,
-        gateSize,
-        gatePosition
-      );
-    } else {
-      // Glass/standoff/general fencing calculation
-      // Calculate total end gaps, using latch gap when gate latch is at wall boundary
-      let leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
-      let rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
-      
-      // When gate is wall-mounted, the hinge end has 0 gap (attached to wall)
-      if (span.gateConfig?.required && span.gateConfig.hingeFrom === "wall") {
-        // Wall-mounted: hinge is at boundary, so that end gap is 0
-        if (span.gateConfig.position === 0) {
-          leftEndGap = 0; // Hinge at left wall
-        } else if (span.gateConfig.position >= 1) {
-          rightEndGap = 0; // Hinge at right wall
-        }
-      }
-      
-      let endGaps = leftEndGap + rightEndGap;
-
-      // Use the configured hinge panel size (default 1200mm)
-      const effectiveHingePanelSize = span.gateConfig?.hingePanelSize || 1200;
-
-      // GATE CENTRE OVERRIDE: when the user has pinned the gate's centre line to a
-      // distance from the left end (e.g. centring on a path), split the run at the
-      // gate and solve each side independently. Falls back to the normal layout if
-      // the requested centre is unworkable.
-      let centredLayout = null;
-      if (
-        gatesAllowed &&
-        span.gateConfig?.required &&
-        span.gateConfig.hingeFrom !== "wall" &&
-        span.gateConfig.centreFromLeft != null
-      ) {
-        // The solver itself searches micro-offsets (≤25mm) and stock hinge widths, and
-        // walks outward up to ±200mm if needed — a single call does it all.
-        centredLayout = calculateCentredGateLayout({
-          spanLength: span.length,
-          leftEndGap,
-          rightEndGap,
-          desiredGap: span.desiredGap,
-          maxPanelWidth: span.maxPanelWidth,
-          hasLeftRaked: span.leftRakedPanel?.enabled || false,
-          hasRightRaked: span.rightRakedPanel?.enabled || false,
-          gateConfig: {
-            gateSize: span.gateConfig.gateSize,
-            hingePanelSize: effectiveHingePanelSize,
-            flipped: span.gateConfig.flipped,
-            hingeGap: span.gateConfig.hingeGap ?? 8,
-            latchGap: span.gateConfig.latchGap ?? 9,
-            autoHingePanel: span.gateConfig.autoHingePanel,
-            centreFromLeft: span.gateConfig.centreFromLeft,
+    // Everything else: ask the server. Debounce so dragging/typing doesn't flood it;
+    // stale responses are discarded via the request id.
+    const requestId = ++layoutRequestId.current;
+    setIsCalculating(true);
+    const timer = setTimeout(async () => {
+      try {
+        const response = await apiRequest("POST", "/api/layout", {
+          productVariant,
+          gatesAllowed,
+          span: {
+            length: span.length,
+            maxPanelWidth: span.maxPanelWidth,
+            desiredGap: span.desiredGap,
+            layoutMode: span.layoutMode,
+            leftGap: span.leftGap,
+            rightGap: span.rightGap,
+            leftRakedPanel: span.leftRakedPanel,
+            rightRakedPanel: span.rightRakedPanel,
+            customPanel: span.customPanel,
+            gateConfig: span.gateConfig,
+            bladeHeight: span.bladeHeight,
+            bladeLayoutMode: span.bladeLayoutMode,
+            barrHeight: span.barrHeight,
+            barrLayoutMode: span.barrLayoutMode,
+            tubularHeight: span.tubularHeight,
+            tubularPanelWidth: span.tubularPanelWidth,
+            tubularLayoutMode: span.tubularLayoutMode,
+            balBarrPanelHeight: span.balBarrPanelHeight,
+            hamptonsLayoutMode: span.hamptonsLayoutMode,
           },
-          customPanelConfig: span.customPanel?.enabled ? {
-            enabled: span.customPanel.enabled,
-            width: span.customPanel.width,
-            height: span.customPanel.height,
-            position: span.customPanel.position,
-          } : undefined,
         });
+        const data = await response.json();
+        if (requestId !== layoutRequestId.current) return; // superseded by a newer request
+
+        setOptimalHingePanelSize(data.optimalHingePanelSize);
+
+        if (data.panelLayout) {
+          const layoutChanged =
+            !span.panelLayout ||
+            JSON.stringify(span.panelLayout) !== JSON.stringify(data.panelLayout);
+          if (layoutChanged) {
+            onUpdate({ ...span, panelLayout: data.panelLayout });
+          }
+        }
+      } catch (error) {
+        console.error("Layout request failed:", error);
+      } finally {
+        if (requestId === layoutRequestId.current) setIsCalculating(false);
       }
+    }, 250);
 
-      // Calculate final panel layout with the configured hinge panel size
-      // Only include gate config if gates are allowed for this product variant
-      layout = centredLayout ?? calculatePanelLayout(
-        span.length,
-        endGaps,
-        span.desiredGap,
-        span.maxPanelWidth,
-        span.leftRakedPanel?.enabled || false,
-        span.rightRakedPanel?.enabled || false,
-        (gatesAllowed && span.gateConfig?.required) ? {
-          required: span.gateConfig.required,
-          gateSize: span.gateConfig.gateSize,
-          hingePanelSize: effectiveHingePanelSize,
-          position: span.gateConfig.position,
-          flipped: span.gateConfig.flipped,
-          hingeFrom: span.gateConfig.hingeFrom,
-          hingeGap: span.gateConfig.hingeGap,
-          latchGap: span.gateConfig.latchGap,
-          // Manual hinge size (match OFF) disables the hinge-match rule so the
-          // remaining panels equalise independently.
-          autoHingePanel: span.gateConfig.autoHingePanel,
-        } : undefined,
-        span.customPanel?.enabled ? {
-          enabled: span.customPanel.enabled,
-          width: span.customPanel.width,
-          height: span.customPanel.height,
-          position: span.customPanel.position,
-        } : undefined
-      );
-    }
-
-    // Update span with calculated layout if it changed
-    const layoutChanged = 
-      !span.panelLayout ||
-      JSON.stringify(span.panelLayout) !== JSON.stringify(layout);
-
-    if (layoutChanged) {
-      onUpdate({ ...span, panelLayout: layout });
-    }
+    return () => clearTimeout(timer);
   }, [span.length, span.desiredGap, span.maxPanelWidth, 
       span.leftGap, span.rightGap, 
       span.leftRakedPanel, span.rightRakedPanel, 
@@ -487,87 +350,8 @@ export function SpanConfigPanel({
 
   const layoutValidation = validatePanelLayout();
 
-  // Calculate optimal hinge panel size for Auto.
-  // HINGE-MATCH RULE (owner, 2026-06-02): the hinge panel and standard panels must
-  // form a single glass family — at most 2 distinct widths, exactly 50mm apart.
-  // Auto therefore runs the REAL layout algorithm (which enforces that rule) for
-  // each candidate hinge size and picks the one whose layout is most uniform —
-  // instead of comparing against a theoretical average that ignores the 50mm grid.
-  const calculateOptimalHingePanelSize = (): number | undefined => {
-    if (!span.gateConfig?.required || span.gateConfig.hingeFrom !== "glass") {
-      return undefined;
-    }
-
-    // Valid hinge panel sizes
-    const validHingeSizes = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800];
-
-    const leftEndGap = span.leftGap?.enabled ? span.leftGap.size : 0;
-    const rightEndGap = span.rightGap?.enabled ? span.rightGap.size : 0;
-    const endGaps = leftEndGap + rightEndGap;
-
-    let bestHingeSize = 1200; // default
-    let bestScore = Infinity;
-
-    for (const hingeSize of validHingeSizes) {
-      const layout = calculatePanelLayout(
-        span.length,
-        endGaps,
-        span.desiredGap,
-        span.maxPanelWidth,
-        span.leftRakedPanel?.enabled || false,
-        span.rightRakedPanel?.enabled || false,
-        {
-          required: true,
-          gateSize: span.gateConfig.gateSize,
-          hingePanelSize: hingeSize,
-          position: span.gateConfig.position,
-          flipped: span.gateConfig.flipped,
-          hingeFrom: span.gateConfig.hingeFrom,
-          hingeGap: span.gateConfig.hingeGap,
-          latchGap: span.gateConfig.latchGap,
-          autoHingePanel: true, // computing the auto-match value — rule applies
-        },
-        span.customPanel?.enabled ? {
-          enabled: span.customPanel.enabled,
-          width: span.customPanel.width,
-          height: span.customPanel.height,
-          position: span.customPanel.position,
-        } : undefined
-      );
-
-      if (!layout.panels.length || !layout.panelTypes) continue;
-
-      // Score, in priority order:
-      //  1. Rule compliance — worst difference between hinge and any standard panel
-      //     (0 = all glass identical, 50 = within the rule, >50 = rule broken).
-      //  2. Fewer panels — a 1300 hinge with 4 panels beats a 600 hinge with 7.
-      //  3. Gaps closest to the user's target gap.
-      //
-      // PRIORITY ORDER (owner-corrected 2026-06-02): rule compliance is a HARD
-      // constraint, not the goal. Among rule-compliant candidates, FEWER (= larger)
-      // panels win — a 1600 hinge giving 6 big panels beats a 1300 hinge giving 7
-      // smaller ones, even though the all-1300 layout is "more equal".
-      const standards = layout.panels.filter((_, i) => layout.panelTypes![i] === "standard");
-      const maxDiff = standards.length > 0
-        ? Math.max(...standards.map((p) => Math.abs(p - hingeSize)))
-        : 0;
-      const ruleBroken = maxDiff > 50;
-      const score =
-        (ruleBroken ? 1_000_000 : 0) +
-        layout.panels.length * 1000 +
-        maxDiff +
-        Math.abs(layout.averageGap - span.desiredGap) / 100;
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestHingeSize = hingeSize;
-      }
-    }
-
-    return bestHingeSize;
-  };
-  
-  const optimalHingePanelSize = calculateOptimalHingePanelSize();
+  // optimalHingePanelSize now comes from the server layout response (state above) —
+  // the hinge-sizing logic is solver IP and never runs in the browser.
 
   // Calculate total measurements and variance for elevation view
   const calculateTotalAndVariance = () => {
@@ -599,6 +383,14 @@ export function SpanConfigPanel({
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="text-base font-semibold whitespace-nowrap">{span.name?.trim() || `Section ${span.spanId}`}</h3>
           <InfoTooltip content="Configure this section's length, panel layout, gaps, gates, and special features. Each section can have custom panels, raked panels for slopes, and independently positioned gates." />
+          {/* Calculating indicator — the layout solver runs server-side; this shows
+              the round-trip so the calculator visibly "works" rather than lags. */}
+          {isCalculating && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-primary" data-testid={`span-${span.spanId}-calculating`}>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Calculating…
+            </span>
+          )}
           {isGlassSpigots && span.panelLayout && (
             <span className="hidden md:flex items-center gap-1.5 ml-2 text-xs text-muted-foreground font-mono truncate">
               <span>{span.length.toLocaleString()} mm</span>
