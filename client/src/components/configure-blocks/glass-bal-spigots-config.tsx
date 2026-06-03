@@ -4,10 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SpanConfig, ProductVariant } from "@shared/schema";
+import { cn } from "@/lib/utils";
 import { InfoTooltip } from "../info-tooltip";
 import { GapSelect } from "./gap-select";
 import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
-import { COVER_MATRIX, MADRID_COVERS } from "./glass-spigots-config";
+import { COVER_MATRIX, MADRID_COVERS, FINISH_BY_FAMILY, FINISH_LABEL, FINISH_SWATCH, type Finish } from "./glass-spigots-config";
 
 interface GlassBalSpigotsConfigProps {
   span: SpanConfig;
@@ -109,6 +110,18 @@ export function GlassBalSpigotsConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thickness, span.spanId]);
 
+  // Spigot finish (SF-8/SF-9 job-wide cosmetic input): {Polish, Satin, Black, Matt White},
+  // uniform across balustrade families and mountings. Filtered via the shared per-family
+  // enums; covers auto-match the chosen finish.
+  const familyFinishes = FINISH_BY_FAMILY[currentFamily] ?? (["polished", "satin", "black", "white"] as Finish[]);
+  const currentFinish = (span.spigotColor || "polished") as Finish;
+  useEffect(() => {
+    if (!familyFinishes.includes(currentFinish)) {
+      updateSpan({ spigotColor: familyFinishes[0] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFamily, span.spanId]);
+
   return (
     <Accordion
       type="multiple"
@@ -193,6 +206,35 @@ export function GlassBalSpigotsConfig({
               spanId={span.spanId}
             />
           </div>
+
+          {/* Finish — same swatch picker as pool spigots. Writes spigotColor (schema enum);
+              covers and spigot SKUs auto-match this finish. */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">Finish</Label>
+              <InfoTooltip content="The spigot finish. Spigot covers are finished to match automatically." />
+            </div>
+            <div className="flex flex-wrap gap-1.5" data-testid={`span-${span.spanId}-finish-picker`}>
+              {familyFinishes.map((f) => {
+                const active = f === currentFinish;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => updateSpan({ spigotColor: f })}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors hover-elevate active-elevate-2",
+                      active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-card-border",
+                    )}
+                    data-testid={`span-${span.spanId}-finish-${f}`}
+                  >
+                    <span className={cn("h-3.5 w-3.5 rounded-full", FINISH_SWATCH[f])} />
+                    {FINISH_LABEL[f]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {/* SF-1 hardware flow (same rules as pool spigots): substrate → mounting →
               covers → fixings. Only CONCRETE can be core-drilled; base-plate rods on
               concrete/steel protrude → raised/high cover required. */}
@@ -211,10 +253,10 @@ export function GlassBalSpigotsConfig({
               ? storedCover
               : enabledCovers[0]?.value ?? coverOptions[0].value;
             const fixingsInfo: Record<string, string> = {
-              "concrete·base-plate": "M10 stainless threaded rod kits (1 per spigot) + chemical anchor.",
-              "concrete·core-drilled": "Core holes grouted — 10kg grout bag per 10 spigots + 1 spare.",
-              "timber·base-plate": "Countersunk batten screw packs (1 per spigot) into structural timber.",
-              "steel·base-plate": "M10 stainless threaded rod kits (1 per spigot), no chemical anchor.",
+              "concrete·base-plate": "M10×120mm stainless threaded rods (1 pack per spigot) + chemical anchor (1 per 6 spigots).",
+              "concrete·core-drilled": "Pourable grout — 1 bag per 10 spigots plus a spare. No mechanical fixings.",
+              "timber·base-plate": "100mm countersunk batten screws (1 pack per spigot). Fix into joists or solid bearers.",
+              "steel·base-plate": "M10×120mm stainless threaded rods (1 pack per spigot). No chemical anchor needed for steel.",
             };
             return (
               <>
@@ -306,7 +348,6 @@ export function GlassBalSpigotsConfig({
               </>
             );
           })()}
-          <p className="text-[11px] text-muted-foreground">Spigot finish is set on Step 1 (applies to the whole design).</p>
         </AccordionContent>
       </AccordionItem>
 

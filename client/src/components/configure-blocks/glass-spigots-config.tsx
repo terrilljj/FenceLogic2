@@ -32,12 +32,16 @@ const AS3000_FAMILIES = ["madrid-pool", "madrid", "insuluxe"];
 // Matt White / White → "white". Silver Grey is Insuluxe-only (SF-1 {B, SG, W}).
 // Finish is chosen AFTER the family and filtered to it — no dead-ends.
 export type Finish = "polished" | "satin" | "black" | "white" | "silver-grey";
-const FINISH_BY_FAMILY: Record<string, Finish[]> = {
+export const FINISH_BY_FAMILY: Record<string, Finish[]> = {
   "madrid-pool": ["polished", "satin", "black", "white"],
   lifestyle: ["polished", "satin", "black"],
   rio: ["polished", "satin", "white"],
   insuluxe: ["black", "silver-grey", "white"],
   madrid: ["polished", "satin", "black", "white"],
+  // Balustrade families (SF-8/SF-9 specs): {Polish, Satin, Black, Matt White},
+  // uniform across families and mountings — full 4-finish coverage.
+  nova: ["polished", "satin", "black", "white"],
+  "madrid-deluxe": ["polished", "satin", "black", "white"],
 };
 export const FINISH_LABEL: Record<Finish, string> = {
   polished: "Polished",
