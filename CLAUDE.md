@@ -2,8 +2,13 @@
 
 ## Repository
 GitHub: https://github.com/terrilljj/FenceLogic2
-Replit: connected to GitHub main (auto-deploys on merge)
-Live app: https://design-scraper-terrilljason.replit.app
+Railway: connected to GitHub main (auto-deploys on merge)
+Live app: https://fencelogic2-production.up.railway.app
+
+NOTE — Replit is NOT used (operator confirmed 2026-06-03; stopped months earlier).
+The old Replit deployment (design-scraper-terrilljason.replit.app) is a stale build
+that is still publicly reachable — operator to decommission it from the Replit account.
+`.replit` and `replit.md` in the repo root are dead leftovers from that era.
 
 ## Local development
 cd ~/FenceLogic2
@@ -41,7 +46,7 @@ Fixed in the 2026-06-03 audit (fix/api-security-hardening):
 9. ✅ Personal Notion dashboard endpoints (/api/dashboard, /api/personal/:type) DELETED —
    they belonged to a different project and exposed private data with no auth.
 
-## REQUIRED PRODUCTION ENV VARS (set in Replit Secrets)
+## REQUIRED PRODUCTION ENV VARS (set in Railway service variables)
 - DATABASE_URL    (existing)
 - ADMIN_USERNAME  (admin UI login — admin login is DISABLED if unset)
 - ADMIN_PASSWORD  (admin UI login — admin login is DISABLED if unset)
@@ -76,7 +81,7 @@ Fixed in the 2026-06-03 audit (fix/api-security-hardening):
 - Never commit directly to main
 - Branch naming: fix/[issue], feat/[feature]
 - One logical change per branch
-- Open a PR after each branch — Replit auto-deploys on merge to main
+- Open a PR after each branch — Railway auto-deploys on merge to main
 
 ## Verification commands after every server change
 (dev server may run on PORT=5173 locally; adjust as needed)
@@ -95,5 +100,4 @@ curl -X POST http://localhost:5000/api/admin/login -H "Content-Type: application
 - Panel layout algorithm (server-side, working correctly)
 - Drizzle schema migrations (destructive if wrong)
 - UI component library (Radix + Tailwind)
-- Replit configuration files
 - reusePort setting (removed for macOS compatibility)
