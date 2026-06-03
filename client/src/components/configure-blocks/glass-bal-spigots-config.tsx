@@ -4,9 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SpanConfig, ProductVariant } from "@shared/schema";
+import { cn } from "@/lib/utils";
 import { InfoTooltip } from "../info-tooltip";
 import { GapSelect } from "./gap-select";
 import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
+import { COVER_MATRIX, MADRID_COVERS, FINISH_BY_FAMILY, FINISH_LABEL, FINISH_SWATCH, type Finish } from "./glass-spigots-config";
 
 interface GlassBalSpigotsConfigProps {
   span: SpanConfig;
@@ -108,6 +110,18 @@ export function GlassBalSpigotsConfig({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thickness, span.spanId]);
 
+  // Spigot finish (SF-8/SF-9 job-wide cosmetic input): {Polish, Satin, Black, Matt White},
+  // uniform across balustrade families and mountings. Filtered via the shared per-family
+  // enums; covers auto-match the chosen finish.
+  const familyFinishes = FINISH_BY_FAMILY[currentFamily] ?? (["polished", "satin", "black", "white"] as Finish[]);
+  const currentFinish = (span.spigotColor || "polished") as Finish;
+  useEffect(() => {
+    if (!familyFinishes.includes(currentFinish)) {
+      updateSpan({ spigotColor: familyFinishes[0] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFamily, span.spanId]);
+
   return (
     <Accordion
       type="multiple"
@@ -192,24 +206,148 @@ export function GlassBalSpigotsConfig({
               spanId={span.spanId}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Mounting</Label>
-              <Select
-                value={span.spigotMounting === "side-mounted" ? "base-plate" : (span.spigotMounting || "base-plate")}
-                onValueChange={(v: "base-plate" | "core-drilled") => updateSpan({ spigotMounting: v })}
-              >
-                <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-mounting`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="base-plate">Base Plate</SelectItem>
-                  <SelectItem value="core-drilled">Core Drilled</SelectItem>
-                </SelectContent>
-              </Select>
+
+          {/* Finish — same swatch picker as pool spigots. Writes spigotColor (schema enum);
+              covers and spigot SKUs auto-match this finish. */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">Finish</Label>
+              <InfoTooltip content="The spigot finish. Spigot covers are finished to match automatically." />
+            </div>
+            <div className="flex flex-wrap gap-1.5" data-testid={`span-${span.spanId}-finish-picker`}>
+              {familyFinishes.map((f) => {
+                const active = f === currentFinish;
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => updateSpan({ spigotColor: f })}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors hover-elevate active-elevate-2",
+                      active ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-card-border",
+                    )}
+                    data-testid={`span-${span.spanId}-finish-${f}`}
+                  >
+                    <span className={cn("h-3.5 w-3.5 rounded-full", FINISH_SWATCH[f])} />
+                    {FINISH_LABEL[f]}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground">Spigot finish is set on Step 1 (applies to the whole design).</p>
+          {/* SF-1 hardware flow (same rules as pool spigots): substrate → mounting →
+              covers → fixings. Only CONCRETE can be core-drilled; base-plate rods on
+              concrete/steel protrude → raised/high cover required. */}
+          {(() => {
+            const substrate = (span.spigotSubstrate || "concrete") as "concrete" | "timber" | "steel";
+            const mounting = span.spigotMounting === "core-drilled" && substrate === "concrete" ? "core-drilled" : "base-plate";
+            const needsRaisedCover = mounting === "base-plate" && (substrate === "concrete" || substrate === "steel");
+            const coverCategory = mounting === "core-drilled" ? "dress" : "dome";
+            const coverOptions = (COVER_MATRIX[currentFamily] ?? MADRID_COVERS)[coverCategory].map((o) => ({
+              ...o,
+              disabled: !!o.slim && needsRaisedCover,
+            }));
+            const enabledCovers = coverOptions.filter((o) => !o.disabled);
+            const storedCover = span.fieldValues?.["spigot-cover"] as string | undefined;
+            const spigotCover = storedCover && enabledCovers.some((o) => o.value === storedCover)
+              ? storedCover
+              : enabledCovers[0]?.value ?? coverOptions[0].value;
+            const fixingsInfo: Record<string, string> = {
+              "concrete·base-plate": "M10×120mm stainless threaded rods (1 pack per spigot) + chemical anchor (1 per 6 spigots).",
+              "concrete·core-drilled": "Pourable grout — 1 bag per 10 spigots plus a spare. No mechanical fixings.",
+              "timber·base-plate": "100mm countersunk batten screws (1 pack per spigot). Fix into joists or solid bearers.",
+              "steel·base-plate": "M10×120mm stainless threaded rods (1 pack per spigot). No chemical anchor needed for steel.",
+            };
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs text-muted-foreground">Substrate</Label>
+                      <InfoTooltip content="The surface the spigots fix to. Concrete can be core-drilled or base-plated; timber decks and steel must be base-plated." />
+                    </div>
+                    <Select
+                      value={substrate}
+                      onValueChange={(v) => {
+                        const next: Partial<typeof span> = { spigotSubstrate: v as typeof substrate };
+                        if (v !== "concrete" && span.spigotMounting === "core-drilled") next.spigotMounting = "base-plate";
+                        updateSpan(next);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-substrate`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="concrete">Concrete</SelectItem>
+                        <SelectItem value="timber">Timber deck</SelectItem>
+                        <SelectItem value="steel">Steel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Mounting</Label>
+                    <Select
+                      value={mounting}
+                      onValueChange={(v: "base-plate" | "core-drilled") => updateSpan({ spigotMounting: v })}
+                    >
+                      <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-spigot-mounting`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="base-plate">Base Plate</SelectItem>
+                        {substrate === "concrete" && <SelectItem value="core-drilled">Core Drilled</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Covers — category follows mounting; range follows the family matrix. */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Spigot Covers — {mounting === "core-drilled" ? "dress rings" : "domical covers"}
+                    </Label>
+                    <InfoTooltip content="Core-drilled spigots take dress rings; base-plated take domical covers. On concrete or steel the rod fixings protrude, so the taller cover is required." />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {coverOptions.map((o) => (
+                      <button
+                        key={o.value}
+                        type="button"
+                        disabled={o.disabled}
+                        onClick={() => updateSpan({ fieldValues: { ...span.fieldValues, "spigot-cover": o.value } })}
+                        className={
+                          "rounded-md border p-2 text-left text-xs transition-colors " +
+                          (o.disabled
+                            ? "cursor-not-allowed border-card-border opacity-40"
+                            : spigotCover === o.value
+                              ? "border-primary bg-primary/5"
+                              : "border-card-border hover:border-primary/40")
+                        }
+                        data-testid={`span-${span.spanId}-cover-${o.value}`}
+                      >
+                        <span className="font-medium">{o.label}</span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {o.disabled ? "Won't clear the rod fixings on concrete/steel." : o.blurb}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {coverOptions.length === 1 && (
+                    <p className="text-[11px] text-muted-foreground">This family has one cover option — included automatically.</p>
+                  )}
+                </div>
+
+                {/* Fixings included */}
+                <div className="rounded-md border border-card-border bg-muted/30 p-2.5" data-testid={`span-${span.spanId}-fixings-info`}>
+                  <p className="text-[11px] font-semibold">Fixings included ({substrate} · {mounting === "core-drilled" ? "core drilled" : "base plate"})</p>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {fixingsInfo[`${substrate}·${mounting}`] ?? fixingsInfo["concrete·base-plate"]}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
         </AccordionContent>
       </AccordionItem>
 
