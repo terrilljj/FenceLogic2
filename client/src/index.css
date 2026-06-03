@@ -14,11 +14,11 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 210 4% 98%;
+  --background: 210 17% 98%; /* storefront --color-background #F8F9FA */
 
-  --foreground: 214 33% 17%; /* BarrierHub navy (#1D2939) */
+  --foreground: 210 35% 17%; /* BarrierHub navy (#1C2B3A — storefront --color-primary) */
 
-  --border: 210 12% 88%;
+  --border: 214 32% 91%; /* storefront --color-border #E2E8F0 */
 
   --card: 210 4% 96%;
 
@@ -32,7 +32,7 @@
 
   --sidebar-border: 210 10% 86%;
 
-  --sidebar-primary: 40 50% 57%; /* BarrierHub gold (#C9A45C) */
+  --sidebar-primary: 39 45% 61%; /* BarrierHub gold (#C8A96E — storefront --color-accent) */
 
   --sidebar-primary-foreground: 40 50% 98%;
 
@@ -48,7 +48,7 @@
 
   --popover-border: 210 10% 84%;
 
-  --primary: 40 50% 57%; /* BarrierHub gold (#C9A45C) */
+  --primary: 39 45% 61%; /* BarrierHub gold (#C8A96E — storefront --color-accent) */
 
   --primary-foreground: 40 50% 98%;
 

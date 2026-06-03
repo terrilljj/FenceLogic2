@@ -22,6 +22,9 @@ import { GlassBalSpigotsConfig } from "./configure-blocks/glass-bal-spigots-conf
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
+  /** All sections in design order — used for cross-section cut-length optimisation
+   *  (channel/handrail offcut reuse chips). */
+  allSpans?: SpanConfig[];
   onUpdate: (span: SpanConfig) => void;
   productVariant?: ProductVariant;
   calculatorConfig?: any;
@@ -32,6 +35,7 @@ interface SpanConfigPanelProps {
 
 export function SpanConfigPanel({
   span,
+  allSpans,
   onUpdate,
   productVariant = "glass-pool-spigots",
   calculatorConfig,
@@ -45,6 +49,8 @@ export function SpanConfigPanel({
   const isSemiFrameless = productVariant === "semi-frameless-1000" || productVariant === "semi-frameless-1800";
 
   const isGlassSpigots = productVariant === "glass-pool-spigots";
+  // Pool channel shares the spigots accordion (hardware section swapped to Channel).
+  const isGlassPoolChannel = productVariant === "glass-pool-channel";
   const isGlassBalSpigots = productVariant.startsWith("glass-bal-spigots");
 
   // Determine if gates are allowed based on calculator config features
@@ -391,7 +397,7 @@ export function SpanConfigPanel({
               Calculating…
             </span>
           )}
-          {isGlassSpigots && span.panelLayout && (
+          {(isGlassSpigots || isGlassPoolChannel) && span.panelLayout && (
             <span className="hidden md:flex items-center gap-1.5 ml-2 text-xs text-muted-foreground font-mono truncate">
               <span>{span.length.toLocaleString()} mm</span>
               <span>·</span>
@@ -455,12 +461,13 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {/* ── Glass Pool Spigots: Oxworks-style numbered configure accordion ──
-              Replaces the rejected tab/help-panel experiment. Built on shared
-              span/updateSpan state so the Phase-2 wizard can reuse the same block. */}
-          {isGlassSpigots && (
+          {/* ── Glass Pool Spigots + Glass Pool Channel: Oxworks-style numbered configure
+              accordion. Channel reuses the same block with the hardware section swapped
+              (owner ruling: "change spigots to channel" — all glass logic shared). */}
+          {(isGlassSpigots || isGlassPoolChannel) && (
             <GlassSpigotsConfig
               span={span}
+              allSpans={allSpans}
               updateSpan={updateSpan}
               gatesAllowed={gatesAllowed}
               optimalHingePanelSize={optimalHingePanelSize}
@@ -468,6 +475,7 @@ export function SpanConfigPanel({
               showRightGap={showRightGap}
               isFieldEnabled={isFieldEnabled}
               isSectionEnabled={isSectionEnabled}
+              productVariant={productVariant}
             />
           )}
 
@@ -1438,7 +1446,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Gap Configurations - Hide for BARR, Blade, Tubular, Hamptons PVC, alu-bal-*, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 {showLeftGap && isFieldEnabled("startGapMm") && (
@@ -1705,7 +1713,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, custom-frameless, semi-frameless, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassBalSpigots && (isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) &&
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalSpigots && (isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) &&
            productVariant !== "alu-pool-barr" &&
            productVariant !== "alu-pool-blade" &&
            productVariant !== "alu-pool-tubular" &&
@@ -1779,36 +1787,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Hardware Configuration - Show channel, spigot, OR post based on product type (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant === "glass-pool-channel" ? (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">Channel Hardware</h4>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Channel Mounting</Label>
-                  <Select
-                    value={span.channelMounting || "ground"}
-                    onValueChange={(channelMounting: "wall" | "ground") => 
-                      updateSpan({ channelMounting })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-channel-mounting`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="wall">Wall Mounted</SelectItem>
-                      <SelectItem value="ground">Ground Mounted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-1">
-                  <p><strong>Channel System:</strong> Versatilt 4200mm aluminum channel</p>
-                  <p><strong>Friction Clamps:</strong> Positioned at 300mm centers</p>
-                  <p><strong>Mounting:</strong> {span.channelMounting === "wall" ? "Base mounted" : "Side mounted"}</p>
-                </div>
-              </div>
-            </div>
-          ) : !isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !isSemiFrameless ? (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -1855,7 +1834,7 @@ export function SpanConfigPanel({
           ) : null}
 
           {/* Gate Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing; glass-pool-spigots uses 4-col grid */}
-          {!isGlassSpigots && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
+          {!isGlassSpigots && !isGlassPoolChannel && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1910,7 +1889,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Raked Panels Configuration - only for non-BARR/Blade/Tubular; glass-pool-spigots uses 4-col grid */}
-          {!isGlassSpigots && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
+          {!isGlassSpigots && !isGlassPoolChannel && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
@@ -2045,7 +2024,7 @@ export function SpanConfigPanel({
 
 
           {/* Custom Panel - Hide for BARR, Blade, Tubular, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && isSectionEnabled("Custom Panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
+          {!isGlassSpigots && !isGlassPoolChannel && isSectionEnabled("Custom Panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
             <div className="space-y-3 pt-4 border-t border-card-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -2080,36 +2059,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Hardware Configuration - Moved to bottom (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless && productVariant === "glass-pool-channel" ? (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <h4 className="text-sm font-semibold">Channel Hardware</h4>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Channel Mounting</Label>
-                  <Select
-                    value={span.channelMounting || "ground"}
-                    onValueChange={(channelMounting: "wall" | "ground") => 
-                      updateSpan({ channelMounting })
-                    }
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-channel-mounting`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="wall">Wall Mounted</SelectItem>
-                      <SelectItem value="ground">Ground Mounted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-1">
-                  <p><strong>Channel System:</strong> Versatilt 4200mm aluminum channel</p>
-                  <p><strong>Friction Clamps:</strong> Positioned at 300mm centers</p>
-                  <p><strong>Mounting:</strong> {span.channelMounting === "wall" ? "Base mounted" : "Side mounted"}</p>
-                </div>
-              </div>
-            </div>
-          ) : !isGlassSpigots && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -2156,7 +2106,7 @@ export function SpanConfigPanel({
           ) : null}
 
           {/* Gate Configuration - Moved to bottom (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
+          {!isGlassSpigots && !isGlassPoolChannel && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2211,7 +2161,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Raked Panels - Moved to bottom (glass-pool-spigots shows Rake in the 4-col grid) */}
-          {!isGlassSpigots && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
+          {!isGlassSpigots && !isGlassPoolChannel && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>

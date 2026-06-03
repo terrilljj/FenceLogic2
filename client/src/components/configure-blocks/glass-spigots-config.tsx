@@ -3,9 +3,11 @@ import { Check, Pencil, Plus } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps } from "@shared/schema";
+import { channelCutPlans, CHANNEL_PINS_PER_JOIN, CHANNEL_PIN_PACK_SIZE } from "@/lib/cut-plan";
 import { cn } from "@/lib/utils";
 import { InfoTooltip } from "../info-tooltip";
 import { GateControls } from "../gate-controls";
@@ -108,6 +110,13 @@ interface GlassSpigotsConfigProps {
   showRightGap?: boolean;
   isFieldEnabled: (fieldKey: string) => boolean;
   isSectionEnabled: (section: string) => boolean;
+  /** All sections in design order — for cross-section offcut reuse (channel cut plans). */
+  allSpans?: SpanConfig[];
+  /** "glass-pool-spigots" (default) or "glass-pool-channel". Channel swaps the
+   *  hardware section (2) from Spigot to Channel; Configure (1) and Gate/raked/
+   *  custom (3) are identical across both — the glass logic is shared (owner
+   *  ruling 2026-06-03: "change spigots to channel"). */
+  productVariant?: string;
 }
 
 // Glass density ≈ 2.5 kg per m² per mm of thickness. glass-pool-spigots is 12mm,
@@ -242,7 +251,13 @@ export function GlassSpigotsConfig({
   showRightGap,
   isFieldEnabled,
   isSectionEnabled,
+  allSpans,
+  productVariant = "glass-pool-spigots",
 }: GlassSpigotsConfigProps) {
+  // CHANNEL MODE (glass-pool-channel): VersaTilt channel system replaces the spigot
+  // ecosystem — no family picker, no covers, channel finish {Black, Satin Anodised},
+  // M12 fixings per substrate. Glass/gates/raked/custom logic is untouched.
+  const isChannel = productVariant === "glass-pool-channel";
   const standardPanelWidth = span.panelLayout?.panels?.length
     ? Math.max(...span.panelLayout.panels)
     : span.maxPanelWidth;
@@ -413,6 +428,54 @@ export function GlassSpigotsConfig({
   ]
     .filter(Boolean)
     .join(" · ");
+
+  // ── CHANNEL hardware state (glass-pool-channel only) ──────────────────────────
+  // VersaTilt (VER-) single family. Finish {Black, Satin Anodised} (Mill excluded).
+  // Deck mount only in V1. Fixings are M12 per substrate (GS* individuals — channel
+  // anchors at 300mm centres), shown not chosen. Stored in fieldValues so the solver
+  // / BOM can read them; substrate reuses the shared spigotSubstrate field.
+  const channelFinish = (span.fieldValues?.["channel-finish"] as string) || "satin-anodised";
+  const channelFixingsInfo: Record<string, string> = {
+    concrete:
+      "M12 stainless threaded rods (1 per anchor, 300mm centres) + chemical anchor. You supply M12 nuts and working washers.",
+    timber:
+      "M12×160mm stainless LAG screws (1 per anchor, 300mm centres) into structural timber. You supply M12 nuts and working washers.",
+    steel:
+      "Customer-supplied M12 stainless hardware — bolt through the steel or drill-and-tap. M10 spigot hardware is not sufficient for channel loads.",
+  };
+  // Channel terminations: every open channel end (section ends + both sides of a gate
+  // break) is finished with an END CAP or a CUT MITRE (operator rule). Stored per end.
+  const channelTermOf = (key: string) => (span.fieldValues?.[key] as string) || "end-cap";
+  const setChannelField = (key: string, value: string) =>
+    updateSpan({ fieldValues: { ...span.fieldValues, [key]: value } });
+  const gateInLayout = !!span.gateConfig?.required;
+
+  // Channel cut plans for ALL sections via the shared cut-plan engine. AUTO-OPTIMISED
+  // (operator design): the user configures all glass runs freely; offcuts from earlier
+  // sections are reused automatically before any new full length is cut. The same
+  // engine will drive handrail cut optimisation.
+  const designSpans = allSpans?.length ? allSpans : [span];
+  const allPlans = channelCutPlans(designSpans);
+  const channelPlanRaw = allPlans.get(span.spanId);
+  const channelPlan = {
+    fullLengths: channelPlanRaw?.fullLengths ?? 0,
+    joins: channelPlanRaw?.joins ?? 0,
+    pins: (channelPlanRaw?.joins ?? 0) * CHANNEL_PINS_PER_JOIN,
+    pinPacks: Math.ceil(((channelPlanRaw?.joins ?? 0) * CHANNEL_PINS_PER_JOIN) / CHANNEL_PIN_PACK_SIZE),
+    offcutOut: channelPlanRaw?.offcutOutMm ?? 0,
+    claimed: channelPlanRaw?.claimedOffcuts ?? [],
+  };
+
+  const channelSummary = [
+    "VersaTilt",
+    channelFinish === "black" ? "Black" : "Satin Anodised",
+    substrateLabel,
+    `${channelPlan.fullLengths} × 4200mm`,
+    channelPlan.claimed.length ? "offcut reused" : null,
+    channelPlan.joins > 0 ? `${channelPlan.joins} join${channelPlan.joins > 1 ? "s" : ""}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const configureSummary = `${span.maxPanelWidth}mm max panel · gaps ${span.leftGap?.enabled ? span.leftGap.size : 0} / ${actualMidGap} / ${span.rightGap?.enabled ? span.rightGap.size : 0}`;
   const addonItems = [
     span.gateConfig?.required ? `Gate ${span.gateConfig.gateSize}` : null,
@@ -509,7 +572,145 @@ export function GlassSpigotsConfig({
         </AccordionContent>
       </AccordionItem>
 
-      {/* 2. Spigot — kept near the top (owner request: simplest first choice). */}
+      {/* 2. Hardware — Channel (glass-pool-channel) or Spigot (glass-pool-spigots). */}
+      {isChannel ? (
+        <AccordionItem value="spigot" className="border-b border-card-border px-3">
+          <AccordionTrigger
+            className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden"
+            data-testid={`span-${span.spanId}-accordion-spigot`}
+          >
+            <SectionHeader n={2} title="Channel" summary={channelSummary} />
+          </AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-3">
+            {/* Channel finish — {Black, Satin Anodised}; Mill is storefront-only. Flows
+                through to end plates and channel accessories (1:1 finish match). */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Channel Finish</Label>
+                <InfoTooltip content="The VersaTilt channel and its end plates come in Black or Satin Anodised. The finish applies to every visible channel component in this section." />
+              </div>
+              <div className="flex gap-2">
+                {[
+                  { value: "satin-anodised", label: "Satin Anodised", swatch: "bg-gradient-to-br from-zinc-300 to-zinc-400" },
+                  { value: "black", label: "Black", swatch: "bg-zinc-900" },
+                ].map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => updateSpan({ fieldValues: { ...span.fieldValues, "channel-finish": f.value } })}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-colors",
+                      channelFinish === f.value
+                        ? "border-primary bg-primary/5 text-foreground"
+                        : "border-card-border text-muted-foreground hover:border-primary/40",
+                    )}
+                    data-testid={`span-${span.spanId}-channel-finish-${f.value}`}
+                  >
+                    <span className={cn("h-4 w-4 rounded-full border border-black/10", f.swatch)} />
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Substrate — drives the M12 fixings (shown, not chosen). */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">Substrate</Label>
+                  <InfoTooltip content="The surface the channel fixes to. Each section can use a different substrate; the fixings are included to match." />
+                </div>
+                <Select
+                  value={substrate}
+                  onValueChange={(v) => updateSpan({ spigotSubstrate: v as "concrete" | "timber" | "steel" })}
+                >
+                  <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-channel-substrate`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="concrete">Concrete</SelectItem>
+                    <SelectItem value="timber">Timber deck</SelectItem>
+                    <SelectItem value="steel">Steel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">Mounting</Label>
+                  <InfoTooltip content="The channel mounts flat to your deck or slab and the glass sits inside it. Face-mounted channel (bolted to a balcony edge) is a future addition." />
+                </div>
+                <div className="flex h-8 items-center rounded-md border border-card-border bg-muted/30 px-3 text-xs text-muted-foreground">
+                  Deck mount
+                </div>
+              </div>
+            </div>
+
+            {/* Channel terminations — every open channel end gets an end cap or a cut
+                mitre. A gate breaks the channel, adding two more ends to finish. */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Channel Terminations</Label>
+                <InfoTooltip content="Every open end of the channel is finished with an end cap, or mitre-cut where it meets another channel at a corner. A gate breaks the channel, so both sides of the gate also need a termination." />
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { key: "channel-term-lhs", label: "Left end" },
+                  { key: "channel-term-rhs", label: "Right end" },
+                  ...(gateInLayout
+                    ? [
+                        { key: "channel-term-gate-lhs", label: "Gate break — left side" },
+                        { key: "channel-term-gate-rhs", label: "Gate break — right side" },
+                      ]
+                    : []),
+                ].map((t) => (
+                  <div key={t.key} className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">{t.label}</Label>
+                    <Select value={channelTermOf(t.key)} onValueChange={(v) => setChannelField(t.key, v)}>
+                      <SelectTrigger className="h-8 text-xs" data-testid={`span-${span.spanId}-${t.key}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="end-cap">End cap</SelectItem>
+                        <SelectItem value="mitre">Cut mitre (corner)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Channel lengths, joins & offcut reuse — 4200mm stock. Offcuts from earlier
+                sections are reused AUTOMATICALLY (cut optimisation — saves waste & cost). */}
+            <div className="rounded-md border border-card-border bg-muted/30 p-2.5" data-testid={`span-${span.spanId}-channel-usage`}>
+              <p className="text-[11px] font-semibold">Channel for this section</p>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {channelPlan.fullLengths} × 4200mm length{channelPlan.fullLengths === 1 ? "" : "s"}
+                {channelPlan.claimed.length > 0
+                  ? ` + ${channelPlan.claimed
+                      .map((o) => `${o.lengthMm.toLocaleString()}mm offcut from ${o.fromLabel}`)
+                      .join(" + ")} (reused automatically)`
+                  : ""}
+                {channelPlan.joins > 0
+                  ? ` · ${channelPlan.joins} join${channelPlan.joins > 1 ? "s" : ""} (${channelPlan.pins} joining pins — ${channelPlan.pinPacks} pack${channelPlan.pinPacks > 1 ? "s" : ""} of 10)`
+                  : " · no joins"}
+                {` · Offcut left over: ${channelPlan.offcutOut.toLocaleString()}mm`}
+              </p>
+              {channelPlan.claimed.length > 0 && (
+                <p className="mt-1 text-[11px] font-medium text-primary">
+                  Cut optimisation: reusing offcuts saved {channelPlan.claimed.length} extra length
+                  {channelPlan.claimed.length > 1 ? "s" : ""} of channel on this section.
+                </p>
+              )}
+            </div>
+
+            {/* Fixings included — per substrate (M12; channel anchors at 300mm centres). */}
+            <div className="rounded-md border border-card-border bg-muted/30 p-2.5" data-testid={`span-${span.spanId}-fixings-info`}>
+              <p className="text-[11px] font-semibold">Fixings included ({substrateLabel.toLowerCase()} · deck mount)</p>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">{channelFixingsInfo[substrate]}</p>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      ) : (
       <AccordionItem value="spigot" className="border-b border-card-border px-3">
         <AccordionTrigger
           className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden"
@@ -718,6 +919,7 @@ export function GlassSpigotsConfig({
           </div>
         </AccordionContent>
       </AccordionItem>
+      )}
 
       {/* 3. Gate, raked & custom — "+ add" image-cards */}
       {(gateEnabled || rakedEnabled || customEnabled) && (
