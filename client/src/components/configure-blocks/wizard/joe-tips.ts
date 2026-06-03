@@ -59,6 +59,7 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const isBalChannel = productVariant === "glass-bal-channel";
   const isChannel = productVariant === "glass-pool-channel" || isBalChannel;
   const isStandoffs = productVariant === "glass-bal-standoffs";
+  const isBlade = productVariant === "alu-pool-blade";
   const is15 = productVariant.includes("15mm");
   const is12 = productVariant.includes("12mm");
   const as3000 = fv["as-3000"] === "true";
@@ -66,7 +67,39 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const softClose = span.gateConfig?.hardware === "polaris";
   const railOn = span.handrail?.enabled === true;
 
-  if (isStandoffs) {
+  if (isBlade) {
+    tips.push({
+      title: "How Blade fencing works",
+      body:
+        "Welded aluminium panels — 50mm blades at 79mm gaps — drop into FastFit brackets on 50×50mm posts. Pool compliant straight out of the box, and it's Satin Black only, so there's nothing to colour-match.",
+    });
+    const bladeSubstrate = (fv["blade-substrate"] as string) || "decking";
+    if (bladeSubstrate === "decking") {
+      tips.push({
+        title: "Decking needs real timber",
+        body:
+          "An aluminium pool fence on a deck needs LVL or F17 hardwood under the base plates — standard pine joists aren't rated for it. Check what's under your boards before you order.",
+      });
+    } else if (bladeSubstrate === "core-drilled") {
+      tips.push({
+        title: "Core-drilling for Blade",
+        body:
+          "Blade posts need an 83mm core hole, 100mm deep — bigger than the holes for glass spigots. Hire the right core bit and the grout we send does the rest.",
+      });
+    }
+    tips.push({
+      title: "Posts near the water",
+      body:
+        "Aluminium posts within 1.25m of the pool water need to be earthed by an electrician (AS 3000). Most fences sit outside that zone — measure from the waterline, not the coping.",
+    });
+    if (gateOn) {
+      tips.push({
+        title: "Blade gate compliance",
+        body:
+          "The gate kit ships with D&D Magna-Latch and TruClose hinges — self-closing and self-latching, rated to 30kg. Hang it so it swings away from the pool and the latch sits at least 1500mm off the ground.",
+      });
+    }
+  } else if (isStandoffs) {
     tips.push({
       title: "How the standoff balustrade works",
       body:
@@ -206,7 +239,9 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
     });
   }
 
-  if (gateOn) {
+  // Glass-gate compliance tip (the soft-close framing is glass hinge hardware —
+  // Blade has its own D&D gate tip above).
+  if (gateOn && !isBlade) {
     tips.push({
       title: "Gate compliance",
       body:
