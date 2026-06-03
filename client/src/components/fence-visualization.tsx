@@ -514,7 +514,11 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   if (!ctx) return;
 
   // Check product type
-  const isChannelSystem = design.productVariant === "glass-pool-channel";
+  // Channel systems: pool (12mm) + balustrade 15mm — same VersaTilt channel drawing.
+  // The one elevation difference is friction-plate spacing (operator ruling 2026-06-03):
+  // pool = 150mm end setback / 500mm max centres; bal = 25mm setback / 300mm centres.
+  const isBalChannel = design.productVariant === "glass-bal-channel";
+  const isChannelSystem = design.productVariant === "glass-pool-channel" || isBalChannel;
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
   const isTubularFencing = design.productVariant === "alu-pool-tubular";
@@ -545,7 +549,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
 
   // Find max panel height including raked panels, custom panels, and auto-calc config.
   // Computed BEFORE the scale so the scale can also be bounded by the box height.
-  let maxPanelHeight = panelHeight;
+  // Bal channel 15mm (operator ruling 2026-06-03): finished height = 35mm channel base
+  // + 1000mm glass + 35mm top rail = 1070mm — used for scale/spacing so nothing clips.
+  let maxPanelHeight = isBalChannel ? 1070 : panelHeight;
   design.spans.forEach(span => {
     // Check auto-calc config panel height (for custom-frameless)
     if (span.autoCalcConfig?.panelHeight && span.autoCalcConfig.panelHeight > maxPanelHeight) {
@@ -751,8 +757,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       const currentPanelWidth = span.panelLayout?.panels[i] || panelWidth;
       const scaledPanelWidth = currentPanelWidth * scale;
       
-      // Determine actual panel height for this span
-      const actualPanelHeight = span.autoCalcConfig?.panelHeight || panelHeight;
+      // Determine actual panel height for this span.
+      // Bal channel 15mm: glass is 1000mm high (operator ruling 2026-06-03 — finished
+      // glass height in channel = 1035mm: 1000mm glass + 35mm channel base).
+      const actualPanelHeight = span.autoCalcConfig?.panelHeight || (isBalChannel ? 1000 : panelHeight);
       let scaledPanelHeight = actualPanelHeight * scale;
       
       // Check if this is a raked panel
@@ -1105,8 +1113,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
         // For left raked: high on left (400mm), slopes down on right
         // For right raked: slopes down on left, high on right (400mm)
-        // Channel systems: glass sits INSIDE the channel (37mm above the fixing surface).
-        const rakedBase = isChannelSystem ? groundLevel - 37 * scale : groundLevel;
+        // Channel systems: glass sits INSIDE the channel (pool: 37mm above the fixing
+        // surface; bal 15mm: 35mm — finished glass height 1035mm, operator ruling).
+        const rakedBase = isChannelSystem ? groundLevel - (isBalChannel ? 35 : 37) * scale : groundLevel;
         const rakedHeight = (isLeftRaked ? leftRaked! : rightRaked!) * scale;
         const horizontalWidth = 400 * scale; // 400mm horizontal section
         
@@ -1135,8 +1144,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.stroke();
       } else {
         // Glass panels - standard rectangular. Channel systems: glass sits INSIDE the
-        // channel on the friction-plate rubber feet (37mm above the fixing surface).
-        const glassBase = isChannelSystem ? groundLevel - 37 * scale : groundLevel;
+        // channel on the friction-plate rubber feet (pool: 37mm above the fixing
+        // surface; bal 15mm: 35mm — finished glass height 1035mm, operator ruling).
+        const glassBase = isChannelSystem ? groundLevel - (isBalChannel ? 35 : 37) * scale : groundLevel;
         ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
         ctx.globalAlpha = 1;
         ctx.fillRect(currentX, glassBase - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
@@ -1493,9 +1503,14 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
                               design.productVariant === "glass-bal-standoffs";
     
     if (isGlassBalustrade && span.handrail?.enabled) {
-      // Rail runs across the entire span length at the top of panels
-      const railY = groundLevel - (maxPanelHeight * scale) - 5; // 5px above panels for visibility
-      const railHeight = 3; // Thin rail
+      // Rail runs across the entire span length at the top of panels.
+      // Bal channel 15mm (operator ruling 2026-06-03): the 35-Series rail (35mm tall)
+      // sits ON the glass top edge at 1035mm — finished height 1070mm. Other
+      // balustrades keep the generic thin-line rail above the panels.
+      const railHeight = isBalChannel ? Math.max(3, 35 * scale) : 3;
+      const railY = isBalChannel
+        ? groundLevel - 1035 * scale - railHeight
+        : groundLevel - (maxPanelHeight * scale) - 5; // 5px above panels for visibility
       const railStartX = drawStartX + (leftGapSize * scale);
       const railEndX = currentX - (rightGapSize * scale);
       
@@ -1618,10 +1633,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         }
       }
 
-      // 2. Pressure-plate clamps — PER PANEL (they grip the glass), all measures to
-      //    centre: 150mm from each panel end, max 500mm between clamp centres.
-      const CLAMP_END_SETBACK_MM = 150;
-      const CLAMP_MAX_SPACING_MM = 500;
+      // 2. Pressure-plate clamps (friction plates) — PER PANEL (they grip the glass),
+      //    all measures to centre. Spacing rule per variant (operator ruling 2026-06-03):
+      //    • Pool channel (12mm): 150mm from each panel end, max 500mm between centres.
+      //    • Bal channel (15mm):  25mm setback + 100mm-wide plate → 75mm first centre,
+      //      300mm max between centres (VER-PPKIT-15MM geometric formula, SF-10).
+      const CLAMP_END_SETBACK_MM = isBalChannel ? 75 : 150;
+      const CLAMP_MAX_SPACING_MM = isBalChannel ? 300 : 500;
       const clampW = Math.max(6, 80 * scale);
       const clampH = Math.max(5, 56 * scale);
       // Plate base ~29mm above the fixing surface; the glass sits 8mm higher again,
@@ -1633,7 +1651,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         const lastCentre = panel.widthMm - CLAMP_END_SETBACK_MM;
         const innerSpan = lastCentre - firstCentre;
         // Raked panels: ALWAYS 4 friction clamps (operator rule). Standard panels:
-        // 150mm end setback, ≤500mm between centres.
+        // end setback + max spacing between centres per the variant rule above.
         const nGaps = panel.isRaked ? 3 : Math.max(1, Math.ceil(innerSpan / CLAMP_MAX_SPACING_MM));
         const centres: number[] = [];
         if (innerSpan === 0) {

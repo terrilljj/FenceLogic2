@@ -56,7 +56,8 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const tips: Tip[] = [];
   const fv = (span.fieldValues ?? {}) as Record<string, unknown>;
   const isPool = productVariant === "glass-pool-spigots";
-  const isChannel = productVariant === "glass-pool-channel";
+  const isBalChannel = productVariant === "glass-bal-channel";
+  const isChannel = productVariant === "glass-pool-channel" || isBalChannel;
   const is15 = productVariant.includes("15mm");
   const is12 = productVariant.includes("12mm");
   const as3000 = fv["as-3000"] === "true";
@@ -64,7 +65,13 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const softClose = span.gateConfig?.hardware === "polaris";
   const railOn = span.handrail?.enabled === true;
 
-  if (isChannel) {
+  if (isBalChannel) {
+    tips.push({
+      title: "How the channel balustrade works",
+      body:
+        "The 15mm glass sits inside a continuous aluminium channel fixed flat to your deck or slab — no spigots, no drilling the glass. The VersaTilt system lets you level each panel after it's in, and the 35-Series top rail ties the run together for a graspable edge.",
+    });
+  } else if (isChannel) {
     tips.push({
       title: "How the channel system works",
       body:
@@ -203,6 +210,13 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
       title: "Top rail",
       body:
         "A top-mounted rail gives a graspable edge and a more solid look. The 35 Series runs anodised aluminium; on 12mm the 25x21 is the slimline option.",
+    });
+  }
+  if (railOn && isBalChannel) {
+    tips.push({
+      title: "Top rail matches the channel",
+      body:
+        "The 35-Series rail comes in the same finishes as the channel, so we match them automatically — Black channel gets a Black rail, Satin gets Satin. One less thing to pick, and it always looks right.",
     });
   }
 
