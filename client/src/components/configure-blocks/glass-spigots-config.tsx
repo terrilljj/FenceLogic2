@@ -66,8 +66,8 @@ const RAKE_HEIGHTS = ["1400", "1500", "1600", "1700", "1800"];
 // Insuluxe has exactly one of each, so the UI shows "included" instead of a choice.
 // `slim: true` marks variants blocked by the protruding-rod rule (base-plate on
 // concrete/steel needs the taller cover).
-type CoverOption = { value: string; label: string; blurb: string; sku: string; slim?: boolean };
-const MADRID_COVERS: { dress: CoverOption[]; dome: CoverOption[] } = {
+export type CoverOption = { value: string; label: string; blurb: string; sku: string; slim?: boolean };
+export const MADRID_COVERS: { dress: CoverOption[]; dome: CoverOption[] } = {
   dress: [
     { value: "dress-flat", label: "Flat dress ring", blurb: "Slim ring, sits flush around the spigot.", sku: "MAD-DR-P" },
     { value: "dress-raised", label: "Raised dress ring", blurb: "Taller ring for an uneven surface.", sku: "MAD-DR-RAISED-P" },
@@ -77,7 +77,7 @@ const MADRID_COVERS: { dress: CoverOption[]; dome: CoverOption[] } = {
     { value: "dome-high", label: "High domical", blurb: "22mm dome — clears rod fixings.", sku: "MAD-HDC-P" },
   ],
 };
-const COVER_MATRIX: Record<string, { dress: CoverOption[]; dome: CoverOption[] }> = {
+export const COVER_MATRIX: Record<string, { dress: CoverOption[]; dome: CoverOption[] }> = {
   "madrid-pool": MADRID_COVERS,
   madrid: MADRID_COVERS,
   lifestyle: {
@@ -97,6 +97,28 @@ const COVER_MATRIX: Record<string, { dress: CoverOption[]; dome: CoverOption[] }
   insuluxe: {
     dress: [{ value: "dress-flat", label: "Dress ring", blurb: "Conceals the Insuluxe spigot base.", sku: "INS-DR-B" }],
     dome: [{ value: "dome-high", label: "High domical", blurb: "26mm two-part dome cover.", sku: "INS-HDC-B" }],
+  },
+  // Balustrade families (SF-8/SF-9). SKU codes follow the family prefix pattern —
+  // operator to confirm exact codes in the hands-on round.
+  nova: {
+    dress: [
+      { value: "dress-flat", label: "Flat dress ring", blurb: "Slim ring, sits flush around the spigot.", sku: "NOV-DR-P" },
+      { value: "dress-raised", label: "Raised dress ring", blurb: "Taller ring for an uneven surface.", sku: "NOV-DR-RAISED-P" },
+    ],
+    dome: [
+      { value: "dome-slim", label: "Slimline domical", blurb: "Low dome over the base plate.", sku: "NOV-SDC-P", slim: true },
+      { value: "dome-high", label: "High domical", blurb: "Taller dome — clears rod fixings.", sku: "NOV-HDC-P" },
+    ],
+  },
+  "madrid-deluxe": {
+    dress: [
+      { value: "dress-flat", label: "Flat dress ring", blurb: "Slim ring, sits flush around the spigot.", sku: "MADDEL-DR-P" },
+      { value: "dress-raised", label: "Raised dress ring", blurb: "Taller ring for an uneven surface.", sku: "MADDEL-DR-RAISED-P" },
+    ],
+    dome: [
+      { value: "dome-slim", label: "Slimline domical", blurb: "Low dome over the base plate.", sku: "MADDEL-SDC-P", slim: true },
+      { value: "dome-high", label: "High domical", blurb: "Taller dome — clears rod fixings.", sku: "MADDEL-HDC-P" },
+    ],
   },
 };
 

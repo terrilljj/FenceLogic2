@@ -86,7 +86,22 @@ Section 2. **Channel** (replaces "Spigots" section):
 Section 3. **Gate, raked & custom** — IDENTICAL to spigots (gate hardware/hinges/latches unchanged;
    hinges clamp glass-to-glass, independent of base mounting system)
 
-## Bal channel 15mm extras (build AFTER pool channel)
+## Bal channel 15mm — OPERATOR RULING 2026-06-03 (supersedes details below)
+
+"The VersaTilt channel in 15mm uses the SAME logic as the pool fence channel but adds
+rail, and the friction plates are at 300mm centres."
+
+Build = pool channel wizard carried over verbatim, with exactly these changes:
+1. + Rail section (35-Series top rail — reuse the Rail accordion from glass-bal-spigots-config.tsx;
+   rail finish auto-matches channel finish B→B / SA→SA)
+2. Friction plates: 300mm CENTRES (not pool's 150mm-ends/500mm-max) — elevation + BOM
+3. No gates (balustrade), no raked panels
+4. Glass 15mm × 1000mm high; variant: glass-bal-channel
+5. Everything else identical: finish (B/SA), substrate→M12 fixings, deck mount,
+   terminations (end cap/mitre), 4200mm stock, joins (4 pins/join, packs of 10),
+   automatic cut optimisation via lib/cut-plan.ts
+
+## Bal channel 15mm extras (older notes, see ruling above)
 
 Adds on top of the pool channel block:
 - Per-section channel terminators L/R: {Mitre, Join, End cap}, default End cap
