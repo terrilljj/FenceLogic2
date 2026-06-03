@@ -355,106 +355,177 @@ export function calculateComponents(
 
       return;
     }
-    // BARR Fencing
+    // BARR Fencing — full component emission (SF-4 / PTS-019 / inputs spec 2026-05-25).
+    // Pool BARR is 1200mm; finish B/W drives every SKU; substrate drives post/cover/
+    // fixing; BARR's 25mm post face can't take the 32mm C-brackets or D&D hardware, so
+    // corners + gates use cross-range 50×50 posts (Black SS-, White XP-).
     else if (isBarrFencing && span.panelLayout && span.panelLayout.panels.length > 0) {
-      const barrHeight = span.barrHeight || "1200mm";
+      const STOCK_W = 2205;
       const barrFinish = span.barrFinish || "satin-black";
-      const barrPostType = span.barrPostType || "welded-base-plate";
-
-      const panelSpecs: Record<string, { width: number; height: number; sku: string }> = {
-        "1000mm": { width: 1733, height: 1000, sku: "BARR-1000" },
-        "1200mm": { width: 2205, height: 1200, sku: "BARR-1200" },
-        "1800mm": { width: 1969, height: 1800, sku: "BARR-1800" },
-      };
-      const spec = panelSpecs[barrHeight];
-
-      const finishName = barrFinish === "satin-black" ? "Satin Black (CN150A)" : "Pearl White (GA078A)";
-      const finishSku = barrFinish === "satin-black" ? "CN150A" : "GA078A";
+      const code = barrFinish === "satin-black" ? "B" : "W";
+      const finishName = barrFinish === "satin-black" ? "Satin Black" : "Pearl White";
+      const substrate = (span.fieldValues?.["barr-substrate"] as string) || "decking";
+      const basePlated = substrate === "decking" || substrate === "concrete-slab";
+      const coreDrilled = substrate === "core-drilled";
+      const inGround = substrate === "in-ground";
 
       const panelTypes = span.panelLayout.panelTypes || [];
+
+      // 1. Panels (real storefront SKUs) — standard / cut / gate.
       span.panelLayout.panels.forEach((panelWidth: number, index: number) => {
         const panelType = panelTypes[index] || "standard";
-
-        if (panelType === "gate") {
+        if (panelType === "gate") return; // gate panel emitted in the gate block below
+        if (panelWidth === STOCK_W) {
           pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'gate', stock_width: String(spec.width), height: barrHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `BARR Gate Panel ${barrHeight} x ${panelWidth}mm (${finishName})`,
-              sku: `${spec.sku}-GATE-${panelWidth}-${finishSku}`,
-            },
-          );
-        } else if (panelWidth === spec.width) {
-          pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'standard', stock_width: String(spec.width), height: barrHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `BARR Panel ${barrHeight} x ${spec.width}mm (${finishName})`,
-              sku: `${spec.sku}-${spec.width}-${finishSku}`,
-            },
+            1, 'panel',
+            { type: 'standard', stock_width: String(STOCK_W), height: '1200mm', cut_width: String(panelWidth), finish: code },
+            { description: `BARR Panel 2205 x 1200mm (${finishName})`, sku: `BR-PANEL-2205-1200-${code}` },
           );
         } else {
           pushSlotOrFallback(
-            1,
-            'panel',
-            { type: 'cut', stock_width: String(spec.width), height: barrHeight, cut_width: String(panelWidth), finish: finishSku },
-            {
-              description: `BARR Panel ${barrHeight} x ${panelWidth}mm (Cut from ${spec.width}mm, ${finishName})`,
-              sku: `${spec.sku}-CUT-${panelWidth}-${finishSku}`,
-            },
+            1, 'panel',
+            { type: 'cut', stock_width: String(STOCK_W), height: '1200mm', cut_width: String(panelWidth), finish: code },
+            { description: `BARR Panel 1200H, cut to ${panelWidth}mm from 2205mm (${finishName})`, sku: `BR-PANEL-2205-1200-${code}` },
           );
         }
       });
 
-      const numPosts = span.panelLayout.gaps.length;
-      if (barrPostType === "welded-base-plate") {
+      // Counts.
+      const nonGatePanels = span.panelLayout.panels.filter((_: number, i: number) => (panelTypes[i] || "standard") !== "gate").length;
+      const hasGate = gatesAllowed && !!span.gateConfig?.required;
+      const totalPosts = span.panelLayout.gaps.length;          // panels + 1
+      const gatePosts = hasGate ? 2 : 0;                        // gate hinge + latch posts (cross-range)
+      const inlinePosts = Math.max(0, totalPosts - gatePosts);
+
+      // 2. C-brackets + bracket caps — 1 kit each per panel (paired).
+      if (nonGatePanels > 0) {
         pushSlotOrFallback(
-          numPosts,
-          'post',
-          { height: '1280', finish: finishSku, mounting: 'welded-base-plate' },
-          {
-            description: `BARR Welded Base Plate Post 1280mm (${finishName})`,
-            sku: `BARR-POST-WBP-1280-${finishSku}`,
-          },
+          nonGatePanels, 'bracket',
+          { type: 'c-bracket', finish: code },
+          { description: `BARR 25mm C-Bracket Kit 4-pack (${finishName})`, sku: `BR-BR25-${code}-4PK` },
         );
-      } else {
-        const postLength = barrHeight === "1800mm" ? 2500 : 1800;
         pushSlotOrFallback(
-          numPosts,
-          'post',
-          { height: String(postLength), finish: finishSku, mounting: 'standard' },
-          {
-            description: `BARR Standard Post ${postLength}mm (${finishName})`,
-            sku: `BARR-POST-STD-${postLength}-${finishSku}`,
-          },
+          nonGatePanels, 'bracket-cap',
+          { type: 'bracket-cap', finish: code },
+          { description: `BARR Bracket Cap 4-pack (${finishName})`, sku: `BR-BRCAP-${code}-4PK` },
         );
       }
 
-      if (gatesAllowed && span.gateConfig?.required) {
-        const gateHeight = spec.height;
+      // 3. Inline posts (BARR 50×25) + covers, substrate-driven.
+      if (inlinePosts > 0) {
+        if (basePlated) {
+          pushSlotOrFallback(
+            inlinePosts, 'post',
+            { type: 'inline', height: '1280', finish: code, mounting: 'base-plate' },
+            { description: `BARR 1280mm Base Plate Post (${finishName})`, sku: `BR-1280-BP-${code}` },
+          );
+          pushSlotOrFallback(
+            inlinePosts, 'post-cover',
+            { type: 'domical', finish: code },
+            { description: `BARR Domical Cover 2-pack (${finishName})`, sku: `BR-DC-2P-${code}` },
+          );
+        } else {
+          pushSlotOrFallback(
+            inlinePosts, 'post',
+            { type: 'inline', height: '1800', finish: code, mounting: 'standard' },
+            { description: `BARR 1800mm Post (${finishName})`, sku: `BR-1800-${code}` },
+          );
+          if (coreDrilled) {
+            pushSlotOrFallback(
+              inlinePosts, 'post-cover',
+              { type: 'dress-ring', finish: code },
+              { description: `BARR Dress Ring (${finishName})`, sku: `BR-DR-${code}` },
+            );
+          }
+        }
+      }
+
+      // Cross-range 50×50 SKUs (Black SS-, White XP-) for corners + gate posts.
+      const xPostSku = basePlated
+        ? (code === "B" ? "SS-1300-BP-B" : "XP-1300-BP-W")
+        : (code === "B" ? "SS-1800-B" : "XP-1800-FP-W");
+      const xPostDesc = basePlated ? "50×50 Base Plate Post" : "50×50 Post";
+      const xCoverSku = basePlated ? `XP-DC-2P-${code}` : coreDrilled ? `XP-DR-${code}` : null;
+      const xCoverDesc = basePlated ? "50×50 Domical Cover" : "50×50 Dress Ring";
+
+      // 4. Gate — panel + finish-asymmetric D&D hardware + 2 cross-range posts + covers.
+      if (hasGate) {
         const gateWidth = span.gateConfig.gateSize || 975;
-
         pushSlotOrFallback(
-          1,
-          'hinge-set',
-          { gate_type: 'barr', height: String(gateHeight), width: String(gateWidth) },
-          {
-            description: `D&D Hinge Set for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
-            sku: `DD-HINGE-BARR-${gateHeight}-${gateWidth}`,
-          },
+          1, 'panel',
+          { type: 'gate', height: '1200mm', width: String(gateWidth), finish: code },
+          { description: `BARR Gate 975 x 1200mm (${finishName})`, sku: `BR-GATE-0975-1200-${code}` },
         );
-
+        if (code === "B") {
+          pushSlotOrFallback(
+            1, 'gate-hardware',
+            { gate_type: 'barr', finish: 'B' },
+            { description: `D&D Magna-Latch + TruClose Hinge Kit (Black, pool compliant)`, sku: `ML-TL-TC-H-AT` },
+          );
+        } else {
+          pushSlotOrFallback(
+            1, 'gate-latch',
+            { gate_type: 'barr', finish: 'W' },
+            { description: `D&D Magna-Latch Top Pull Lockable Latch (White)`, sku: `ML-TL-W` },
+          );
+          pushSlotOrFallback(
+            1, 'gate-hinge',
+            { gate_type: 'barr', finish: 'W' },
+            { description: `D&D TruClose Self-Closing Hinge Pair (White)`, sku: `TC-H-AT-2L-W` },
+          );
+        }
+        // Two cross-range gate posts (hinge + latch side) + their covers.
         pushSlotOrFallback(
-          1,
-          'latch-set',
-          { gate_type: 'barr', height: String(gateHeight), width: String(gateWidth) },
-          {
-            description: `D&D Latch for ${gateHeight}mm x ${gateWidth}mm BARR Gate`,
-            sku: `DD-LATCH-BARR-${gateHeight}-${gateWidth}`,
-          },
+          2, 'post',
+          { type: 'gate-post', finish: code, mounting: basePlated ? 'base-plate' : 'standard' },
+          { description: `BARR ${xPostDesc} — gate (${finishName})`, sku: xPostSku },
         );
+        if (xCoverSku) {
+          pushSlotOrFallback(
+            2, 'post-cover',
+            { type: 'cross-range', finish: code },
+            { description: `BARR ${xCoverDesc} — gate post (${finishName})`, sku: xCoverSku },
+          );
+        }
+      }
+
+      // 5. Corner posts (design-level) — emit once on the first span. N sections → N-1 corners.
+      const cornerCount = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
+      if (cornerCount > 0 && spanIndex === 0) {
+        pushSlotOrFallback(
+          cornerCount, 'post',
+          { type: 'corner-post', finish: code, mounting: basePlated ? 'base-plate' : 'standard' },
+          { description: `BARR ${xPostDesc} — corner (${finishName})`, sku: xPostSku },
+        );
+        if (xCoverSku) {
+          pushSlotOrFallback(
+            cornerCount, 'post-cover',
+            { type: 'cross-range', finish: code },
+            { description: `BARR ${xCoverDesc} — corner post (${finishName})`, sku: xCoverSku },
+          );
+        }
+      }
+
+      // 6. Fixings — substrate-driven (PTS-019 / operator 2026-06-04).
+      //   Decking: M10×100 countersunk batten screws, 1 × 4-pack per 4 posts.
+      //   Core-drilled: Setfast grout, 1 bag per 15 posts (+1 spare, design-level).
+      //   Concrete slab / in-ground: customer-sourced (no BH fixing).
+      const basePlatedPostsThisSpan = inlinePosts + gatePosts + (spanIndex === 0 ? cornerCount : 0);
+      if (substrate === "decking" && basePlatedPostsThisSpan > 0) {
+        pushSlotOrFallback(
+          Math.ceil(basePlatedPostsThisSpan / 4), 'fixing',
+          { type: 'csk', substrate: 'decking' },
+          { description: `M10 x 100mm Countersunk Batten Screws 4-pack`, sku: `CSK-100-4PK` },
+        );
+      } else if (coreDrilled) {
+        const coreThisSpan = inlinePosts + gatePosts + (spanIndex === 0 ? cornerCount : 0);
+        if (coreThisSpan > 0) {
+          pushSlotOrFallback(
+            Math.ceil(coreThisSpan / 15) + (spanIndex === 0 ? 1 : 0), 'grout',
+            { type: 'setfast' },
+            { description: `Setfast Non-Shrink Grout 10kg (incl. spare)`, sku: `GROUT-SETFAST-10KG` },
+          );
+        }
       }
 
       return;

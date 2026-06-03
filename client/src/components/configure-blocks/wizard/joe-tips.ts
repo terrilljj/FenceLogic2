@@ -60,6 +60,7 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const isChannel = productVariant === "glass-pool-channel" || isBalChannel;
   const isStandoffs = productVariant === "glass-bal-standoffs";
   const isBlade = productVariant === "alu-pool-blade";
+  const isBarr = productVariant === "alu-pool-barr";
   const is15 = productVariant.includes("15mm");
   const is12 = productVariant.includes("12mm");
   const as3000 = fv["as-3000"] === "true";
@@ -67,7 +68,46 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const softClose = span.gateConfig?.hardware === "polaris";
   const railOn = span.handrail?.enabled === true;
 
-  if (isBlade) {
+  if (isBarr) {
+    tips.push({
+      title: "How BARR fencing works",
+      body:
+        "Pre-fabricated panels — 25mm picket faces at 93mm gaps, welded to the rails — drop onto slimline 50×25mm posts with C-brackets. It's the architectural step up from tubular, in Satin Black or Pearl White.",
+    });
+    tips.push({
+      title: "Why corners and gates use a bigger post",
+      body:
+        "BARR's slimline post face is only 25mm — too narrow for brackets and gate hardware to grab. Corners and gates get a 50×50 post from our Six Star (Black) or Xpress (White) range, swapped in automatically.",
+    });
+    const barrFinish = span.barrFinish || "satin-black";
+    if (barrFinish === "pearl-white") {
+      tips.push({
+        title: "White gate hardware comes as two items",
+        body:
+          "D&D doesn't make the bundled hinge-and-latch kit in white — so a white BARR gate gets the Magna-Latch and the TruClose hinge pair as two separate items. Same hardware, same compliance, just two boxes instead of one.",
+      });
+    }
+    const barrSubstrate = (fv["barr-substrate"] as string) || "decking";
+    if (barrSubstrate === "decking") {
+      tips.push({
+        title: "Decking needs real timber",
+        body:
+          "An aluminium pool fence on a deck needs LVL or F17 hardwood under the base plates — standard pine joists aren't rated for it. Check what's under your boards before you order.",
+      });
+    }
+    tips.push({
+      title: "Posts near the water",
+      body:
+        "Aluminium posts within 1.25m of the pool water need to be earthed by an electrician (AS 3000). Most fences sit outside that zone — measure from the waterline, not the coping.",
+    });
+    if (gateOn) {
+      tips.push({
+        title: "BARR gate compliance",
+        body:
+          "The D&D hardware is self-closing and self-latching, rated to 30kg. Hang the gate so it swings away from the pool and the latch sits at least 1500mm off the ground.",
+      });
+    }
+  } else if (isBlade) {
     tips.push({
       title: "How Blade fencing works",
       body:
@@ -241,7 +281,7 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
 
   // Glass-gate compliance tip (the soft-close framing is glass hinge hardware —
   // Blade has its own D&D gate tip above).
-  if (gateOn && !isBlade) {
+  if (gateOn && !isBlade && !isBarr) {
     tips.push({
       title: "Gate compliance",
       body:
