@@ -551,7 +551,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   // Computed BEFORE the scale so the scale can also be bounded by the box height.
   // Bal channel 15mm (operator ruling 2026-06-03): finished height = 35mm channel base
   // + 1000mm glass + 35mm top rail = 1070mm — used for scale/spacing so nothing clips.
-  let maxPanelHeight = isBalChannel ? 1070 : panelHeight;
+  // Standoff bal 15mm (SF-16): 1280mm pre-drilled glass + 35mm top rail = 1315mm.
+  let maxPanelHeight = isBalChannel ? 1070 : isStandoffSystem ? 1315 : panelHeight;
   design.spans.forEach(span => {
     // Check auto-calc config panel height (for custom-frameless)
     if (span.autoCalcConfig?.panelHeight && span.autoCalcConfig.panelHeight > maxPanelHeight) {
@@ -746,6 +747,22 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       currentX += scaledLeftGap;
     }
 
+    // STANDOFF FASCIA — drawn BEFORE the glass so the substrate sits BEHIND the
+    // panels (operator correction 2026-06-03: "the substrate is in front of the
+    // glass — wrong"). The standoff discs draw AFTER the glass (they grip through
+    // it) — see the isStandoffSystem block below the panel loop.
+    if (isStandoffSystem) {
+      const FASCIA_H_MM = 280;
+      const fasciaH = FASCIA_H_MM * scale;
+      const fasciaStartX = currentX;
+      const fasciaW = span.length * scale - scaledLeftGap - rightGapSize * scale;
+      ctx.fillStyle = "#cfd8de";
+      ctx.fillRect(fasciaStartX, groundLevel - fasciaH, fasciaW, fasciaH);
+      ctx.strokeStyle = "#64748b";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(fasciaStartX, groundLevel - fasciaH, fasciaW, fasciaH);
+    }
+
     // Draw each panel in this span
     for (let i = 0; i < numPanels; i++) {
       const panelType = span.panelLayout?.panelTypes?.[i] || "standard";
@@ -760,7 +777,9 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       // Determine actual panel height for this span.
       // Bal channel 15mm: glass is 1000mm high (operator ruling 2026-06-03 — finished
       // glass height in channel = 1035mm: 1000mm glass + 35mm channel base).
-      const actualPanelHeight = span.autoCalcConfig?.panelHeight || (isBalChannel ? 1000 : panelHeight);
+      // Standoff bal 15mm: 1280mm pre-drilled glass (SF-16 / 1280S- SKU family).
+      const actualPanelHeight =
+        span.autoCalcConfig?.panelHeight || (isBalChannel ? 1000 : isStandoffSystem ? 1280 : panelHeight);
       let scaledPanelHeight = actualPanelHeight * scale;
       
       // Check if this is a raked panel
@@ -1146,10 +1165,13 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         // Glass panels - standard rectangular. Channel systems: glass sits INSIDE the
         // channel on the friction-plate rubber feet (pool: 37mm above the fixing
         // surface; bal 15mm: 35mm — finished glass height 1035mm, operator ruling).
+        // Standoff system: glass draws semi-transparent IN FRONT of the fascia band
+        // so the substrate reads as behind the glass (operator sample).
         const glassBase = isChannelSystem ? groundLevel - (isBalChannel ? 35 : 37) * scale : groundLevel;
         ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = isStandoffSystem ? 0.75 : 1;
         ctx.fillRect(currentX, glassBase - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+        ctx.globalAlpha = 1;
 
         // Panel border - cleaner, more subtle
         ctx.strokeStyle = isHinge ? "#a4e8b8" : isGate ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
@@ -1267,31 +1289,8 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       // Standoff mounting hardware — 4 standoff buttons per panel (replaces the 2 base spigots).
       // Two horizontal positions (~150mm in from each side edge), two vertical pairs
       // (~200mm down from top, ~200mm up from bottom). 50mm diameter visual.
-      if (!isGate && isStandoffSystem) {
-        const standoffRadius = (50 * scale) / 2;
-        const horizontalInset = 150 * scale;
-        const verticalInset = 200 * scale;
-        const panelTopY = groundLevel - scaledPanelHeight;
-        const leftX = currentX + horizontalInset;
-        const rightX = currentX + scaledPanelWidth - horizontalInset;
-        const topY = panelTopY + verticalInset;
-        const bottomY = groundLevel - verticalInset;
-        const positions: Array<[number, number]> = [
-          [leftX, topY],
-          [rightX, topY],
-          [leftX, bottomY],
-          [rightX, bottomY],
-        ];
-        ctx.fillStyle = "#9ca3af";
-        ctx.strokeStyle = "#6b7280";
-        ctx.lineWidth = 1;
-        for (const [cx, cy] of positions) {
-          ctx.beginPath();
-          ctx.arc(cx, cy, standoffRadius, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-        }
-      }
+      // Standoff discs are drawn per-span AFTER the panel loop (with the fascia band) —
+      // see the isStandoffSystem block below the channel-system block.
 
       // Draw hinges and latch for gate - at edge of panel
       if (isGate) {
@@ -1505,12 +1504,15 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     if (isGlassBalustrade && span.handrail?.enabled) {
       // Rail runs across the entire span length at the top of panels.
       // Bal channel 15mm (operator ruling 2026-06-03): the 35-Series rail (35mm tall)
-      // sits ON the glass top edge at 1035mm — finished height 1070mm. Other
-      // balustrades keep the generic thin-line rail above the panels.
-      const railHeight = isBalChannel ? Math.max(3, 35 * scale) : 3;
+      // sits ON the glass top edge at 1035mm — finished height 1070mm.
+      // Standoff bal 15mm: same 35-Series bar on the 1280mm glass top — 1315mm finished.
+      // Other balustrades keep the generic thin-line rail above the panels.
+      const railHeight = isBalChannel || isStandoffSystem ? Math.max(3, 35 * scale) : 3;
       const railY = isBalChannel
         ? groundLevel - 1035 * scale - railHeight
-        : groundLevel - (maxPanelHeight * scale) - 5; // 5px above panels for visibility
+        : isStandoffSystem
+          ? groundLevel - 1280 * scale - railHeight
+          : groundLevel - (maxPanelHeight * scale) - 5; // 5px above panels for visibility
       const railStartX = drawStartX + (leftGapSize * scale);
       const railEndX = currentX - (rightGapSize * scale);
       
@@ -1523,7 +1525,29 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       ctx.strokeStyle = "#6b7280";
       ctx.lineWidth = 0.5;
       ctx.strokeRect(railStartX, railY, railEndX - railStartX, railHeight);
-      
+
+      // Rail stock-length joins (operator ruling 2026-06-03): the 35-Series rail comes
+      // in 5800mm lengths, so a run longer than 5800mm is JOINED (1 inline joiner per
+      // join). Draw a join line at every 5800mm — same treatment as the channel's
+      // 4200mm break lines.
+      const RAIL_STOCK_PX = 5800 * scale;
+      for (let joinX = railStartX + RAIL_STOCK_PX; joinX < railEndX - 2; joinX += RAIL_STOCK_PX) {
+        ctx.strokeStyle = "#1f2937";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(joinX, railY);
+        ctx.lineTo(joinX, railY + railHeight);
+        ctx.stroke();
+        // Small "join" tick marks either side of the join line (channel pattern).
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(joinX - 3, railY + railHeight * 0.3);
+        ctx.lineTo(joinX + 3, railY + railHeight * 0.3);
+        ctx.moveTo(joinX - 3, railY + railHeight * 0.7);
+        ctx.lineTo(joinX + 3, railY + railHeight * 0.7);
+        ctx.stroke();
+      }
+
       // Rail type label at the end of the rail
       const railTypeNames = {
         "nonorail-25x21": "25×21mm",
@@ -1680,6 +1704,44 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         channelStartX + (channelEndX - channelStartX) / 2,
         channelTopY - 8
       );
+    }
+
+    // Point-fix standoff discs — standoff balustrade only. Drawn AFTER the glass
+    // (the standoffs grip through the glass into the fascia behind it). The fascia
+    // band itself is drawn BEFORE the panel loop so it sits BEHIND the glass
+    // (operator correction 2026-06-03).
+    if (isStandoffSystem) {
+      // Standoffs per panel: 2 rows inside the fascia zone. Columns: 2 for panels
+      // ≤750mm wide (4 standoffs), 3 for wider panels (6 standoffs) — SF-16 rule.
+      const sLayoutPanels = span.panelLayout?.panels ?? [];
+      const sLayoutGaps = span.panelLayout?.gaps ?? [];
+      const sLayoutTypes = span.panelLayout?.panelTypes ?? sLayoutPanels.map(() => "standard");
+      const standoffRadius = Math.max(3, (50 * scale) / 2);
+      const rowYs = [groundLevel - 80 * scale, groundLevel - 200 * scale];
+      let px = drawStartX + scaledLeftGap; // start of the first panel
+      for (let i = 0; i < sLayoutPanels.length; i++) {
+        const panelWmm = sLayoutPanels[i];
+        const panelWpx = panelWmm * scale;
+        if (sLayoutTypes[i] !== "gate") {
+          const inset = 150 * scale;
+          const cols =
+            panelWmm >= 800
+              ? [px + inset, px + panelWpx / 2, px + panelWpx - inset]
+              : [px + inset, px + panelWpx - inset];
+          ctx.fillStyle = "#9ca3af";
+          ctx.strokeStyle = "#6b7280";
+          ctx.lineWidth = 1;
+          for (const cx of cols) {
+            for (const cy of rowYs) {
+              ctx.beginPath();
+              ctx.arc(cx, cy, standoffRadius, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+            }
+          }
+        }
+        px += panelWpx + (sLayoutGaps[i] ?? 0) * scale;
+      }
     }
 
     // Height dimension removed per user request

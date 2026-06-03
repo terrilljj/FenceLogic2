@@ -609,6 +609,7 @@ export default function FenceLogic() {
     isGlassSpigots ||
     design.productVariant === "glass-pool-channel" ||
     design.productVariant === "glass-bal-channel" ||
+    design.productVariant === "glass-bal-standoffs" ||
     design.productVariant.startsWith("glass-bal-spigots");
   // Wizard elevation rules (Oxworks): Step 2 (Configure) shows the ACTIVE section
   // only; Step 4 (Review) shows ALL sections (height grows to fit). Steps 1 & 3
@@ -1071,10 +1072,12 @@ export default function FenceLogic() {
 // PTS-derived max panel width per style (overrides the generic 1800 default).
 // glass-bal-spigots: 12mm → 1500mm, 15mm → 1400mm (PTS-002/PTS-007 max span).
 // glass-bal-channel: 15mm → 1400mm (PTS-003 VersaTilt max span).
+// glass-bal-standoffs: 15mm → 1200mm (PTS-006 point-fix glass range 400–1200mm).
 function ptsMaxPanelFor(variant: string): number | undefined {
   if (variant === "glass-bal-spigots-15mm") return 1400;
   if (variant === "glass-bal-spigots-12mm" || variant === "glass-bal-spigots") return 1500;
   if (variant === "glass-bal-channel") return 1400;
+  if (variant === "glass-bal-standoffs") return 1200;
   return undefined;
 }
 

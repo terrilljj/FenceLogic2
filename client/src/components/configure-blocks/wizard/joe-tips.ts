@@ -58,6 +58,7 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const isPool = productVariant === "glass-pool-spigots";
   const isBalChannel = productVariant === "glass-bal-channel";
   const isChannel = productVariant === "glass-pool-channel" || isBalChannel;
+  const isStandoffs = productVariant === "glass-bal-standoffs";
   const is15 = productVariant.includes("15mm");
   const is12 = productVariant.includes("12mm");
   const as3000 = fv["as-3000"] === "true";
@@ -65,7 +66,18 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const softClose = span.gateConfig?.hardware === "polaris";
   const railOn = span.handrail?.enabled === true;
 
-  if (isBalChannel) {
+  if (isStandoffs) {
+    tips.push({
+      title: "How the standoff balustrade works",
+      body:
+        "The 15mm glass comes pre-drilled and bolts straight onto 50mm stainless standoff pins — no posts, no channel. Panels up to 750mm wide take 4 standoffs, wider panels take 6. The 35-Series top rail ties the panels together for AS 1288 compliance.",
+    });
+    tips.push({
+      title: "Adjustable vs fixed bodies",
+      body:
+        "Adjustable bodies wind in and out to take up an uneven substrate — the DIY-friendly pick. Fixed bodies are cheaper but the substrate needs to be dead flat, or you'll be cutting shims.",
+    });
+  } else if (isBalChannel) {
     tips.push({
       title: "How the channel balustrade works",
       body:
@@ -218,6 +230,29 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
       body:
         "The 35-Series rail comes in the same finishes as the channel, so we match them automatically — Black channel gets a Black rail, Satin gets Satin. One less thing to pick, and it always looks right.",
     });
+  }
+  if (isStandoffs) {
+    const substrate = span.spigotSubstrate || "timber";
+    if (substrate === "steel") {
+      tips.push({
+        title: "Fixing standoffs to steel",
+        body:
+          "Drill-and-tap cuts an M12 thread straight into the steel — cleanest look, needs at least 10mm of steel. Through-fixing bolts right through with a nut on the back — easier if you can reach the back side.",
+      });
+    } else {
+      tips.push({
+        title: "Cladding changes the fixing",
+        body:
+          "If there's decking, render or veneer between the standoff and the structure, the fixing needs to be longer to reach through it. Tell us about cladding and we'll send the right length — it's the most common thing people get wrong.",
+      });
+    }
+    if (railOn) {
+      tips.push({
+        title: "The rail is structural here",
+        body:
+          "On a standoff balustrade the top rail isn't just for looks — it interlinks the panels so the run meets AS 1288. Keep it on unless your run has at least 3 panels, each a metre wide or more.",
+      });
+    }
   }
 
   return tips;

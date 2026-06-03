@@ -19,6 +19,7 @@ import { SemiFramelessPostConfig } from "./semi-frameless-post-config";
 import { InfoTooltip } from "./info-tooltip";
 import { GlassSpigotsConfig } from "./configure-blocks/glass-spigots-config";
 import { GlassBalSpigotsConfig } from "./configure-blocks/glass-bal-spigots-config";
+import { GlassBalStandoffsConfig } from "./configure-blocks/glass-bal-standoffs-config";
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
@@ -55,6 +56,8 @@ export function SpanConfigPanel({
   // gates/raked — operator ruling 2026-06-03, _docs/channel-ui-build-spec.md).
   const isGlassBalChannel = productVariant === "glass-bal-channel";
   const isGlassBalSpigots = productVariant.startsWith("glass-bal-spigots");
+  // Standoff balustrade 15mm (point-fix) — wizard accordion (Configure/Standoffs/Rail).
+  const isGlassBalStandoffs = productVariant === "glass-bal-standoffs";
 
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
@@ -510,208 +513,15 @@ export function SpanConfigPanel({
             />
           )}
 
-          {/* Glass Balustrade Configuration (standoffs only) - glass thickness and top rail.
-              glass-bal-spigots and glass-bal-channel now use the wizard accordions above. */}
-          {productVariant === "glass-bal-standoffs" && (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold">Glass Balustrade Configuration</h4>
-                <InfoTooltip content="Configure glass thickness and optional top-mounted rail for your balustrade system. Top rails provide additional safety and aesthetic appeal." />
-              </div>
-              
-              {/* Glass Thickness - not shown for standoffs (always 15mm) */}
-              {productVariant !== "glass-bal-standoffs" && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Glass Thickness</Label>
-                  <Select
-                    value={span.glassThickness || "12mm"}
-                    onValueChange={(value) => {
-                      const glassThickness = value as "12mm" | "15mm";
-                      const updates: Partial<SpanConfig> = { glassThickness };
-                      
-                      // If switching to 15mm and rail type is 25x21, clear it (25x21 only works with 12mm)
-                      if (glassThickness === "15mm" && span.handrail?.type === "nonorail-25x21") {
-                        updates.handrail = {
-                          ...span.handrail,
-                          type: "series-35x35" // Default to universal 35 series
-                        };
-                      }
-                      
-                      updateSpan(updates);
-                    }}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-glass-thickness`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="12mm">12mm Glass</SelectItem>
-                      <SelectItem value="15mm">15mm Glass</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {(span.glassThickness || "12mm") === "12mm" 
-                      ? "12mm glass: 300-1500mm width, 970mm height" 
-                      : "15mm glass: 300-1400mm width, 1000mm height"}
-                  </p>
-                </div>
-              )}
-              
-              {/* Top Mounted Rail */}
-              <div className="space-y-3 pt-2 border-t border-card-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-semibold">Top Mounted Rail</Label>
-                    <InfoTooltip content="Add a top-mounted handrail to your balustrade. Standard lengths are 5800mm with automatic optimization to minimize wastage across multiple sections." />
-                  </div>
-                  <Switch
-                    checked={span.handrail?.enabled || false}
-                    onCheckedChange={(enabled) => {
-                      if (enabled) {
-                        // Determine default rail type based on glass thickness
-                        const glassThickness = productVariant === "glass-bal-standoffs" ? "15mm" : (span.glassThickness || "12mm");
-                        const defaultRailType = glassThickness === "12mm" ? "nonorail-25x21" : "series-35x35";
-                        
-                        updateSpan({
-                          handrail: {
-                            enabled: true,
-                            type: defaultRailType,
-                            material: "stainless-steel",
-                            finish: "satin",
-                            startTermination: "end-cap",
-                            endTermination: "end-cap",
-                          }
-                        });
-                      } else {
-                        updateSpan({ handrail: undefined });
-                      }
-                    }}
-                    data-testid={`span-${span.spanId}-top-rail-toggle`}
-                  />
-                </div>
-
-                {span.handrail?.enabled && (
-                  <div className="space-y-3 pt-2">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm font-medium">Rail Type</Label>
-                          <InfoTooltip content="25×21mm (NonoRail): For 12mm glass only. 30×21mm (NanoRail): Universal. 35×35mm (Series 35): Universal, larger profile." />
-                        </div>
-                        <Select
-                          value={span.handrail.type}
-                          onValueChange={(type) => updateSpan({ 
-                            handrail: { ...span.handrail!, type: type as "nonorail-25x21" | "nanorail-30x21" | "series-35x35" }
-                          })}
-                        >
-                          <SelectTrigger data-testid={`span-${span.spanId}-rail-type`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {/* 25x21 only for 12mm glass */}
-                            {(productVariant === "glass-bal-standoffs" ? "15mm" : (span.glassThickness || "12mm")) === "12mm" && (
-                              <SelectItem value="nonorail-25x21">25×21mm (NonoRail)</SelectItem>
-                            )}
-                            <SelectItem value="nanorail-30x21">30×21mm (NanoRail)</SelectItem>
-                            <SelectItem value="series-35x35">35×35mm (Series 35)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Material</Label>
-                        <Select
-                          value={span.handrail.material}
-                          onValueChange={(material) => updateSpan({ 
-                            handrail: { ...span.handrail!, material: material as "stainless-steel" | "anodised-aluminium" }
-                          })}
-                        >
-                          <SelectTrigger data-testid={`span-${span.spanId}-rail-material`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="stainless-steel">Stainless Steel</SelectItem>
-                            <SelectItem value="anodised-aluminium">Anodised Aluminium</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Finish</Label>
-                      <Select
-                        value={span.handrail.finish}
-                        onValueChange={(finish) => updateSpan({ 
-                          handrail: { ...span.handrail!, finish: finish as "polished" | "satin" | "black" | "white" }
-                        })}
-                      >
-                        <SelectTrigger data-testid={`span-${span.spanId}-rail-finish`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="polished">Polished</SelectItem>
-                          <SelectItem value="satin">Satin</SelectItem>
-                          <SelectItem value="black">Black</SelectItem>
-                          <SelectItem value="white">White</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm font-medium">Start Termination</Label>
-                          <InfoTooltip content="How the rail ends at the start of this section: End Cap (sealed end), Wall Tie (attached to wall), 90° Corner, or Adjustable Corner." />
-                        </div>
-                        <Select
-                          value={span.handrail.startTermination || "end-cap"}
-                          onValueChange={(termination) => updateSpan({ 
-                            handrail: { ...span.handrail!, startTermination: termination as "end-cap" | "wall-tie" | "90-degree" | "adjustable-corner" }
-                          })}
-                        >
-                          <SelectTrigger data-testid={`span-${span.spanId}-rail-start-termination`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="end-cap">End Cap</SelectItem>
-                            <SelectItem value="wall-tie">Wall Tie</SelectItem>
-                            <SelectItem value="90-degree">90° Corner</SelectItem>
-                            <SelectItem value="adjustable-corner">Adjustable Corner</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm font-medium">End Termination</Label>
-                          <InfoTooltip content="How the rail ends at the end of this section: End Cap (sealed end), Wall Tie (attached to wall), 90° Corner, or Adjustable Corner." />
-                        </div>
-                        <Select
-                          value={span.handrail.endTermination || "end-cap"}
-                          onValueChange={(termination) => updateSpan({ 
-                            handrail: { ...span.handrail!, endTermination: termination as "end-cap" | "wall-tie" | "90-degree" | "adjustable-corner" }
-                          })}
-                        >
-                          <SelectTrigger data-testid={`span-${span.spanId}-rail-end-termination`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="end-cap">End Cap</SelectItem>
-                            <SelectItem value="wall-tie">Wall Tie</SelectItem>
-                            <SelectItem value="90-degree">90° Corner</SelectItem>
-                            <SelectItem value="adjustable-corner">Adjustable Corner</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md space-y-1">
-                      <p><strong>Standard Length:</strong> 5800mm rails with automatic optimization</p>
-                      <p><strong>Section Length:</strong> {span.length}mm rail required for this section</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* ── Standoff Balustrade 15mm: Oxworks accordion (Configure/Standoffs/Rail) ── */}
+          {isGlassBalStandoffs && (
+            <GlassBalStandoffsConfig
+              span={span}
+              updateSpan={updateSpan}
+              allSpans={allSpans}
+              showLeftGap={showLeftGap}
+              showRightGap={showRightGap}
+            />
           )}
 
           {/* Blade Fencing Configuration - appears right after section length */}
@@ -1466,7 +1276,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Gap Configurations - Hide for BARR, Blade, Tubular, Hamptons PVC, alu-bal-*, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 {showLeftGap && isFieldEnabled("startGapMm") && (
@@ -1733,7 +1543,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Panel Configuration - Hide for BARR, Blade, Tubular, Hamptons PVC, custom-frameless, semi-frameless, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalSpigots && (isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) &&
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && !isGlassBalSpigots && (isFieldEnabled("maxPanelMm") || isFieldEnabled("betweenGapMm")) &&
            productVariant !== "alu-pool-barr" &&
            productVariant !== "alu-pool-blade" &&
            productVariant !== "alu-pool-tubular" &&
@@ -1807,7 +1617,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Hardware Configuration - Show channel, spigot, OR post based on product type (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !isSemiFrameless ? (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -1854,7 +1664,7 @@ export function SpanConfigPanel({
           ) : null}
 
           {/* Gate Configuration - only for non-BARR/Blade/Tubular pool fencing and general fencing; glass-pool-spigots uses 4-col grid */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1909,7 +1719,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Raked Panels Configuration - only for non-BARR/Blade/Tubular; glass-pool-spigots uses 4-col grid */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
@@ -2044,7 +1854,7 @@ export function SpanConfigPanel({
 
 
           {/* Custom Panel - Hide for BARR, Blade, Tubular, and glass-pool-spigots (uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && isSectionEnabled("Custom Panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && isSectionEnabled("Custom Panel") && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && (
             <div className="space-y-3 pt-4 border-t border-card-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -2079,7 +1889,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Hardware Configuration - Moved to bottom (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && !isSemiFrameless ? (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <h4 className="text-sm font-semibold">Spigot Hardware</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -2126,7 +1936,7 @@ export function SpanConfigPanel({
           ) : null}
 
           {/* Gate Configuration - Moved to bottom (glass-pool-spigots uses 4-col grid) */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && isSectionEnabled("Gate") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2181,7 +1991,7 @@ export function SpanConfigPanel({
           )}
 
           {/* Raked Panels - Moved to bottom (glass-pool-spigots shows Rake in the 4-col grid) */}
-          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
+          {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && isSectionEnabled("Raked Panel") && gatesAllowed && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && productVariant !== "custom-frameless" && (
             <div className="space-y-4 pt-4 border-t border-card-border">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Raked Panels (for step ups - retaining walls and height changes)</h4>
