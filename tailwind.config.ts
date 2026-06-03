@@ -11,6 +11,11 @@ export default {
         sm: ".1875rem", /* 3px */
       },
       colors: {
+        // BarrierHub brand (matches storefront src/app/globals.css exactly)
+        "brand-navy": "#1C2B3A",
+        "brand-navy-light": "#2D4459",
+        "brand-gold": "#C8A96E",
+        "brand-gold-light": "#D4BC8A",
         // Flat / base colors (regular buttons)
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",

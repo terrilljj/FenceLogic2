@@ -56,6 +56,7 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const tips: Tip[] = [];
   const fv = (span.fieldValues ?? {}) as Record<string, unknown>;
   const isPool = productVariant === "glass-pool-spigots";
+  const isChannel = productVariant === "glass-pool-channel";
   const is15 = productVariant.includes("15mm");
   const is12 = productVariant.includes("12mm");
   const as3000 = fv["as-3000"] === "true";
@@ -63,7 +64,13 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const softClose = span.gateConfig?.hardware === "polaris";
   const railOn = span.handrail?.enabled === true;
 
-  if (isPool) {
+  if (isChannel) {
+    tips.push({
+      title: "How the channel system works",
+      body:
+        "The glass sits inside a continuous aluminium channel fixed flat to your slab or deck — no spigots, no drilling the glass. It gives a clean, uninterrupted line along the base and the glass can be levelled after installation.",
+    });
+  } else if (isPool) {
     tips.push({
       title: "Choosing a spigot family",
       body:
@@ -102,11 +109,13 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
     );
   }
 
-  tips.push({
-    title: "Base-plate vs core-fill",
-    body:
-      "Base-plate suits fixing onto existing pavers or a finished slab. Core-fill needs at least 100mm of solid concrete — too shallow and the spigot won't hold under load.",
-  });
+  if (!isChannel) {
+    tips.push({
+      title: "Base-plate vs core-fill",
+      body:
+        "Base-plate suits fixing onto existing pavers or a finished slab. Core-fill needs at least 100mm of solid concrete — too shallow and the spigot won't hold under load.",
+    });
+  }
 
   // ── Spigot section: substrate / mounting (SF-1 fixings matrix) ──
   if (isPool) {
@@ -131,6 +140,35 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
           "Core-drilled spigots get grouted in — allow a 10kg bag per ten spigots plus a spare. On a hot day keep the holes shaded and the mixing water cold.",
       });
     }
+  }
+
+  // ── Channel section: substrate fixings + corners (M12, 300mm centres) ──
+  if (isChannel) {
+    const substrate = span.spigotSubstrate || "concrete";
+    if (substrate === "timber") {
+      tips.push({
+        title: "Channel on a timber deck",
+        body:
+          "The channel anchors every 300mm with M12 LAG screws, so it needs structural timber underneath the whole run — joists or bearers, not just decking boards. You supply the M12 nuts and washers.",
+      });
+    } else if (substrate === "steel") {
+      tips.push({
+        title: "Channel on steel",
+        body:
+          "You'll supply your own M12 stainless hardware — bolt through the steel or drill-and-tap. The M10 hardware used for spigots isn't enough for channel loads.",
+      });
+    } else {
+      tips.push({
+        title: "Channel on concrete",
+        body:
+          "The channel anchors every 300mm with M12 threaded rods set in chemical anchor. Make sure you've got solid concrete the full length of the run — no pavers over sand.",
+      });
+    }
+    tips.push({
+      title: "Corners are mitre-cut",
+      body:
+        "Where two channel runs meet at a corner, both get cut at 45° so they join cleanly. You'll need a mitre saw or a careful hand cut — it's the one bit of cutting in a channel install.",
+    });
   }
 
   // ── Add-ons section: raked / custom panels ──

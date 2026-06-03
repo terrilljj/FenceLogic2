@@ -12,6 +12,9 @@ interface ProductOption {
 }
 
 const productOptions: ProductOption[] = [
+  // ── V1 LAUNCH STYLES ONLY (operator ruling 2026-06-03) ──────────────────────
+  // Pool (5): Spigots · Channel · Flat Top · BARR · Blade
+  // Balustrade (6): Spigots 12mm · Spigots 15mm · Channel 15mm · Standoff · BARR · Blade
   {
     id: "glass-pool-spigots",
     type: "glass-pool",
@@ -20,60 +23,11 @@ const productOptions: ProductOption[] = [
     visual: "frameless-glass"
   },
   {
-    id: "glass-pool-channel-std",
+    id: "glass-pool-channel",
     type: "glass-pool",
     name: "VersaTilt Channel Pool Fence",
-    description: "12mm/15mm glass with gates, 4200mm channel",
+    description: "12mm glass with gates, 4200mm channel",
     visual: "channel-glass"
-  },
-  {
-    id: "glass-bal-spigots-12mm",
-    type: "glass-balustrade",
-    name: "Frameless Balustrade 12mm",
-    description: "970mm high, 12mm glass with spigots",
-    visual: "frameless-glass"
-  },
-  {
-    id: "glass-bal-spigots-15mm",
-    type: "glass-balustrade",
-    name: "Frameless Balustrade 15mm",
-    description: "1000mm high, 15mm glass with spigots",
-    visual: "frameless-glass"
-  },
-  {
-    id: "glass-bal-channel-std",
-    type: "glass-balustrade",
-    name: "VersaTilt Channel Standard",
-    description: "12mm/15mm glass, 4200mm channel",
-    visual: "channel-glass"
-  },
-  {
-    id: "glass-bal-channel-hd",
-    type: "glass-balustrade",
-    name: "VersaTilt Channel Heavy Duty",
-    description: "17.52mm SGP glass, 3600mm channel",
-    visual: "channel-glass"
-  },
-  {
-    id: "glass-bal-standoffs",
-    type: "glass-balustrade",
-    name: "Standoff Balustrade",
-    description: "15mm glass, 1280mm height, 50mm standoffs",
-    visual: "standoff-glass"
-  },
-  {
-    id: "semi-frameless-1000",
-    type: "custom",
-    name: "Semi-Frameless 1000mm",
-    description: "12mm glass, 50mm posts, shuffle glazed, top rail",
-    visual: "semi-frameless-posts"
-  },
-  {
-    id: "semi-frameless-1800",
-    type: "custom",
-    name: "Semi-Frameless 1800mm",
-    description: "10mm glass, 50mm posts, shuffle glazed, mid-rail",
-    visual: "semi-frameless-posts"
   },
   {
     id: "alu-pool-tubular",
@@ -97,6 +51,34 @@ const productOptions: ProductOption[] = [
     visual: "aluminium-blade"
   },
   {
+    id: "glass-bal-spigots-12mm",
+    type: "glass-balustrade",
+    name: "Frameless Balustrade 12mm",
+    description: "970mm high, 12mm glass with spigots",
+    visual: "frameless-glass"
+  },
+  {
+    id: "glass-bal-spigots-15mm",
+    type: "glass-balustrade",
+    name: "Frameless Balustrade 15mm",
+    description: "1000mm high, 15mm glass with spigots",
+    visual: "frameless-glass"
+  },
+  {
+    id: "glass-bal-channel",
+    type: "glass-balustrade",
+    name: "VersaTilt Channel 15mm",
+    description: "1000mm high, 15mm glass, 4200mm channel",
+    visual: "channel-glass"
+  },
+  {
+    id: "glass-bal-standoffs",
+    type: "glass-balustrade",
+    name: "Standoff Balustrade",
+    description: "15mm glass, 1280mm height, 50mm standoffs",
+    visual: "standoff-glass"
+  },
+  {
     id: "alu-bal-barr",
     type: "aluminium-balustrade",
     name: "BARR Balustrade",
@@ -109,48 +91,6 @@ const productOptions: ProductOption[] = [
     name: "Blade Balustrade",
     description: "Modern slim-profile aluminium balustrade",
     visual: "aluminium-slats"
-  },
-  {
-    id: "pvc-hamptons-full-privacy",
-    type: "pvc",
-    name: "Hamptons Full Privacy",
-    description: "1800mm solid privacy panels",
-    visual: "pvc-hamptons-full"
-  },
-  {
-    id: "pvc-hamptons-combo",
-    type: "pvc",
-    name: "Hamptons Combo",
-    description: "1800mm with slat topper",
-    visual: "pvc-hamptons-combo"
-  },
-  {
-    id: "pvc-hamptons-vertical-paling",
-    type: "pvc",
-    name: "Hamptons Vertical Paling",
-    description: "1800mm vertical paling style",
-    visual: "pvc-hamptons-vertical"
-  },
-  {
-    id: "pvc-hamptons-semi-privacy",
-    type: "pvc",
-    name: "Hamptons Semi Privacy",
-    description: "1000mm with horizontal gaps",
-    visual: "pvc-hamptons-semi"
-  },
-  {
-    id: "pvc-hamptons-3rail",
-    type: "pvc",
-    name: "Hamptons 3 Rail",
-    description: "1525mm adjustable height rails",
-    visual: "pvc-hamptons-3rail"
-  },
-  {
-    id: "custom-frameless",
-    type: "custom",
-    name: "Frameless Spigots",
-    description: "Auto-calc panels with exact gaps",
-    visual: "frameless-glass"
   }
 ];
 
@@ -437,15 +377,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h1 className="text-4xl font-bold mb-2" data-testid="text-home-title">
+      {/* Hero — matches the BH storefront header treatment: navy band, white text,
+          gold accents (storefront src/app/page.tsx hero section). */}
+      <div className="bg-brand-navy text-white">
+        <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-3" data-testid="text-home-title">
             Fence Logic Calculator
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg md:text-xl text-gray-300 max-w-2xl">
             Calculate your fence cost and the materials needed.
           </p>
+        </div>
+        {/* Trust band (storefront pattern: primary-light strip with gold ticks) */}
+        <div className="bg-brand-navy-light border-t border-white/10">
+          <div className="max-w-7xl mx-auto px-6 py-3">
+            <div className="flex flex-wrap gap-x-8 gap-y-1 text-sm text-gray-300">
+              <span>Instant panel layout</span>
+              <span>Full component list</span>
+              <span>Australian standards compliant</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -454,7 +405,7 @@ export default function Home() {
         {/* Pool Fencing Section */}
         <div className="mb-16">
           <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-3" data-testid="text-pool-fencing-title">
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-pool-fencing-title">
               Pool Fencing
             </h2>
             <p className="text-muted-foreground">
@@ -468,45 +419,7 @@ export default function Home() {
               .map((product) => (
                 <Card
                   key={product.id}
-                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
-                  onClick={() => handleSelectProduct(product.type, product.id)}
-                  data-testid={`card-home-product-${product.id}`}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <ProductVisual type={product.visual} />
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-sm">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {product.description}
-                      </p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </Card>
-              ))}
-          </div>
-        </div>
-
-        {/* Hamptons Section */}
-        <div className="mb-16">
-          <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-3" data-testid="text-hamptons-title">
-              Hamptons
-            </h2>
-            <p className="text-muted-foreground">
-              Low-maintenance PVC fencing with classic Hamptons styling
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {productOptions
-              .filter((p) => p.type === "pvc")
-              .map((product) => (
-                <Card
-                  key={product.id}
-                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  className="bg-white p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
                   onClick={() => handleSelectProduct(product.type, product.id)}
                   data-testid={`card-home-product-${product.id}`}
                 >
@@ -530,7 +443,7 @@ export default function Home() {
         {/* Balustrade Section */}
         <div className="mb-16">
           <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-3" data-testid="text-balustrade-title">
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-balustrade-title">
               Balustrade
             </h2>
             <p className="text-muted-foreground">
@@ -544,45 +457,7 @@ export default function Home() {
               .map((product) => (
                 <Card
                   key={product.id}
-                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
-                  onClick={() => handleSelectProduct(product.type, product.id)}
-                  data-testid={`card-home-product-${product.id}`}
-                >
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <ProductVisual type={product.visual} />
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-sm">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {product.description}
-                      </p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </Card>
-              ))}
-          </div>
-        </div>
-
-        {/* Custom Section */}
-        <div className="mb-16">
-          <div className="mb-8">
-            <h2 className="text-3xl font-semibold mb-3" data-testid="text-custom-title">
-              Custom
-            </h2>
-            <p className="text-muted-foreground">
-              Advanced configurator with auto-calculated panel widths
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {productOptions
-              .filter((p) => p.type === "custom")
-              .map((product) => (
-                <Card
-                  key={product.id}
-                  className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
+                  className="bg-white p-4 cursor-pointer hover-elevate active-elevate-2 transition-all group"
                   onClick={() => handleSelectProduct(product.type, product.id)}
                   data-testid={`card-home-product-${product.id}`}
                 >

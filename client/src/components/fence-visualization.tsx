@@ -1105,24 +1105,26 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         // Draw raked panel: 400mm horizontal at top, then slope to 1200mm
         // For left raked: high on left (400mm), slopes down on right
         // For right raked: slopes down on left, high on right (400mm)
+        // Channel systems: glass sits INSIDE the channel (37mm above the fixing surface).
+        const rakedBase = isChannelSystem ? groundLevel - 37 * scale : groundLevel;
         const rakedHeight = (isLeftRaked ? leftRaked! : rightRaked!) * scale;
         const horizontalWidth = 400 * scale; // 400mm horizontal section
         
         ctx.beginPath();
         if (isLeftRaked) {
           // Left raked: horizontal at top for first 400mm, then slope down
-          ctx.moveTo(currentX, groundLevel);
-          ctx.lineTo(currentX, groundLevel - rakedHeight);
-          ctx.lineTo(currentX + horizontalWidth, groundLevel - rakedHeight);
-          ctx.lineTo(currentX + scaledPanelWidth, groundLevel - scaledPanelHeight);
-          ctx.lineTo(currentX + scaledPanelWidth, groundLevel);
+          ctx.moveTo(currentX, rakedBase);
+          ctx.lineTo(currentX, rakedBase - rakedHeight);
+          ctx.lineTo(currentX + horizontalWidth, rakedBase - rakedHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, rakedBase - scaledPanelHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, rakedBase);
         } else {
           // Right raked: slope up, then horizontal at top for last 400mm
-          ctx.moveTo(currentX, groundLevel);
-          ctx.lineTo(currentX, groundLevel - scaledPanelHeight);
-          ctx.lineTo(currentX + scaledPanelWidth - horizontalWidth, groundLevel - rakedHeight);
-          ctx.lineTo(currentX + scaledPanelWidth, groundLevel - rakedHeight);
-          ctx.lineTo(currentX + scaledPanelWidth, groundLevel);
+          ctx.moveTo(currentX, rakedBase);
+          ctx.lineTo(currentX, rakedBase - scaledPanelHeight);
+          ctx.lineTo(currentX + scaledPanelWidth - horizontalWidth, rakedBase - rakedHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, rakedBase - rakedHeight);
+          ctx.lineTo(currentX + scaledPanelWidth, rakedBase);
         }
         ctx.closePath();
         ctx.fill();
@@ -1132,15 +1134,17 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.lineWidth = 1.5;
         ctx.stroke();
       } else {
-        // Glass panels - standard rectangular
+        // Glass panels - standard rectangular. Channel systems: glass sits INSIDE the
+        // channel on the friction-plate rubber feet (37mm above the fixing surface).
+        const glassBase = isChannelSystem ? groundLevel - 37 * scale : groundLevel;
         ctx.fillStyle = isCustom ? "#f9d5c5" : isHinge ? "#c5f9d4" : isGate ? "#d4c5f9" : isActive ? "#bdd7ee" : "#d9e8f5";
         ctx.globalAlpha = 1;
-        ctx.fillRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+        ctx.fillRect(currentX, glassBase - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
 
         // Panel border - cleaner, more subtle
         ctx.strokeStyle = isHinge ? "#a4e8b8" : isGate ? "#b8a4e8" : isActive ? "#90c3e0" : "#b8d4e8";
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(currentX, groundLevel - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
+        ctx.strokeRect(currentX, glassBase - scaledPanelHeight, scaledPanelWidth, scaledPanelHeight);
       }
 
       // Panel width is annotated ONCE — on the glass panel itself (below).
@@ -1523,75 +1527,140 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
       );
     }
 
-    // Draw channel system (continuous across entire span) - for channel systems only
+    // Draw channel system - for channel systems only. PTS proportions (operator,
+    // 2026-06-03): channel is 128mm high with its base 38mm above the ground; the
+    // GLASS SITS INSIDE the channel (finished glass top = 1237mm). The channel BREAKS
+    // at the gate (the gate swings on hinges off the neighbouring panel — it can't sit
+    // in a channel) and at the gate's hardware gaps either side.
     if (isChannelSystem) {
-      const channelHeight = 50 * scale;  // Channel height
-      const channelDepth = 80 * scale;   // Channel depth/thickness
-      const channelGap = 50 * scale;     // 50mm gap below glass (same as spigot)
+      const CHANNEL_HEIGHT_MM = 128;
+      const channelHeight = CHANNEL_HEIGHT_MM * scale;
+      // Deck mount: the channel sits ON the fixing surface. Glass bottom is 37mm up,
+      // inside the channel, resting on the friction-plate rubber feet.
+      const channelBottomY = groundLevel;
+      const channelTopY = channelBottomY - channelHeight;
       const channelStartX = drawStartX + scaledLeftGap;
       const channelEndX = currentX;
-      const channelWidth = channelEndX - channelStartX;
-      
-      // Draw main channel body (continuous aluminum channel)
-      ctx.fillStyle = "#a8b2bd";  // Aluminum color
-      ctx.fillRect(
-        channelStartX,
-        groundLevel + channelGap - channelHeight,
-        channelWidth,
-        channelHeight
-      );
-      
-      // Channel border
-      ctx.strokeStyle = "#6b7280";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        channelStartX,
-        groundLevel + channelGap - channelHeight,
-        channelWidth,
-        channelHeight
-      );
-      
-      // Draw friction clamps at 300mm intervals
-      const clampSpacing = 300; // 300mm spacing
-      const clampWidth = 30 * scale;
-      const clampHeight = 70 * scale;
-      const numClamps = Math.floor(span.length / clampSpacing) + 1;
-      
-      for (let c = 0; c <= numClamps; c++) {
-        const clampPosition = channelStartX + (c * clampSpacing * scale);
-        
-        // Only draw if within span bounds
-        if (clampPosition >= channelStartX && clampPosition <= channelEndX - clampWidth) {
-          // Friction clamp
-          ctx.fillStyle = "#4b5563";  // Darker gray for clamps
-          ctx.fillRect(
-            clampPosition,
-            groundLevel + channelGap - channelHeight,
-            clampWidth,
-            clampHeight
-          );
-          
-          // Clamp border
-          ctx.strokeStyle = "#374151";
+
+      // Walk the panel layout once: channel segments (glass + gaps between glass sit
+      // over channel; the gate and its adjacent gaps do not) AND per-panel positions
+      // for the pressure-plate clamps.
+      const segments: Array<[number, number]> = [];
+      const glassPanels: Array<{ startX: number; widthMm: number; isRaked: boolean }> = [];
+      const layoutPanels = span.panelLayout?.panels ?? [];
+      const layoutGaps = span.panelLayout?.gaps ?? [];
+      const layoutTypes = span.panelLayout?.panelTypes ?? layoutPanels.map(() => "standard");
+      if (layoutPanels.length) {
+        let x = channelStartX;
+        let segStart: number | null = null;
+        let prevPanelEnd = channelStartX;
+        for (let i = 0; i < layoutPanels.length; i++) {
+          const panelEnd = x + layoutPanels[i] * scale;
+          if (layoutTypes[i] === "gate") {
+            // Close the running segment at the end of the previous glass panel.
+            if (segStart !== null) {
+              segments.push([segStart, prevPanelEnd]);
+              segStart = null;
+            }
+          } else {
+            if (segStart === null) segStart = x;
+            prevPanelEnd = panelEnd;
+            // Raked panels are the first/last panel when enabled on that side.
+            const isRaked =
+              (i === 0 && !!span.leftRakedPanel?.enabled) ||
+              (i === layoutPanels.length - 1 && !!span.rightRakedPanel?.enabled);
+            glassPanels.push({ startX: x, widthMm: layoutPanels[i], isRaked });
+          }
+          x = panelEnd + (layoutGaps[i] ?? 0) * scale;
+        }
+        if (segStart !== null && prevPanelEnd > segStart) segments.push([segStart, prevPanelEnd]);
+      } else {
+        // No layout yet — fall back to a continuous channel.
+        segments.push([channelStartX, channelEndX]);
+      }
+
+      // 1. Channel bodies — drawn OVER the glass so the glass reads as sitting inside.
+      for (const [segStart, segEnd] of segments) {
+        const segWidth = segEnd - segStart;
+        if (segWidth <= 0) continue;
+        ctx.fillStyle = "#b8c0c9"; // Aluminum
+        ctx.fillRect(segStart, channelTopY, segWidth, channelHeight);
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(segStart, channelTopY, segWidth, channelHeight);
+        // Darker base strip (the channel's hollow base section, ~29mm, under the plates).
+        const baseStripH = Math.max(3, 29 * scale);
+        ctx.fillStyle = "#9aa3ad";
+        ctx.fillRect(segStart, channelBottomY - baseStripH, segWidth, baseStripH);
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(segStart, channelBottomY - baseStripH, segWidth, baseStripH);
+
+        // Channel stock-length breaks: the channel comes in 4200mm lengths, so a run
+        // longer than 4200mm is joined from multiple pieces (4 joining pins per join).
+        // Draw a break line at every 4200mm from the start of this run.
+        const STOCK_LEN_PX = 4200 * scale;
+        for (let breakX = segStart + STOCK_LEN_PX; breakX < segEnd - 2; breakX += STOCK_LEN_PX) {
+          ctx.strokeStyle = "#1f2937";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(breakX, channelTopY);
+          ctx.lineTo(breakX, channelBottomY);
+          ctx.stroke();
+          // Small "join" tick marks either side of the break line
           ctx.lineWidth = 1;
-          ctx.strokeRect(
-            clampPosition,
-            groundLevel + channelGap - channelHeight,
-            clampWidth,
-            clampHeight
-          );
+          ctx.beginPath();
+          ctx.moveTo(breakX - 3, channelTopY + channelHeight * 0.3);
+          ctx.lineTo(breakX + 3, channelTopY + channelHeight * 0.3);
+          ctx.moveTo(breakX - 3, channelTopY + channelHeight * 0.7);
+          ctx.lineTo(breakX + 3, channelTopY + channelHeight * 0.7);
+          ctx.stroke();
         }
       }
-      
-      // Channel label
-      const mountingType = span.channelMounting === "wall" ? "Wall" : "Ground";
+
+      // 2. Pressure-plate clamps — PER PANEL (they grip the glass), all measures to
+      //    centre: 150mm from each panel end, max 500mm between clamp centres.
+      const CLAMP_END_SETBACK_MM = 150;
+      const CLAMP_MAX_SPACING_MM = 500;
+      const clampW = Math.max(6, 80 * scale);
+      const clampH = Math.max(5, 56 * scale);
+      // Plate base ~29mm above the fixing surface; the glass sits 8mm higher again,
+      // on the plate's rubber foot (glass bottom = 37mm).
+      const clampY = groundLevel - 29 * scale - clampH;
+      for (const panel of glassPanels) {
+        if (panel.widthMm < CLAMP_END_SETBACK_MM * 2) continue;
+        const firstCentre = CLAMP_END_SETBACK_MM;
+        const lastCentre = panel.widthMm - CLAMP_END_SETBACK_MM;
+        const innerSpan = lastCentre - firstCentre;
+        // Raked panels: ALWAYS 4 friction clamps (operator rule). Standard panels:
+        // 150mm end setback, ≤500mm between centres.
+        const nGaps = panel.isRaked ? 3 : Math.max(1, Math.ceil(innerSpan / CLAMP_MAX_SPACING_MM));
+        const centres: number[] = [];
+        if (innerSpan === 0) {
+          centres.push(firstCentre);
+        } else {
+          for (let k = 0; k <= nGaps; k++) centres.push(firstCentre + (innerSpan * k) / nGaps);
+        }
+        for (const centreMm of centres) {
+          const cx = panel.startX + centreMm * scale;
+          ctx.beginPath();
+          ctx.roundRect(cx - clampW / 2, clampY, clampW, clampH, Math.min(6, clampW / 5));
+          ctx.fillStyle = "#6b7280";
+          ctx.fill();
+          ctx.strokeStyle = "#334155";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+      }
+
+      // Channel label (V1 is deck mount only)
       ctx.fillStyle = "#374151";
       ctx.font = "500 11px Inter";
       ctx.textAlign = "center";
       ctx.fillText(
-        `Versatilt Channel (${mountingType} Mount)`,
-        channelStartX + channelWidth / 2,
-        groundLevel + channelGap - channelHeight - 8
+        "VersaTilt Channel — Deck Mount",
+        channelStartX + (channelEndX - channelStartX) / 2,
+        channelTopY - 8
       );
     }
 

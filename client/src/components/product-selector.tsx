@@ -30,7 +30,7 @@ const productCategories: ProductCategory[] = [
     variants: [
       { id: "glass-bal-spigots-12mm", name: "Spigots — 12mm" },
       { id: "glass-bal-spigots-15mm", name: "Spigots — 15mm" },
-      { id: "glass-bal-channel", name: "Channel" },
+      { id: "glass-bal-channel", name: "Channel — 15mm" },
       { id: "glass-bal-standoffs", name: "Standoffs" }
     ]
   },
@@ -41,8 +41,7 @@ const productCategories: ProductCategory[] = [
     variants: [
       { id: "alu-pool-tubular", name: "Tubular Flat Top" },
       { id: "alu-pool-barr", name: "BARR" },
-      { id: "alu-pool-blade", name: "Blade" },
-      { id: "alu-pool-pik", name: "PIK" }
+      { id: "alu-pool-blade", name: "Blade" }
     ]
   },
   {
@@ -51,28 +50,9 @@ const productCategories: ProductCategory[] = [
     description: "Aluminium balustrade systems for decks and balconies",
     variants: [
       { id: "alu-bal-barr", name: "Barr" },
-      { id: "alu-bal-blade", name: "Blade" },
-      { id: "alu-bal-visor", name: "Visor" }
+      { id: "alu-bal-blade", name: "Blade" }
     ]
   },
-  {
-    id: "pvc",
-    name: "PVC Fencing",
-    description: "Low-maintenance PVC fencing solutions",
-    variants: [
-      { id: "pvc-privacy", name: "Privacy" }
-    ]
-  },
-  {
-    id: "general",
-    name: "General Fencing",
-    description: "Premium fencing options for residential and commercial",
-    variants: [
-      { id: "general-zeus", name: "Zeus" },
-      { id: "general-blade", name: "Blade" },
-      { id: "general-barr", name: "Barr" }
-    ]
-  }
 ];
 
 interface ProductSelectorProps {

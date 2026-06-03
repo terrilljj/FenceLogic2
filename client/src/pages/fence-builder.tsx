@@ -605,7 +605,10 @@ export default function FenceLogic() {
   // Styles that run inside the Oxworks wizard (same format across them). Adding a
   // style here routes it through the 4-step wizard; its Step-2 config comes from
   // SpanConfigPanel (per-variant accordion).
-  const isWizardVariant = isGlassSpigots || design.productVariant.startsWith("glass-bal-spigots");
+  const isWizardVariant =
+    isGlassSpigots ||
+    design.productVariant === "glass-pool-channel" ||
+    design.productVariant.startsWith("glass-bal-spigots");
   // Wizard elevation rules (Oxworks): Step 2 (Configure) shows the ACTIVE section
   // only; Step 4 (Review) shows ALL sections (height grows to fit). Steps 1 & 3
   // (Style, Finishing) have no elevation. Other variants are unchanged (300px).
@@ -736,6 +739,7 @@ export default function FenceLogic() {
                       >
                         <SpanConfigPanel
                           span={activeSpan}
+                          allSpans={design.spans}
                           onUpdate={(updatedSpan) => handleSpanUpdate(activeSpan.spanId, updatedSpan)}
                           productVariant={design.productVariant}
                           calculatorConfig={calculatorConfig}
@@ -908,6 +912,7 @@ export default function FenceLogic() {
                     >
                       <SpanConfigPanel
                         span={span}
+                        allSpans={design.spans}
                         onUpdate={(updatedSpan) => handleSpanUpdate(span.spanId, updatedSpan)}
                         productVariant={design.productVariant}
                         calculatorConfig={calculatorConfig}
