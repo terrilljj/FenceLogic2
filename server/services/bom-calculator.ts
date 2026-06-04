@@ -1134,10 +1134,11 @@ function calculateComponentsForVariant(
           });
         }
 
-        // Add hardware per panel - either spigots OR channel clamps
+        // Add hardware per panel - either spigots OR channel clamps. The GATE panel swings on
+        // its hinge/latch (separate lines) — it is NOT spigot-mounted, so it gets no base pair.
         // Skip for standoff systems — standoff hardware is emitted later inside the
         // isGlassBalustrade block at 4 per panel.
-        if (!isChannelSystem && !isStandoffSystem && !isBalChannel) {
+        if (panelType !== "gate" && !isChannelSystem && !isStandoffSystem && !isBalChannel) {
           const fieldValues = (span as any).fieldValues || {};
           const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
           const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
