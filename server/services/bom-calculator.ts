@@ -944,10 +944,12 @@ export function calculateComponents(
                 sku: mappedProduct.sku,
               });
             } else {
+              // Real 12mm frameless pool-glass family (12N-{width}, zero-padded to 4 digits).
+              // Off-step equalised widths are made-to-size against this family.
               components.push({
                 qty: 1,
-                description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-                sku: `GP-${panelWidth}-1200-12`,
+                description: `12mm Clear Toughened Frameless Glass ${panelWidth}W × 1200H`,
+                sku: `12N-${String(panelWidth).padStart(4, "0")}`,
               });
             }
           }
@@ -1088,8 +1090,8 @@ export function calculateComponents(
       if (numPanels > 0) {
         components.push({
           qty: numPanels,
-          description: `Glass Panel ${fallbackPanelWidth}mm x 1200mm (12mm thick) [provisional]`,
-          sku: `GP-${fallbackPanelWidth}-1200-12`,
+          description: `12mm Clear Toughened Frameless Glass ${fallbackPanelWidth}W × 1200H [provisional]`,
+          sku: `12N-${String(fallbackPanelWidth).padStart(4, "0")}`,
         });
 
         if (!isChannelSystem && !isStandoffSystem) {
