@@ -723,6 +723,23 @@ export default function FenceLogic() {
                         const s = design.spans.find((x) => x.spanId === spanId);
                         if (s) handleSpanUpdate(spanId, { ...s, name });
                       }}
+                      onSpanStyleChange={(spanId, variant) => {
+                        const s = design.spans.find((x) => x.spanId === spanId);
+                        if (!s) return;
+                        const cap = ptsMaxPanelFor(variant);
+                        handleSpanUpdate(spanId, {
+                          ...s,
+                          productVariant: variant,
+                          ...(cap ? { maxPanelWidth: Math.min(s.maxPanelWidth, cap) } : {}),
+                        });
+                      }}
+                      onSpanUpdate={(spanId, patch) => {
+                        const s = design.spans.find((x) => x.spanId === spanId);
+                        if (!s) return;
+                        const merged: SpanConfig = { ...s, ...patch };
+                        if (patch.fieldValues) merged.fieldValues = { ...s.fieldValues, ...patch.fieldValues };
+                        handleSpanUpdate(spanId, merged);
+                      }}
                       onAddSection={handleAddSectionStep1}
                       onDeleteSection={handleDeleteSection}
                     />
