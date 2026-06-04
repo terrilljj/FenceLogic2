@@ -15,8 +15,6 @@ import {
   HandrailFinish,
   RailTerminationType,
   getSpigotDetails,
-  getHingeDetails,
-  getLatchDetails,
   optimizeRailLengths,
 } from "@shared/schema";
 
@@ -139,6 +137,44 @@ function spigotSku(family: string, mounting: string, finish: string): { sku: str
     : (({ black: "B", white: "MW", polished: "P", satin: "S" } as Record<string, string>)[finish] || "P");
   const famLabel: Record<string, string> = { MAD: "Madrid", NOV: "Nova", MADDEL: "Madrid Deluxe", POOLMAD: "Madrid Pool", INS: "Insuluxe" };
   return { sku: `${prefix}-${mount}-${F}`, label: `${famLabel[prefix]} Spigot ${mount === "S" ? "Core-Drill" : "Base-Plated"} (${finish})` };
+}
+
+/**
+ * Real gate hardware SKUs (operator-confirmed from the storefront, 2026-06-04).
+ * The gate config is binary: hardware = "master" (Master Range MR-, budget) | "polaris"
+ * ("Soft Close" — Polaris PSC- hinges + Atlantic LAT- latches). Finish inherits the fence
+ * finish (polished/satin/black/white). Finish codes DIFFER per family:
+ *   MR hinges (GGH/SPH) BLK/MW/P/S · MR latches (FLGG/FL90/WGL) B/MW/P/S
+ *   Polaris PSC B/MW/P/S · Atlantic LAT B/P/S/W
+ */
+const _gf = (finish: string, map: Record<string, string>) => map[finish] || "P";
+function gateHingeSku(hardware: string, hingeType: string, finish: string): string {
+  const wall = hingeType !== "glass-to-glass";
+  if (hardware === "master") {
+    const F = _gf(finish, { polished: "P", satin: "S", black: "BLK", white: "MW" });
+    return wall ? `MR-SPH-${F}` : `MR-GGH-${F}`;
+  }
+  const F = _gf(finish, { polished: "P", satin: "S", black: "B", white: "MW" });
+  return wall ? `PSC-125W-${F}` : `PSC-125GG-${F}`; // PSC-125GG-P pending in storefront (operator)
+}
+function gateLatchSku(hardware: string, latchType: string, finish: string): string {
+  if (hardware === "master") {
+    const F = _gf(finish, { polished: "P", satin: "S", black: "B", white: "MW" });
+    return latchType === "corner-in" ? `MR-FL90I-${F}` : latchType === "corner-out" ? `MR-FL90E-${F}`
+      : latchType === "glass-to-wall" ? `MR-WGL-${F}` : `MR-FLGG-${F}`;
+  }
+  const F = _gf(finish, { polished: "P", satin: "S", black: "B", white: "W" }); // Atlantic: white = W
+  return latchType === "corner-in" ? `LAT90INT-${F}` : latchType === "corner-out" ? `LAT90EXT-${F}`
+    : latchType === "glass-to-wall" ? `LATWALL-${F}` : `LAT180-${F}`;
+}
+/** Gate panel glass: master = 8mm 08SLG (sizes 750/834/890/1000); polaris = 12mm 12PGG (g2g) / 12PWG (wall). */
+function gateGlassSku(hardware: string, hingeType: string, width: number): { sku: string; description: string } {
+  const w4 = String(width).padStart(4, "0");
+  if (hardware === "master") return { sku: `08SLG-${w4}`, description: `Master Range 8mm Toughened Gate Glass ${width}W` };
+  const wall = hingeType !== "glass-to-glass";
+  return wall
+    ? { sku: `12PWG-${w4}`, description: `Polaris 12mm Soft-Close Wall/Post Gate Glass ${width}W` }
+    : { sku: `12PGG-${w4}`, description: `Polaris 12mm Soft-Close Glass-to-Glass Gate Glass ${width}W` };
 }
 
 export function calculateComponents(
@@ -992,11 +1028,11 @@ export function calculateComponents(
             });
           }
         } else if (panelType === "gate") {
-          components.push({
-            qty: 1,
-            description: `Gate Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-            sku: `GP-GATE-${panelWidth}-1200-12`,
-          });
+          // Real gate glass — master = 8mm 08SLG; polaris = 12mm 12PGG (g2g) / 12PWG (wall).
+          const gHw = (span.gateConfig?.hardware || "polaris") as string;
+          const gHinge = (span.gateConfig?.hingeType || "glass-to-glass") as string;
+          const g = gateGlassSku(gHw, gHinge, panelWidth);
+          components.push({ qty: 1, description: g.description, sku: g.sku });
         } else if (panelType === "custom") {
           const customHeight = span.customPanel?.height || 1200;
           components.push({
@@ -1066,43 +1102,29 @@ export function calculateComponents(
         if (pins > 0) components.push({ qty: Math.ceil(pins / 10), description: `VersaTilt Channel Alignment Pins (10-pack)`, sku: `VER-PINS` });
       }
 
-      // Gate hardware
+      // Gate hardware — real catalogue SKUs (Master Range / Polaris+Atlantic). Finish inherits
+      // the fence finish; hinge & latch type come from the gate config.
       if (gatesAllowed && span.gateConfig?.required) {
         const hingeType = (span.gateConfig.hingeType || "glass-to-glass") as HingeType;
         const latchType = (span.gateConfig.latchType || "glass-to-glass") as LatchType;
         const hardware = (span.gateConfig.hardware || "polaris") as GateHardware;
-        const hingeDetails = getHingeDetails(hingeType, hardware);
-        const latchDetails = getLatchDetails(latchType);
         const gateSize = String(span.gateConfig.gateSize);
+        const gateFinish = (span as any).spigotColor || (span as any).fieldValues?.["spigot-color"] || "polished";
+        const rangeLabel = hardware === "master" ? "Master Range" : "Soft-Close";
 
-        // hinge-set discriminators: { type, finish } — "finish" carries the hardware line (e.g. polaris,
-        // master-range) since the existing model has no separate finish parameter for gate hardware.
         pushSlotOrFallback(
-          1,
-          'hinge-set',
+          1, 'hinge-set',
           { type: hingeType, finish: hardware, gate_size: gateSize },
-          {
-            description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-            sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
-          },
+          { description: `${rangeLabel} Gate Hinge Set — ${hingeType} (${gateFinish})`, sku: gateHingeSku(hardware, hingeType, gateFinish) },
         );
-
         pushSlotOrFallback(
-          1,
-          'latch-set',
+          1, 'latch-set',
           { type: latchType, finish: hardware, gate_size: gateSize },
-          {
-            description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-            sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
-          },
+          { description: `${rangeLabel} Gate Latch — ${latchType} (${gateFinish})`, sku: gateLatchSku(hardware, latchType, gateFinish) },
         );
-
         if (hardware === "polaris" && span.gateConfig.postAdapterPlate) {
-          components.push({
-            qty: 1,
-            description: `Polaris/Atlantic Post Adapter Plate`,
-            sku: `PAP-POLARIS`,
-          });
+          const F = ({ polished: "P", satin: "S", black: "B", white: "MW" } as Record<string, string>)[gateFinish] || "P";
+          components.push({ qty: 1, description: `Polaris 125 Square-Post Back Plate (${gateFinish})`, sku: `PSC-125PLATE-SP-${F}` });
         }
       }
     } else {
@@ -1130,69 +1152,47 @@ export function calculateComponents(
           if (slotResult) {
             components.push({ qty: numPanels * 2, description: slotResult.description, sku: slotResult.sku });
           } else {
-            const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
-            components.push({ qty: numPanels * 2, description: fallback.description, sku: fallback.sku });
+            const real = spigotSku(family, mounting, finish);
+            if (real) {
+              components.push({ qty: numPanels * 2, description: real.label, sku: real.sku });
+            } else {
+              const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
+              components.push({ qty: numPanels * 2, description: fallback.description, sku: fallback.sku });
+            }
           }
         } else if (isChannelSystem) {
-          const spanLength = span.length;
-          const channelLength = 4200;
-          const numChannels = Math.ceil(spanLength / channelLength);
-          const mountingType = span.channelMounting === "wall" ? "Wall" : "Ground";
-
-          components.push({
-            qty: numChannels,
-            description: `Versatilt Aluminum Channel 4200mm (${mountingType} Mount)`,
-            sku: `VC-4200-${span.channelMounting || "ground"}`,
-          });
-
-          const numClamps = Math.ceil(spanLength / 300) + 2;
-          components.push({
-            qty: numClamps,
-            description: `Channel Friction Clamp (300mm spacing)`,
-            sku: `CFC-300`,
-          });
-
-          components.push({
-            qty: 2,
-            description: `Channel End Cap`,
-            sku: `CEC-STD`,
-          });
+          // Real VersaTilt POOL channel SKUs (12mm) — see the layout path above.
+          const numChannels = Math.max(1, Math.ceil(span.length / 4200));
+          const chF = ((span.fieldValues?.["channel-finish"]) === "black") ? "B" : "SA";
+          const face = span.channelMounting === "wall";
+          const finLabel = chF === "B" ? "Matt Black" : "Satin";
+          components.push({ qty: numChannels, description: `VersaTilt Channel 4200mm ${face ? "Face" : "Deck"}-Mount Kit (${finLabel})`, sku: face ? `VER-4200-FMK-${chF}` : `VER-4200-DMK-${chF}` });
+          components.push({ qty: numChannels, description: `VersaTilt 12mm Glass Glazing Rubber Kit`, sku: `VER-12KIT-RUB-2PK` });
+          components.push({ qty: numChannels, description: `VersaTilt Stabilising Washer Pack`, sku: `VER-WASHER-14PK` });
+          components.push({ qty: 1, description: `VersaTilt Channel End Plate 2-Pack (${finLabel})`, sku: face ? `VER-2FMEP-${chF}` : `VER-2DMEP-${chF}` });
         }
 
         if (gatesAllowed && span.gateConfig?.required) {
           const hingeType = (span.gateConfig.hingeType || "glass-to-glass") as HingeType;
           const latchType = (span.gateConfig.latchType || "glass-to-glass") as LatchType;
           const hardware = (span.gateConfig.hardware || "polaris") as GateHardware;
-          const hingeDetails = getHingeDetails(hingeType, hardware);
-          const latchDetails = getLatchDetails(latchType);
           const gateSize = String(span.gateConfig.gateSize);
+          const gateFinish = (span as any).spigotColor || (span as any).fieldValues?.["spigot-color"] || "polished";
+          const rangeLabel = hardware === "master" ? "Master Range" : "Soft-Close";
 
           pushSlotOrFallback(
-            1,
-            'hinge-set',
+            1, 'hinge-set',
             { type: hingeType, finish: hardware, gate_size: gateSize },
-            {
-              description: `${hingeDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-              sku: `${hingeDetails.sku}-${span.gateConfig.gateSize}`,
-            },
+            { description: `${rangeLabel} Gate Hinge Set — ${hingeType} (${gateFinish})`, sku: gateHingeSku(hardware, hingeType, gateFinish) },
           );
-
           pushSlotOrFallback(
-            1,
-            'latch-set',
+            1, 'latch-set',
             { type: latchType, finish: hardware, gate_size: gateSize },
-            {
-              description: `${latchDetails.description} (for ${span.gateConfig.gateSize}mm gate)`,
-              sku: `${latchDetails.sku}-${span.gateConfig.gateSize}`,
-            },
+            { description: `${rangeLabel} Gate Latch — ${latchType} (${gateFinish})`, sku: gateLatchSku(hardware, latchType, gateFinish) },
           );
-
           if (hardware === "polaris" && span.gateConfig.postAdapterPlate) {
-            components.push({
-              qty: 1,
-              description: `Polaris/Atlantic Post Adapter Plate`,
-              sku: `PAP-POLARIS`,
-            });
+            const F = ({ polished: "P", satin: "S", black: "B", white: "MW" } as Record<string, string>)[gateFinish] || "P";
+            components.push({ qty: 1, description: `Polaris 125 Square-Post Back Plate (${gateFinish})`, sku: `PSC-125PLATE-SP-${F}` });
           }
         }
       }
