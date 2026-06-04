@@ -205,6 +205,17 @@ describe("balustrade branches — slot resolution with template-literal fallback
       expect(lamGlass?.sku).toBe("1000FBG-1150-LAM");
     });
 
+    it("sub-1000 widths are zero-padded to 4 digits (exact catalogue match)", () => {
+      const comps = calculateComponents(
+        makeBalustradeDesign("glass-bal-spigots-15mm", [950, 850, 300], { fieldValues: { "glass-bal-fall-height": "1m-5m" } }), [], [],
+      );
+      expect(comps.some(c => c.sku === "1000FBG-0950")).toBe(true);
+      expect(comps.some(c => c.sku === "1000FBG-0850")).toBe(true);
+      expect(comps.some(c => c.sku === "1000FBG-0300")).toBe(true);
+      // no unpadded near-miss
+      expect(comps.some(c => /^1000FBG-\d{3}$/.test(c.sku ?? ""))).toBe(false);
+    });
+
     it("spigots-12mm: 11.52mm laminated at >=5m (970H)", () => {
       const lam = calculateComponents(
         makeBalustradeDesign("glass-bal-spigots-12mm", [1450], { fieldValues: { "glass-bal-fall-height": "over-5m" } }),
