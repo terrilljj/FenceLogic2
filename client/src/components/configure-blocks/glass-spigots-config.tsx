@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps } from "@shared/schema";
 import { channelCutPlans, computeSectionCutPlans, CHANNEL_PINS_PER_JOIN, CHANNEL_PIN_PACK_SIZE, CHANNEL_STOCK_MM, CHANNEL_STOCK_HD_MM } from "@/lib/cut-plan";
+import { glassMaxPanelSizes } from "@/lib/glass-sizes";
 import { cn } from "@/lib/utils";
 import { InfoTooltip } from "../info-tooltip";
 import { GateControls } from "../gate-controls";
@@ -621,7 +622,7 @@ export function GlassSpigotsConfig({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.from({ length: (maxPanelCapMm - 200) / 50 + 1 }, (_, i) => 200 + i * 50).map((w) => (
+                    {glassMaxPanelSizes(productVariant, maxPanelCapMm).map((w) => (
                       <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
                     ))}
                   </SelectContent>

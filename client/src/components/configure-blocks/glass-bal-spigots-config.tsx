@@ -10,6 +10,7 @@ import { GapSelect } from "./gap-select";
 import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
 import { COVER_MATRIX, MADRID_COVERS, FINISH_BY_FAMILY, FINISH_LABEL, FINISH_SWATCH, type Finish } from "./glass-spigots-config";
 import { GlassBalFallBand, glassFallBand } from "./glass-bal-fall-band";
+import { glassMaxPanelSizes } from "@/lib/glass-sizes";
 
 interface GlassBalSpigotsConfigProps {
   span: SpanConfig;
@@ -146,7 +147,7 @@ export function GlassBalSpigotsConfig({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: (maxPanelCap - 200) / 50 + 1 }, (_, i) => 200 + i * 50).map((w) => (
+                  {glassMaxPanelSizes(productVariant, maxPanelCap).map((w) => (
                     <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
                   ))}
                 </SelectContent>

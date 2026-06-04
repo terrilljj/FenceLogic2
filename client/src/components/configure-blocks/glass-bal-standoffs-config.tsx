@@ -10,6 +10,7 @@ import { InfoTooltip } from "../info-tooltip";
 import { GapSelect } from "./gap-select";
 import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
 import { FINISH_LABEL, FINISH_SWATCH, type Finish } from "./glass-spigots-config";
+import { glassMaxPanelSizes } from "@/lib/glass-sizes";
 import { GlassBalFallBand } from "./glass-bal-fall-band";
 
 interface GlassBalStandoffsConfigProps {
@@ -221,7 +222,7 @@ export function GlassBalStandoffsConfig({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: (MAX_PANEL_MM - 400) / 50 + 1 }, (_, i) => 400 + i * 50).map((w) => (
+                  {glassMaxPanelSizes("glass-bal-standoffs", MAX_PANEL_MM).map((w) => (
                     <SelectItem key={w} value={w.toString()}>{w}mm</SelectItem>
                   ))}
                 </SelectContent>
