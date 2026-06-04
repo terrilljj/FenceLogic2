@@ -81,6 +81,45 @@ function balGlassLine(productVariant: string, fallBand: string, width: number): 
   };
 }
 
+/**
+ * Real catalogue rail SKUs for the balustrade top rail. Two families:
+ *   series-35x35   → SER35-*   (15mm / channel / standoff styles)
+ *   nonorail-25x21 → STG-*2521 (12mm spigots)
+ * The rail length SKU bundles glazing rubber + 2 factory-fitted end caps, so an
+ * `end-cap` termination emits nothing separate (returns null). Inline joiners + the
+ * other terminators (wall-tie / 90° / adjustable-corner) map to their real SKUs.
+ * (Replaces the old made-up RAIL-{TYPE}-… placeholders.)
+ */
+function railSkus(type: string, finish: string) {
+  if (type === "nonorail-25x21" || type === "nanorail-30x21") {
+    const F = ({ black: "B", white: "MW", polished: "P", satin: "S" } as Record<string, string>)[finish] || "S";
+    return {
+      family: "Summit 25×21 NonoRail",
+      rail: `STG-R5800-2521-${F}`,
+      inlineJoiner: `STG-2521-J-${F}`,
+      term: (t: string): string | null =>
+        t === "end-cap" ? null
+        : t === "wall-tie" ? `STG-2521-WP-${F}`
+        : t === "90-degree" ? `STG-2521-90J-${F}`
+        : t === "adjustable-corner" ? `STG-2521-VJA-${F}` : null,
+    };
+  }
+  // series-35x35 (default). Rail/end-cap finish: B/MW/SA; wall-plate finish: B/MW/S;
+  // joiners are Satin-Anodised only (catalogue stocks SER35-J*-SA only).
+  const F = ({ black: "B", white: "MW", satin: "SA" } as Record<string, string>)[finish] || "SA";
+  const WF = ({ black: "B", white: "MW", satin: "S" } as Record<string, string>)[finish] || "S";
+  return {
+    family: "35-Series",
+    rail: `SER35-R5800-${F}`,
+    inlineJoiner: "SER35-J-SA",
+    term: (t: string): string | null =>
+      t === "end-cap" ? null
+      : t === "wall-tie" ? `SER35-WB-${WF}`
+      : t === "90-degree" ? "SER35-J90-SA"
+      : t === "adjustable-corner" ? "SER35-VJA-SA" : null,
+  };
+}
+
 export function calculateComponents(
   design: FenceDesign,
   slotMappings: SlotMapping[] = [],
@@ -1271,11 +1310,6 @@ export function calculateComponents(
         "series-35x35": "35×35mm Series 35",
       };
 
-      const materialNames: Record<string, string> = {
-        "stainless-steel": "Stainless Steel",
-        "anodised-aluminium": "Anodised Aluminium",
-      };
-
       const finishNamesMap: Record<string, string> = {
         "polished": "Polished",
         "satin": "Satin",
@@ -1284,20 +1318,31 @@ export function calculateComponents(
       };
 
       const railTypeName = railTypeNames[group.config.type];
-      const materialName = materialNames[group.config.material];
       const finishName = finishNamesMap[group.config.finish];
+      const r = railSkus(group.config.type, group.config.finish);
 
       if (optimization.standardLengths > 0) {
+        // Real rail length SKU — bundles glazing rubber + 2 factory-fitted end caps.
         components.push({
           qty: optimization.standardLengths,
-          description: `Top Rail ${railTypeName} 5800mm (${materialName}, ${finishName})`,
-          sku: `RAIL-${group.config.type.toUpperCase()}-5800-${group.config.material.toUpperCase()}-${group.config.finish.toUpperCase()}`,
+          description: `Top Rail ${railTypeName} 5800mm (${r.family}, ${finishName})`,
+          sku: r.rail,
         });
+
+        // Inline joiners — one per join within each section (CEIL(len/5800) − 1).
+        const inlineJoins = group.spans.reduce((sum, s) => sum + Math.max(0, Math.ceil(s.length / 5800) - 1), 0);
+        if (inlineJoins > 0) {
+          components.push({
+            qty: inlineJoins,
+            description: `${railTypeName} Inline Joiner (${r.family})`,
+            sku: r.inlineJoiner,
+          });
+        }
 
         if (optimization.wastage > 0) {
           components.push({
             qty: 1,
-            description: `Rail Optimization: ${optimization.totalLength}mm total required, ${optimization.wastage}mm wastage from ${optimization.standardLengths} × 5800mm lengths`,
+            description: `Rail cut-optimisation note: ${optimization.totalLength}mm required, ${optimization.wastage}mm offcut across ${optimization.standardLengths} × 5800mm — our team reviews cut lengths before processing`,
             sku: `RAIL-OPT-NOTE`,
           });
         }
@@ -1318,14 +1363,15 @@ export function calculateComponents(
       };
 
       terminationCounts.forEach((count, termination) => {
-        if (count > 0) {
-          const terminationName = terminationNames[termination];
-          components.push({
-            qty: count,
-            description: `${railTypeName} ${terminationName} (${materialName}, ${finishName})`,
-            sku: `RAIL-${group.config.type.toUpperCase()}-${termination.toUpperCase()}-${group.config.material.toUpperCase()}-${group.config.finish.toUpperCase()}`,
-          });
-        }
+        if (count <= 0) return;
+        // end-cap is factory-fitted to the rail length SKU → no separate emission.
+        const sku = r.term(termination);
+        if (!sku) return;
+        components.push({
+          qty: count,
+          description: `${railTypeName} ${terminationNames[termination]} (${r.family}, ${finishName})`,
+          sku,
+        });
       });
     });
   }
