@@ -52,15 +52,14 @@ type ProductDetails = { sku: string; description: string };
  *   standoffs    (Standoff PF)     15mm mono / 15mm laminated,     1280H (pre-drilled)
  */
 function balGlassLine(productVariant: string, fallBand: string, width: number): ProductDetails {
-  // VersaTilt Heavy Duty (PTS-028) is ALWAYS 17.52mm SGP laminated by design — not a
-  // fall-band swap. SGP family code derived (no laminated SKU seeded yet; operator to ratify).
   // Catalogue codes are zero-padded to 4 digits (e.g. 1000FBG-0850) — pad so the emitted
   // SKU is an EXACT catalogue match, not a near-miss.
   const w4 = String(width).padStart(4, "0");
   if (productVariant === "glass-bal-channel-hd") {
+    // Real storefront SGP family: 1100SGP-{width} (17.52mm SGP laminated, 1100H).
     return {
-      sku: `1000SGP1752-${w4}`,
-      description: `17.52mm Toughened SGP Laminated HD Channel Bal Glass ${width}W × 1000H`,
+      sku: `1100SGP-${w4}`,
+      description: `17.52mm SGP Laminated HD Channel Bal Glass ${width}W × 1100H`,
     };
   }
   const laminated = fallBand === "over-5m";
@@ -1221,7 +1220,7 @@ export function calculateComponents(
       const plateSku = isBalChannelHd ? `VER-HD-PPKIT-17-4PK` : `VER-PPKIT-15MM`;
       const plin = isBalChannelHd ? 4 : 1; // HD friction plates ship as a 4-pack
       const washerSku = isBalChannelHd ? `VER-HD-WASHER-18PK` : `VER-WASHER-14PK`;
-      const rubberSku = isBalChannelHd ? `VER-HD-17KIT-RUB` : `VER-15KIT-RUB`;
+      const rubberSku = isBalChannelHd ? `VER-HD-17KIT-RUB-2PK` : `VER-15KIT-RUB`;
       const endPlateSku = isBalChannelHd ? `VER-HD-2DMEP-${finishCode}` : `VER-2DMEP-${finishCode}`;
       const chName = isBalChannelHd ? "VersaTilt HD Channel 3600mm Deck-Mount Kit" : "VersaTilt Channel 4200mm Deck-Mount Kit";
 
@@ -1252,7 +1251,7 @@ export function calculateComponents(
         // won't seat 17.52 glass) — 1 per rail stock length (5800mm). SKU derived.
         if (isBalChannelHd) {
           const rails = Math.max(1, Math.ceil(runMm / 5800));
-          components.push({ qty: rails, description: `35-Series Rail 17.52 Runner Insert`, sku: `SER35-17KIT-RUB` });
+          components.push({ qty: rails, description: `35-Series Rail 17.52 Runner Insert`, sku: `SER35-RUB-17.52MM` });
         }
       });
 

@@ -160,12 +160,13 @@ describe("balustrade branches — slot resolution with template-literal fallback
         [], [],
       );
       const glass = comps.find(c => /Bal Glass/.test(c.description ?? ""));
-      expect(glass?.description).toContain("17.52mm Toughened SGP Laminated HD Channel Bal Glass");
-      expect(glass?.sku).toBe("1000SGP1752-1150");
+      expect(glass?.description).toContain("17.52mm SGP Laminated HD Channel Bal Glass");
+      expect(glass?.sku).toBe("1100SGP-1150");                          // real storefront SGP code
       expect(comps.some(c => /^VER-HD-3600-DMK-/.test(c.sku ?? ""))).toBe(true);
       expect(comps.some(c => c.sku === "VER-HD-PPKIT-17-4PK")).toBe(true);
       expect(comps.some(c => c.sku === "VER-HD-WASHER-18PK")).toBe(true);
-      expect(comps.some(c => c.sku === "SER35-17KIT-RUB")).toBe(true);
+      expect(comps.some(c => c.sku === "VER-HD-17KIT-RUB-2PK")).toBe(true); // real glazing rubber
+      expect(comps.some(c => c.sku === "SER35-RUB-17.52MM")).toBe(true);    // real 17.52 rail runner
       // Must NOT emit the standard 15mm channel SKUs.
       expect(comps.some(c => /^VER-4200-DMK/.test(c.sku ?? ""))).toBe(false);
     });
