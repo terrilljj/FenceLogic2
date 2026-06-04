@@ -9,6 +9,8 @@ interface ProductOption {
   name: string;
   description: string;
   visual: "frameless-glass" | "channel-glass" | "standoff-glass" | "semi-frameless-posts" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail";
+  /** Real product photo (served from client/public). When set, used instead of the generated ProductVisual. */
+  image?: string;
 }
 
 const productOptions: ProductOption[] = [
@@ -20,14 +22,16 @@ const productOptions: ProductOption[] = [
     type: "glass-pool",
     name: "Frameless Pool Fence",
     description: "Glass panels with spigot mounting",
-    visual: "frameless-glass"
+    visual: "frameless-glass",
+    image: "/styles/frameless-pool-fence.png"
   },
   {
     id: "glass-pool-channel",
     type: "glass-pool",
     name: "VersaTilt Channel Pool Fence",
     description: "12mm glass with gates, 4200mm channel",
-    visual: "channel-glass"
+    visual: "channel-glass",
+    image: "/styles/channel-pool-fence.png"
   },
   {
     id: "alu-pool-tubular",
@@ -55,49 +59,54 @@ const productOptions: ProductOption[] = [
     type: "glass-balustrade",
     name: "Frameless Balustrade 12mm",
     description: "970mm high, 12mm glass with spigots",
-    visual: "frameless-glass"
+    visual: "frameless-glass",
+    image: "/styles/frameless-balustrade-12mm.png"
   },
   {
     id: "glass-bal-spigots-15mm",
     type: "glass-balustrade",
     name: "Frameless Balustrade 15mm",
     description: "1000mm high, 15mm glass with spigots",
-    visual: "frameless-glass"
+    visual: "frameless-glass",
+    image: "/styles/frameless-balustrade-15mm.png"
   },
   {
     id: "glass-bal-channel",
     type: "glass-balustrade",
     name: "VersaTilt Channel 15mm",
     description: "1000mm high, 15mm glass, 4200mm channel",
-    visual: "channel-glass"
+    visual: "channel-glass",
+    image: "/styles/versatilt-channel-15mm.png"
   },
   {
     id: "glass-bal-channel-hd",
     type: "glass-balustrade",
     name: "VersaTilt Channel HD 17.52",
     description: "Laminated SGP glass, 3600mm channel — high wind/fall, to 50m",
-    visual: "channel-glass"
+    visual: "channel-glass",
+    image: "/styles/versatilt-channel-hd-17-52mm.png"
   },
   {
     id: "glass-bal-standoffs",
     type: "glass-balustrade",
     name: "Standoff Balustrade",
     description: "15mm glass, 1280mm height, 50mm standoffs",
-    visual: "standoff-glass"
+    visual: "standoff-glass",
+    image: "/styles/standoff-balustrade.png"
   },
   {
     id: "alu-bal-barr",
     type: "aluminium-balustrade",
     name: "BARR Balustrade",
     description: "50×25 picket aluminium balustrade (Black or White)",
-    visual: "aluminium-slats"
+    visual: "aluminium-vertical"
   },
   {
     id: "alu-bal-blade",
     type: "aluminium-balustrade",
     name: "Blade Balustrade",
     description: "Modern slim-profile aluminium balustrade",
-    visual: "aluminium-slats"
+    visual: "aluminium-blade"
   }
 ];
 
@@ -431,7 +440,11 @@ export default function Home() {
                   data-testid={`card-home-product-${product.id}`}
                 >
                   <div className="flex flex-col items-center text-center space-y-2">
-                    <ProductVisual type={product.visual} />
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} loading="lazy" className="h-24 w-auto object-contain" />
+                    ) : (
+                      <ProductVisual type={product.visual} />
+                    )}
                     <div className="space-y-1">
                       <h3 className="font-semibold text-sm">
                         {product.name}
@@ -469,7 +482,11 @@ export default function Home() {
                   data-testid={`card-home-product-${product.id}`}
                 >
                   <div className="flex flex-col items-center text-center space-y-2">
-                    <ProductVisual type={product.visual} />
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} loading="lazy" className="h-24 w-auto object-contain" />
+                    ) : (
+                      <ProductVisual type={product.visual} />
+                    )}
                     <div className="space-y-1">
                       <h3 className="font-semibold text-sm">
                         {product.name}
