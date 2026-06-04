@@ -13,6 +13,7 @@ import adminConfigRouter from "./routes/adminConfig";
 import adminSheetsRouter from "./routes/adminSheets";
 import { calculateComponents, stripSkus } from "./services/bom-calculator";
 import { loadDesignSlots } from "./services/slot-loader";
+import { sendEmail, buildQuoteEmailHtml, buildLeadMessage, buildLeadNotifyHtml } from "./services/quote-email";
 import { computeSpanLayout } from "./services/layout/layout-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -358,18 +359,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const components = calculateComponents(design, slotData, productData, slotsByVariant);
 
-      // In a real implementation, this would send an email
-      console.log("Sending quote email to:", email);
-      console.log("Design variant:", design.productVariant);
-      console.log("Components count:", components.length);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      res.json({
-        success: true,
-        message: `Quote email would be sent to ${email}`,
-        components: stripSkus(components),
+      // Price the full plan from bh_storefront (the emailed deliverable carries SKUs + prices).
+      const skus = Array.from(new Set(components.map(c => c.sku).filter((s): s is string => !!s)));
+      const priceBySku = await storage.getStorefrontPrices(skus);
+      const pricedLines = components.map(c => {
+        const unitPrice = c.sku ? (priceBySku.get(c.sku) ?? null) : null;
+        return {
+          qty: c.qty,
+          description: c.description,
+          sku: c.sku ?? "",
+          unitPrice,
+          totalPrice: unitPrice != null ? Math.round(unitPrice * c.qty * 100) / 100 : null,
+        };
       });
+      const grandTotal = Math.round(pricedLines.reduce((s, l) => s + (l.totalPrice ?? 0), 0) * 100) / 100;
+      const designName = design.name?.trim() || "Fence design";
+
+      // Dual-write (ADR 0050): the durable lead row FIRST, then best-effort email. A send
+      // failure must never lose the lead.
+      try {
+        await storage.createLead({
+          name: String(email).split("@")[0] || "Calculator lead",
+          email,
+          subject: `Calculator quote — ${designName}`,
+          message: buildLeadMessage(design, grandTotal),
+          source: "calculator",
+        });
+      } catch (leadErr) {
+        console.error("[email-quote] lead save failed:", leadErr);
+      }
+
+      // Email the full priced plan to the customer; notify the operator inbox (best-effort).
+      const emailed = await sendEmail(email, `Your Barrier Hub quote — ${designName}`,
+        buildQuoteEmailHtml(designName, pricedLines, grandTotal));
+      if (process.env.CONTACT_EMAIL) {
+        sendEmail(process.env.CONTACT_EMAIL, `New calculator lead — ${email}`,
+          buildLeadNotifyHtml(email, design, grandTotal)).catch(() => {});
+      }
+
+      res.json({ success: true, emailed, components: stripSkus(components) });
     } catch (error) {
       console.error("Error sending email:", error);
       res.status(500).json({ error: "Failed to send email" });

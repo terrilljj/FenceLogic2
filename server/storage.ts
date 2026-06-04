@@ -30,6 +30,8 @@ export interface IStorage {
   getStorefrontPrices(skus: string[]): Promise<Map<string, number>>;
   /** Primary product image path by SKU from bh_storefront.product_images (e.g. /products/X.JPG). */
   getStorefrontImages(): Promise<Record<string, string>>;
+  /** Durable lead record — writes to bh_storefront.leads (shared with the storefront, ADR 0050). */
+  createLead(lead: { name: string; email: string; phone?: string | null; subject: string; message: string; source: string }): Promise<void>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
   upsertProduct(product: InsertProduct): Promise<{ product: Product; created: boolean }>;
@@ -177,6 +179,15 @@ export class DatabaseStorage implements IStorage {
     const map: Record<string, string> = {};
     for (const r of rows) if (r?.sku && r?.url) map[String(r.sku)] = String(r.url);
     return map;
+  }
+
+  // Dual-write target for lead capture (ADR 0050) — same bh_storefront.leads table the
+  // storefront contact form writes to. The DB row is the durable record; email is best-effort.
+  async createLead(lead: { name: string; email: string; phone?: string | null; subject: string; message: string; source: string }): Promise<void> {
+    await db.execute(sqlOp`
+      INSERT INTO bh_storefront.leads (name, email, phone, subject, message, source)
+      VALUES (${lead.name}, ${lead.email}, ${lead.phone ?? null}, ${lead.subject}, ${lead.message}, ${lead.source})
+    `);
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
