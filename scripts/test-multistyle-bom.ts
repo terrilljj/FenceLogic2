@@ -59,7 +59,15 @@ const hasSpigot = M.some((c) => /spigot/i.test(c.description));
 const hasBarr = M.some((c) => /barr|post/i.test(c.description));
 console.log(`mixed contains spigot line: ${hasSpigot}  |  contains barr/post line: ${hasBarr}`);
 
-if (ok && hasSpigot && hasBarr) {
+// Single-style via SPAN override: design default is glass, every section switched to BARR
+// (how the Step-1 picker works). The BOM must be BARR, not the design default (glass).
+const overrideDesign: FenceDesign = { ...base, productVariant: "glass-pool-spigots",
+  spans: [{ ...spanBarr, productVariant: "alu-pool-barr" }] };
+const O = calculateComponents(overrideDesign);
+const overrideOk = O.some((c) => /BARR|^BR-/.test((c as any).sku || c.description)) && !O.some((c) => /spigot|Frameless Glass/i.test(c.description));
+console.log(`span-override single-style resolves to BARR (not glass): ${overrideOk}`);
+
+if (ok && hasSpigot && hasBarr && overrideOk) {
   console.log("\n✅ PASS — mixed BOM equals per-variant BOMs merged, and contains lines from both styles.");
   process.exit(0);
 } else {
