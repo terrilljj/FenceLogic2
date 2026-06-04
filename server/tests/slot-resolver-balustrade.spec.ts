@@ -79,6 +79,48 @@ describe("balustrade branches — slot resolution with template-literal fallback
     });
   });
 
+  describe("glass-bal AS1288 fall-height glass line", () => {
+    it("spigots-15mm: toughened monolithic <5m, laminated 16mm at >=5m", () => {
+      const mono = calculateComponents(
+        makeBalustradeDesign("glass-bal-spigots-15mm", [1150, 1150], { fieldValues: { "glass-bal-fall-height": "1m-5m" } }),
+        [], [],
+      );
+      const monoGlass = mono.find(c => /Frameless Bal Glass/.test(c.description ?? ""));
+      expect(monoGlass).toBeDefined();
+      expect(monoGlass?.description).toContain("15mm Toughened Frameless Bal Glass");
+      expect(monoGlass?.sku).toBe("1000FBG-1150");
+
+      const lam = calculateComponents(
+        makeBalustradeDesign("glass-bal-spigots-15mm", [1150, 1150], { fieldValues: { "glass-bal-fall-height": "over-5m" } }),
+        [], [],
+      );
+      const lamGlass = lam.find(c => /Bal Glass/.test(c.description ?? ""));
+      expect(lamGlass?.description).toContain("16mm Toughened Laminated");
+      expect(lamGlass?.sku).toBe("1000FBG-1150-LAM");
+    });
+
+    it("spigots-12mm: 11.52mm laminated at >=5m (970H)", () => {
+      const lam = calculateComponents(
+        makeBalustradeDesign("glass-bal-spigots-12mm", [1450], { fieldValues: { "glass-bal-fall-height": "over-5m" } }),
+        [], [],
+      );
+      const g = lam.find(c => /Bal Glass/.test(c.description ?? ""));
+      expect(g?.description).toContain("11.52mm Toughened Laminated Frameless Bal Glass 1450W × 970H");
+      expect(g?.sku).toBe("970NTG-1450-LAM");
+    });
+
+    it("standoffs: 15mm 1280H pre-drilled; no stale pool GP- line", () => {
+      const comps = calculateComponents(
+        makeBalustradeDesign("glass-bal-standoffs", [1000], { spigotColor: "polished", spigotMounting: "core-drilled" }),
+        [], [],
+      );
+      const g = comps.find(c => /Bal Glass/.test(c.description ?? ""));
+      expect(g?.description).toContain("15mm Toughened Standoff Bal Glass 1000W × 1280H, pre-drilled");
+      expect(g?.sku).toBe("1280S-1000");
+      expect(comps.some(c => /^GP-\d+-1200-12$/.test(c.sku ?? ""))).toBe(false);
+    });
+  });
+
   describe("alu-bal-barr", () => {
     it("emits real slot SKU when 'panel' slot matches discriminators", () => {
       const products = [

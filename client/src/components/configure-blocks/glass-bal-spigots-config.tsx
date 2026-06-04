@@ -9,6 +9,7 @@ import { InfoTooltip } from "../info-tooltip";
 import { GapSelect } from "./gap-select";
 import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
 import { COVER_MATRIX, MADRID_COVERS, FINISH_BY_FAMILY, FINISH_LABEL, FINISH_SWATCH, type Finish } from "./glass-spigots-config";
+import { GlassBalFallBand, glassFallBand } from "./glass-bal-fall-band";
 
 interface GlassBalSpigotsConfigProps {
   span: SpanConfig;
@@ -185,6 +186,31 @@ export function GlassBalSpigotsConfig({
             Panel weight ≈ <span className="font-semibold text-foreground">{weightKg.toFixed(1)} kg</span>{" "}
             per {standardPanelWidth}×{panelHeightMm}mm panel ({thicknessMm}mm glass)
           </p>
+
+          {/* AS1288 fall-height band — drives glass selection (toughened <5m / laminated ≥5m).
+              The 4.88m run-cap note shows only for Madrid Standard (12mm + family=madrid). */}
+          <div className="mt-3">
+            <GlassBalFallBand
+              span={span}
+              updateSpan={updateSpan}
+              productVariant={productVariant}
+              showRunCapNote={thickness === "12mm" && currentFamily === "madrid"}
+            />
+          </div>
+
+          {/* Madrid Standard run-length cap: certified to 4.88m per run. The cap only binds
+              at a ≥1m fall (NCC barrier); under 1m it is lifted. Over the cap → movement joint
+              / split run, or switch to Nova (no per-run cap). */}
+          {thickness === "12mm" && currentFamily === "madrid" && glassFallBand(span) !== "under-1m" && span.length > 4880 && (
+            <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2.5 dark:border-amber-900 dark:bg-amber-950/30" data-testid={`span-${span.spanId}-runcap-warning`}>
+              <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                Run exceeds Madrid Standard&apos;s 4.88m certified limit
+              </p>
+              <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                This {(span.length / 1000).toFixed(2)}m run is over the 4.88m single-run cap. Split it with a movement joint into separate certified runs, or switch the spigot family to <strong>Nova</strong> (no per-run cap).
+              </p>
+            </div>
+          )}
         </AccordionContent>
       </AccordionItem>
 

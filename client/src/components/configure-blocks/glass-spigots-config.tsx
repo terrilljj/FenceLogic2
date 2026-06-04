@@ -15,6 +15,7 @@ import { CustomPanelControls } from "../custom-panel-controls";
 import { GapSelect } from "./gap-select";
 import { SpigotFamilyPicker, familyImageSrc, type SpigotFamily } from "./spigot-family-picker";
 import { PanelThumb } from "./panel-thumb";
+import { GlassBalFallBand } from "./glass-bal-fall-band";
 
 // Pool spigot families (SF-1 §2.1: 5 V1 families; Nova removed for pool).
 // imageSku = base-plated black variant (Rio has no black → satin).
@@ -666,6 +667,14 @@ export function GlassSpigotsConfig({
             Panel weight ≈ <span className="font-semibold text-foreground">{weightKg.toFixed(1)} kg</span>{" "}
             per {standardPanelWidth}×{glassHeightMm}mm panel ({glassThicknessMm}mm glass)
           </p>
+
+          {/* AS1288 fall-height band — balustrade channel only (not pool). VersaTilt has no
+              run-length cap, so no run-cap note. */}
+          {isBalChannel && (
+            <div className="mt-3">
+              <GlassBalFallBand span={span} updateSpan={updateSpan} productVariant={productVariant} />
+            </div>
+          )}
         </AccordionContent>
       </AccordionItem>
 
