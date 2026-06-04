@@ -1238,22 +1238,29 @@ export function calculateComponents(
         components.push({ qty: Math.ceil(totalPins / 10), description: `VersaTilt Channel Alignment Pins (10-pack)`, sku: `VER-PINS` });
       }
     }
-    // Standoff hardware: emit 4 × 50mm standoffs per panel. Standoff balustrade is fixed
-    // at 1280mm height per operator data — count is panel-based, not height-based.
+    // Standoff hardware — real catalogue SKUs (was placeholder STANDOFF-50-*):
+    //   Adjustable → GSA-50{30|45}-{B/MW/P/S}   Fixed → GS50{30|50}{B/P/S} (white = -MW)
+    // Count per pre-drilled panel: 4 if ≤750mm wide, else 6 (SF-16 hole pattern).
     if (isStandoffSystem) {
+      const F: Record<string, string> = { polished: "P", satin: "S", black: "B", white: "MW" };
       (design.spans as any[]).forEach((span: any) => {
-        const numPanels = span.panelLayout?.panels?.length || 0;
-        if (numPanels === 0) return;
+        const panels: number[] = span.panelLayout?.panels ?? [];
+        if (panels.length === 0) return;
         const fieldValues = (span as any).fieldValues || {};
-        const finish = fieldValues['standoff-finish'] || fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
+        const finish = (span as any).spigotColor || fieldValues["standoff-finish"] || "polished";
+        const body = fieldValues["standoff-body"] || "adjustable";
+        const depth = fieldValues["standoff-depth"] || (body === "fixed" ? "30" : "30");
+        const f = F[finish] || "P";
+        const sku = body === "fixed"
+          ? (f === "MW" ? `GS50${depth}-MW` : `GS50${depth}${f}`)
+          : `GSA-50${depth}-${f}`;
+        const qty = panels.reduce((sum, w) => sum + (w <= 750 ? 4 : 6), 0);
+        const bodyLabel = body === "fixed" ? "Fixed" : "Adjustable";
         pushSlotOrFallback(
-          numPanels * 4,
-          'standoff-hardware',
-          { finish },
-          {
-            description: `50mm Glass Standoff ${finish}`,
-            sku: `STANDOFF-50-${String(finish).toUpperCase()}`,
-          },
+          qty,
+          "standoff-hardware",
+          { finish, body, depth },
+          { description: `50mm ${bodyLabel} Glass Standoff ${depth}mm (${finish})`, sku },
         );
       });
     }
