@@ -533,11 +533,9 @@ export function calculateComponents(
       //    Side-mount swaps the run to the shared AIRE face-mount engine (design-level, once).
       if (sideMounted) {
         if (spanIndex === 0) {
-          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => {
-            const ps: number[] = s.panelLayout?.panels ?? [];
-            const ts = s.panelLayout?.panelTypes ?? ps.map(() => "standard");
-            return sum + ps.filter((_: number, i: number) => (ts[i] || "standard") !== "gate").length;
-          }, 0);
+          // Every panel boundary needs an AIRE post — gates included (the gate's hinge/latch
+          // posts ARE AIRE posts under side-mount, operator 2026-06-04), so count all panels.
+          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => sum + (s.panelLayout?.panels?.length ?? 0), 0);
           const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
           emitFaceMountPosts("B", finishName, faceMaterial, fmPanels, fmCorners);
         }
@@ -661,15 +659,13 @@ export function calculateComponents(
       }
 
       // 3. Inline posts (BARR 50×25) + covers, substrate-driven. Side-mount swaps the whole
-      //    run to the shared AIRE face-mount engine (design-level, once at span 0); the gate
-      //    keeps its cross-range gate posts below.
+      //    run to the shared AIRE face-mount engine (design-level, once at span 0); gate posts
+      //    are AIRE too (counted in the run total — the gate block skips its cross-range posts).
       if (sideMounted) {
         if (spanIndex === 0) {
-          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => {
-            const ps: number[] = s.panelLayout?.panels ?? [];
-            const ts = s.panelLayout?.panelTypes ?? ps.map(() => "standard");
-            return sum + ps.filter((_: number, i: number) => (ts[i] || "standard") !== "gate").length;
-          }, 0);
+          // Every panel boundary needs an AIRE post — gates included (the gate's hinge/latch
+          // posts ARE AIRE posts under side-mount, operator 2026-06-04), so count all panels.
+          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => sum + (s.panelLayout?.panels?.length ?? 0), 0);
           const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
           emitFaceMountPosts(code, finishName, faceMaterial, fmPanels, fmCorners);
         }
@@ -735,18 +731,21 @@ export function calculateComponents(
             { description: `D&D TruClose Self-Closing Hinge Pair (White)`, sku: `TC-H-AT-2L-W` },
           );
         }
-        // Two cross-range gate posts (hinge + latch side) + their covers.
-        pushSlotOrFallback(
-          2, 'post',
-          { type: 'gate-post', finish: code, mounting: basePlated ? 'base-plate' : 'standard' },
-          { description: `BARR ${xPostDesc} — gate (${finishName})`, sku: xPostSku },
-        );
-        if (xCoverSku) {
+        // Two cross-range gate posts (hinge + latch side) + their covers. Skipped for
+        // side-mount: the gate's posts are AIRE and already in the face-mount run total.
+        if (!sideMounted) {
           pushSlotOrFallback(
-            2, 'post-cover',
-            { type: 'cross-range', finish: code },
-            { description: `BARR ${xCoverDesc} — gate post (${finishName})`, sku: xCoverSku },
+            2, 'post',
+            { type: 'gate-post', finish: code, mounting: basePlated ? 'base-plate' : 'standard' },
+            { description: `BARR ${xPostDesc} — gate (${finishName})`, sku: xPostSku },
           );
+          if (xCoverSku) {
+            pushSlotOrFallback(
+              2, 'post-cover',
+              { type: 'cross-range', finish: code },
+              { description: `BARR ${xCoverDesc} — gate post (${finishName})`, sku: xCoverSku },
+            );
+          }
         }
       }
 
@@ -860,11 +859,9 @@ export function calculateComponents(
       //    span 0); else substrate-driven cross-range posts + domical covers (base-plated).
       if (sideMounted) {
         if (spanIndex === 0) {
-          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => {
-            const ps: number[] = s.panelLayout?.panels ?? [];
-            const ts = s.panelLayout?.panelTypes ?? ps.map(() => "standard");
-            return sum + ps.filter((_: number, i: number) => (ts[i] || "standard") !== "gate").length;
-          }, 0);
+          // Every panel boundary needs an AIRE post — gates included (the gate's hinge/latch
+          // posts ARE AIRE posts under side-mount, operator 2026-06-04), so count all panels.
+          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => sum + (s.panelLayout?.panels?.length ?? 0), 0);
           const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
           emitFaceMountPosts(code, finishName, faceMaterial, fmPanels, fmCorners);
         }

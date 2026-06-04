@@ -83,8 +83,8 @@ const SUBSTRATE_HARDWARE: Record<
     fixingChip: "1 / 10 posts",
     fixingTip: "Pourable grout — 1 × 10kg bag per 10 posts plus a spare.",
   },
-  // Side-mount uses the shared AIRE face-mount posts (B/W only — Monument not available
-  // side-mounted). Fixing material defaults to concrete until the picker lands.
+  // Side-mount uses the shared AIRE face-mount posts (B/W/MN — AR-1500-*-MN exists per
+  // operator 2026-06-04). Fixing material defaults to concrete until the picker lands.
   "side-mounted": {
     short: "Side-mounted",
     postSku: (c) => `AR-1500-FMID-${c}`,
