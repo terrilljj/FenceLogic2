@@ -38,6 +38,41 @@ type ProductLookup = {
 
 type ProductDetails = { sku: string; description: string };
 
+/**
+ * Glass-balustrade panel line — correct family / height / thickness per system, with the
+ * AS1288 §7 laminated swap at a ≥5m fall (fallBand "over-5m"). Widths are made-to-size
+ * (equalised by the solver), mirroring the existing GP-…-1200-12 made-to-size convention.
+ *
+ * SKU families are the calc's catalogue bal-glass families (1000FBG / 970NTG / 1280S);
+ * the "-LAM" laminated suffix is DERIVED — no laminated SKU exists in the catalogue yet
+ * (operator to ratify / seed). Glass builds per system are from the PTS extractions:
+ *   spigots-12mm (Madrid Standard) 12mm mono / 11.52mm laminated, 970H
+ *   spigots-15mm (Madrid Deluxe)   15mm mono / 16mm laminated,     1000H
+ *   channel      (VersaTilt)       15mm mono / 15mm laminated,     1000H
+ *   standoffs    (Standoff PF)     15mm mono / 15mm laminated,     1280H (pre-drilled)
+ */
+function balGlassLine(productVariant: string, fallBand: string, width: number): ProductDetails {
+  const laminated = fallBand === "over-5m";
+  let family: string, height: number, mono: number, lam: number, label: string;
+  if (productVariant.includes("15mm")) {
+    family = "1000FBG"; height = 1000; mono = 15; lam = 16; label = "Frameless Bal Glass";
+  } else if (productVariant.includes("12mm")) {
+    family = "970NTG"; height = 970; mono = 12; lam = 11.52; label = "Frameless Bal Glass";
+  } else if (productVariant === "glass-bal-standoffs") {
+    family = "1280S"; height = 1280; mono = 15; lam = 15; label = "Standoff Bal Glass";
+  } else {
+    // glass-bal-channel — shares the 15mm/1000H frameless bal glass family
+    family = "1000FBG"; height = 1000; mono = 15; lam = 15; label = "Channel Bal Glass";
+  }
+  const thick = laminated ? lam : mono;
+  const buildWord = laminated ? "Toughened Laminated" : "Toughened";
+  const drilled = productVariant === "glass-bal-standoffs" ? ", pre-drilled" : "";
+  return {
+    sku: laminated ? `${family}-${width}-LAM` : `${family}-${width}`,
+    description: `${thick}mm ${buildWord} ${label} ${width}W × ${height}H${drilled}`,
+  };
+}
+
 export function calculateComponents(
   design: FenceDesign,
   slotMappings: SlotMapping[] = [],
@@ -184,6 +219,12 @@ export function calculateComponents(
   const isStandoffSystem = design.productVariant === "glass-bal-standoffs";
   const isBalBarr = design.productVariant === "alu-bal-barr";
   const isBalBlade = design.productVariant === "alu-bal-blade";
+  // Glass balustrade panel families take their own glass line (correct height/thickness +
+  // AS1288 laminated swap at ≥5m), NOT the pool GP-…-1200-12 fallback.
+  const isGlassBalPanel =
+    design.productVariant.startsWith("glass-bal-spigots") ||
+    design.productVariant === "glass-bal-channel" ||
+    design.productVariant === "glass-bal-standoffs";
   const gatesAllowed = !design.productVariant.includes("bal-");
 
   // Cast spans to any — design JSON from clients may carry extra dynamic properties
@@ -834,20 +875,27 @@ export function calculateComponents(
         const panelType = panelTypes[index] || "standard";
 
         if (panelType === "standard") {
-          const mappedProduct = lookupSlot("glass-panels", { size_mm: String(panelWidth) });
-
-          if (mappedProduct) {
-            components.push({
-              qty: 1,
-              description: mappedProduct.description,
-              sku: mappedProduct.sku,
-            });
+          if (isGlassBalPanel) {
+            // Balustrade glass: correct family/height/thickness + AS1288 laminated swap at ≥5m.
+            const fallBand = (span.fieldValues?.["glass-bal-fall-height"] as string) || "1m-5m";
+            const line = balGlassLine(design.productVariant, fallBand, panelWidth);
+            components.push({ qty: 1, description: line.description, sku: line.sku });
           } else {
-            components.push({
-              qty: 1,
-              description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-              sku: `GP-${panelWidth}-1200-12`,
-            });
+            const mappedProduct = lookupSlot("glass-panels", { size_mm: String(panelWidth) });
+
+            if (mappedProduct) {
+              components.push({
+                qty: 1,
+                description: mappedProduct.description,
+                sku: mappedProduct.sku,
+              });
+            } else {
+              components.push({
+                qty: 1,
+                description: `Glass Panel ${panelWidth}mm x 1200mm (12mm thick)`,
+                sku: `GP-${panelWidth}-1200-12`,
+              });
+            }
           }
         } else if (panelType === "raked") {
           const isLeftRaked = index === 0 && span.leftRakedPanel?.enabled;

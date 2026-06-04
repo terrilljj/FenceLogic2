@@ -10,6 +10,7 @@ import { InfoTooltip } from "../info-tooltip";
 import { GapSelect } from "./gap-select";
 import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
 import { FINISH_LABEL, FINISH_SWATCH, type Finish } from "./glass-spigots-config";
+import { GlassBalFallBand } from "./glass-bal-fall-band";
 
 interface GlassBalStandoffsConfigProps {
   span: SpanConfig;
@@ -260,6 +261,12 @@ export function GlassBalStandoffsConfig({
             Panel weight ≈ <span className="font-semibold text-foreground">{weightKg.toFixed(1)} kg</span>{" "}
             per {standardPanelWidth}×{GLASS_HEIGHT_MM}mm panel ({GLASS_THICKNESS_MM}mm glass, pre-drilled)
           </p>
+
+          {/* AS1288 fall-height band — drives glass selection (toughened <5m / laminated ≥5m).
+              Standoff point-fix has no run-length cap. */}
+          <div className="mt-3">
+            <GlassBalFallBand span={span} updateSpan={updateSpan} productVariant="glass-bal-standoffs" />
+          </div>
         </AccordionContent>
       </AccordionItem>
 
