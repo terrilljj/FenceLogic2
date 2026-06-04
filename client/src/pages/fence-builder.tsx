@@ -12,7 +12,8 @@ import { STEP3_REVIEW_TIPS, step2Tips } from "@/components/configure-blocks/wiza
 import { StepStyleMeasure } from "@/components/configure-blocks/wizard/step-style-measure";
 import { StepReview } from "@/components/configure-blocks/wizard/step-review";
 import { useToast } from "@/hooks/use-toast";
-import { FenceDesign, FenceShape, SpanConfig, SavedFenceDesign, ProductType, ProductVariant } from "@shared/schema";
+import { FenceDesign, FenceShape, SpanConfig, SavedFenceDesign, ProductType, ProductVariant, spanVariant } from "@shared/schema";
+import { StylePicker } from "@/components/configure-blocks/wizard/style-picker";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Dialog,
@@ -762,6 +763,8 @@ export default function FenceLogic() {
                 {/* ── Step 2 — Configure each side ─────────────────────────── */}
                 {currentStep === 2 && (() => {
                   const activeSpan = design.spans.find((s) => s.spanId === selectedSpanId) ?? design.spans[0];
+                  // Each section configures against ITS OWN style, not the design default.
+                  const activeVariant = spanVariant(design, activeSpan);
                   return (
                     <div className="grid gap-4 lg:grid-cols-[170px_1fr_300px] xl:grid-cols-[200px_1fr_340px] items-start">
                       <SectionSwitcher
@@ -774,19 +777,39 @@ export default function FenceLogic() {
                       <div
                         onMouseEnter={() => setActiveSpanId(activeSpan.spanId)}
                         onMouseLeave={() => setActiveSpanId(undefined)}
+                        className="space-y-3"
                       >
+                        {/* Style override — fix a Step-1 mis-pick without leaving Step 2 */}
+                        <div className="flex flex-wrap items-center gap-2 rounded-md border border-card-border bg-muted/30 px-3 py-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Style</span>
+                          <StylePicker
+                            value={activeVariant}
+                            onChange={(v) => {
+                              const cap = ptsMaxPanelFor(v);
+                              handleSpanUpdate(activeSpan.spanId, {
+                                ...activeSpan,
+                                productVariant: v,
+                                ...(cap ? { maxPanelWidth: Math.min(activeSpan.maxPanelWidth, cap) } : {}),
+                              });
+                            }}
+                          />
+                        </div>
                         <SpanConfigPanel
+                          // Remount when the section's STYLE changes (override or cross-style
+                          // section switch) so style-specific mount-time defaults re-fire.
+                          // Same-style section switches keep the key → no remount (props update).
+                          key={activeVariant}
                           span={activeSpan}
                           allSpans={design.spans}
                           onUpdate={(updatedSpan) => handleSpanUpdate(activeSpan.spanId, updatedSpan)}
-                          productVariant={design.productVariant}
+                          productVariant={activeVariant}
                           calculatorConfig={calculatorConfig}
                           showLeftGap={true}
                           showRightGap={true}
                           showSectionLength={false}
                         />
                       </div>
-                      <TipsPanel tips={step2Tips(design.productVariant, activeSpan)} />
+                      <TipsPanel tips={step2Tips(activeVariant, activeSpan)} />
                     </div>
                   );
                 })()}
