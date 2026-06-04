@@ -235,6 +235,50 @@ function computeOptimalHingePanelSize(span: LayoutRequestSpan, gatesAllowed: boo
  * Compute a span's panel layout. Handles every product variant the calculator offers
  * (the dispatch that previously lived in the client's layout effect).
  */
+// VersaTilt HD 17.52 SGP laminated glass is fixed-stock (1100SGP-{w}): non-uniform steps
+// (100mm below 1000mm, 50mm above). Snap the equalised panels onto these stock sizes so every
+// HD glass line is an EXACT catalogue SKU; the inter-panel gaps absorb the small delta. If a
+// snap would push a gap out of [0,125], keep the original (the rare short-run case).
+const SGP_STOCK_SIZES = [600, 700, 800, 900, 1000, 1050, 1100, 1150, 1200, 1250, 1300];
+function snapPanelsToStock(layout: PanelLayout, sizes: number[]): PanelLayout {
+  if (!layout?.panels?.length) return layout;
+  const min = sizes[0], max = sizes[sizes.length - 1];
+  const floor = (w: number) => { let f = min; for (const s of sizes) if (s <= w) f = s; return f; };
+  const ceil = (w: number) => { for (const s of sizes) if (s >= w) return s; return max; };
+  if (layout.panels.every((w) => sizes.includes(w))) return layout; // already all on-stock
+
+  // Start every panel at its floor stock size, then greedily flip the cheapest panels up to
+  // their ceil so the panel sum lands as close to the original as possible — this lets an
+  // unequal stock split (e.g. 900 + 1000) absorb a width the gaps can't.
+  const origSum = layout.panels.reduce((a, b) => a + b, 0);
+  const snapped = layout.panels.map(floor);
+  const flips = layout.panels
+    .map((w, i) => ({ i, inc: ceil(w) - floor(w) }))
+    .filter((x) => x.inc > 0)
+    .sort((a, b) => a.inc - b.inc);
+  let sum = snapped.reduce((a, b) => a + b, 0);
+  for (const f of flips) {
+    if (sum >= origSum) break;
+    snapped[f.i] = ceil(layout.panels[f.i]);
+    sum += f.inc;
+  }
+
+  const delta = origSum - sum; // residual (small) — absorbed by the gaps
+  const gaps = [...(layout.gaps ?? [])];
+  if (gaps.length > 0 && delta !== 0) {
+    const per = delta / gaps.length;
+    for (let i = 0; i < gaps.length; i++) gaps[i] = Math.round(gaps[i] + per);
+  }
+  if (gaps.some((g) => g < 0 || g > 125)) return layout; // not viable — leave to manual review
+  return {
+    ...layout,
+    panels: snapped,
+    gaps,
+    totalPanelWidth: snapped.reduce((a, b) => a + b, 0),
+    totalGapWidth: gaps.reduce((a, b) => a + b, 0),
+  };
+}
+
 export function computeSpanLayout(request: LayoutRequest): LayoutResponse {
   const { productVariant, gatesAllowed, span } = request;
 
@@ -334,6 +378,7 @@ export function computeSpanLayout(request: LayoutRequest): LayoutResponse {
     );
   } else {
     layout = computeGlassLayout(span, gatesAllowed);
+    if (productVariant === "glass-bal-channel-hd") layout = snapPanelsToStock(layout, SGP_STOCK_SIZES);
   }
 
   return {
