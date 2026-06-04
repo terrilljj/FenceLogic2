@@ -132,7 +132,9 @@ const allSkus = [...new Set([...perStyle.values()].flatMap(v => [...v.lines.keys
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();
 
-const calcCodes = new Set<string>((await client.query("SELECT code FROM public.products")).rows.map((r: any) => r.code));
+// The COMPLETE catalogue is bh_storefront.products — public.products is the calc's stale,
+// incomplete subset (it lacks the channel family etc.). Check exactness against storefront.
+const calcCodes = new Set<string>((await client.query("SELECT sku AS code FROM bh_storefront.products")).rows.map((r: any) => r.code));
 const priceMap = new Map<string, number>();
 for (const r of (await client.query("SELECT sku, retail_price_inc_gst FROM bh_storefront.products WHERE sku = ANY($1)", [allSkus])).rows as any[]) {
   if (r.retail_price_inc_gst != null) priceMap.set(r.sku, Number(r.retail_price_inc_gst));
