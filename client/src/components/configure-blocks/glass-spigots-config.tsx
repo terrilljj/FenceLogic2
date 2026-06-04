@@ -300,7 +300,8 @@ export function GlassSpigotsConfig({
   const glassThicknessMm = isBalChannelHd ? 17.52 : isBalChannel ? 15 : GLASS_THICKNESS_MM;
   const glassHeightMm = isBalChannel ? 1000 : STANDARD_PANEL_HEIGHT_MM;
   // PTS-003 max span for the 15mm bal channel: 1400mm (pool styles go to 2000mm).
-  const maxPanelCapMm = isBalChannel ? 1400 : 2000;
+  // HD = 1300mm — the 1100SGP laminated family's max stock size.
+  const maxPanelCapMm = isBalChannelHd ? 1300 : isBalChannel ? 1400 : 2000;
   const standardPanelWidth = span.panelLayout?.panels?.length
     ? Math.max(...span.panelLayout.panels)
     : span.maxPanelWidth;

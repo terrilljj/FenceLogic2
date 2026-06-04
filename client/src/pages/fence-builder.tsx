@@ -1083,7 +1083,8 @@ export default function FenceLogic() {
 function ptsMaxPanelFor(variant: string): number | undefined {
   if (variant === "glass-bal-spigots-15mm") return 1400;
   if (variant === "glass-bal-spigots-12mm" || variant === "glass-bal-spigots") return 1500;
-  if (variant === "glass-bal-channel" || variant === "glass-bal-channel-hd") return 1400;
+  if (variant === "glass-bal-channel-hd") return 1300; // 1100SGP max stock size
+  if (variant === "glass-bal-channel") return 1400;
   if (variant === "glass-bal-standoffs") return 1200;
   return undefined;
 }
