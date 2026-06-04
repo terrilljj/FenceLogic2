@@ -8,7 +8,7 @@ import { ProductSelector } from "@/components/product-selector";
 import { SectionSwitcher } from "@/components/configure-blocks/section-switcher";
 import { WizardStepper, type WizardStep } from "@/components/configure-blocks/wizard/wizard-stepper";
 import { TipsPanel } from "@/components/configure-blocks/wizard/tips-panel";
-import { STEP1_MEASURE_TIPS, STEP1_FOOTNOTE, STEP3_REVIEW_TIPS, step2Tips } from "@/components/configure-blocks/wizard/joe-tips";
+import { STEP3_REVIEW_TIPS, step2Tips } from "@/components/configure-blocks/wizard/joe-tips";
 import { StepStyleMeasure } from "@/components/configure-blocks/wizard/step-style-measure";
 import { StepReview } from "@/components/configure-blocks/wizard/step-review";
 import { useToast } from "@/hooks/use-toast";
@@ -326,10 +326,25 @@ export default function FenceLogic() {
   const handleAddSectionStep1 = useCallback(() => {
     setDesign((prev) => {
       if (prev.spans.length >= 10) return prev;
-      const defaultMaxPanel = calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800;
       const targetCount = prev.spans.length + 1;
-      const spans = resizeSpans(prev.spans, targetCount, defaultMaxPanel);
-      return { ...prev, spans, shape: countToShape(targetCount), customSides: Math.max(prev.customSides ?? 0, targetCount) };
+      const newId = String.fromCharCode(65 + prev.spans.length);
+      const last = prev.spans[prev.spans.length - 1];
+      // Inherit the previous section's style + attachment so a long same-style run is a few
+      // taps; the user re-points style/length only where the run actually changes.
+      const newSpan: SpanConfig = last
+        ? {
+            ...last,
+            spanId: newId,
+            name: undefined,
+            fieldValues: last.fieldValues ? { ...last.fieldValues } : undefined,
+          }
+        : createDefaultSpan(newId, calculatorConfig?.fields?.maxPanelMm?.defaultValue || 1800);
+      return {
+        ...prev,
+        spans: [...prev.spans, newSpan],
+        shape: countToShape(targetCount),
+        customSides: Math.max(prev.customSides ?? 0, targetCount),
+      };
     });
   }, [calculatorConfig]);
 
@@ -707,8 +722,7 @@ export default function FenceLogic() {
               <>
                 {/* ── Step 1 — Style & Measure ─────────────────────────────── */}
                 {currentStep === 1 && (
-                  <div className="grid gap-4 lg:grid-cols-[1fr_320px] items-start">
-                    <StepStyleMeasure
+                  <StepStyleMeasure
                       design={design}
                       productLabel={productVariantLabel(design.productVariant)}
                       onChangeProduct={() => setShowProductMockup(true)}
@@ -742,9 +756,7 @@ export default function FenceLogic() {
                       }}
                       onAddSection={handleAddSectionStep1}
                       onDeleteSection={handleDeleteSection}
-                    />
-                    <TipsPanel tips={STEP1_MEASURE_TIPS} footnote={STEP1_FOOTNOTE} />
-                  </div>
+                  />
                 )}
 
                 {/* ── Step 2 — Configure each side ─────────────────────────── */}

@@ -8,27 +8,32 @@
  */
 import type { SpanConfig } from "@shared/schema";
 
+export type StyleUse = "pool" | "balustrade";
+
 export interface StyleOption {
   id: string;            // ProductVariant
   label: string;
+  use: StyleUse;         // Pool Fence vs Balustrade — the first pick in the style picker
   group: "glass" | "aluminium";
   image?: string;        // home-page photo (glass styles); aluminium uses an icon
 }
 
-// The 12 V1 launch styles, in the home-page order.
+// The 12 V1 launch styles, in the home-page order. `use` separates Pool Fence from
+// Balustrade so the picker can gate by application first (you can't cross-pick a bal
+// style onto a pool run and have to restart the config).
 export const STYLE_OPTIONS: StyleOption[] = [
-  { id: "glass-pool-spigots", label: "Frameless Pool", group: "glass", image: "/styles/frameless-pool-fence.png" },
-  { id: "glass-pool-channel", label: "Channel Pool", group: "glass", image: "/styles/channel-pool-fence.png" },
-  { id: "alu-pool-tubular", label: "Flat Top Pool", group: "aluminium" },
-  { id: "alu-pool-barr", label: "BARR Pool", group: "aluminium" },
-  { id: "alu-pool-blade", label: "Blade Pool", group: "aluminium" },
-  { id: "glass-bal-spigots-12mm", label: "Frameless Bal 12mm", group: "glass", image: "/styles/frameless-balustrade-12mm.png" },
-  { id: "glass-bal-spigots-15mm", label: "Frameless Bal 15mm", group: "glass", image: "/styles/frameless-balustrade-15mm.png" },
-  { id: "glass-bal-channel", label: "Channel Bal 15mm", group: "glass", image: "/styles/versatilt-channel-15mm.png" },
-  { id: "glass-bal-channel-hd", label: "Channel HD 17.52", group: "glass", image: "/styles/versatilt-channel-hd-17-52mm.png" },
-  { id: "glass-bal-standoffs", label: "Standoff Bal", group: "glass", image: "/styles/standoff-balustrade.png" },
-  { id: "alu-bal-barr", label: "BARR Bal", group: "aluminium" },
-  { id: "alu-bal-blade", label: "Blade Bal", group: "aluminium" },
+  { id: "glass-pool-spigots", label: "Frameless", use: "pool", group: "glass", image: "/styles/frameless-pool-fence.png" },
+  { id: "glass-pool-channel", label: "Channel", use: "pool", group: "glass", image: "/styles/channel-pool-fence.png" },
+  { id: "alu-pool-tubular", label: "Flat Top", use: "pool", group: "aluminium" },
+  { id: "alu-pool-barr", label: "BARR", use: "pool", group: "aluminium" },
+  { id: "alu-pool-blade", label: "Blade", use: "pool", group: "aluminium" },
+  { id: "glass-bal-spigots-12mm", label: "Frameless 12mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-12mm.png" },
+  { id: "glass-bal-spigots-15mm", label: "Frameless 15mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-15mm.png" },
+  { id: "glass-bal-channel", label: "Channel 15mm", use: "balustrade", group: "glass", image: "/styles/versatilt-channel-15mm.png" },
+  { id: "glass-bal-channel-hd", label: "Channel HD 17.52", use: "balustrade", group: "glass", image: "/styles/versatilt-channel-hd-17-52mm.png" },
+  { id: "glass-bal-standoffs", label: "Standoff", use: "balustrade", group: "glass", image: "/styles/standoff-balustrade.png" },
+  { id: "alu-bal-barr", label: "BARR", use: "balustrade", group: "aluminium" },
+  { id: "alu-bal-blade", label: "Blade", use: "balustrade", group: "aluminium" },
 ];
 
 export function styleLabel(variant: string): string {
@@ -36,6 +41,18 @@ export function styleLabel(variant: string): string {
 }
 export function styleImage(variant: string): string | undefined {
   return STYLE_OPTIONS.find((s) => s.id === variant)?.image;
+}
+/** Label with its application, for the row chip / Joe where there's no use-tab for context. */
+export function styleFullLabel(variant: string): string {
+  const s = STYLE_OPTIONS.find((o) => o.id === variant);
+  if (!s) return variant;
+  return `${s.label} ${s.use === "pool" ? "Pool" : "Balustrade"}`;
+}
+export function styleUse(variant: string): StyleUse {
+  return STYLE_OPTIONS.find((s) => s.id === variant)?.use ?? (variant.includes("-pool") ? "pool" : "balustrade");
+}
+export function stylesForUse(use: StyleUse): StyleOption[] {
+  return STYLE_OPTIONS.filter((s) => s.use === use);
 }
 
 export type AttachmentIcon = "core-drill" | "base-plate" | "side-mount" | "deck" | "face" | "in-ground" | "concrete" | "timber" | "steel";
