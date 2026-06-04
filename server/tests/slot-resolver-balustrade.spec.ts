@@ -53,10 +53,13 @@ describe("balustrade branches — slot resolution with template-literal fallback
       });
 
       const components = calculateComponents(design, [], []);
-      // Rail termination SKUs come from the isGlassBalustrade rail-optimisation block
-      // and only appear when the suffixed variant is matched via startsWith.
-      const railTerminations = components.filter(c => (c.sku ?? "").startsWith("RAIL-NONORAIL-25X21-"));
-      expect(railTerminations.length).toBeGreaterThan(0);
+      // NonoRail 25×21 maps to the real Summit catalogue family (STG-…-2521), not a
+      // made-up RAIL-* placeholder. Rail length SKU + the wall-tie terminator.
+      const rail = components.find(c => (c.sku ?? "").startsWith("STG-R5800-2521-"));
+      expect(rail).toBeDefined();
+      // wall-tie termination → STG-2521-WP-{finish}; end-cap is factory-fitted (no SKU).
+      expect(components.some(c => (c.sku ?? "").startsWith("STG-2521-WP-"))).toBe(true);
+      expect(components.some(c => /^RAIL-(NONORAIL|SERIES)/.test(c.sku ?? ""))).toBe(false);
     });
   });
 
@@ -76,6 +79,30 @@ describe("balustrade branches — slot resolution with template-literal fallback
       const standoff = components.find(c => c.sku === "STANDOFF-50-POLISHED");
       expect(standoff).toBeDefined();
       expect(standoff?.qty).toBe(12);
+    });
+  });
+
+  describe("35-Series rail → real SER35 catalogue SKUs", () => {
+    it("emits SER35-R5800-{finish} + real terminators, no RAIL-* placeholder", () => {
+      const design = makeBalustradeDesign("glass-bal-spigots-15mm", [1400, 1400], {
+        handrail: { enabled: true, type: "series-35x35", material: "anodised-aluminium", finish: "satin", startTermination: "wall-tie", endTermination: "90-degree" },
+      });
+      const comps = calculateComponents(design, [], []);
+      expect(comps.some(c => c.sku === "SER35-R5800-SA")).toBe(true);     // satin rail
+      expect(comps.some(c => c.sku === "SER35-WB-S")).toBe(true);          // wall-tie (wall-plate finish = S)
+      expect(comps.some(c => c.sku === "SER35-J90-SA")).toBe(true);        // 90° corner (joiners always SA)
+      expect(comps.some(c => /^RAIL-(SERIES|NONORAIL)/.test(c.sku ?? ""))).toBe(false);
+    });
+
+    it("black 35-Series rail uses -B; end-cap termination emits no separate SKU", () => {
+      const design = makeBalustradeDesign("glass-bal-channel", [1200, 1200], {
+        fieldValues: { "channel-finish": "black" },
+        handrail: { enabled: true, type: "series-35x35", material: "anodised-aluminium", finish: "black", startTermination: "end-cap", endTermination: "end-cap" },
+      });
+      const comps = calculateComponents(design, [], []);
+      expect(comps.some(c => c.sku === "SER35-R5800-B")).toBe(true);
+      // end-cap is factory-fitted to the rail → no SER35-EC line emitted.
+      expect(comps.some(c => /^SER35-EC/.test(c.sku ?? ""))).toBe(false);
     });
   });
 
