@@ -19,18 +19,18 @@ export interface StyleOption {
   visual?: string;       // home-page ProductVisual key (aluminium styles, drawn icon)
 }
 
-// The V1 launch styles, in the home-page order. `use` separates Pool Fence from
-// Balustrade so the picker can gate by application first (you can't cross-pick a bal
-// style onto a pool run and have to restart the config).
-// CHANNEL (pool + bal + HD) is held for post-launch V2 — the channel glass SKUs aren't
-// in the storefront yet, so it can't be quoted. Calc logic stays; just not offered. (Trello)
+// The launch styles, in the home-page order. `use` separates Pool Fence from Balustrade so
+// the picker can gate by application first (you can't cross-pick a bal style onto a pool run).
 export const STYLE_OPTIONS: StyleOption[] = [
   { id: "glass-pool-spigots", label: "Frameless", use: "pool", group: "glass", image: "/styles/frameless-pool-fence.png" },
+  { id: "glass-pool-channel", label: "Channel", use: "pool", group: "glass", image: "/styles/channel-pool-fence.png" },
   { id: "alu-pool-tubular", label: "Flat Top", use: "pool", group: "aluminium", visual: "aluminium-tubular" },
   { id: "alu-pool-barr", label: "BARR", use: "pool", group: "aluminium", visual: "aluminium-vertical" },
   { id: "alu-pool-blade", label: "Blade", use: "pool", group: "aluminium", visual: "aluminium-blade" },
   { id: "glass-bal-spigots-12mm", label: "Frameless 12mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-12mm.png" },
   { id: "glass-bal-spigots-15mm", label: "Frameless 15mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-15mm.png" },
+  { id: "glass-bal-channel", label: "Channel 15mm", use: "balustrade", group: "glass", image: "/styles/versatilt-channel-15mm.png" },
+  { id: "glass-bal-channel-hd", label: "Channel HD 17.52", use: "balustrade", group: "glass", image: "/styles/versatilt-channel-hd-17-52mm.png" },
   { id: "glass-bal-standoffs", label: "Standoff", use: "balustrade", group: "glass", image: "/styles/standoff-balustrade.png" },
   { id: "alu-bal-barr", label: "BARR", use: "balustrade", group: "aluminium", visual: "aluminium-vertical" },
   { id: "alu-bal-blade", label: "Blade", use: "balustrade", group: "aluminium", visual: "aluminium-blade" },
