@@ -92,6 +92,8 @@ const ALU_POOL_MOUNTS: AttachmentOption[] = [
   { value: "inground", label: "In-ground", blurb: "Posts set into the ground / footing", icon: "in-ground" },
   { value: "side-mounted", label: "Side-mount", blurb: "Posts fixed to a vertical edge / wall", icon: "side-mount" },
 ];
+// Flat Top (tubular) drops Side-mount for v1 — deferred to post-launch (Trello #153).
+const ALU_POOL_TUBULAR_MOUNTS: AttachmentOption[] = ALU_POOL_MOUNTS.filter((o) => o.value !== "side-mounted");
 const ALU_BAL_MOUNTS: AttachmentOption[] = [
   { value: "base-plated", label: "Base-plate", blurb: "Bolt-down on a slab / deck", icon: "base-plate" },
   { value: "core-drilled", label: "Core-drill", blurb: "Posts grouted into cored concrete", icon: "core-drill" },
@@ -141,8 +143,10 @@ export function attachmentConfigFor(variant: string): AttachmentConfig | null {
   // Aluminium pool → fieldValues['{family}-substrate']
   if (variant.startsWith("alu-pool")) {
     const key = aluPoolKey(variant);
+    // Flat Top excludes Side-mount in v1 (BARR/Blade keep it).
+    const options = variant.includes("tubular") ? ALU_POOL_TUBULAR_MOUNTS : ALU_POOL_MOUNTS;
     return {
-      options: ALU_POOL_MOUNTS,
+      options,
       current: (s) => s.fieldValues?.[key] as string | undefined,
       write: (v) => ({ fieldValues: { [key]: v } } as Partial<SpanConfig>),
     };
