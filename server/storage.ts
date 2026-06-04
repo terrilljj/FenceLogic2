@@ -26,6 +26,8 @@ export interface IStorage {
   getProduct(id: string): Promise<Product | undefined>;
   getProductByCode(code: string): Promise<Product | undefined>;
   getAllProducts(): Promise<Product[]>;
+  /** Canonical GST-inc retail prices by SKU from bh_storefront.products (the real catalogue). */
+  getStorefrontPrices(skus: string[]): Promise<Map<string, number>>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
   upsertProduct(product: InsertProduct): Promise<{ product: Product; created: boolean }>;
@@ -139,6 +141,24 @@ export class DatabaseStorage implements IStorage {
 
   async getAllProducts(): Promise<Product[]> {
     return await db.select().from(products);
+  }
+
+  // Canonical pricing lives in bh_storefront.products.retail_price_inc_gst (the complete,
+  // GST-inc catalogue) — NOT the stale public.products. Queried by SKU (= products.code).
+  async getStorefrontPrices(skus: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (skus.length === 0) return map;
+    const list = sqlOp.join(skus.map((s) => sqlOp`${s}`), sqlOp`, `);
+    const result: any = await db.execute(sqlOp`
+      SELECT sku, retail_price_inc_gst::float AS price
+      FROM bh_storefront.products
+      WHERE sku IN (${list}) AND retail_price_inc_gst IS NOT NULL
+    `);
+    const rows = result?.rows ?? result ?? [];
+    for (const r of rows) {
+      if (r?.sku != null && r?.price != null) map.set(String(r.sku), Number(r.price));
+    }
+    return map;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
