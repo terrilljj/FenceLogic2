@@ -58,7 +58,7 @@ export function SpanConfigPanel({
   const isGlassPoolChannel = productVariant === "glass-pool-channel";
   // Bal channel 15mm shares the same accordion in channel mode (+ Rail section, no
   // gates/raked — operator ruling 2026-06-03, _docs/channel-ui-build-spec.md).
-  const isGlassBalChannel = productVariant === "glass-bal-channel";
+  const isGlassBalChannel = productVariant === "glass-bal-channel" || productVariant === "glass-bal-channel-hd";
   const isGlassBalSpigots = productVariant.startsWith("glass-bal-spigots");
   // Standoff balustrade 15mm (point-fix) — wizard accordion (Configure/Standoffs/Rail).
   const isGlassBalStandoffs = productVariant === "glass-bal-standoffs";

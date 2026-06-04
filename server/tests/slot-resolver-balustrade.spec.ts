@@ -79,6 +79,41 @@ describe("balustrade branches — slot resolution with template-literal fallback
     });
   });
 
+  describe("glass-bal-channel-hd (VersaTilt Heavy Duty 17.52 SGP)", () => {
+    it("emits 17.52 SGP laminated glass + HD channel hardware", () => {
+      const comps = calculateComponents(
+        makeBalustradeDesign("glass-bal-channel-hd", [1150, 1150], {
+          fieldValues: { "channel-finish": "satin-anodised" },
+          handrail: { enabled: true, type: "series-35x35", material: "anodised-aluminium", finish: "satin", startTermination: "end-cap", endTermination: "end-cap" },
+        }),
+        [], [],
+      );
+      const glass = comps.find(c => /Bal Glass/.test(c.description ?? ""));
+      expect(glass?.description).toContain("17.52mm Toughened SGP Laminated HD Channel Bal Glass");
+      expect(glass?.sku).toBe("1000SGP1752-1150");
+      expect(comps.some(c => /^VER-HD-3600-DMK-/.test(c.sku ?? ""))).toBe(true);
+      expect(comps.some(c => c.sku === "VER-HD-PPKIT-17-4PK")).toBe(true);
+      expect(comps.some(c => c.sku === "VER-HD-WASHER-18PK")).toBe(true);
+      expect(comps.some(c => c.sku === "SER35-17KIT-RUB")).toBe(true);
+      // Must NOT emit the standard 15mm channel SKUs.
+      expect(comps.some(c => /^VER-4200-DMK/.test(c.sku ?? ""))).toBe(false);
+    });
+
+    it("standard glass-bal-channel emits VersaTilt 4200 channel hardware (was missing)", () => {
+      const comps = calculateComponents(
+        makeBalustradeDesign("glass-bal-channel", [1150, 1150], {
+          fieldValues: { "channel-finish": "black" },
+        }),
+        [], [],
+      );
+      expect(comps.some(c => c.sku === "VER-4200-DMK-B")).toBe(true);
+      expect(comps.some(c => c.sku === "VER-PPKIT-15MM")).toBe(true);
+      expect(comps.some(c => c.sku === "VER-WASHER-14PK")).toBe(true);
+      // 15mm glass, not 17.52.
+      expect(comps.some(c => /17\.52/.test(c.description ?? ""))).toBe(false);
+    });
+  });
+
   describe("glass-bal AS1288 fall-height glass line", () => {
     it("spigots-15mm: toughened monolithic <5m, laminated 16mm at >=5m", () => {
       const mono = calculateComponents(

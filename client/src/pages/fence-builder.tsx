@@ -34,6 +34,7 @@ const PRODUCT_VARIANT_LABELS: Record<string, string> = {
   "glass-bal-spigots-12mm": "Glass Balustrade — Spigots (12mm)",
   "glass-bal-spigots-15mm": "Glass Balustrade — Spigots (15mm)",
   "glass-bal-channel": "Glass Balustrade — Channel",
+  "glass-bal-channel-hd": "Glass Balustrade — Channel (Heavy Duty, 17.52 laminated)",
   "glass-bal-standoffs": "Glass Balustrade — Standoffs",
   "alu-pool-tubular": "Aluminium Pool Fencing — Tubular Flat Top",
   "alu-pool-barr": "Aluminium Pool Fencing — BARR",
@@ -609,6 +610,7 @@ export default function FenceLogic() {
     isGlassSpigots ||
     design.productVariant === "glass-pool-channel" ||
     design.productVariant === "glass-bal-channel" ||
+    design.productVariant === "glass-bal-channel-hd" ||
     design.productVariant === "glass-bal-standoffs" ||
     design.productVariant === "alu-pool-blade" ||
     design.productVariant === "alu-pool-barr" ||
@@ -1081,7 +1083,7 @@ export default function FenceLogic() {
 function ptsMaxPanelFor(variant: string): number | undefined {
   if (variant === "glass-bal-spigots-15mm") return 1400;
   if (variant === "glass-bal-spigots-12mm" || variant === "glass-bal-spigots") return 1500;
-  if (variant === "glass-bal-channel") return 1400;
+  if (variant === "glass-bal-channel" || variant === "glass-bal-channel-hd") return 1400;
   if (variant === "glass-bal-standoffs") return 1200;
   return undefined;
 }

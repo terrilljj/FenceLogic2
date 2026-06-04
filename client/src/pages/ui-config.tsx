@@ -24,6 +24,7 @@ const PRODUCT_VARIANTS: { variant: ProductVariant; label: string; group: string 
   { variant: "glass-pool-channel", label: "Glass Pool - Channel", group: "Glass Pool Fencing" },
   { variant: "glass-bal-spigots", label: "Glass Balustrade - Spigots", group: "Glass Balustrade" },
   { variant: "glass-bal-channel", label: "Glass Balustrade - Channel", group: "Glass Balustrade" },
+  { variant: "glass-bal-channel-hd", label: "Glass Balustrade - Channel (HD 17.52)", group: "Glass Balustrade" },
   { variant: "glass-bal-standoffs", label: "Glass Balustrade - Standoffs", group: "Glass Balustrade" },
   { variant: "alu-pool-barr", label: "Aluminium Pool - BARR", group: "Aluminium Pool Fencing" },
   { variant: "alu-pool-blade", label: "Aluminium Pool - Blade", group: "Aluminium Pool Fencing" },
@@ -80,6 +81,7 @@ const VARIANT_FIELDS: Record<ProductVariant, UIInputField[]> = {
   // Glass Balustrade
   "glass-bal-spigots": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "custom-panel", "glass-thickness", "top-rail", "spigot-hardware"],
   "glass-bal-channel": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "custom-panel", "glass-thickness", "top-rail", "channel-hardware"],
+  "glass-bal-channel-hd": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "custom-panel", "glass-thickness", "top-rail", "channel-hardware"],
   "glass-bal-standoffs": ["section-length", "left-gap", "right-gap", "max-panel-width", "desired-gap", "gate-config", "custom-panel", "glass-thickness"],
   
   // Aluminium Pool Fencing

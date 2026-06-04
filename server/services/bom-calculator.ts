@@ -52,6 +52,14 @@ type ProductDetails = { sku: string; description: string };
  *   standoffs    (Standoff PF)     15mm mono / 15mm laminated,     1280H (pre-drilled)
  */
 function balGlassLine(productVariant: string, fallBand: string, width: number): ProductDetails {
+  // VersaTilt Heavy Duty (PTS-028) is ALWAYS 17.52mm SGP laminated by design — not a
+  // fall-band swap. SGP family code derived (no laminated SKU seeded yet; operator to ratify).
+  if (productVariant === "glass-bal-channel-hd") {
+    return {
+      sku: `1000SGP1752-${width}`,
+      description: `17.52mm Toughened SGP Laminated HD Channel Bal Glass ${width}W × 1000H`,
+    };
+  }
   const laminated = fallBand === "over-5m";
   let family: string, height: number, mono: number, lam: number, label: string;
   if (productVariant.includes("15mm")) {
@@ -224,7 +232,14 @@ export function calculateComponents(
   const isGlassBalPanel =
     design.productVariant.startsWith("glass-bal-spigots") ||
     design.productVariant === "glass-bal-channel" ||
+    design.productVariant === "glass-bal-channel-hd" ||
     design.productVariant === "glass-bal-standoffs";
+  // Balustrade channel hardware (channel kit + friction plates + washers + glazing rubber +
+  // end plates + alignment pins). glass-bal-channel = VersaTilt (PTS-003, 4200mm);
+  // glass-bal-channel-hd = VersaTilt Heavy Duty (PTS-028, 3600mm, 17.52 SGP laminated).
+  const isBalChannel =
+    design.productVariant === "glass-bal-channel" || design.productVariant === "glass-bal-channel-hd";
+  const isBalChannelHd = design.productVariant === "glass-bal-channel-hd";
   const gatesAllowed = !design.productVariant.includes("bal-");
 
   // Cast spans to any — design JSON from clients may carry extra dynamic properties
@@ -1123,9 +1138,67 @@ export function calculateComponents(
   // that home.tsx sends. The unsuffixed legacy string is also matched by startsWith.
   const isGlassBalustrade = design.productVariant.startsWith("glass-bal-spigots") ||
                            design.productVariant === "glass-bal-channel" ||
+                           design.productVariant === "glass-bal-channel-hd" ||
                            design.productVariant === "glass-bal-standoffs";
 
   if (isGlassBalustrade) {
+    // ── Channel hardware (VersaTilt deck-mount) — channel kit + glazing rubber + friction
+    //    plates + stabilising washers + end plates + alignment pins. Keyed by variant:
+    //    standard = VersaTilt (PTS-003, 4200mm); HD = VersaTilt Heavy Duty (PTS-028, 3600mm).
+    //    NOTE: HD consumable SKUs (glazing rubber, end plates) are DERIVED — operator to seed.
+    if (isBalChannel) {
+      const stockMm = isBalChannelHd ? 3600 : 4200;
+      const finishCode = ((design.spans as any[])[0]?.fieldValues?.["channel-finish"] === "black") ? "B" : "SA";
+      const channelSku = isBalChannelHd ? `VER-HD-3600-DMK-${finishCode}` : `VER-4200-DMK-${finishCode}`;
+      const plateSku = isBalChannelHd ? `VER-HD-PPKIT-17-4PK` : `VER-PPKIT-15MM`;
+      const plin = isBalChannelHd ? 4 : 1; // HD friction plates ship as a 4-pack
+      const washerSku = isBalChannelHd ? `VER-HD-WASHER-18PK` : `VER-WASHER-14PK`;
+      const rubberSku = isBalChannelHd ? `VER-HD-17KIT-RUB` : `VER-15KIT-RUB`;
+      const endPlateSku = isBalChannelHd ? `VER-HD-2DMEP-${finishCode}` : `VER-2DMEP-${finishCode}`;
+      const chName = isBalChannelHd ? "VersaTilt HD Channel 3600mm Deck-Mount Kit" : "VersaTilt Channel 4200mm Deck-Mount Kit";
+
+      let totalPlates = 0;
+      let totalPins = 0;
+      (design.spans as any[]).forEach((span: any) => {
+        const panels: number[] = span.panelLayout?.panels ?? [];
+        if (!panels.length) return;
+        const runMm = span.panelLayout?.totalPanelWidth || panels.reduce((a: number, b: number) => a + b, 0);
+        const channels = Math.max(1, Math.ceil(runMm / stockMm));
+
+        // Channel kit + glazing rubber (always-substitute) + stabilising washers — 1 per channel length.
+        components.push({ qty: channels, description: `${chName} (${finishCode === "B" ? "Black" : "Satin Anodised"})`, sku: channelSku });
+        components.push({ qty: channels, description: `${isBalChannelHd ? "17.52mm" : "15mm"} Glass Channel Glazing Rubber Kit`, sku: rubberSku });
+        components.push({ qty: channels, description: `VersaTilt${isBalChannelHd ? " HD" : ""} Stabilising Washer Pack`, sku: washerSku });
+
+        // Friction plates — per-panel geometric formula (100mm wide, 25mm setback, 300mm max centres).
+        const platesThisSpan = panels.reduce((sum, w) => sum + (Math.ceil((w - 150) / 300) + 1), 0);
+        totalPlates += platesThisSpan;
+
+        // End plates — one 2-pack caps the open ends of the section's channel run.
+        components.push({ qty: 1, description: `VersaTilt${isBalChannelHd ? " HD" : ""} Channel End Plate 2-Pack (${finishCode === "B" ? "Black" : "Satin Anodised"})`, sku: endPlateSku });
+
+        // Alignment pins — 2 per inline channel-to-channel join within the section.
+        totalPins += 2 * Math.max(0, channels - 1);
+
+        // HD only: the 35-Series rail needs a 17.52 runner insert (the bundled 15mm rubber
+        // won't seat 17.52 glass) — 1 per rail stock length (5800mm). SKU derived.
+        if (isBalChannelHd) {
+          const rails = Math.max(1, Math.ceil(runMm / 5800));
+          components.push({ qty: rails, description: `35-Series Rail 17.52 Runner Insert`, sku: `SER35-17KIT-RUB` });
+        }
+      });
+
+      if (totalPlates > 0) {
+        components.push({
+          qty: Math.ceil(totalPlates / plin),
+          description: isBalChannelHd ? `VersaTilt HD Friction Plate (suits 17.52mm), 4-pack` : `VersaTilt Friction Plate (suits 15mm)`,
+          sku: plateSku,
+        });
+      }
+      if (totalPins > 0) {
+        components.push({ qty: Math.ceil(totalPins / 10), description: `VersaTilt Channel Alignment Pins (10-pack)`, sku: `VER-PINS` });
+      }
+    }
     // Standoff hardware: emit 4 × 50mm standoffs per panel. Standoff balustrade is fixed
     // at 1280mm height per operator data — count is panel-based, not height-based.
     if (isStandoffSystem) {

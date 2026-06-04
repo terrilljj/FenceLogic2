@@ -16,7 +16,7 @@ function getProductDisplayName(variant: ProductVariant): string {
     "glass-bal-spigots-15mm": "Glass Balustrade - Spigots (15mm)",
     "glass-bal-channel": "Glass Balustrade - Channel",
     "glass-bal-channel-std": "Glass Balustrade - Channel",
-    "glass-bal-channel-hd": "Glass Balustrade - Channel (HD)",
+    "glass-bal-channel-hd": "Glass Balustrade - Channel (HD 17.52)",
     "glass-bal-standoffs": "Glass Balustrade - Standoffs",
     "semi-frameless-1000": "Semi-Frameless 1000",
     "semi-frameless-1800": "Semi-Frameless 1800",
