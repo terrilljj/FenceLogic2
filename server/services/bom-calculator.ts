@@ -1039,32 +1039,31 @@ export function calculateComponents(
         }
       });
 
-      // Channel system hardware (per span)
+      // Channel system hardware (per span) — real VersaTilt POOL SKUs (12mm glass).
+      // Deck mount (ground) → DMK; face mount (wall) → FMK. (Was made-up VC-/CFC/CEC.)
       if (isChannelSystem) {
-        const spanLength = span.length;
-        const channelLength = 4200;
+        const panels: number[] = span.panelLayout?.panels ?? [];
+        const runMm = span.panelLayout?.totalPanelWidth || panels.reduce((a: number, b: number) => a + b, 0) || span.length;
+        const channels = Math.max(1, Math.ceil(runMm / 4200));
+        const chF = ((span.fieldValues?.["channel-finish"]) === "black") ? "B" : "SA";
+        const face = span.channelMounting === "wall";
+        const finLabel = chF === "B" ? "Matt Black" : "Satin";
+        const mountLabel = face ? "Face-Mount" : "Deck-Mount";
 
-        const numChannels = Math.ceil(spanLength / channelLength);
-        const mountingType = span.channelMounting === "wall" ? "Wall" : "Ground";
+        components.push({ qty: channels, description: `VersaTilt Channel 4200mm ${mountLabel} Kit (${finLabel})`, sku: face ? `VER-4200-FMK-${chF}` : `VER-4200-DMK-${chF}` });
+        components.push({ qty: channels, description: `VersaTilt 12mm Glass Glazing Rubber Kit`, sku: `VER-12KIT-RUB-2PK` });
+        components.push({ qty: channels, description: `VersaTilt Stabilising Washer Pack`, sku: `VER-WASHER-14PK` });
 
-        components.push({
-          qty: numChannels,
-          description: `Versatilt Aluminum Channel 4200mm (${mountingType} Mount)`,
-          sku: `VC-4200-${span.channelMounting || "ground"}`,
-        });
+        // Pressure plates — per-panel formula (100mm wide, 25mm setback, 300mm max centres).
+        const plates = panels.reduce((sum, w) => sum + (Math.ceil((w - 150) / 300) + 1), 0);
+        if (plates > 0) components.push({ qty: plates, description: `VersaTilt Pressure Plate (12mm glass)`, sku: `VER-PPKIT` });
 
-        const numClamps = Math.ceil(spanLength / 300) + 2;
-        components.push({
-          qty: numClamps,
-          description: `Channel Friction Clamp (300mm spacing)`,
-          sku: `CFC-300`,
-        });
+        // End plates — one 2-pack caps the section's channel run.
+        components.push({ qty: 1, description: `VersaTilt Channel End Plate 2-Pack (${finLabel})`, sku: face ? `VER-2FMEP-${chF}` : `VER-2DMEP-${chF}` });
 
-        components.push({
-          qty: 2,
-          description: `Channel End Cap`,
-          sku: `CEC-STD`,
-        });
+        // Alignment pins — 2 per inline channel-to-channel join.
+        const pins = 2 * Math.max(0, channels - 1);
+        if (pins > 0) components.push({ qty: Math.ceil(pins / 10), description: `VersaTilt Channel Alignment Pins (10-pack)`, sku: `VER-PINS` });
       }
 
       // Gate hardware
@@ -1375,10 +1374,10 @@ export function calculateComponents(
         }
 
         if (optimization.wastage > 0) {
+          // Informational cut-optimisation note — NOT an orderable SKU (sku omitted).
           components.push({
             qty: 1,
             description: `Rail cut-optimisation note: ${optimization.totalLength}mm required, ${optimization.wastage}mm offcut across ${optimization.standardLengths} × 5800mm — our team reviews cut lengths before processing`,
-            sku: `RAIL-OPT-NOTE`,
           });
         }
       }
