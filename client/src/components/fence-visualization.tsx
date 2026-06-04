@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Box, Layers, Download } from "lucide-react";
-import { FenceDesign } from "@shared/schema";
+import { FenceDesign, spanVariant } from "@shared/schema";
 
 interface FenceVisualizationProps {
   design: FenceDesign;
@@ -517,18 +517,24 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   // Channel systems: pool (12mm) + balustrade 15mm — same VersaTilt channel drawing.
   // The one elevation difference is friction-plate spacing (operator ruling 2026-06-03):
   // pool = 150mm end setback / 500mm max centres; bal = 25mm setback / 300mm centres.
-  const isBalChannel = design.productVariant === "glass-bal-channel" || design.productVariant === "glass-bal-channel-hd";
-  const isChannelSystem = design.productVariant === "glass-pool-channel" || isBalChannel;
-  const isBladeFencing = design.productVariant === "alu-pool-blade";
-  const isBarrFencing = design.productVariant === "alu-pool-barr";
-  const isTubularFencing = design.productVariant === "alu-pool-tubular";
-  const isSemiFrameless = design.productVariant === "semi-frameless-1000" || design.productVariant === "semi-frameless-1800";
-  const isHamptonsPVC = design.productVariant.startsWith("pvc-hamptons-");
-  // Aluminium balustrade variants — reuse Pool aluminium rendering (panel-width specs are identical).
-  const isBalBarr = design.productVariant === "alu-bal-barr";
-  const isBalBlade = design.productVariant === "alu-bal-blade";
-  // Standoff balustrade — distinct mounting visual (4 standoff buttons in place of 2 base spigots).
-  const isStandoffSystem = design.productVariant === "glass-bal-standoffs";
+  // Style is resolved PER SECTION inside the draw loop (multi-style designs: each section
+  // can be its own style). A small helper computes the per-span style flags from the
+  // section's resolved variant; the pre-loop height calc uses the same resolution.
+  const styleFlags = (variant: string) => {
+    const isBalChannel = variant === "glass-bal-channel" || variant === "glass-bal-channel-hd";
+    return {
+      isBalChannel,
+      isChannelSystem: variant === "glass-pool-channel" || isBalChannel,
+      isBladeFencing: variant === "alu-pool-blade",
+      isBarrFencing: variant === "alu-pool-barr",
+      isTubularFencing: variant === "alu-pool-tubular",
+      isSemiFrameless: variant === "semi-frameless-1000" || variant === "semi-frameless-1800",
+      isHamptonsPVC: variant.startsWith("pvc-hamptons-"),
+      isBalBarr: variant === "alu-bal-barr",
+      isBalBlade: variant === "alu-bal-blade",
+      isStandoffSystem: variant === "glass-bal-standoffs",
+    };
+  };
 
   // Set canvas size to match container
   const rect = canvas.getBoundingClientRect();
@@ -552,8 +558,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   // Bal channel 15mm (operator ruling 2026-06-03): finished height = 35mm channel base
   // + 1000mm glass + 35mm top rail = 1070mm — used for scale/spacing so nothing clips.
   // Standoff bal 15mm (SF-16): 1280mm pre-drilled glass + 35mm top rail = 1315mm.
-  let maxPanelHeight = isBalChannel ? 1070 : isStandoffSystem ? 1315 : panelHeight;
+  let maxPanelHeight = panelHeight;
   design.spans.forEach(span => {
+    // Per-section base height: channel bal = 1070, standoff bal = 1315, else 1200.
+    const sf = styleFlags(spanVariant(design, span));
+    const base = sf.isBalChannel ? 1070 : sf.isStandoffSystem ? 1315 : panelHeight;
+    if (base > maxPanelHeight) maxPanelHeight = base;
     // Check auto-calc config panel height (for custom-frameless)
     if (span.autoCalcConfig?.panelHeight && span.autoCalcConfig.panelHeight > maxPanelHeight) {
       maxPanelHeight = span.autoCalcConfig.panelHeight;
@@ -586,6 +596,12 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   const startY = (maxPanelHeight * scale) + 40; // Dynamic top margin based on tallest panel
 
   design.spans.forEach((span, spanIndex) => {
+    // Per-section style — each section draws in its OWN style (multi-style designs).
+    const spanVar = spanVariant(design, span);
+    const {
+      isBalChannel, isChannelSystem, isBladeFencing, isBarrFencing, isTubularFencing,
+      isSemiFrameless, isHamptonsPVC, isBalBarr, isBalBlade, isStandoffSystem,
+    } = styleFlags(spanVar);
     const isActive = span.spanId === activeSpanId;
     const effectiveLength = span.length;
     // Use calculated panel layout with fallback
@@ -1049,7 +1065,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
         ctx.fillRect(currentX, panelTop, scaledPanelWidth, scaledPanelHeight);
         
         // Draw vertical slats based on style
-        const style = design.productVariant.replace("pvc-hamptons-", "");
+        const style = spanVar.replace("pvc-hamptons-", "");
         ctx.fillStyle = "#e0e0e0";
         
         if (style === "full-privacy") {
@@ -1467,7 +1483,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     }
 
     // Draw mid-rail for semi-frameless 1800mm variant
-    if (design.productVariant === "semi-frameless-1800") {
+    if (spanVar === "semi-frameless-1800") {
       const midRailHeight = 1000 * scale; // Mid-rail at 1000mm from ground
       const railHeight = 4; // Rail thickness
       const railStartX = drawStartX + (leftGapSize * scale);
@@ -1497,10 +1513,10 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     // Draw top-mounted rail for glass balustrade if enabled.
     // startsWith("glass-bal-spigots") catches both the 12mm and 15mm suffixed variants
     // that home.tsx emits, mirroring the same fix landed in bom-calculator.ts (PR #27).
-    const isGlassBalustrade = design.productVariant.startsWith("glass-bal-spigots") ||
-                              design.productVariant === "glass-bal-channel" ||
-                              design.productVariant === "glass-bal-channel-hd" ||
-                              design.productVariant === "glass-bal-standoffs";
+    const isGlassBalustrade = spanVar.startsWith("glass-bal-spigots") ||
+                              spanVar === "glass-bal-channel" ||
+                              spanVar === "glass-bal-channel-hd" ||
+                              spanVar === "glass-bal-standoffs";
     
     if (isGlassBalustrade && span.handrail?.enabled) {
       // Rail runs across the entire span length at the top of panels.

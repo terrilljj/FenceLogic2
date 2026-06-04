@@ -568,13 +568,10 @@ function calculateComponentsForVariant(
       // 3. Posts + covers (substrate-driven). One 50×50 family — same SKU at corners/gates.
       //    Side-mount swaps the run to the shared AIRE face-mount engine (design-level, once).
       if (sideMounted) {
-        if (spanIndex === 0) {
-          // Every panel boundary needs an AIRE post — gates included (the gate's hinge/latch
-          // posts ARE AIRE posts under side-mount, operator 2026-06-04), so count all panels.
-          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => sum + (s.panelLayout?.panels?.length ?? 0), 0);
-          const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
-          emitFaceMountPosts("B", finishName, faceMaterial, fmPanels, fmCorners);
-        }
+        // Each side-mounted SECTION gets its own AIRE posts (gates included — the gate's
+        // hinge/latch posts ARE AIRE posts). Per-span so a mixed-substrate design where only
+        // SOME sections are side-mounted is correct; corners come from the normal corner block.
+        emitFaceMountPosts("B", finishName, faceMaterial, span.panelLayout.panels.length, 0);
       } else if (numPosts > 0) {
         if (basePlated) {
           pushSlotOrFallback(
@@ -698,13 +695,10 @@ function calculateComponentsForVariant(
       //    run to the shared AIRE face-mount engine (design-level, once at span 0); gate posts
       //    are AIRE too (counted in the run total — the gate block skips its cross-range posts).
       if (sideMounted) {
-        if (spanIndex === 0) {
-          // Every panel boundary needs an AIRE post — gates included (the gate's hinge/latch
-          // posts ARE AIRE posts under side-mount, operator 2026-06-04), so count all panels.
-          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => sum + (s.panelLayout?.panels?.length ?? 0), 0);
-          const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
-          emitFaceMountPosts(code, finishName, faceMaterial, fmPanels, fmCorners);
-        }
+        // Each side-mounted SECTION gets its own AIRE posts (gates included — the gate's
+        // hinge/latch posts ARE AIRE posts). Per-span so a mixed-substrate design where only
+        // SOME sections are side-mounted is correct; corners come from the normal corner block.
+        emitFaceMountPosts(code, finishName, faceMaterial, span.panelLayout.panels.length, 0);
       } else if (inlinePosts > 0) {
         if (basePlated) {
           pushSlotOrFallback(
@@ -894,13 +888,10 @@ function calculateComponentsForVariant(
       // 4. Posts — side-mount uses the shared AIRE face-mount engine (design-level, once at
       //    span 0); else substrate-driven cross-range posts + domical covers (base-plated).
       if (sideMounted) {
-        if (spanIndex === 0) {
-          // Every panel boundary needs an AIRE post — gates included (the gate's hinge/latch
-          // posts ARE AIRE posts under side-mount, operator 2026-06-04), so count all panels.
-          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => sum + (s.panelLayout?.panels?.length ?? 0), 0);
-          const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
-          emitFaceMountPosts(code, finishName, faceMaterial, fmPanels, fmCorners);
-        }
+        // Each side-mounted SECTION gets its own AIRE posts (gates included — the gate's
+        // hinge/latch posts ARE AIRE posts). Per-span so a mixed-substrate design where only
+        // SOME sections are side-mounted is correct; corners come from the normal corner block.
+        emitFaceMountPosts(code, finishName, faceMaterial, span.panelLayout.panels.length, 0);
       } else if (numPosts > 0) {
         if (basePlated) {
           pushSlotOrFallback(
