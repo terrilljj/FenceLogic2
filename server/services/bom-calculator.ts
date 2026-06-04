@@ -54,9 +54,12 @@ type ProductDetails = { sku: string; description: string };
 function balGlassLine(productVariant: string, fallBand: string, width: number): ProductDetails {
   // VersaTilt Heavy Duty (PTS-028) is ALWAYS 17.52mm SGP laminated by design — not a
   // fall-band swap. SGP family code derived (no laminated SKU seeded yet; operator to ratify).
+  // Catalogue codes are zero-padded to 4 digits (e.g. 1000FBG-0850) — pad so the emitted
+  // SKU is an EXACT catalogue match, not a near-miss.
+  const w4 = String(width).padStart(4, "0");
   if (productVariant === "glass-bal-channel-hd") {
     return {
-      sku: `1000SGP1752-${width}`,
+      sku: `1000SGP1752-${w4}`,
       description: `17.52mm Toughened SGP Laminated HD Channel Bal Glass ${width}W × 1000H`,
     };
   }
@@ -76,7 +79,7 @@ function balGlassLine(productVariant: string, fallBand: string, width: number): 
   const buildWord = laminated ? "Toughened Laminated" : "Toughened";
   const drilled = productVariant === "glass-bal-standoffs" ? ", pre-drilled" : "";
   return {
-    sku: laminated ? `${family}-${width}-LAM` : `${family}-${width}`,
+    sku: laminated ? `${family}-${w4}-LAM` : `${family}-${w4}`,
     description: `${thick}mm ${buildWord} ${label} ${width}W × ${height}H${drilled}`,
   };
 }
