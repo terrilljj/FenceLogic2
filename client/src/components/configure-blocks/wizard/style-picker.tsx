@@ -3,14 +3,25 @@ import { Box, ChevronDown, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
-  STYLE_OPTIONS, stylesForUse, styleImage, styleFullLabel, styleUse, type StyleUse, type StyleOption,
+  STYLE_OPTIONS, stylesForUse, styleImage, styleVisual, styleFullLabel, styleUse, type StyleUse, type StyleOption,
 } from "@/lib/style-attachments";
+import { ProductVisual, type ProductVisualType } from "@/pages/home";
 
-function Thumb({ variant, className }: { variant: string; className?: string }) {
+/** Glass styles → photo; aluminium → the home-page ProductVisual (scaled to the thumb). */
+function Thumb({ variant, size, className }: { variant: string; size: "sm" | "lg"; className?: string }) {
   const img = styleImage(variant);
-  return img
-    ? <img src={img} alt="" className={cn("object-contain", className)} />
-    : <Box className={cn("text-muted-foreground", className)} strokeWidth={1.25} />;
+  if (img) return <img src={img} alt="" className={cn("object-contain", className)} />;
+  const visual = styleVisual(variant);
+  if (visual) {
+    return (
+      <div className={cn("flex items-center justify-center overflow-hidden", className)}>
+        <div className={size === "sm" ? "scale-[0.32]" : "scale-90"}>
+          <ProductVisual type={visual as ProductVisualType} />
+        </div>
+      </div>
+    );
+  }
+  return <Box className={cn("text-muted-foreground", className)} strokeWidth={1.25} />;
 }
 
 interface Props {
@@ -53,7 +64,7 @@ export function StylePicker({ value, onChange, onOpenField, className }: Props) 
           </span>
         )}
         <div className="flex h-24 w-full items-center justify-center bg-muted/40 p-1">
-          <Thumb variant={s.id} className="h-full w-full" />
+          <Thumb variant={s.id} size="lg" className="h-full w-full" />
         </div>
         <span className="px-2 py-1.5 text-xs font-medium leading-tight">{s.label}</span>
       </button>
@@ -76,7 +87,7 @@ export function StylePicker({ value, onChange, onOpenField, className }: Props) 
           data-testid="style-trigger"
         >
           <span className="flex min-w-0 items-center gap-2">
-            <Thumb variant={value} className="h-8 w-8 shrink-0" />
+            <Thumb variant={value} size="sm" className="h-8 w-8 shrink-0" />
             <span className="truncate text-sm font-medium">{styleFullLabel(value)}</span>
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />

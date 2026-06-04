@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowDownToLine, ChevronLeft, ChevronRight, CircleDot, FlipHorizontal, Layers, Pencil, Square } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ChevronLeft, ChevronRight, CircleDot, FlipHorizontal, Layers, Pencil, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ const GATE_W_MM = 975;
 // The FastFit bracket is Blade-SPECIFIC (operator ruling 2026-06-03) — BARR uses
 // C-brackets, Tubular uses shrouds. Posts are the spigot-equivalent: auto-included,
 // shown as product cards, no inputs.
-type Substrate = "decking" | "concrete-slab" | "in-ground" | "core-drilled";
+type Substrate = "decking" | "concrete-slab" | "in-ground" | "core-drilled" | "side-mounted";
 const SUBSTRATE_HARDWARE: Record<
   Substrate,
   {
@@ -81,6 +81,18 @@ const SUBSTRATE_HARDWARE: Record<
     fixingTitle: "Grout 10kg",
     fixingChip: "1 / 15 posts",
     fixingTip: "Pourable grout — 83mm core holes, 100mm deep (bigger than glass-spigot holes). 1 × 10kg bag per 15 posts plus a spare.",
+  },
+  // Side-mount uses the shared AIRE face-mount posts (Black). Fixing material defaults to
+  // concrete until the timber/concrete/steel picker lands.
+  "side-mounted": {
+    short: "Side-mounted",
+    postSku: "AR-1500-FMID-B",
+    postTitle: "AIRE 1500mm Face-Mount Post",
+    coverSku: "GS-DN-4PK-B",
+    coverTitle: "M12 Dome Nut 4-pack",
+    fixingTitle: "M12 post fixings",
+    fixingTip: "Match the Fixing surface you pick above: timber → M12×160 LAG screws, concrete → M12 rod + chemical anchor, steel → you supply M12. Dome nuts for the visible face are always included.",
+    supplyNote: "Fixings per your selected surface",
   },
 };
 
@@ -381,9 +393,32 @@ export function AluPoolBladeConfig({ span, updateSpan, allSpans }: AluPoolBladeC
                 { value: "concrete-slab", label: "Concrete Slab", blurb: "Bolt-down", icon: <Square className="h-6 w-6" /> },
                 { value: "in-ground", label: "In-ground", blurb: "Post holes", icon: <ArrowDownToLine className="h-6 w-6" /> },
                 { value: "core-drilled", label: "Core-drilled", blurb: "Into concrete", icon: <CircleDot className="h-6 w-6" /> },
+                { value: "side-mounted", label: "Side-mounted", blurb: "AIRE face-mount", icon: <FlipHorizontal className="h-6 w-6" /> },
               ]}
             />
           </div>
+
+          {/* Fixing surface — side-mount only; drives the AIRE post fixings. */}
+          {substrate === "side-mounted" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Fixing surface</Label>
+                <InfoTooltip content="The face the AIRE side-mount posts bolt to. Timber takes M12 LAG screws; concrete takes M12 threaded rod + chemical anchor; steel is customer-supplied M12. Dome nuts are included either way." />
+              </div>
+              <IconOptionPicker
+                spanId={span.spanId}
+                idPrefix="blade-material"
+                value={(span.fieldValues?.["blade-material"] as string) || "concrete"}
+                onSelect={(v) => updateSpan({ fieldValues: { ...span.fieldValues, "blade-material": v } })}
+                columns={3}
+                options={[
+                  { value: "timber", label: "Timber", blurb: "M12 LAG screws", icon: <Layers className="h-5 w-5" /> },
+                  { value: "concrete", label: "Concrete", blurb: "Rod + chem anchor", icon: <CircleDot className="h-5 w-5" /> },
+                  { value: "steel", label: "Steel", blurb: "You supply M12", icon: <AlertTriangle className="h-5 w-5" /> },
+                ]}
+              />
+            </div>
+          )}
 
           {/* Included hardware — product cards (the spigot-section equivalent). */}
           <div className="space-y-1.5">

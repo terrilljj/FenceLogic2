@@ -15,25 +15,25 @@ export interface StyleOption {
   label: string;
   use: StyleUse;         // Pool Fence vs Balustrade — the first pick in the style picker
   group: "glass" | "aluminium";
-  image?: string;        // home-page photo (glass styles); aluminium uses an icon
+  image?: string;        // home-page photo (glass styles)
+  visual?: string;       // home-page ProductVisual key (aluminium styles, drawn icon)
 }
 
-// The 12 V1 launch styles, in the home-page order. `use` separates Pool Fence from
+// The V1 launch styles, in the home-page order. `use` separates Pool Fence from
 // Balustrade so the picker can gate by application first (you can't cross-pick a bal
 // style onto a pool run and have to restart the config).
+// CHANNEL (pool + bal + HD) is held for post-launch V2 — the channel glass SKUs aren't
+// in the storefront yet, so it can't be quoted. Calc logic stays; just not offered. (Trello)
 export const STYLE_OPTIONS: StyleOption[] = [
   { id: "glass-pool-spigots", label: "Frameless", use: "pool", group: "glass", image: "/styles/frameless-pool-fence.png" },
-  { id: "glass-pool-channel", label: "Channel", use: "pool", group: "glass", image: "/styles/channel-pool-fence.png" },
-  { id: "alu-pool-tubular", label: "Flat Top", use: "pool", group: "aluminium" },
-  { id: "alu-pool-barr", label: "BARR", use: "pool", group: "aluminium" },
-  { id: "alu-pool-blade", label: "Blade", use: "pool", group: "aluminium" },
+  { id: "alu-pool-tubular", label: "Flat Top", use: "pool", group: "aluminium", visual: "aluminium-tubular" },
+  { id: "alu-pool-barr", label: "BARR", use: "pool", group: "aluminium", visual: "aluminium-vertical" },
+  { id: "alu-pool-blade", label: "Blade", use: "pool", group: "aluminium", visual: "aluminium-blade" },
   { id: "glass-bal-spigots-12mm", label: "Frameless 12mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-12mm.png" },
   { id: "glass-bal-spigots-15mm", label: "Frameless 15mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-15mm.png" },
-  { id: "glass-bal-channel", label: "Channel 15mm", use: "balustrade", group: "glass", image: "/styles/versatilt-channel-15mm.png" },
-  { id: "glass-bal-channel-hd", label: "Channel HD 17.52", use: "balustrade", group: "glass", image: "/styles/versatilt-channel-hd-17-52mm.png" },
   { id: "glass-bal-standoffs", label: "Standoff", use: "balustrade", group: "glass", image: "/styles/standoff-balustrade.png" },
-  { id: "alu-bal-barr", label: "BARR", use: "balustrade", group: "aluminium" },
-  { id: "alu-bal-blade", label: "Blade", use: "balustrade", group: "aluminium" },
+  { id: "alu-bal-barr", label: "BARR", use: "balustrade", group: "aluminium", visual: "aluminium-vertical" },
+  { id: "alu-bal-blade", label: "Blade", use: "balustrade", group: "aluminium", visual: "aluminium-blade" },
 ];
 
 export function styleLabel(variant: string): string {
@@ -41,6 +41,9 @@ export function styleLabel(variant: string): string {
 }
 export function styleImage(variant: string): string | undefined {
   return STYLE_OPTIONS.find((s) => s.id === variant)?.image;
+}
+export function styleVisual(variant: string): string | undefined {
+  return STYLE_OPTIONS.find((s) => s.id === variant)?.visual;
 }
 /** Label with its application, for the row chip / Joe where there's no use-tab for context. */
 export function styleFullLabel(variant: string): string {
@@ -71,10 +74,10 @@ export interface AttachmentConfig {
   write: (value: string) => Partial<SpanConfig>;
 }
 
+// Glass spigots build only base-plate + core-drill (spigotSku: S | SBP). No side-mount in v1.
 const SPIGOT_MOUNTS: AttachmentOption[] = [
   { value: "core-drilled", label: "Core-drill", blurb: "Set into a cored hole in concrete", icon: "core-drill" },
   { value: "base-plate", label: "Base-plate", blurb: "Bolt-down on a slab or deck", icon: "base-plate" },
-  { value: "side-mounted", label: "Side-mount", blurb: "Fixed to a vertical fascia / edge", icon: "side-mount" },
 ];
 const CHANNEL_MOUNTS: AttachmentOption[] = [
   { value: "ground", label: "Deck mount", blurb: "Channel sits on top of the deck / slab", icon: "deck" },
@@ -85,12 +88,14 @@ const SUBSTRATES: AttachmentOption[] = [
   { value: "timber", label: "Timber", blurb: "Lag-screwed into structural timber", icon: "timber" },
   { value: "steel", label: "Steel", blurb: "Bolted to steel (you supply fixings)", icon: "steel" },
 ];
-// DRAFT — operator to confirm the real aluminium pool attachment set (in-ground / side-mount).
+// Matches the alu-pool config blocks (BARR/Blade/Tubular). Side-mount uses the shared AIRE
+// face-mount posts (operator 2026-06-04: the AR-series posts are the only side-mount option).
 const ALU_POOL_MOUNTS: AttachmentOption[] = [
-  { value: "decking", label: "Deck", blurb: "Base-plated to decking / slab", icon: "deck" },
+  { value: "decking", label: "Decking", blurb: "Base-plated to a timber deck", icon: "deck" },
+  { value: "concrete-slab", label: "Concrete slab", blurb: "Bolt-down on a slab", icon: "base-plate" },
+  { value: "in-ground", label: "In-ground", blurb: "Posts set in post holes / footings", icon: "in-ground" },
   { value: "core-drilled", label: "Core-drill", blurb: "Posts grouted into cored concrete", icon: "core-drill" },
-  { value: "inground", label: "In-ground", blurb: "Posts set into the ground / footing", icon: "in-ground" },
-  { value: "side-mounted", label: "Side-mount", blurb: "Posts fixed to a vertical edge / wall", icon: "side-mount" },
+  { value: "side-mounted", label: "Side-mount", blurb: "AIRE posts fixed to a vertical face / edge", icon: "side-mount" },
 ];
 const ALU_BAL_MOUNTS: AttachmentOption[] = [
   { value: "base-plated", label: "Base-plate", blurb: "Bolt-down on a slab / deck", icon: "base-plate" },

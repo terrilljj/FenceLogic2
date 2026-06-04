@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowDownToLine, ChevronLeft, ChevronRight, CircleDot, FlipHorizontal, Layers, Pencil, Square } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ChevronLeft, ChevronRight, CircleDot, FlipHorizontal, Layers, Pencil, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ const FINISH_META: Record<Finish, { code: "B" | "W"; label: string; swatch: stri
 // Substrate → inline post / cover / fixings (operator inputs spec + PTS-019).
 // BARR brackets are C-brackets + caps (BARR-specific — Blade uses FastFit, Tubular
 // uses shrouds; operator ruling 2026-06-03: never shared).
-type Substrate = "decking" | "concrete-slab" | "in-ground" | "core-drilled";
+type Substrate = "decking" | "concrete-slab" | "in-ground" | "core-drilled" | "side-mounted";
 const SUBSTRATE_HARDWARE: Record<
   Substrate,
   {
@@ -108,6 +108,21 @@ const SUBSTRATE_HARDWARE: Record<
     fixingTitle: "Grout 10kg",
     fixingChip: "1 / 15 posts",
     fixingTip: "Pourable grout — 76mm core holes, 100mm deep. 1 × 10kg bag per 15 posts plus a spare.",
+  },
+  // Side-mount uses the shared AIRE face-mount posts (operator 2026-06-04: the AR-series
+  // posts are the only side-mount option). Fixing material defaults to concrete until the
+  // timber/concrete/steel picker lands.
+  "side-mounted": {
+    short: "Side-mounted",
+    postSku: (c) => `AR-1500-FMID-${c}`,
+    postTitle: "AIRE 1500mm Face-Mount Post",
+    coverSku: (c) => (c === "W" ? "GS-DN-4PK" : "GS-DN-4PK-B"),
+    coverTitle: "M12 Dome Nut 4-pack",
+    xPostSku: (c) => `AR-1500-FMLR-${c}-2PK`,
+    xPostTitle: "AIRE Face-Mount L+R End 2-pack",
+    fixingTitle: "M12 post fixings",
+    fixingTip: "Match the Fixing surface you pick above: timber → M12×160 LAG screws, concrete → M12 rod + chemical anchor, steel → you supply M12. Dome nuts for the visible face are always included.",
+    supplyNote: "Fixings per your selected surface",
   },
 };
 
@@ -447,9 +462,32 @@ export function AluPoolBarrConfig({ span, updateSpan, allSpans }: AluPoolBarrCon
                 { value: "concrete-slab", label: "Concrete Slab", blurb: "Bolt-down", icon: <Square className="h-6 w-6" /> },
                 { value: "in-ground", label: "In-ground", blurb: "Post holes", icon: <ArrowDownToLine className="h-6 w-6" /> },
                 { value: "core-drilled", label: "Core-drilled", blurb: "Into concrete", icon: <CircleDot className="h-6 w-6" /> },
+                { value: "side-mounted", label: "Side-mounted", blurb: "AIRE face-mount", icon: <FlipHorizontal className="h-6 w-6" /> },
               ]}
             />
           </div>
+
+          {/* Fixing surface — side-mount only; drives the AIRE post fixings. */}
+          {substrate === "side-mounted" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Fixing surface</Label>
+                <InfoTooltip content="The face the AIRE side-mount posts bolt to. Timber takes M12 LAG screws; concrete takes M12 threaded rod + chemical anchor; steel is customer-supplied M12. Dome nuts are included either way." />
+              </div>
+              <IconOptionPicker
+                spanId={span.spanId}
+                idPrefix="barr-material"
+                value={(span.fieldValues?.["barr-material"] as string) || "concrete"}
+                onSelect={(v) => updateSpan({ fieldValues: { ...span.fieldValues, "barr-material": v } })}
+                columns={3}
+                options={[
+                  { value: "timber", label: "Timber", blurb: "M12 LAG screws", icon: <Layers className="h-5 w-5" /> },
+                  { value: "concrete", label: "Concrete", blurb: "Rod + chem anchor", icon: <CircleDot className="h-5 w-5" /> },
+                  { value: "steel", label: "Steel", blurb: "You supply M12", icon: <AlertTriangle className="h-5 w-5" /> },
+                ]}
+              />
+            </div>
+          )}
 
           {/* Inline hardware — product cards (finish-matched SKUs). */}
           <div className="space-y-1.5">

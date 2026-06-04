@@ -24,33 +24,50 @@ const STYLE_TIP: Tip = {
 const ATTACH_TIPS: Record<string, Tip> = {
   "core-drilled": {
     title: "Core-drilled",
-    body: "Set into a cored hole in the concrete and grouted in. The cleanest, strongest fix — glass spigots or aluminium posts grout straight into the slab. Needs solid concrete to core.",
+    body: "My pick on a solid concrete slab — the spigot or post grouts straight into a cored hole for the cleanest, strongest result. Needs sound concrete to core into; not for decks or thin toppings.",
   },
   "base-plate": {
     title: "Base-plated",
-    body: "Bolts down onto a slab or deck with a base plate — no coring. The everyday fix for new slabs and timber decks. The rod fixings sit proud, so it takes the taller cover.",
+    body: "On a deck — or any finished surface you don't want to core — use a base-plated spigot. It bolts straight down, no coring needed, and it's my go-to for timber decks and new slabs with a tiled or paved finish.",
+  },
+  "base-plated": {
+    title: "Base-plated",
+    body: "On a deck or finished slab, base-plate the posts — they bolt straight down, no coring needed. My go-to for timber decks and tiled/paved slabs.",
+  },
+  "face-mounted": {
+    title: "Face-mounted",
+    body: "Face-mount the posts to a vertical edge (a fascia or the edge of a slab) when you want to keep the top surface clear — the run cantilevers up from the side. Best on raised decks and stair edges.",
   },
   "side-mounted": {
     title: "Side-mounted",
-    body: "Fixed to a vertical face — a fascia, the edge of a slab, or a wall. Frees up the top surface and suits raised decks or stair edges.",
+    body: "Fix the posts to a vertical face — a fascia, the edge of a slab, or a wall — to keep the top surface clear. Uses the AIRE face-mount posts; tell me whether the fixing surface is timber, concrete or steel so I get the right bolts.",
   },
-  "inground": {
+  // aluminium pool substrate
+  "decking": {
+    title: "Decking",
+    body: "On a timber deck, base-plate the posts down to the deck framing — no coring. The everyday deck fix; the batten screws are included.",
+  },
+  "concrete-slab": {
+    title: "Concrete slab",
+    body: "On a finished concrete slab, bolt the base plates down — the standard fix where you don't want to core. Fixings into the slab are customer-sourced.",
+  },
+  "in-ground": {
     title: "In-ground",
-    body: "Aluminium posts set straight into the ground or a concrete footing — no slab needed. The go-to where the fence runs across dirt, grass or a garden bed.",
+    body: "Where the fence runs across dirt, grass or a garden bed with no slab, set the posts in-ground in concrete footings. That's the one to use off-slab — don't base-plate onto pavers sitting on sand.",
   },
   // channel
   "ground": {
     title: "Deck mount",
-    body: "The channel sits on top of the deck or slab and the glass drops into it. The standard channel fix on a flat surface.",
+    body: "On a flat deck or slab, deck-mount the channel — it sits on top and the glass drops in. The standard, simplest channel fix; use it unless you need the surface clear.",
   },
   "wall": {
     title: "Face mount",
-    body: "The channel bolts to a vertical edge (a fascia or slab edge), with the glass cantilevering up. Keeps the deck surface clear.",
+    body: "Face-mount the channel to a vertical edge (a fascia or slab edge) when you want to keep the deck surface completely clear — the glass cantilevers up from the side.",
   },
   // standoff substrate
-  "concrete": { title: "Concrete", body: "Standoffs core or chem-anchor into concrete — solid and permanent. Mind the edge distance near a slab edge." },
-  "timber": { title: "Timber", body: "Lag-screwed into structural timber (a bearer or solid blocking behind the cladding). Not into cladding alone." },
-  "steel": { title: "Steel", body: "Bolted to a steel member — you supply the M12 hardware. The post engineer confirms the steel is rated for the load." },
+  "concrete": { title: "Concrete", body: "Into concrete, core or chem-anchor the standoffs — solid and permanent. Keep clear of the slab edge for the minimum edge distance." },
+  "timber": { title: "Timber", body: "Into timber, lag-screw the standoffs to a structural member (a bearer or solid blocking) — never into cladding alone." },
+  "steel": { title: "Steel", body: "Onto steel, bolt the standoffs with your own M12 hardware and have the engineer confirm the member is rated for the load." },
 };
 
 /** Tips for the RHS Joe pane given the selected section's style and the active field. */
