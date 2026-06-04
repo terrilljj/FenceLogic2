@@ -40,11 +40,15 @@ app.use(
   })
 );
 
-// CSP headers for Shopify iframe embedding
+// CSP frame-ancestors — who may iframe the calculator. Includes the BarrierHub storefront
+// (Vercel previews + the live domain) so it can be embedded into the site, plus Shopify
+// (legacy) and self. Set EMBED_FRAME_ANCESTORS in Railway to the live storefront origin(s)
+// (space-separated) once the domain is attached, e.g. "https://barrierhub.com https://www.barrierhub.com".
+const storefrontFrameAncestors = process.env.EMBED_FRAME_ANCESTORS || "https://*.vercel.app";
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
-    `frame-ancestors https://*.myshopify.com https://admin.shopify.com https://${req.headers['x-forwarded-host'] || req.headers.host};`
+    `frame-ancestors https://*.myshopify.com https://admin.shopify.com ${storefrontFrameAncestors} https://${req.headers['x-forwarded-host'] || req.headers.host};`
   );
   next();
 });
