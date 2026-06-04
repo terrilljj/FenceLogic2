@@ -72,6 +72,13 @@ const productOptions: ProductOption[] = [
     visual: "channel-glass"
   },
   {
+    id: "glass-bal-channel-hd",
+    type: "glass-balustrade",
+    name: "VersaTilt Channel HD 17.52",
+    description: "Laminated SGP glass, 3600mm channel — high wind/fall, to 50m",
+    visual: "channel-glass"
+  },
+  {
     id: "glass-bal-standoffs",
     type: "glass-balustrade",
     name: "Standoff Balustrade",

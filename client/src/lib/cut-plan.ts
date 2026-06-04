@@ -186,6 +186,7 @@ export function panelCutPlans(
 // ── Channel-specific wrapper ─────────────────────────────────────────────────────
 
 export const CHANNEL_STOCK_MM = 4200;
+export const CHANNEL_STOCK_HD_MM = 3600; // VersaTilt HD deck-mount kit (PTS-028) — shorter stock
 export const CHANNEL_PINS_PER_JOIN = 4; // operator rule (pool channel); sold in packs of 10
 export const CHANNEL_PIN_PACK_SIZE = 10;
 
@@ -212,12 +213,13 @@ export function channelRunsForSpan(span: SpanConfig): number[] {
   return runs;
 }
 
-/** Compute channel cut plans for every span in the design (in span order). */
-export function channelCutPlans(spans: SpanConfig[]): Map<string, SectionCutPlan> {
+/** Compute channel cut plans for every span in the design (in span order).
+ *  stockMm defaults to the standard 4200mm VersaTilt channel; HD passes 3600mm. */
+export function channelCutPlans(spans: SpanConfig[], stockMm: number = CHANNEL_STOCK_MM): Map<string, SectionCutPlan> {
   const sections: CutSectionInput[] = spans.map((s) => ({
     id: s.spanId,
     label: s.name?.trim() || `Section ${s.spanId}`,
     runsMm: channelRunsForSpan(s),
   }));
-  return computeSectionCutPlans(sections, CHANNEL_STOCK_MM);
+  return computeSectionCutPlans(sections, stockMm);
 }

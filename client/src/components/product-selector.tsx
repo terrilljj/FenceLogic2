@@ -31,6 +31,7 @@ const productCategories: ProductCategory[] = [
       { id: "glass-bal-spigots-12mm", name: "Spigots — 12mm" },
       { id: "glass-bal-spigots-15mm", name: "Spigots — 15mm" },
       { id: "glass-bal-channel", name: "Channel — 15mm" },
+      { id: "glass-bal-channel-hd", name: "Channel — HD 17.52" },
       { id: "glass-bal-standoffs", name: "Standoffs" }
     ]
   },

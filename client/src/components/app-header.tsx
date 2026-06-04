@@ -12,6 +12,7 @@ function getProductDisplayName(variant: ProductVariant): string {
     "glass-pool-channel": "Glass Pool - Channel",
     "glass-bal-spigots": "Glass Balustrade - Spigots",
     "glass-bal-channel": "Glass Balustrade - Channel",
+    "glass-bal-channel-hd": "Glass Balustrade - Channel (HD 17.52)",
     "glass-bal-standoffs": "Glass Balustrade - Standoffs",
     "alu-pool-barr": "Aluminium Pool - BARR",
     "alu-pool-blade": "Aluminium Pool - Blade",

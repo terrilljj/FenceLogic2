@@ -517,7 +517,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
   // Channel systems: pool (12mm) + balustrade 15mm — same VersaTilt channel drawing.
   // The one elevation difference is friction-plate spacing (operator ruling 2026-06-03):
   // pool = 150mm end setback / 500mm max centres; bal = 25mm setback / 300mm centres.
-  const isBalChannel = design.productVariant === "glass-bal-channel";
+  const isBalChannel = design.productVariant === "glass-bal-channel" || design.productVariant === "glass-bal-channel-hd";
   const isChannelSystem = design.productVariant === "glass-pool-channel" || isBalChannel;
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
@@ -1499,6 +1499,7 @@ function renderElevationView(canvas: HTMLCanvasElement, design: FenceDesign, act
     // that home.tsx emits, mirroring the same fix landed in bom-calculator.ts (PR #27).
     const isGlassBalustrade = design.productVariant.startsWith("glass-bal-spigots") ||
                               design.productVariant === "glass-bal-channel" ||
+                              design.productVariant === "glass-bal-channel-hd" ||
                               design.productVariant === "glass-bal-standoffs";
     
     if (isGlassBalustrade && span.handrail?.enabled) {

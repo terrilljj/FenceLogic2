@@ -170,6 +170,16 @@ export const PANEL_SIZE_REGISTRY: Partial<Record<ProductVariant, PanelSizeConfig
       label: "Glass Panels"
     }
   ],
+  "glass-bal-channel-hd": [
+    {
+      minWidth: 250,
+      maxWidth: 1400,
+      increment: 50,
+      fieldName: "glass-panels",
+      prefix: "GP",
+      label: "Glass Panels"
+    }
+  ],
   "glass-bal-standoffs": [
     {
       minWidth: 400,
@@ -624,6 +634,7 @@ export const fenceDesignSchema = z.object({
     "glass-pool-channel",
     "glass-bal-spigots",
     "glass-bal-channel",
+    "glass-bal-channel-hd",
     "glass-bal-standoffs",
     "semi-frameless-1000",
     "semi-frameless-1800",

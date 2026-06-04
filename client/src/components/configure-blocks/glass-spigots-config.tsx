@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SpanConfig, getGateGaps } from "@shared/schema";
-import { channelCutPlans, computeSectionCutPlans, CHANNEL_PINS_PER_JOIN, CHANNEL_PIN_PACK_SIZE } from "@/lib/cut-plan";
+import { channelCutPlans, computeSectionCutPlans, CHANNEL_PINS_PER_JOIN, CHANNEL_PIN_PACK_SIZE, CHANNEL_STOCK_MM, CHANNEL_STOCK_HD_MM } from "@/lib/cut-plan";
 import { cn } from "@/lib/utils";
 import { InfoTooltip } from "../info-tooltip";
 import { GateControls } from "../gate-controls";
@@ -289,10 +289,15 @@ export function GlassSpigotsConfig({
   //    section. Operator ruling 2026-06-03 (_docs/channel-ui-build-spec.md): pool
   //    channel carried over verbatim + 35-Series rail (finish auto-matched) +
   //    friction plates at 300mm centres.
-  const isBalChannel = productVariant === "glass-bal-channel";
+  // HD = VersaTilt Heavy Duty (PTS-028): 17.52mm SGP laminated, 3600mm channel, HD
+  // friction plates + washers, 35-Series rail with a 17.52 runner insert. Otherwise
+  // identical to the standard 15mm bal channel.
+  const isBalChannelHd = productVariant === "glass-bal-channel-hd";
+  const isBalChannel = productVariant === "glass-bal-channel" || isBalChannelHd;
   const isChannel = productVariant === "glass-pool-channel" || isBalChannel;
-  // Glass spec per mode: pool = 12mm × 1200mm; bal channel = 15mm × 1000mm (PTS-003).
-  const glassThicknessMm = isBalChannel ? 15 : GLASS_THICKNESS_MM;
+  // Glass spec per mode: pool = 12mm × 1200mm; bal channel = 15mm × 1000mm (PTS-003);
+  // HD bal channel = 17.52mm SGP laminated × 1000mm (PTS-028).
+  const glassThicknessMm = isBalChannelHd ? 17.52 : isBalChannel ? 15 : GLASS_THICKNESS_MM;
   const glassHeightMm = isBalChannel ? 1000 : STANDARD_PANEL_HEIGHT_MM;
   // PTS-003 max span for the 15mm bal channel: 1400mm (pool styles go to 2000mm).
   const maxPanelCapMm = isBalChannel ? 1400 : 2000;
@@ -499,7 +504,8 @@ export function GlassSpigotsConfig({
   // sections are reused automatically before any new full length is cut. The same
   // engine will drive handrail cut optimisation.
   const designSpans = allSpans?.length ? allSpans : [span];
-  const allPlans = channelCutPlans(designSpans);
+  const channelStockMm = isBalChannelHd ? CHANNEL_STOCK_HD_MM : CHANNEL_STOCK_MM;
+  const allPlans = channelCutPlans(designSpans, channelStockMm);
   const channelPlanRaw = allPlans.get(span.spanId);
   const channelPlan = {
     fullLengths: channelPlanRaw?.fullLengths ?? 0,
@@ -514,7 +520,7 @@ export function GlassSpigotsConfig({
     "VersaTilt",
     channelFinish === "black" ? "Black" : "Satin Anodised",
     substrateLabel,
-    `${channelPlan.fullLengths} × 4200mm`,
+    `${channelPlan.fullLengths} × ${channelStockMm}mm`,
     channelPlan.claimed.length ? "offcut reused" : null,
     channelPlan.joins > 0 ? `${channelPlan.joins} join${channelPlan.joins > 1 ? "s" : ""}` : null,
   ]
@@ -668,11 +674,20 @@ export function GlassSpigotsConfig({
             per {standardPanelWidth}×{glassHeightMm}mm panel ({glassThicknessMm}mm glass)
           </p>
 
-          {/* AS1288 fall-height band — balustrade channel only (not pool). VersaTilt has no
-              run-length cap, so no run-cap note. */}
-          {isBalChannel && (
+          {/* AS1288 fall-height band — standard balustrade channel only (not pool). VersaTilt
+              has no run-length cap, so no run-cap note. HD is ALWAYS 17.52 SGP laminated, so it
+              skips the band and shows a fixed spec note instead. */}
+          {isBalChannel && !isBalChannelHd && (
             <div className="mt-3">
               <GlassBalFallBand span={span} updateSpan={updateSpan} productVariant={productVariant} />
+            </div>
+          )}
+          {isBalChannelHd && (
+            <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-2.5 text-[11px] leading-relaxed dark:border-amber-900 dark:bg-amber-950/30" data-testid={`span-${span.spanId}-glass-spec`}>
+              <p className="font-semibold">Glass: 17.52mm Grade A toughened SGP laminated</p>
+              <p className="text-amber-800 dark:text-amber-300">
+                Heavy-duty VersaTilt (PTS-028): laminated by design — rated for high-wind / high-fall / C1–C2 occupancy up to 50m. The build (17.52 vs 21.52mm) is confirmed by engineering against your wind region, height and substrate.
+              </p>
             </div>
           )}
         </AccordionContent>
@@ -790,7 +805,7 @@ export function GlassSpigotsConfig({
             <div className="rounded-md border border-card-border bg-muted/30 p-2.5" data-testid={`span-${span.spanId}-channel-usage`}>
               <p className="text-[11px] font-semibold">Channel for this section</p>
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                {channelPlan.fullLengths} × 4200mm length{channelPlan.fullLengths === 1 ? "" : "s"}
+                {channelPlan.fullLengths} × {channelStockMm}mm length{channelPlan.fullLengths === 1 ? "" : "s"}
                 {channelPlan.claimed.length > 0
                   ? ` + ${channelPlan.claimed
                       .map((o) => `${o.lengthMm.toLocaleString()}mm offcut from ${o.fromLabel}`)

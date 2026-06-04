@@ -56,7 +56,8 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const tips: Tip[] = [];
   const fv = (span.fieldValues ?? {}) as Record<string, unknown>;
   const isPool = productVariant === "glass-pool-spigots";
-  const isBalChannel = productVariant === "glass-bal-channel";
+  const isBalChannelHd = productVariant === "glass-bal-channel-hd";
+  const isBalChannel = productVariant === "glass-bal-channel" || isBalChannelHd;
   const isChannel = productVariant === "glass-pool-channel" || isBalChannel;
   const isStandoffs = productVariant === "glass-bal-standoffs";
   const isBlade = productVariant === "alu-pool-blade";
