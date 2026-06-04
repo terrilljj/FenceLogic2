@@ -548,6 +548,34 @@ export default function FenceLogic() {
     });
   };
 
+  // Push the priced BOM to the storefront cart. The calc is embedded in
+  // barrierhub.com.au/calculator; we hand the sellable cart items to the parent page via
+  // postMessage and it adds them to the storefront cart (which re-prices by SKU at checkout).
+  const handleAddToCart = async () => {
+    try {
+      const res = await fetch("/api/cart-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ design }),
+      });
+      if (!res.ok) throw new Error("cart-items failed");
+      const { items, skipped } = await res.json();
+      if (!items?.length) {
+        toast({ title: "Nothing to add yet", description: "No purchasable items in this design.", variant: "destructive" });
+        return;
+      }
+      // Hand off to the embedding storefront page. Payload is public cart data; the storefront
+      // listener validates the sender origin.
+      window.parent?.postMessage({ type: "bh:add-to-cart", items }, "*");
+      toast({
+        title: "Added to cart",
+        description: `${items.length} item${items.length === 1 ? "" : "s"} added${skipped?.length ? ` · ${skipped.length} need a quote` : ""}.`,
+      });
+    } catch {
+      toast({ title: "Couldn't add to cart", description: "Please try again.", variant: "destructive" });
+    }
+  };
+
   const handleDownloadList = () => {
     const lines: string[] = [];
 
@@ -830,6 +858,7 @@ export default function FenceLogic() {
                         components={components}
                         onEmail={handleEmailQuote}
                         onDownload={handleDownloadList}
+                        onAddToCart={handleAddToCart}
                       />
                       <TipsPanel title="Before you order" tips={STEP3_REVIEW_TIPS} />
                     </div>

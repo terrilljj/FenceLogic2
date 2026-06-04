@@ -32,6 +32,9 @@ export interface IStorage {
   getStorefrontImages(): Promise<Record<string, string>>;
   /** Durable lead record — writes to bh_storefront.leads (shared with the storefront, ADR 0050). */
   createLead(lead: { name: string; email: string; phone?: string | null; subject: string; message: string; source: string }): Promise<void>;
+  /** Per-SKU cart info from bh_storefront: name, GST-inc price, primary image, and whether
+   * it's sellable (placed in a category — the storefront checkout rejects unplaced SKUs). */
+  getCartLineInfo(skus: string[]): Promise<Map<string, { name: string; price: number | null; imageUrl: string | null; placed: boolean }>>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
   upsertProduct(product: InsertProduct): Promise<{ product: Product; created: boolean }>;
@@ -188,6 +191,30 @@ export class DatabaseStorage implements IStorage {
       INSERT INTO bh_storefront.leads (name, email, phone, subject, message, source)
       VALUES (${lead.name}, ${lead.email}, ${lead.phone ?? null}, ${lead.subject}, ${lead.message}, ${lead.source})
     `);
+  }
+
+  async getCartLineInfo(skus: string[]): Promise<Map<string, { name: string; price: number | null; imageUrl: string | null; placed: boolean }>> {
+    const map = new Map<string, { name: string; price: number | null; imageUrl: string | null; placed: boolean }>();
+    if (skus.length === 0) return map;
+    const list = sqlOp.join(skus.map((s) => sqlOp`${s}`), sqlOp`, `);
+    const result: any = await db.execute(sqlOp`
+      SELECT p.sku, p.name, p.retail_price_inc_gst::float AS price,
+        (SELECT i.url FROM bh_storefront.product_images i WHERE i.sku = p.sku ORDER BY i.is_primary DESC NULLS LAST LIMIT 1) AS image,
+        EXISTS (SELECT 1 FROM bh_storefront.product_placements pp WHERE pp.sku = p.sku) AS placed
+      FROM bh_storefront.products p
+      WHERE p.sku IN (${list})
+    `);
+    const rows = result?.rows ?? result ?? [];
+    for (const r of rows) {
+      if (!r?.sku) continue;
+      map.set(String(r.sku), {
+        name: r.name ?? String(r.sku),
+        price: r.price != null ? Number(r.price) : null,
+        imageUrl: r.image ?? null,
+        placed: r.placed === true,
+      });
+    }
+    return map;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
