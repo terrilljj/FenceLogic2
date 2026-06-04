@@ -37,6 +37,68 @@ function makeAluminiumDesign(
 }
 
 describe("aluminium branches — slot resolution with template-literal fallback", () => {
+  describe("aluminium balustrade — BARR + Blade (AIRE engine)", () => {
+    const balDesign = (variant: string, fieldValues: Record<string, string>, extra: Record<string, unknown> = {}) =>
+      ({
+        name: "Bal", productType: "aluminium-balustrade", productVariant: variant as any, shape: "inline",
+        spans: [{
+          spanId: "s1", length: 8000, maxPanelWidth: 1733, desiredGap: 50, layoutMode: "auto-equalize",
+          panelLayout: { panels: [1365, 1365, 1365], gaps: [50, 50, 50, 50], totalPanelWidth: 4095, totalGapWidth: 200, averageGap: 50, panelTypes: ["standard", "standard", "standard"] },
+          fieldValues, ...extra,
+        }],
+      } as unknown as import("@shared/schema").FenceDesign);
+
+    it("BARR Bal base-plated timber: panels, C-brackets + caps, AIRE base-plate posts, domical covers, M10 LAG", () => {
+      const skus = calculateComponents(balDesign("alu-bal-barr", { "bal-substrate": "base-plated", "bal-material": "timber" }, { balBarrFinish: "black" }), [], []).map(c => c.sku);
+      expect(skus).toContain("BR-PANEL-1733-1000-B");   // panels
+      expect(skus).toContain("BR-BR60-B-4PK");          // extended C-brackets
+      expect(skus).toContain("BR-BRCAP-B-4PK");         // bracket caps
+      expect(skus).toContain("AR-1050-FPBP-B");         // AIRE base-plate posts
+      expect(skus).toContain("XP-DC-2P-B");             // domical covers
+      expect(skus).toContain("S-110LAG-4PK");           // M10 LAG fixings
+    });
+
+    it("BARR Bal White core-drilled: XP white covers, AIRE 5800 posts, top plate, grout", () => {
+      const skus = calculateComponents(balDesign("alu-bal-barr", { "bal-substrate": "core-drilled" }, { balBarrFinish: "white" }), [], []).map(c => c.sku);
+      expect(skus).toContain("BR-PANEL-1733-1000-W");
+      expect(skus).toContain("AR-5800-FP-W");
+      expect(skus).toContain("XP-TP-W");                // top plate
+      expect(skus).toContain("XP-DR-W");                // dress ring
+      expect(skus).toContain("GROUT-SETFAST-10KG");
+    });
+
+    it("BARR Bal face-mount concrete: AIRE mid + L+R pack, dome nuts, M12 rod + chem anchor", () => {
+      const skus = calculateComponents(balDesign("alu-bal-barr", { "bal-substrate": "face-mounted", "bal-material": "concrete" }, { balBarrFinish: "black" }), [], []).map(c => c.sku);
+      expect(skus).toContain("AR-1500-FMID-B");         // mid posts
+      expect(skus).toContain("AR-1500-FMLR-B-2PK");     // L+R end pack
+      expect(skus).toContain("GS-DN-4PK-B");            // dome nuts (Black)
+      expect(skus).toContain("GS150ROD");               // M12 rod
+      expect(skus).toContain("SOUD-CA1400");            // chem anchor
+    });
+
+    it("Blade Bal base-plated timber: BLA panel, FastFit brackets (no cap), AIRE posts", () => {
+      const comps = calculateComponents(
+        { name: "B", productType: "aluminium-balustrade", productVariant: "alu-bal-blade" as any, shape: "inline",
+          spans: [{ spanId: "s1", length: 8000, maxPanelWidth: 1700, desiredGap: 50, layoutMode: "auto-equalize",
+            panelLayout: { panels: [1700, 1700], gaps: [50, 50, 50], totalPanelWidth: 3400, totalGapWidth: 150, averageGap: 50, panelTypes: ["standard", "standard"] },
+            fieldValues: { "bal-substrate": "base-plated", "bal-material": "timber" } }] } as unknown as import("@shared/schema").FenceDesign,
+        [], []);
+      const skus = comps.map(c => c.sku);
+      expect(skus).toContain("BLA-PNL-1700-1000-B");
+      expect(skus).toContain("FF-BH-OPEN-4PK-B");
+      expect(skus).toContain("AR-1050-FPBP-B");
+      expect(skus).toContain("XP-DC-2P-B");
+      expect(skus).not.toContain("BR-BRCAP-B-4PK");     // no bracket cap for FastFit
+    });
+
+    it("White face-mount uses Silver dome nuts (GS-DN-4PK), not Black", () => {
+      const skus = calculateComponents(balDesign("alu-bal-barr", { "bal-substrate": "face-mounted", "bal-material": "steel" }, { balBarrFinish: "white" }), [], []).map(c => c.sku);
+      expect(skus).toContain("GS-DN-4PK");              // Silver for White
+      expect(skus).not.toContain("GS-DN-4PK-B");
+      expect(skus).not.toContain("GS150ROD");           // steel = customer-supplied
+    });
+  });
+
   describe("alu-pool-blade", () => {
     it("emits the full hardware set on a timber deck (FastFit brackets, covers, fixings)", () => {
       const design = makeAluminiumDesign("alu-pool-blade", [2200, 2200], {

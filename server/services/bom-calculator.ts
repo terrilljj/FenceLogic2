@@ -98,6 +98,84 @@ export function calculateComponents(
     }
   };
 
+  // ── Shared aluminium-balustrade hardware (SF-12/13 — BARR Bal + Blade Bal use the
+  // SAME AIRE post family + XP covers + 3D fixings matrix; only panels + brackets +
+  // finish availability differ). Substrate-driven post topology (face-mount corners
+  // are 2 posts back-to-back; core/base share); covers + fixings per substrate × material.
+  //   code: 'B' | 'W'  ·  substrate: core-drilled | base-plated | face-mounted
+  //   material: timber | concrete | steel (base/face only)  ·  corners: count
+  const emitBalHardware = (
+    code: "B" | "W",
+    finishName: string,
+    substrate: string,
+    material: string,
+    totalPanels: number,
+    corners: number,
+  ): void => {
+    if (substrate === "core-drilled") {
+      const posts = totalPanels + 1;                 // corners are shared inline posts
+      pushSlotOrFallback(posts, 'post', { type: 'core', finish: code },
+        { description: `AIRE 5800mm Core-Drill Post — cut to length (${finishName})`, sku: `AR-5800-FP-${code}` });
+      pushSlotOrFallback(posts, 'top-plate', { finish: code },
+        { description: `Post Top Plate (${finishName})`, sku: `XP-TP-${code}` });
+      pushSlotOrFallback(posts, 'post-cover', { type: 'dress-ring', finish: code },
+        { description: `Dress Ring (${finishName})`, sku: `XP-DR-${code}` });
+      pushSlotOrFallback(Math.ceil(posts / 15) + 1, 'grout', { type: 'setfast' },
+        { description: `Setfast Non-Shrink Grout 10kg (incl. spare)`, sku: `GROUT-SETFAST-10KG` });
+    } else if (substrate === "base-plated") {
+      const posts = totalPanels + 1;
+      pushSlotOrFallback(posts, 'post', { type: 'base-plate', finish: code },
+        { description: `AIRE 1050mm Base Plate Post (${finishName})`, sku: `AR-1050-FPBP-${code}` });
+      pushSlotOrFallback(posts, 'post-cover', { type: 'domical', finish: code },
+        { description: `Domical Cover 2-part (${finishName})`, sku: `XP-DC-2P-${code}` });
+      if (material === "timber") {
+        pushSlotOrFallback(posts, 'fixing', { type: 'lag-m10', substrate: 'base-timber' },
+          { description: `M10 LAG Screw 4-pack (4 per post)`, sku: `S-110LAG-4PK` });
+      } else if (material === "concrete") {
+        pushSlotOrFallback(posts, 'fixing', { type: 'rod-m10', substrate: 'base-concrete' },
+          { description: `M10 Threaded Rod 4-pack (4 per post)`, sku: `S-120ROD-4PK` });
+        pushSlotOrFallback(Math.ceil(posts / 20), 'chem-anchor', { type: 'soudal' },
+          { description: `Chemical Anchor 400ml (1 per 20 posts)`, sku: `SOUD-CA1400` });
+      } // steel: customer-supplied — no BH fixing SKU
+    } else { // face-mounted — mid posts + 2 back-to-back per corner + L+R end pack
+      const midPosts = Math.max(0, totalPanels - 1 - corners);
+      const cornerPosts = corners * 2;
+      const fmid = midPosts + cornerPosts;
+      if (fmid > 0) {
+        pushSlotOrFallback(fmid, 'post', { type: 'face-mid', finish: code },
+          { description: `AIRE 1500mm Face-Mount Mid Post (${finishName})`, sku: `AR-1500-FMID-${code}` });
+      }
+      const endPacks = 1; // a connected run has two free ends → one L+R 2-pack
+      pushSlotOrFallback(endPacks, 'post', { type: 'face-end', finish: code },
+        { description: `AIRE 1500mm Face-Mount L+R End Post 2-pack (${finishName})`, sku: `AR-1500-FMLR-${code}-2PK` });
+      const facePosts = fmid + endPacks * 2;
+      // Dome nuts emitted for ALL face-mount materials; finish-matched (Silver SS for White).
+      const domeSku = code === "W" ? `GS-DN-4PK` : `GS-DN-4PK-B`;
+      pushSlotOrFallback(facePosts, 'dome-nut', { finish: code },
+        { description: `M12 Dome Nut 4-pack (${code === "W" ? "Silver" : "Black"})`, sku: domeSku });
+      if (material === "timber") {
+        pushSlotOrFallback(facePosts * 4, 'fixing', { type: 'lag-m12', substrate: 'face-timber' },
+          { description: `M12 x 160mm LAG Screw (4 per post)`, sku: `GS160LAG` });
+      } else if (material === "concrete") {
+        pushSlotOrFallback(facePosts * 4, 'fixing', { type: 'rod-m12', substrate: 'face-concrete' },
+          { description: `M12 x 150mm Threaded Rod (4 per post)`, sku: `GS150ROD` });
+        pushSlotOrFallback(Math.ceil(facePosts / 15), 'chem-anchor', { type: 'soudal' },
+          { description: `Chemical Anchor 400ml (1 per 15 posts)`, sku: `SOUD-CA1400` });
+      } // steel: customer-supplied main fixings (dome nuts still emitted above)
+    }
+  };
+
+  // Corner count from the design shape (manual override via fieldValues['bal-corners']).
+  const balCornersFromShape = (): number => {
+    const s = (design as any).shape as string;
+    const sections = (design.spans as any[]).length;
+    if (s === "l-shape") return 1;
+    if (s === "u-shape") return 2;
+    if (s === "enclosed") return 4;
+    if (s === "custom") return Math.max(0, sections - 1);
+    return 0; // inline
+  };
+
   const isChannelSystem = design.productVariant === "glass-pool-channel";
   const isBladeFencing = design.productVariant === "alu-pool-blade";
   const isBarrFencing = design.productVariant === "alu-pool-barr";
@@ -661,278 +739,89 @@ export function calculateComponents(
       return;
     }
     // Aluminium Balustrade — BARR
+    // Aluminium Balustrade — BARR (SF-12 / inputs spec 2026-05-26). 1733×1000 panel,
+    // 2 finishes; AIRE posts + XP covers + 3D fixings via the shared helper. No gates.
+    // Emitted ONCE at span 0 with design-level totals (corner topology is cross-section).
     else if (isBalBarr && span.panelLayout && span.panelLayout.panels.length > 0) {
-      const panelHeight = (span.balBarrPanelHeight || "1000mm") as "1000mm" | "1200mm";
+      if (spanIndex !== 0) return;
       const finishKey = (span.balBarrFinish || "black") as "black" | "white";
-      const postMounting = (span.balBarrPostMounting || "face-mount") as "face-mount" | "base-plated" | "full-post-core-drill";
+      const code: "B" | "W" = finishKey === "black" ? "B" : "W";
+      const finishName = finishKey === "black" ? "Satin Black" : "Pearl White";
+      const substrate = (span.fieldValues?.["bal-substrate"] as string) || "base-plated";
+      const material = (span.fieldValues?.["bal-material"] as string) || "timber";
+      const corners = span.fieldValues?.["bal-corners"] != null
+        ? (parseInt(String(span.fieldValues["bal-corners"]), 10) || 0)
+        : balCornersFromShape();
 
-      const panelSpecs: Record<string, { width: number; height: number }> = {
-        "1000mm": { width: 1733, height: 1000 },
-        "1200mm": { width: 2205, height: 1200 },
-      };
-      const spec = panelSpecs[panelHeight];
-      const finishLetter = finishKey === "black" ? "B" : "W";
-
-      const panelTypes = span.panelLayout.panelTypes || [];
-
-      // Panels
-      span.panelLayout.panels.forEach((_panelWidth: number, index: number) => {
-        const panelType = panelTypes[index] || "standard";
-        if (panelType === "raked") {
-          pushSlotOrFallback(
-            1,
-            'rake-panel',
-            { width: '1380', height: '1000', finish: finishKey },
-            {
-              description: `Bal BARR Rake Panel 1380×1000 (${finishKey})`,
-              sku: `BR-RAKE-1380-1000-${finishLetter}`,
-            },
-          );
-        } else {
-          pushSlotOrFallback(
-            1,
-            'panel',
-            { width: String(spec.width), height: String(spec.height), finish: finishKey },
-            {
-              description: `Bal BARR Panel ${spec.width}×${spec.height} (${finishKey})`,
-              sku: `BR-PANEL-${spec.width}-${spec.height}-${finishLetter}`,
-            },
-          );
-        }
+      // 1. Panels (real SKU, standard / cut) across every section.
+      let totalPanels = 0;
+      (design.spans as any[]).forEach((s: any) => {
+        const panels: number[] = s.panelLayout?.panels ?? [];
+        const types = s.panelLayout?.panelTypes ?? panels.map(() => "standard");
+        panels.forEach((w: number, i: number) => {
+          if ((types[i] || "standard") === "gate") return;
+          totalPanels++;
+          if (w === 1733) {
+            pushSlotOrFallback(1, 'panel',
+              { type: 'standard', width: '1733', height: '1000', finish: code },
+              { description: `BARR Balustrade Panel 1733 x 1000mm (${finishName})`, sku: `BR-PANEL-1733-1000-${code}` });
+          } else {
+            pushSlotOrFallback(1, 'panel',
+              { type: 'cut', width: String(w), height: '1000', finish: code },
+              { description: `BARR Balustrade Panel 1000H, cut to ${w}mm from 1733mm (${finishName})`, sku: `BR-PANEL-1733-1000-${code}` });
+          }
+        });
       });
 
-      const numPanels = span.panelLayout.panels.length;
-      // For BARR-style fencing, panel junctions = mid posts; span ends = end posts (one 2-pack covers L+R).
-      const midPostCount = Math.max(0, numPanels - 1);
-      const endPostPackCount = 1; // one 2-pack per span termination set
-
-      if (postMounting === "full-post-core-drill") {
-        // Full posts at each junction + ends (numPanels + 1 total positions, but full-post is one piece per position)
-        const fullPostCount = numPanels + 1;
-        pushSlotOrFallback(
-          fullPostCount,
-          'full-post',
-          { length: '5800', mounting: 'core-drill', finish: finishKey },
-          {
-            description: `Bal BARR Full Post 5800mm core-drill (${finishKey})`,
-            sku: `AR-5800-FP-${finishLetter}`,
-          },
-        );
-      } else {
-        // Mid posts (intermediate junctions)
-        if (midPostCount > 0) {
-          const midPostHeight = postMounting === "face-mount" ? "1500" : "1050";
-          const midPostType = postMounting === "face-mount" ? "face-mount" : "base-plated";
-          const midPostSkuMid = postMounting === "face-mount" ? "FMID" : "FPBP";
-          pushSlotOrFallback(
-            midPostCount,
-            'mid-post',
-            { type: midPostType, height: midPostHeight, finish: finishKey },
-            {
-              description: `Bal BARR Mid Post ${midPostHeight}mm ${midPostType} (${finishKey})`,
-              sku: `AR-${midPostHeight}-${midPostSkuMid}-${finishLetter}`,
-            },
-          );
-        }
-        // End posts (2-pack covers L+R)
-        pushSlotOrFallback(
-          endPostPackCount,
-          'end-post',
-          { type: 'face-mount', height: '1500', finish: finishKey },
-          {
-            description: `Bal BARR End Post 1500mm face-mount 2-pack (${finishKey})`,
-            sku: `AR-1500-FMLR-${finishLetter}-2PK`,
-          },
-        );
+      // 2. Brackets + caps — 1 kit each per panel (BR- aesthetic tier).
+      if (totalPanels > 0) {
+        pushSlotOrFallback(totalPanels, 'bracket', { type: 'c-bracket-60', finish: code },
+          { description: `BARR Extended C-Bracket Kit 4-pack (${finishName})`, sku: `BR-BR60-${code}-4PK` });
+        pushSlotOrFallback(totalPanels, 'bracket-cap', { finish: code },
+          { description: `BARR Bracket Cap 4-pack (${finishName})`, sku: `BR-BRCAP-${code}-4PK` });
       }
 
-      const totalPostCount = postMounting === "full-post-core-drill" ? (numPanels + 1) : (midPostCount + 2);
-
-      // C-brackets: 2 per post, packaged in 4-packs. qty = ceil(2 × postCount / 4)
-      const cBracketPacks = Math.ceil((2 * totalPostCount) / 4);
-      pushSlotOrFallback(
-        cBracketPacks,
-        'c-bracket',
-        { type: 'standard', finish: finishKey },
-        {
-          description: `Bal BARR C-Bracket 4-pack (${finishKey})`,
-          sku: `BR-BR60-${finishLetter}-4PK`,
-        },
-      );
-
-      // Bracket caps match c-bracket quantity
-      pushSlotOrFallback(
-        cBracketPacks,
-        'bracket-cap',
-        { finish: finishKey },
-        {
-          description: `Bal BARR Bracket Cap 4-pack (${finishKey})`,
-          sku: `BR-BRCAP-${finishLetter}-4PK`,
-        },
-      );
-
-      // Top cap — 1 per panel
-      pushSlotOrFallback(
-        numPanels,
-        'top-cap',
-        { finish: finishKey },
-        {
-          description: `Bal BARR Top Cap (${finishKey})`,
-          sku: `BR-TCA-${finishLetter}`,
-        },
-      );
-
-      // Per-post hardware: dress-ring, top-plate, domical-cover
-      pushSlotOrFallback(
-        totalPostCount,
-        'dress-ring',
-        { finish: finishKey },
-        {
-          description: `Dress Ring (${finishKey})`,
-          sku: `XP-DR-${finishLetter}`,
-        },
-      );
-      pushSlotOrFallback(
-        totalPostCount,
-        'top-plate',
-        { finish: finishKey },
-        {
-          description: `Top Plate (${finishKey})`,
-          sku: `XP-TP-${finishLetter}`,
-        },
-      );
-      pushSlotOrFallback(
-        totalPostCount,
-        'domical-cover',
-        { finish: finishKey },
-        {
-          description: `Domical Cover 2-piece (${finishKey})`,
-          sku: `XP-DC-2P-${finishLetter}`,
-        },
-      );
-
+      // 3. Posts + covers + fixings — shared AIRE/substrate engine.
+      emitBalHardware(code, finishName, substrate, material, totalPanels, corners);
       return;
     }
-    // Aluminium Balustrade — Blade (black only)
+    // Aluminium Balustrade — Blade (SF-13 / inputs spec 2026-05-26). Black-only,
+    // 1700×1000 panel, FF-BH-OPEN brackets (no cap); same AIRE/XP/fixings engine as
+    // BARR Bal. No c-to-c ceiling (40×40 SHS rail spans full stock). Emitted once at span 0.
     else if (isBalBlade && span.panelLayout && span.panelLayout.panels.length > 0) {
-      const postMounting = (span.balBladePostMounting || "face-mount") as "face-mount" | "full-post";
-      const fullPostLen = (span.balBladeFullPostLength || "2400") as "2400" | "6000";
+      if (spanIndex !== 0) return;
+      const substrate = (span.fieldValues?.["bal-substrate"] as string) || "base-plated";
+      const material = (span.fieldValues?.["bal-material"] as string) || "timber";
+      const corners = span.fieldValues?.["bal-corners"] != null
+        ? (parseInt(String(span.fieldValues["bal-corners"]), 10) || 0)
+        : balCornersFromShape();
 
-      const numPanels = span.panelLayout.panels.length;
-      const midPostCount = Math.max(0, numPanels - 1);
-
-      // Panels — 1700×1000 fixed, black only
-      span.panelLayout.panels.forEach(() => {
-        pushSlotOrFallback(
-          1,
-          'panel',
-          { width: '1700', height: '1000' },
-          {
-            description: `Bal Blade Panel 1700×1000 (Black)`,
-            sku: `BLA-PNL-1700-1000-B`,
-          },
-        );
+      // 1. Panels (real SKU, standard / cut) — Black only.
+      let totalPanels = 0;
+      (design.spans as any[]).forEach((s: any) => {
+        const panels: number[] = s.panelLayout?.panels ?? [];
+        panels.forEach((w: number) => {
+          totalPanels++;
+          if (w === 1700) {
+            pushSlotOrFallback(1, 'panel',
+              { type: 'standard', width: '1700', height: '1000', finish: 'B' },
+              { description: `Blade Balustrade Panel 1700 x 1000mm (Black)`, sku: `BLA-PNL-1700-1000-B` });
+          } else {
+            pushSlotOrFallback(1, 'panel',
+              { type: 'cut', width: String(w), height: '1000', finish: 'B' },
+              { description: `Blade Balustrade Panel 1000H, cut to ${w}mm from 1700mm (Black)`, sku: `BLA-PNL-1700-1000-B` });
+          }
+        });
       });
 
-      if (postMounting === "full-post") {
-        const fullPostCount = numPanels + 1;
-        pushSlotOrFallback(
-          fullPostCount,
-          'full-post',
-          { length: fullPostLen },
-          {
-            description: `Bal Blade Full Post ${fullPostLen}mm (Black)`,
-            sku: `XP-${fullPostLen}-FP-B`,
-          },
-        );
-        // Base plate per full post
-        pushSlotOrFallback(
-          fullPostCount,
-          'base-plate',
-          {},
-          {
-            description: `Bal Blade Base Plate Set (Black)`,
-            sku: `XP-BP-SET-B`,
-          },
-        );
-      } else {
-        // Face-mount: mid posts + end-post 2-pack
-        if (midPostCount > 0) {
-          pushSlotOrFallback(
-            midPostCount,
-            'mid-post',
-            { type: 'face-mount', height: '1500' },
-            {
-              description: `Bal Blade Mid Post 1500mm face-mount (Black)`,
-              sku: `AR-1500-FMID-B`,
-            },
-          );
-        }
-        pushSlotOrFallback(
-          1,
-          'end-post',
-          { type: 'face-mount', height: '1500' },
-          {
-            description: `Bal Blade End Post 1500mm face-mount 2-pack (Black)`,
-            sku: `AR-1500-FMLR-B-2PK`,
-          },
-        );
+      // 2. FastFit brackets — 1 kit per panel (no cap for the FF- family).
+      if (totalPanels > 0) {
+        pushSlotOrFallback(totalPanels, 'bracket', { type: 'fastfit-open', finish: 'B' },
+          { description: `Blade FastFit Open Bracket 4-pack (Black)`, sku: `FF-BH-OPEN-4PK-B` });
       }
 
-      const totalPostCount = postMounting === "full-post" ? (numPanels + 1) : (midPostCount + 2);
-
-      // Brackets: fastfit-open, 4-pack
-      const bracketPacks = Math.ceil((2 * totalPostCount) / 4);
-      pushSlotOrFallback(
-        bracketPacks,
-        'bracket',
-        { type: 'fastfit-open' },
-        {
-          description: `Bal Blade FastFit Bracket 4-pack (Black)`,
-          sku: `FF-BH-OPEN-4PK-B`,
-        },
-      );
-
-      // Top cap — 1 per panel
-      pushSlotOrFallback(
-        numPanels,
-        'top-cap',
-        {},
-        {
-          description: `Bal Blade Top Cap (Black)`,
-          sku: `BLA-TCA-B`,
-        },
-      );
-
-      // Per-post hardware
-      pushSlotOrFallback(
-        totalPostCount,
-        'top-plate',
-        {},
-        {
-          description: `Top Plate (Black)`,
-          sku: `XP-TP-B`,
-        },
-      );
-      pushSlotOrFallback(
-        totalPostCount,
-        'dress-ring',
-        {},
-        {
-          description: `Dress Ring (Black)`,
-          sku: `XP-DR-B`,
-        },
-      );
-      pushSlotOrFallback(
-        totalPostCount,
-        'domical-cover',
-        {},
-        {
-          description: `Domical Cover 2-piece (Black)`,
-          sku: `XP-DC-2P-B`,
-        },
-      );
-
+      // 3. Posts + covers + fixings — shared AIRE/substrate engine (Black).
+      emitBalHardware("B", "Black", substrate, material, totalPanels, corners);
       return;
     }
 

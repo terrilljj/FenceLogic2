@@ -985,7 +985,10 @@ export function calculateBarrPanelLayout(
   hasGate: boolean = false,
   gateSize: number = 1000,
   gatePosition: number = 0,
-  gateCentreFromLeft?: number | null
+  gateCentreFromLeft?: number | null,
+  // Max effective panel width override — BARR Balustrade caps panel width at the
+  // fall-height c-to-c ceiling (1365mm at 1m–5m fall), below the 1733mm stock.
+  maxPanelOverride?: number
 ): PanelLayout {
   const BARR_SPECS = {
     "1000mm": { panelWidth: 1733, postAllowance: 25 },
@@ -994,7 +997,7 @@ export function calculateBarrPanelLayout(
   };
 
   const specs = BARR_SPECS[barrHeight];
-  const standardPanelWidth = specs.panelWidth;
+  const standardPanelWidth = maxPanelOverride && maxPanelOverride < specs.panelWidth ? maxPanelOverride : specs.panelWidth;
   const post = specs.postAllowance;
   const MIN_PANEL = 200;
   const GATE_ALLOWANCE = 25; // Aluminium gate allowance
