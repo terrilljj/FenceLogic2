@@ -64,21 +64,33 @@ describe("balustrade branches — slot resolution with template-literal fallback
   });
 
   describe("glass-bal-standoffs", () => {
-    it("emits no spigot SKUs and emits standoff-hardware at 4 per panel", () => {
-      const design = makeBalustradeDesign("glass-bal-standoffs", [1200, 1200, 1000], {
-        spigotColor: "polished",
-        spigotMounting: "core-drilled",
-      });
-
-      const components = calculateComponents(design, [], []);
-      // No spigot SKUs should appear (default fallback prefix is "SP-")
-      const spigotSkus = components.filter(c => /^SP-/.test(c.sku ?? ""));
-      expect(spigotSkus).toHaveLength(0);
-
-      // Standoff hardware fallback: 3 panels × 4 = 12 units
-      const standoff = components.find(c => c.sku === "STANDOFF-50-POLISHED");
+    it("emits real GSA/GS50 standoff SKUs at 4 (≤750) / 6 (≥800) per panel", () => {
+      // adjustable (default) polished, 3 panels all >750 → 6 each = 18 → GSA-5030-P
+      const adj = calculateComponents(
+        makeBalustradeDesign("glass-bal-standoffs", [1200, 1200, 1000], { spigotColor: "polished" }), [], [],
+      );
+      const standoff = adj.find(c => c.sku === "GSA-5030-P");
       expect(standoff).toBeDefined();
-      expect(standoff?.qty).toBe(12);
+      expect(standoff?.qty).toBe(18);
+      expect(adj.some(c => /^STANDOFF-50/.test(c.sku ?? ""))).toBe(false);
+
+      // fixed black 50mm → GS5050B; mixed widths 700 (4) + 900 (6) = 10
+      const fixed = calculateComponents(
+        makeBalustradeDesign("glass-bal-standoffs", [700, 900], {
+          spigotColor: "black", fieldValues: { "standoff-body": "fixed", "standoff-depth": "50" },
+        }), [], [],
+      );
+      const gs = fixed.find(c => c.sku === "GS5050B");
+      expect(gs).toBeDefined();
+      expect(gs?.qty).toBe(10);
+
+      // fixed white uses the dashed -MW form
+      const white = calculateComponents(
+        makeBalustradeDesign("glass-bal-standoffs", [600], {
+          spigotColor: "white", fieldValues: { "standoff-body": "fixed", "standoff-depth": "30" },
+        }), [], [],
+      );
+      expect(white.some(c => c.sku === "GS5030-MW")).toBe(true);
     });
   });
 
