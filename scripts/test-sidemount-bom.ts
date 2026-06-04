@@ -55,5 +55,19 @@ const mn = (() => {
 results.push(mn);
 console.log(`${mn ? "✅" : "❌"} Monument uses AR-1500-FMID-MN: ${mn}`);
 
+// MIXED substrate within one variant: only section 3 is side-mounted. The side-mount AIRE
+// posts must still emit (regression: the old span-0 gate skipped non-first side-mounted spans).
+const mixed = (() => {
+  const mk = (id: string, sub: string): any => ({ spanId: id, length: 4000, maxPanelWidth: 2000, desiredGap: 50,
+    panelLayout: layout([2000, 1800]), barrFinish: "satin-black",
+    fieldValues: { "barr-substrate": sub, "barr-material": "concrete" } });
+  const c = calculateComponents({ ...base, shape: "custom", customSides: 3, productVariant: "alu-pool-barr",
+    spans: [mk("A", "decking"), mk("B", "in-ground"), mk("C", "side-mounted")] } as any);
+  const skus = c.map(x => x.sku || "");
+  return skus.some(s => /^BR-1280-BP/.test(s)) && skus.some(s => /^BR-1800/.test(s)) && skus.some(s => /^AR-1500-FMID/.test(s));
+})();
+results.push(mixed);
+console.log(`${mixed ? "✅" : "❌"} Mixed substrate (deck+in-ground+side-mount) all emit: ${mixed}`);
+
 if (results.every(Boolean)) { console.log("\n✅ PASS"); process.exit(0); }
 else { console.log("\n❌ FAIL"); process.exit(1); }
