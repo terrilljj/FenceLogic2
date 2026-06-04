@@ -290,6 +290,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public: the design's BOM as ready-to-add storefront cart items (sku/name/price/qty/image),
+  // filtered to SELLABLE SKUs (placed in a category — the storefront checkout rejects unplaced).
+  // Drives "Add to cart" from the embedded calculator. SKUs are public (owner ruling 2026-05-31).
+  app.post("/api/cart-items", async (req, res) => {
+    try {
+      const { design } = req.body;
+      if (!design || !design.spans) return res.status(400).json({ error: "Invalid design data" });
+      const [{ slotData, slotsByVariant }, products] = await Promise.all([
+        loadDesignSlots(design),
+        storage.getAllProducts(),
+      ]);
+      const productData = products.map(p => ({ id: p.id, code: p.code, description: p.description, price: p.price }));
+      const components = calculateComponents(design, slotData, productData, slotsByVariant);
+      const skus = Array.from(new Set(components.map(c => c.sku).filter((s): s is string => !!s)));
+      const info = await storage.getCartLineInfo(skus);
+      const items: { sku: string; name: string; price_inc_gst: number; quantity: number; imageUrl?: string }[] = [];
+      const skipped: string[] = [];
+      for (const c of components) {
+        if (!c.sku) continue;
+        const i = info.get(c.sku);
+        if (i && i.placed && i.price != null) {
+          items.push({ sku: c.sku, name: i.name, price_inc_gst: i.price, quantity: c.qty, imageUrl: i.imageUrl ?? undefined });
+        } else {
+          skipped.push(c.sku);
+        }
+      }
+      res.json({ items, skipped });
+    } catch (error) {
+      console.error("Error building cart items:", error);
+      res.status(500).json({ error: "Failed to build cart items" });
+    }
+  });
+
   // Admin BOM preview — same computation as /api/quote but returns full SKUs and prices.
   // Use this endpoint to verify slot resolver output during development and testing.
   app.post("/api/admin/bom-preview", requireAdmin, async (req, res) => {
