@@ -120,6 +120,25 @@ function railSkus(type: string, finish: string) {
   };
 }
 
+/**
+ * Real catalogue spigot SKU from the chosen family + mounting + finish.
+ * {PREFIX}-{SBP|S}-{finish}: base-plate → SBP, core-drill → S.
+ *   madrid→MAD · nova→NOV · madrid-deluxe→MADDEL · madrid-pool→POOLMAD  (finish B/MW/P/S)
+ *   insuluxe→INS  (polymer pool spigot — finish B/SG/W, no polish tier)
+ * Returns null for an unmapped family so the caller keeps its placeholder fallback.
+ */
+function spigotSku(family: string, mounting: string, finish: string): { sku: string; label: string } | null {
+  const PREFIX: Record<string, string> = { madrid: "MAD", nova: "NOV", "madrid-deluxe": "MADDEL", "madrid-pool": "POOLMAD", insuluxe: "INS" };
+  const prefix = PREFIX[family];
+  if (!prefix) return null;
+  const mount = mounting === "core-drilled" ? "S" : "SBP";
+  const F = prefix === "INS"
+    ? (({ black: "B", white: "W", satin: "SG", polished: "SG" } as Record<string, string>)[finish] || "SG")
+    : (({ black: "B", white: "MW", polished: "P", satin: "S" } as Record<string, string>)[finish] || "P");
+  const famLabel: Record<string, string> = { MAD: "Madrid", NOV: "Nova", MADDEL: "Madrid Deluxe", POOLMAD: "Madrid Pool", INS: "Insuluxe" };
+  return { sku: `${prefix}-${mount}-${F}`, label: `${famLabel[prefix]} Spigot ${mount === "S" ? "Core-Drill" : "Base-Plated"} (${finish})` };
+}
+
 export function calculateComponents(
   design: FenceDesign,
   slotMappings: SlotMapping[] = [],
@@ -1006,9 +1025,14 @@ export function calculateComponents(
           if (slotResult) {
             components.push({ qty: 2, description: slotResult.description, sku: slotResult.sku });
           } else {
-            // Fallback: generic description until operator maps spigot-hardware slots
-            const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
-            components.push({ qty: 2, description: fallback.description, sku: fallback.sku });
+            // Real catalogue spigot SKU keyed by family; placeholder only for unmapped families.
+            const real = spigotSku(family, mounting, finish);
+            if (real) {
+              components.push({ qty: 2, description: real.label, sku: real.sku });
+            } else {
+              const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
+              components.push({ qty: 2, description: fallback.description, sku: fallback.sku });
+            }
           }
         }
       });
