@@ -31,7 +31,7 @@ const FINISH_META: Record<Finish, { code: "B" | "W" | "MN"; label: string; swatc
   monument: { code: "MN", label: "Monument", swatch: "bg-slate-500" },
 };
 
-type Substrate = "decking" | "concrete-slab" | "in-ground" | "core-drilled";
+type Substrate = "decking" | "concrete-slab" | "in-ground" | "core-drilled" | "side-mounted";
 const SUBSTRATE_HARDWARE: Record<
   Substrate,
   {
@@ -82,6 +82,19 @@ const SUBSTRATE_HARDWARE: Record<
     fixingTitle: "Grout 10kg",
     fixingChip: "1 / 10 posts",
     fixingTip: "Pourable grout — 1 × 10kg bag per 10 posts plus a spare.",
+  },
+  // Side-mount uses the shared AIRE face-mount posts (B/W only — Monument not available
+  // side-mounted). Fixing material defaults to concrete until the picker lands.
+  "side-mounted": {
+    short: "Side-mounted",
+    postSku: (c) => `AR-1500-FMID-${c}`,
+    postTitle: "AIRE 1500mm Face-Mount Post",
+    coverSku: (_c, w) => (w ? "GS-DN-4PK" : "GS-DN-4PK-B"),
+    coverTitle: "M12 Dome Nut 4-pack",
+    fixingSku: () => `GS150ROD`,
+    fixingTitle: "M12 Rods + Anchor",
+    fixingChip: "4 / post",
+    fixingTip: "AIRE face-mount posts bolt to a vertical face (fascia or slab edge) with M12 fixings + a dome-nut pack per post. Currently assumes a concrete face (rod + chemical anchor) — a timber/concrete/steel picker is coming.",
   },
 };
 
@@ -424,6 +437,7 @@ export function AluPoolTubularConfig({ span, updateSpan, allSpans }: AluPoolTubu
                 { value: "concrete-slab", label: "Concrete Slab", blurb: "Bolt-down", icon: <Square className="h-6 w-6" /> },
                 { value: "in-ground", label: "In-ground", blurb: "Post holes", icon: <ArrowDownToLine className="h-6 w-6" /> },
                 { value: "core-drilled", label: "Core-drilled", blurb: "Into concrete", icon: <CircleDot className="h-6 w-6" /> },
+                { value: "side-mounted", label: "Side-mounted", blurb: "AIRE face-mount", icon: <FlipHorizontal className="h-6 w-6" /> },
               ]}
             />
           </div>

@@ -227,6 +227,43 @@ export function calculateComponents(
     }
   };
 
+  // AIRE face-mount post topology — the ONLY side/face-mount system (operator 2026-06-04:
+  // "the AR series side mount posts are the only option for side mounting"). Shared by
+  // balustrade face-mounted AND aluminium-pool side-mount: mid posts + 2 back-to-back per
+  // corner + one L+R end 2-pack; dome nuts per post; fixings per material (steel = customer).
+  const emitFaceMountPosts = (
+    code: string,            // finish: B | W (AIRE is B/W only)
+    finishName: string,
+    material: string,        // timber | concrete | steel
+    totalPanels: number,
+    corners: number,
+  ): void => {
+    const midPosts = Math.max(0, totalPanels - 1 - corners);
+    const cornerPosts = corners * 2;        // face-mount corners can fix to only one face
+    const fmid = midPosts + cornerPosts;
+    if (fmid > 0) {
+      pushSlotOrFallback(fmid, 'post', { type: 'face-mid', finish: code },
+        { description: `AIRE 1500mm Face-Mount Mid Post (${finishName})`, sku: `AR-1500-FMID-${code}` });
+    }
+    const endPacks = 1; // a connected run has two free ends → one L+R 2-pack
+    pushSlotOrFallback(endPacks, 'post', { type: 'face-end', finish: code },
+      { description: `AIRE 1500mm Face-Mount L+R End Post 2-pack (${finishName})`, sku: `AR-1500-FMLR-${code}-2PK` });
+    const facePosts = fmid + endPacks * 2;
+    // Dome nuts emitted for ALL face-mount materials; finish-matched (Silver SS for White).
+    const domeSku = code === "W" ? `GS-DN-4PK` : `GS-DN-4PK-B`;
+    pushSlotOrFallback(facePosts, 'dome-nut', { finish: code },
+      { description: `M12 Dome Nut 4-pack (${code === "W" ? "Silver" : "Black"})`, sku: domeSku });
+    if (material === "timber") {
+      pushSlotOrFallback(facePosts * 4, 'fixing', { type: 'lag-m12', substrate: 'face-timber' },
+        { description: `M12 x 160mm LAG Screw (4 per post)`, sku: `GS160LAG` });
+    } else if (material === "concrete") {
+      pushSlotOrFallback(facePosts * 4, 'fixing', { type: 'rod-m12', substrate: 'face-concrete' },
+        { description: `M12 x 150mm Threaded Rod (4 per post)`, sku: `GS150ROD` });
+      pushSlotOrFallback(Math.ceil(facePosts / 15), 'chem-anchor', { type: 'soudal' },
+        { description: `Chemical Anchor 400ml (1 per 15 posts)`, sku: `SOUD-CA1400` });
+    } // steel: customer-supplied main fixings (dome nuts still emitted above)
+  };
+
   // ── Shared aluminium-balustrade hardware (SF-12/13 — BARR Bal + Blade Bal use the
   // SAME AIRE post family + XP covers + 3D fixings matrix; only panels + brackets +
   // finish availability differ). Substrate-driven post topology (face-mount corners
@@ -266,31 +303,8 @@ export function calculateComponents(
         pushSlotOrFallback(Math.ceil(posts / 20), 'chem-anchor', { type: 'soudal' },
           { description: `Chemical Anchor 400ml (1 per 20 posts)`, sku: `SOUD-CA1400` });
       } // steel: customer-supplied — no BH fixing SKU
-    } else { // face-mounted — mid posts + 2 back-to-back per corner + L+R end pack
-      const midPosts = Math.max(0, totalPanels - 1 - corners);
-      const cornerPosts = corners * 2;
-      const fmid = midPosts + cornerPosts;
-      if (fmid > 0) {
-        pushSlotOrFallback(fmid, 'post', { type: 'face-mid', finish: code },
-          { description: `AIRE 1500mm Face-Mount Mid Post (${finishName})`, sku: `AR-1500-FMID-${code}` });
-      }
-      const endPacks = 1; // a connected run has two free ends → one L+R 2-pack
-      pushSlotOrFallback(endPacks, 'post', { type: 'face-end', finish: code },
-        { description: `AIRE 1500mm Face-Mount L+R End Post 2-pack (${finishName})`, sku: `AR-1500-FMLR-${code}-2PK` });
-      const facePosts = fmid + endPacks * 2;
-      // Dome nuts emitted for ALL face-mount materials; finish-matched (Silver SS for White).
-      const domeSku = code === "W" ? `GS-DN-4PK` : `GS-DN-4PK-B`;
-      pushSlotOrFallback(facePosts, 'dome-nut', { finish: code },
-        { description: `M12 Dome Nut 4-pack (${code === "W" ? "Silver" : "Black"})`, sku: domeSku });
-      if (material === "timber") {
-        pushSlotOrFallback(facePosts * 4, 'fixing', { type: 'lag-m12', substrate: 'face-timber' },
-          { description: `M12 x 160mm LAG Screw (4 per post)`, sku: `GS160LAG` });
-      } else if (material === "concrete") {
-        pushSlotOrFallback(facePosts * 4, 'fixing', { type: 'rod-m12', substrate: 'face-concrete' },
-          { description: `M12 x 150mm Threaded Rod (4 per post)`, sku: `GS150ROD` });
-        pushSlotOrFallback(Math.ceil(facePosts / 15), 'chem-anchor', { type: 'soudal' },
-          { description: `Chemical Anchor 400ml (1 per 15 posts)`, sku: `SOUD-CA1400` });
-      } // steel: customer-supplied main fixings (dome nuts still emitted above)
+    } else { // face-mounted — shared AIRE face-mount post engine
+      emitFaceMountPosts(code, finishName, material, totalPanels, corners);
     }
   };
 
@@ -478,6 +492,8 @@ export function calculateComponents(
       const substrate = (span.fieldValues?.["blade-substrate"] as string) || "decking";
       const basePlated = substrate === "decking" || substrate === "concrete-slab";
       const coreDrilled = substrate === "core-drilled";
+      const sideMounted = substrate === "side-mounted";
+      const faceMaterial = (span.fieldValues?.["blade-material"] as string) || "concrete";
 
       const panelTypes = span.panelLayout.panelTypes || [];
 
@@ -514,7 +530,18 @@ export function calculateComponents(
       }
 
       // 3. Posts + covers (substrate-driven). One 50×50 family — same SKU at corners/gates.
-      if (numPosts > 0) {
+      //    Side-mount swaps the run to the shared AIRE face-mount engine (design-level, once).
+      if (sideMounted) {
+        if (spanIndex === 0) {
+          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => {
+            const ps: number[] = s.panelLayout?.panels ?? [];
+            const ts = s.panelLayout?.panelTypes ?? ps.map(() => "standard");
+            return sum + ps.filter((_: number, i: number) => (ts[i] || "standard") !== "gate").length;
+          }, 0);
+          const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
+          emitFaceMountPosts("B", finishName, faceMaterial, fmPanels, fmCorners);
+        }
+      } else if (numPosts > 0) {
         if (basePlated) {
           pushSlotOrFallback(
             numPosts, 'post',
@@ -588,6 +615,8 @@ export function calculateComponents(
       const basePlated = substrate === "decking" || substrate === "concrete-slab";
       const coreDrilled = substrate === "core-drilled";
       const inGround = substrate === "in-ground";
+      const sideMounted = substrate === "side-mounted";
+      const faceMaterial = (span.fieldValues?.["barr-material"] as string) || "concrete";
 
       const panelTypes = span.panelLayout.panelTypes || [];
 
@@ -631,8 +660,20 @@ export function calculateComponents(
         );
       }
 
-      // 3. Inline posts (BARR 50×25) + covers, substrate-driven.
-      if (inlinePosts > 0) {
+      // 3. Inline posts (BARR 50×25) + covers, substrate-driven. Side-mount swaps the whole
+      //    run to the shared AIRE face-mount engine (design-level, once at span 0); the gate
+      //    keeps its cross-range gate posts below.
+      if (sideMounted) {
+        if (spanIndex === 0) {
+          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => {
+            const ps: number[] = s.panelLayout?.panels ?? [];
+            const ts = s.panelLayout?.panelTypes ?? ps.map(() => "standard");
+            return sum + ps.filter((_: number, i: number) => (ts[i] || "standard") !== "gate").length;
+          }, 0);
+          const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
+          emitFaceMountPosts(code, finishName, faceMaterial, fmPanels, fmCorners);
+        }
+      } else if (inlinePosts > 0) {
         if (basePlated) {
           pushSlotOrFallback(
             inlinePosts, 'post',
@@ -710,8 +751,9 @@ export function calculateComponents(
       }
 
       // 5. Corner posts (design-level) — emit once on the first span. N sections → N-1 corners.
+      //    Skipped for side-mount: the AIRE face-mount engine already adds back-to-back corners.
       const cornerCount = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
-      if (cornerCount > 0 && spanIndex === 0) {
+      if (!sideMounted && cornerCount > 0 && spanIndex === 0) {
         pushSlotOrFallback(
           cornerCount, 'post',
           { type: 'corner-post', finish: code, mounting: basePlated ? 'base-plate' : 'standard' },
@@ -764,6 +806,8 @@ export function calculateComponents(
       const substrate = (span.fieldValues?.["tubular-substrate"] as string) || "decking";
       const basePlated = substrate === "decking" || substrate === "concrete-slab";
       const coreDrilled = substrate === "core-drilled";
+      const sideMounted = substrate === "side-mounted";
+      const faceMaterial = (span.fieldValues?.["tubular-material"] as string) || "concrete";
       // Stock width: White/Monument are 2450 only; Black may use 2450 or 3000.
       const stockWidth = (code === "B" && span.tubularPanelWidth === "3000mm") ? 3000 : 2450;
 
@@ -812,8 +856,19 @@ export function calculateComponents(
         );
       }
 
-      // 4. Posts (substrate-driven, cross-range White) + domical covers (base-plated only).
-      if (numPosts > 0) {
+      // 4. Posts — side-mount uses the shared AIRE face-mount engine (design-level, once at
+      //    span 0); else substrate-driven cross-range posts + domical covers (base-plated).
+      if (sideMounted) {
+        if (spanIndex === 0) {
+          const fmPanels = (design.spans as any[]).reduce((sum: number, s: any) => {
+            const ps: number[] = s.panelLayout?.panels ?? [];
+            const ts = s.panelLayout?.panelTypes ?? ps.map(() => "standard");
+            return sum + ps.filter((_: number, i: number) => (ts[i] || "standard") !== "gate").length;
+          }, 0);
+          const fmCorners = isMultiSpanCorner ? Math.max(0, (design.spans as any[]).length - 1) : 0;
+          emitFaceMountPosts(code, finishName, faceMaterial, fmPanels, fmCorners);
+        }
+      } else if (numPosts > 0) {
         if (basePlated) {
           pushSlotOrFallback(
             numPosts, 'post',

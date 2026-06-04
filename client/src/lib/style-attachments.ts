@@ -84,13 +84,14 @@ const SUBSTRATES: AttachmentOption[] = [
   { value: "timber", label: "Timber", blurb: "Lag-screwed into structural timber", icon: "timber" },
   { value: "steel", label: "Steel", blurb: "Bolted to steel (you supply fixings)", icon: "steel" },
 ];
-// Matches the alu-pool config blocks (BARR/Blade/Tubular all offer the same four).
-// No side-mount in v1 — Flat Top side-mount deferred to post-launch (Trello #153).
+// Matches the alu-pool config blocks (BARR/Blade/Tubular). Side-mount uses the shared AIRE
+// face-mount posts (operator 2026-06-04: the AR-series posts are the only side-mount option).
 const ALU_POOL_MOUNTS: AttachmentOption[] = [
   { value: "decking", label: "Decking", blurb: "Base-plated to a timber deck", icon: "deck" },
   { value: "concrete-slab", label: "Concrete slab", blurb: "Bolt-down on a slab", icon: "base-plate" },
   { value: "in-ground", label: "In-ground", blurb: "Posts set in post holes / footings", icon: "in-ground" },
   { value: "core-drilled", label: "Core-drill", blurb: "Posts grouted into cored concrete", icon: "core-drill" },
+  { value: "side-mounted", label: "Side-mount", blurb: "AIRE posts fixed to a vertical face / edge", icon: "side-mount" },
 ];
 const ALU_BAL_MOUNTS: AttachmentOption[] = [
   { value: "base-plated", label: "Base-plate", blurb: "Bolt-down on a slab / deck", icon: "base-plate" },

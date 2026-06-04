@@ -38,6 +38,10 @@ const ATTACH_TIPS: Record<string, Tip> = {
     title: "Face-mounted",
     body: "Face-mount the posts to a vertical edge (a fascia or the edge of a slab) when you want to keep the top surface clear — the run cantilevers up from the side. Best on raised decks and stair edges.",
   },
+  "side-mounted": {
+    title: "Side-mounted",
+    body: "Fix the posts to a vertical face — a fascia, the edge of a slab, or a wall — to keep the top surface clear. Uses the AIRE face-mount posts; tell me whether the fixing surface is timber, concrete or steel so I get the right bolts.",
+  },
   // aluminium pool substrate
   "decking": {
     title: "Decking",
