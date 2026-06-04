@@ -298,13 +298,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const components = calculateComponents(design, slotData, productData, slotsByVariant);
 
-      // Enrich each component with price from the products table
-      const productByCode = new Map(allProducts.map(p => [p.code, p]));
+      // Enrich each component with the canonical GST-inc price from bh_storefront (the real
+      // catalogue) — keyed by SKU. The stale public.products price is no longer used here.
+      const skus = Array.from(new Set(components.map(c => c.sku).filter((s): s is string => !!s)));
+      const priceBySku = await storage.getStorefrontPrices(skus);
       const enriched = components.map(c => {
-        const prod = c.sku ? productByCode.get(c.sku) : undefined;
-        const unitPrice = prod
-          ? parseFloat(prod.price?.replace(/[$,\s]/g, "") ?? "") || null
-          : null;
+        const unitPrice = c.sku ? (priceBySku.get(c.sku) ?? null) : null;
         return {
           qty: c.qty,
           description: c.description,
