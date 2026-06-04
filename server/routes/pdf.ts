@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { FenceDesign } from '../../shared/schema.js';
 import { createPdfDocument, renderQuotePdf } from '../pdf/render.js';
 import { calculateComponents, stripSkus } from '../services/bom-calculator.js';
+import { loadDesignSlots } from '../services/slot-loader.js';
 import { storage } from '../storage.js';
 
 export const pdfRouter = Router();
@@ -19,20 +20,10 @@ pdfRouter.post('/designs/pdf', async (req: Request, res: Response) => {
     // POST /api/quote does, so the PDF BOM matches the on-screen BOM.
     // Without these, every slot lookup misses and the PDF falls back to
     // generic descriptions that diverge from the quote.
-    const [slotMappings, products] = await Promise.all([
-      design.productVariant
-        ? storage.getAllSlotsByVariant(design.productVariant)
-        : Promise.resolve([]),
+    const [{ slotData, slotsByVariant }, products] = await Promise.all([
+      loadDesignSlots(design),
       storage.getAllProducts(),
     ]);
-
-    const slotData = slotMappings.map(s => ({
-      internalId: s.internalId,
-      fieldName: s.fieldName,
-      productId: s.productId,
-      label: s.label,
-      discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
-    }));
 
     const productData = products.map(p => ({
       id: p.id,
@@ -41,7 +32,7 @@ pdfRouter.post('/designs/pdf', async (req: Request, res: Response) => {
       price: p.price,
     }));
 
-    const components = calculateComponents(design, slotData, productData);
+    const components = calculateComponents(design, slotData, productData, slotsByVariant);
     const bom = stripSkus(components);
 
     // Build PDF

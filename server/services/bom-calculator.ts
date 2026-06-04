@@ -16,6 +16,8 @@ import {
   RailTerminationType,
   getSpigotDetails,
   optimizeRailLengths,
+  designVariants,
+  spanVariant,
 } from "@shared/schema";
 
 export type SlotMapping = {
@@ -167,7 +169,41 @@ function gateGlassSku(hardware: string, hingeType: string, width: number): { sku
     : { sku: `12PGG-${w4}`, description: `Polaris 12mm Soft-Close Glass-to-Glass Gate Glass ${width}W` };
 }
 
+/**
+ * Multi-style dispatch. A single fence can mix styles per section (e.g. glass spigots on
+ * one run, BARR pool on another). When >1 distinct variant is present, partition the spans
+ * by variant, run the single-variant BOM for each (each sub-design carries only its own
+ * spans + its productVariant), then merge + consolidate identical SKUs across the groups.
+ * A single-variant design takes the fast path → byte-identical to before.
+ */
 export function calculateComponents(
+  design: FenceDesign,
+  slotMappings: SlotMapping[] = [],
+  products: ProductLookup[] = [],
+  // Slots scoped per variant (product_slots rows are variant-keyed). Required for correct
+  // SKU resolution in mixed designs — lookupSlot matches on fieldName+discriminators only,
+  // so a naive cross-variant union could cross-resolve. Single-style designs ignore this.
+  slotsByVariant?: Record<string, SlotMapping[]>
+): Component[] {
+  const variants = designVariants(design);
+  if (variants.length <= 1) {
+    return calculateComponentsForVariant(design, slotMappings, products);
+  }
+  const merged: Component[] = [];
+  for (const variant of variants) {
+    const spans = design.spans.filter((s) => spanVariant(design, s) === variant);
+    const subDesign: FenceDesign = { ...design, productVariant: variant as FenceDesign["productVariant"], spans };
+    const variantSlots = slotsByVariant?.[variant] ?? slotMappings;
+    merged.push(...calculateComponentsForVariant(subDesign, variantSlots, products));
+  }
+  return consolidateAndSort(merged);
+}
+
+/**
+ * Single-variant BOM — the whole design is assumed to be one style. Multi-style designs
+ * reach this once per variant group via calculateComponents above.
+ */
+function calculateComponentsForVariant(
   design: FenceDesign,
   slotMappings: SlotMapping[] = [],
   products: ProductLookup[] = []
@@ -1400,7 +1436,15 @@ export function calculateComponents(
     });
   }
 
-  // Consolidate duplicate components by SKU (falls back to description if no SKU)
+  return consolidateAndSort(components);
+}
+
+/**
+ * Consolidate duplicate components by SKU (falling back to description) and sort into the
+ * BOM display order. Shared by the single-variant path and the multi-style merge so
+ * identical SKUs across variant groups (e.g. shared grout) collapse to one line.
+ */
+function consolidateAndSort(components: Component[]): Component[] {
   const consolidated: Component[] = [];
   components.forEach((comp) => {
     const key = comp.sku || comp.description;
