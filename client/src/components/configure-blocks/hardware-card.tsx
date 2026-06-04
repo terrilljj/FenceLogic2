@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { familyImageSrc } from "./spigot-family-picker";
+import { useProductImageMap, storefrontImageUrl } from "@/lib/product-images";
 
 /**
  * Visual primitives for the aluminium-style configure blocks (Blade / BARR / Flat Top
@@ -30,7 +30,8 @@ export interface HardwareCardProps {
 }
 
 export function HardwareCard({ imageSku, title, chip, blurb, testId }: HardwareCardProps) {
-  const img = familyImageSrc(imageSku);
+  const { data: imageMap } = useProductImageMap();
+  const img = storefrontImageUrl(imageMap?.[imageSku]);
   return (
     <div className="flex flex-col gap-1.5 rounded-md border border-card-border bg-card p-2" data-testid={testId}>
       <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded bg-muted text-center">

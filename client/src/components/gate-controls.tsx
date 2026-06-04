@@ -3,6 +3,7 @@ import { Check, ChevronLeft, ChevronRight, FlipHorizontal, Info, TriangleAlert }
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useProductImageMap, storefrontImageUrl } from "@/lib/product-images";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -56,11 +57,6 @@ const HARDWARE_CARDS: { value: "polaris" | "master"; label: string; blurb: strin
   { value: "polaris", label: "Soft Close", blurb: "Polaris / Atlantic self-closing hinges.", imageSku: "PSC-125GG-B" },
   { value: "master", label: "Master Range", blurb: "Budget select; manual-close hinge set.", imageSku: "MR-GGH-B" },
 ];
-const IMAGE_BASE = (import.meta as any).env?.VITE_STOREFRONT_IMAGE_BASE as string | undefined;
-function hardwareImageSrc(sku: string): string | undefined {
-  if (!IMAGE_BASE) return undefined;
-  return `${IMAGE_BASE}/_next/image?url=/products/${sku}.png&w=256&q=75`;
-}
 
 export function GateControls({
   config,
@@ -73,6 +69,7 @@ export function GateControls({
   leftEndGapMm = 25,
   rightEndGapMm = 25,
 }: GateControlsProps) {
+  const { data: imageMap } = useProductImageMap();
   const [hingeWarningAcknowledged, setHingeWarningAcknowledged] = useState(false);
 
   // ── GATE PLACEMENT, DUAL MODE (owner 2026-06-03):
@@ -302,7 +299,7 @@ export function GateControls({
           <div className="grid max-w-md grid-cols-2 gap-2.5" data-testid={`gate-${spanId}-hardware`}>
             {HARDWARE_CARDS.map((hw) => {
               const isActive = config.hardware === hw.value;
-              const img = hardwareImageSrc(hw.imageSku);
+              const img = storefrontImageUrl(imageMap?.[hw.imageSku]);
               return (
                 <button
                   key={hw.value}
