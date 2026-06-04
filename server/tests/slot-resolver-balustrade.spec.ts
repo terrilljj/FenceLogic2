@@ -145,6 +145,8 @@ describe("balustrade branches — slot resolution with template-literal fallback
       expect(comps.some(c => c.sku === "SER35-R5800-B")).toBe(true);
       // end-cap is factory-fitted to the rail → no SER35-EC line emitted.
       expect(comps.some(c => /^SER35-EC/.test(c.sku ?? ""))).toBe(false);
+      // Bal channel uses channels, not spigots — no phantom SPIGOT-* line.
+      expect(comps.some(c => /^SPIGOT-/.test(c.sku ?? ""))).toBe(false);
     });
   });
 

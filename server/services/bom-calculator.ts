@@ -1013,7 +1013,7 @@ export function calculateComponents(
         // Add hardware per panel - either spigots OR channel clamps
         // Skip for standoff systems — standoff hardware is emitted later inside the
         // isGlassBalustrade block at 4 per panel.
-        if (!isChannelSystem && !isStandoffSystem) {
+        if (!isChannelSystem && !isStandoffSystem && !isBalChannel) {
           const fieldValues = (span as any).fieldValues || {};
           const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
           const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
@@ -1118,7 +1118,7 @@ export function calculateComponents(
           sku: `12N-${String(fallbackPanelWidth).padStart(4, "0")}`,
         });
 
-        if (!isChannelSystem && !isStandoffSystem) {
+        if (!isChannelSystem && !isStandoffSystem && !isBalChannel) {
           const fieldValues = (span as any).fieldValues || {};
           const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
           const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
