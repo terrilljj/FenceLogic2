@@ -49,6 +49,15 @@ const RAKED_PANEL_HEIGHTS = [1400, 1500, 1600, 1700, 1800];                     
 const POLARIS_GATE_WIDTHS = [800, 900];                                                       // 12PGG / 12PWG
 const MASTER_GATE_WIDTHS = [750, 834, 890, 1000];                                             // 08SLG
 
+// ── Opt-in slot-resolution audit (off in production; flag never set on a real request) ──
+// Records every lookupSlot call so scripts/audit-slot-coverage.ts can show, per variant,
+// which components are driven by the configured slot mapping vs. fell back to hardcoded code.
+type SlotAuditEntry = { fieldName: string; discriminators: Record<string, string>; hit: boolean };
+let __slotAuditOn = false;
+const __slotAuditLog: SlotAuditEntry[] = [];
+export function startSlotAudit() { __slotAuditOn = true; __slotAuditLog.length = 0; }
+export function readSlotAudit(): SlotAuditEntry[] { return __slotAuditLog.slice(); }
+
 /**
  * Glass-balustrade panel line — real catalogue glass family per system. Widths are
  * stock sizes (the solver only uses stocked widths). The ONLY laminated option in the
@@ -240,9 +249,8 @@ function calculateComponentsForVariant(
    * Returns null if no mapped slot matches — callers emit an [unmapped] BOM line.
    */
   const lookupSlot = (fieldName: string, discriminators: Record<string, string>): ProductDetails | null => {
+    let result: ProductDetails | null = null;
     const fieldSlots = slotMappings.filter(s => s.fieldName === fieldName && s.productId);
-    if (fieldSlots.length === 0) return null;
-
     for (const slot of fieldSlots) {
       const product = products.find(p => p.id === slot.productId);
       if (!product) continue;
@@ -251,7 +259,8 @@ function calculateComponentsForVariant(
         // New path: all provided discriminators must be present and match
         const attrs = slot.discriminatorAttributes as Record<string, string>;
         if (Object.entries(discriminators).every(([k, v]) => String(attrs[k]) === String(v))) {
-          return { sku: product.code, description: product.description };
+          result = { sku: product.code, description: product.description };
+          break;
         }
       } else {
         // Legacy path: regex match on size_mm against product description/code
@@ -259,12 +268,14 @@ function calculateComponentsForVariant(
         if (panelWidth) {
           const widthPattern = new RegExp(`\\b${panelWidth}(mm|W)\\b`, 'i');
           if (widthPattern.test(product.description) || widthPattern.test(product.code)) {
-            return { sku: product.code, description: product.description };
+            result = { sku: product.code, description: product.description };
+            break;
           }
         }
       }
     }
-    return null;
+    if (__slotAuditOn) __slotAuditLog.push({ fieldName, discriminators: { ...discriminators }, hit: !!result });
+    return result;
   };
 
   // Helper: try slot resolution first, fall through to hardcoded template-literal SKU.
