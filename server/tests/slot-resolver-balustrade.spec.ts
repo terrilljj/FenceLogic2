@@ -89,6 +89,7 @@ describe("balustrade branches — slot resolution with template-literal fallback
           price: "240",
         },
       ];
+      // BOM now emits real SKUs + finish code B/W + a type discriminator.
       const slots: SlotMapping[] = [
         {
           internalId: "BR-PANEL-1733-1000-B",
@@ -96,9 +97,10 @@ describe("balustrade branches — slot resolution with template-literal fallback
           productId: "p-bbarr-1000",
           label: "BARR Bal panel 1000H",
           discriminatorAttributes: {
+            type: "standard",
             width: "1733",
             height: "1000",
-            finish: "black",
+            finish: "B",
           },
         },
       ];
@@ -106,7 +108,7 @@ describe("balustrade branches — slot resolution with template-literal fallback
       const design = makeBalustradeDesign("alu-bal-barr", [1733], {
         balBarrPanelHeight: "1000mm",
         balBarrFinish: "black",
-        balBarrPostMounting: "face-mount",
+        fieldValues: { "bal-substrate": "base-plated", "bal-material": "timber" },
       }, "aluminium-balustrade");
 
       const components = calculateComponents(design, slots, products);
@@ -115,17 +117,17 @@ describe("balustrade branches — slot resolution with template-literal fallback
       expect(panelComp?.description).toBe("Real BARR Bal Panel 1733×1000 Black");
     });
 
-    it("falls back to template-literal panel SKU when no slot exists", () => {
+    it("falls back to the real storefront panel SKU when no slot exists", () => {
       const design = makeBalustradeDesign("alu-bal-barr", [1733], {
         balBarrPanelHeight: "1000mm",
         balBarrFinish: "black",
-        balBarrPostMounting: "face-mount",
+        fieldValues: { "bal-substrate": "base-plated", "bal-material": "timber" },
       }, "aluminium-balustrade");
 
       const components = calculateComponents(design, [], []);
       const panelComp = components.find(c => c.sku === "BR-PANEL-1733-1000-B");
       expect(panelComp).toBeDefined();
-      expect(panelComp?.description).toContain("Bal BARR Panel 1733×1000");
+      expect(panelComp?.description).toContain("BARR Balustrade Panel 1733");
     });
   });
 
@@ -146,14 +148,16 @@ describe("balustrade branches — slot resolution with template-literal fallback
           productId: "p-bblade-1000",
           label: "Blade Bal panel",
           discriminatorAttributes: {
+            type: "standard",
             width: "1700",
             height: "1000",
+            finish: "B",
           },
         },
       ];
 
       const design = makeBalustradeDesign("alu-bal-blade", [1700], {
-        balBladePostMounting: "face-mount",
+        fieldValues: { "bal-substrate": "base-plated", "bal-material": "timber" },
       }, "aluminium-balustrade");
 
       const components = calculateComponents(design, slots, products);
@@ -162,15 +166,15 @@ describe("balustrade branches — slot resolution with template-literal fallback
       expect(panelComp?.description).toBe("Real Blade Bal Panel 1700×1000 Black");
     });
 
-    it("falls back to template-literal panel SKU when no slot exists", () => {
+    it("falls back to the real storefront panel SKU when no slot exists", () => {
       const design = makeBalustradeDesign("alu-bal-blade", [1700], {
-        balBladePostMounting: "face-mount",
+        fieldValues: { "bal-substrate": "base-plated", "bal-material": "timber" },
       }, "aluminium-balustrade");
 
       const components = calculateComponents(design, [], []);
       const panelComp = components.find(c => c.sku === "BLA-PNL-1700-1000-B");
       expect(panelComp).toBeDefined();
-      expect(panelComp?.description).toContain("Bal Blade Panel 1700×1000");
+      expect(panelComp?.description).toContain("Blade Balustrade Panel 1700");
     });
   });
 });

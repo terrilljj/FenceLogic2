@@ -23,6 +23,7 @@ import { GlassBalStandoffsConfig } from "./configure-blocks/glass-bal-standoffs-
 import { AluPoolBladeConfig } from "./configure-blocks/alu-pool-blade-config";
 import { AluPoolBarrConfig } from "./configure-blocks/alu-pool-barr-config";
 import { AluPoolTubularConfig } from "./configure-blocks/alu-pool-tubular-config";
+import { AluBalConfig } from "./configure-blocks/alu-bal-config";
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
@@ -69,6 +70,9 @@ export function SpanConfigPanel({
   // Flat Top Tubular — wizard accordion. 3 finishes (3000mm Black-only), cross-range
   // White posts, shrouds, swivel shrouds at angled corners, finish-asymmetric gate.
   const isAluPoolTubular = productVariant === "alu-pool-tubular";
+  // Aluminium balustrade — shared AIRE/substrate wizard (BARR 2 finishes, Blade Black-only).
+  const isAluBalBarr = productVariant === "alu-bal-barr";
+  const isAluBalBlade = productVariant === "alu-bal-blade";
 
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
@@ -254,6 +258,8 @@ export function SpanConfigPanel({
             tubularPanelWidth: span.tubularPanelWidth,
             tubularLayoutMode: span.tubularLayoutMode,
             balBarrPanelHeight: span.balBarrPanelHeight,
+            // Alu balustrade fall-height band — drives the BARR Bal c-to-c ceiling.
+            balFallHeight: span.fieldValues?.["bal-fall-height"] as string | undefined,
             hamptonsLayoutMode: span.hamptonsLayoutMode,
           },
         });
@@ -294,6 +300,7 @@ export function SpanConfigPanel({
       span.tubularHeight, span.tubularPanelWidth, span.tubularLayoutMode, // Add Tubular-specific dependencies
       span.hamptonsStyle, span.hamptonsLayoutMode, // Add Hamptons PVC-specific dependencies
       span.balBarrPanelHeight, span.balBladePostMounting, // Add Aluminium Balustrade dependencies
+      span.fieldValues?.["bal-fall-height"], // Bal fall-height band drives the BARR Bal c-to-c ceiling
       productVariant, gatesAllowed, onUpdate]);
 
   // Validate panel layout
@@ -559,6 +566,16 @@ export function SpanConfigPanel({
               span={span}
               updateSpan={updateSpan}
               allSpans={allSpans}
+            />
+          )}
+
+          {/* ── Aluminium Balustrade BARR / Blade: shared accordion (Configure/Posts) ── */}
+          {(isAluBalBarr || isAluBalBlade) && (
+            <AluBalConfig
+              span={span}
+              updateSpan={updateSpan}
+              allSpans={allSpans}
+              style={isAluBalBarr ? "barr" : "blade"}
             />
           )}
 

@@ -613,6 +613,8 @@ export default function FenceLogic() {
     design.productVariant === "alu-pool-blade" ||
     design.productVariant === "alu-pool-barr" ||
     design.productVariant === "alu-pool-tubular" ||
+    design.productVariant === "alu-bal-barr" ||
+    design.productVariant === "alu-bal-blade" ||
     design.productVariant.startsWith("glass-bal-spigots");
   // Wizard elevation rules (Oxworks): Step 2 (Configure) shows the ACTIVE section
   // only; Step 4 (Review) shows ALL sections (height grows to fit). Steps 1 & 3

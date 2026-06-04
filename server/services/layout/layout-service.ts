@@ -57,6 +57,7 @@ export interface LayoutRequestSpan {
   tubularPanelWidth?: string;
   tubularLayoutMode?: string;
   balBarrPanelHeight?: string;
+  balFallHeight?: string;
   hamptonsLayoutMode?: string;
 }
 
@@ -302,16 +303,22 @@ export function computeSpanLayout(request: LayoutRequest): LayoutResponse {
       hasGate ? span.gateConfig?.centreFromLeft : undefined,
     );
   } else if (productVariant === "alu-bal-barr") {
+    // BARR Balustrade: equally-spaced panels, capped at the fall-height c-to-c ceiling.
+    // 1m–5m fall → 1365mm max panel (1425mm c-to-c); <1m → 1733mm stock (no cap).
+    const barrBalMax = span.balFallHeight === "under-1m" ? undefined : 1365;
     layout = calculateBarrPanelLayout(
       span.length,
-      (span.balBarrPanelHeight || "1000mm") as any,
-      "full-panels-cut-end",
+      "1000mm",
+      "equally-spaced",
       false,
       undefined,
       0,
+      undefined,
+      barrBalMax,
     );
   } else if (productVariant === "alu-bal-blade") {
-    layout = calculateBladePanelLayout(span.length, "1000mm", "full-panels-cut-end", false, undefined, 0);
+    // Blade Balustrade: no c-to-c ceiling — the 40×40 SHS rail spans the full 1700mm stock.
+    layout = calculateBladePanelLayout(span.length, "1000mm", "equally-spaced", false, undefined, 0);
   } else if (productVariant.startsWith("pvc-hamptons-")) {
     const hamptonsStyle = productVariant.replace("pvc-hamptons-", "") as any;
     const hasGate = gatesAllowed && span.gateConfig?.required;

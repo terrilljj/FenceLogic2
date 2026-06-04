@@ -62,12 +62,48 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
   const isBlade = productVariant === "alu-pool-blade";
   const isBarr = productVariant === "alu-pool-barr";
   const isTubular = productVariant === "alu-pool-tubular";
+  const isAluBal = productVariant === "alu-bal-barr" || productVariant === "alu-bal-blade";
   const is15 = productVariant.includes("15mm");
   const is12 = productVariant.includes("12mm");
   const as3000 = fv["as-3000"] === "true";
   const gateOn = span.gateConfig?.required === true;
   const softClose = span.gateConfig?.hardware === "polaris";
   const railOn = span.handrail?.enabled === true;
+
+  if (isAluBal) {
+    const isBarrBal = productVariant === "alu-bal-barr";
+    tips.push({
+      title: isBarrBal ? "BARR aluminium balustrade" : "Blade aluminium balustrade",
+      body: isBarrBal
+        ? "Pre-fab picket panels on AIRE 50×50 posts with extended C-brackets — architectural aluminium for balconies, decks and stairs. No gates, no electrical earthing (that's pool-only)."
+        : "Blade-profile panels on AIRE 50×50 posts with enclosed FastFit brackets. The 40×40 rail spans the full panel width, so there's no width limit at the usual fall heights.",
+    });
+    const fall = (fv["bal-fall-height"] as string) || "1m-5m";
+    if (fall === "over-5m") {
+      tips.push({
+        title: "Over 5m is a manual quote",
+        body: "Above a 5m fall, the engineering changes — we sign these off individually. Email hello@barrierhub.com.au with your run and we'll price it.",
+      });
+    } else if (isBarrBal && fall === "1m-5m") {
+      tips.push({
+        title: "Panel width at 1m–5m",
+        body: "For the standard 1m–5m balustrade load, BARR panels cap at 1365mm wide (1425mm between post centres) — so a long run just uses a few more posts.",
+      });
+    }
+    const balSub = (fv["bal-substrate"] as string) || "base-plated";
+    if (balSub === "core-drilled") {
+      tips.push({
+        title: "Core-drilled posts cut to size",
+        body: "The AIRE posts come as 5800mm full lengths — cut them to height on site. 100mm into the concrete and grouted meets the engineering spec. Buy full lengths only.",
+      });
+    } else if (balSub === "face-mounted") {
+      tips.push({
+        title: "Face-mount corners use two posts",
+        body: "A face-mounted post only fixes to one face, so a corner needs two posts back-to-back — one for each run. The calculator adds them automatically from your corner count.",
+      });
+    }
+    return tips; // balustrade: no gate/rail tips below
+  }
 
   if (isTubular) {
     tips.push({
