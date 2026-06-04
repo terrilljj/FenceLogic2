@@ -275,6 +275,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public: primary product image path per SKU from the storefront catalogue (e.g.
+  // "/products/X.JPG"). Image paths are public; the client prefixes the storefront base.
+  // Cached in-process — the catalogue images rarely change.
+  let imageMapCache: Record<string, string> | null = null;
+  app.get("/api/product-images", async (_req, res) => {
+    try {
+      if (!imageMapCache) imageMapCache = await storage.getStorefrontImages();
+      res.json(imageMapCache);
+    } catch (error) {
+      console.error("Error fetching product images:", error);
+      res.status(500).json({ error: "Failed to fetch product images" });
+    }
+  });
+
   // Admin BOM preview — same computation as /api/quote but returns full SKUs and prices.
   // Use this endpoint to verify slot resolver output during development and testing.
   app.post("/api/admin/bom-preview", requireAdmin, async (req, res) => {

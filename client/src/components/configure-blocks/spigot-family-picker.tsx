@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProductImageMap, storefrontImageUrl } from "@/lib/product-images";
 
 export interface SpigotFamily {
   /** Discriminator value written to fieldValues['spigot-family']. */
@@ -18,25 +19,18 @@ interface SpigotFamilyPickerProps {
   spanId: string;
 }
 
-// Optimised storefront image, only when a production base URL is configured.
-// Until then each card shows a labelled placeholder keyed to the family's SKU.
-const IMAGE_BASE = (import.meta as any).env?.VITE_STOREFRONT_IMAGE_BASE as string | undefined;
-export function familyImageSrc(sku: string): string | undefined {
-  if (!IMAGE_BASE) return undefined;
-  return `${IMAGE_BASE}/_next/image?url=/products/${sku}.png&w=256&q=75`;
-}
-
 /**
- * Card grid for choosing a spigot family (image + name + blurb). The image is a
- * placeholder (showing the base-plated-black SKU) until VITE_STOREFRONT_IMAGE_BASE
- * is set, at which point real product photos load. Reused by pool + balustrade.
+ * Card grid for choosing a spigot family (image + name + blurb). Photos come from the
+ * storefront catalogue (real per-SKU paths) once VITE_STOREFRONT_IMAGE_BASE is set;
+ * otherwise a labelled placeholder. Reused by pool + balustrade.
  */
 export function SpigotFamilyPicker({ families, value, onSelect, spanId }: SpigotFamilyPickerProps) {
+  const { data: imageMap } = useProductImageMap();
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5" data-testid={`span-${spanId}-spigot-family-picker`}>
       {families.map((f) => {
         const isActive = f.value === value;
-        const img = familyImageSrc(f.imageSku);
+        const img = storefrontImageUrl(imageMap?.[f.imageSku]);
         return (
           <button
             key={f.value}

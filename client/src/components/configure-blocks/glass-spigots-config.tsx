@@ -14,7 +14,8 @@ import { InfoTooltip } from "../info-tooltip";
 import { GateControls } from "../gate-controls";
 import { CustomPanelControls } from "../custom-panel-controls";
 import { GapSelect } from "./gap-select";
-import { SpigotFamilyPicker, familyImageSrc, type SpigotFamily } from "./spigot-family-picker";
+import { SpigotFamilyPicker, type SpigotFamily } from "./spigot-family-picker";
+import { useProductImageMap, storefrontImageUrl } from "@/lib/product-images";
 import { PanelThumb } from "./panel-thumb";
 import { GlassBalFallBand } from "./glass-bal-fall-band";
 
@@ -282,6 +283,7 @@ export function GlassSpigotsConfig({
   allSpans,
   productVariant = "glass-pool-spigots",
 }: GlassSpigotsConfigProps) {
+  const { data: imageMap } = useProductImageMap();
   // CHANNEL MODE: VersaTilt channel system replaces the spigot ecosystem — no family
   // picker, no covers, channel finish {Black, Satin Anodised}, M12 fixings per
   // substrate. Glass/gates/raked/custom logic is untouched.
@@ -975,8 +977,8 @@ export function GlassSpigotsConfig({
                 data-testid={`span-${span.spanId}-cover-included`}
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded bg-muted text-center">
-                  {familyImageSrc(selectedCover.sku) ? (
-                    <img src={familyImageSrc(selectedCover.sku)} alt={selectedCover.label} className="h-full w-full object-contain" loading="lazy" />
+                  {storefrontImageUrl(imageMap?.[selectedCover.sku]) ? (
+                    <img src={storefrontImageUrl(imageMap?.[selectedCover.sku])} alt={selectedCover.label} className="h-full w-full object-contain" loading="lazy" />
                   ) : (
                     <span className="px-0.5 font-mono text-[7px] leading-tight text-muted-foreground">{selectedCover.sku}</span>
                   )}
@@ -992,7 +994,7 @@ export function GlassSpigotsConfig({
               <div className="grid max-w-md grid-cols-2 gap-2.5" data-testid={`span-${span.spanId}-cover-picker`}>
                 {coverOptions.map((opt) => {
                   const active = spigotCover === opt.value;
-                  const img = familyImageSrc(opt.sku);
+                  const img = storefrontImageUrl(imageMap?.[opt.sku]);
                   return (
                     <button
                       key={opt.value}

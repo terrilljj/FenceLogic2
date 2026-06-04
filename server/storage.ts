@@ -28,6 +28,8 @@ export interface IStorage {
   getAllProducts(): Promise<Product[]>;
   /** Canonical GST-inc retail prices by SKU from bh_storefront.products (the real catalogue). */
   getStorefrontPrices(skus: string[]): Promise<Map<string, number>>;
+  /** Primary product image path by SKU from bh_storefront.product_images (e.g. /products/X.JPG). */
+  getStorefrontImages(): Promise<Record<string, string>>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
   upsertProduct(product: InsertProduct): Promise<{ product: Product; created: boolean }>;
@@ -158,6 +160,22 @@ export class DatabaseStorage implements IStorage {
     for (const r of rows) {
       if (r?.sku != null && r?.price != null) map.set(String(r.sku), Number(r.price));
     }
+    return map;
+  }
+
+  // Primary image path per SKU from bh_storefront.product_images. Paths vary in extension
+  // and case (X.png / X.JPG / ...-b.JPG), so the DB url is the only reliable source —
+  // never construct it from the SKU. Returned relative; the client prefixes the storefront base.
+  async getStorefrontImages(): Promise<Record<string, string>> {
+    const result: any = await db.execute(sqlOp`
+      SELECT DISTINCT ON (sku) sku, url
+      FROM bh_storefront.product_images
+      WHERE url IS NOT NULL
+      ORDER BY sku, is_primary DESC NULLS LAST
+    `);
+    const rows = result?.rows ?? result ?? [];
+    const map: Record<string, string> = {};
+    for (const r of rows) if (r?.sku && r?.url) map[String(r.sku)] = String(r.url);
     return map;
   }
 
