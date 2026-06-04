@@ -15,7 +15,8 @@ export interface StyleOption {
   label: string;
   use: StyleUse;         // Pool Fence vs Balustrade — the first pick in the style picker
   group: "glass" | "aluminium";
-  image?: string;        // home-page photo (glass styles); aluminium uses an icon
+  image?: string;        // home-page photo (glass styles)
+  visual?: string;       // home-page ProductVisual key (aluminium styles, drawn icon)
 }
 
 // The V1 launch styles, in the home-page order. `use` separates Pool Fence from
@@ -25,14 +26,14 @@ export interface StyleOption {
 // in the storefront yet, so it can't be quoted. Calc logic stays; just not offered. (Trello)
 export const STYLE_OPTIONS: StyleOption[] = [
   { id: "glass-pool-spigots", label: "Frameless", use: "pool", group: "glass", image: "/styles/frameless-pool-fence.png" },
-  { id: "alu-pool-tubular", label: "Flat Top", use: "pool", group: "aluminium" },
-  { id: "alu-pool-barr", label: "BARR", use: "pool", group: "aluminium" },
-  { id: "alu-pool-blade", label: "Blade", use: "pool", group: "aluminium" },
+  { id: "alu-pool-tubular", label: "Flat Top", use: "pool", group: "aluminium", visual: "aluminium-tubular" },
+  { id: "alu-pool-barr", label: "BARR", use: "pool", group: "aluminium", visual: "aluminium-vertical" },
+  { id: "alu-pool-blade", label: "Blade", use: "pool", group: "aluminium", visual: "aluminium-blade" },
   { id: "glass-bal-spigots-12mm", label: "Frameless 12mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-12mm.png" },
   { id: "glass-bal-spigots-15mm", label: "Frameless 15mm", use: "balustrade", group: "glass", image: "/styles/frameless-balustrade-15mm.png" },
   { id: "glass-bal-standoffs", label: "Standoff", use: "balustrade", group: "glass", image: "/styles/standoff-balustrade.png" },
-  { id: "alu-bal-barr", label: "BARR", use: "balustrade", group: "aluminium" },
-  { id: "alu-bal-blade", label: "Blade", use: "balustrade", group: "aluminium" },
+  { id: "alu-bal-barr", label: "BARR", use: "balustrade", group: "aluminium", visual: "aluminium-vertical" },
+  { id: "alu-bal-blade", label: "Blade", use: "balustrade", group: "aluminium", visual: "aluminium-blade" },
 ];
 
 export function styleLabel(variant: string): string {
@@ -40,6 +41,9 @@ export function styleLabel(variant: string): string {
 }
 export function styleImage(variant: string): string | undefined {
   return STYLE_OPTIONS.find((s) => s.id === variant)?.image;
+}
+export function styleVisual(variant: string): string | undefined {
+  return STYLE_OPTIONS.find((s) => s.id === variant)?.visual;
 }
 /** Label with its application, for the row chip / Joe where there's no use-tab for context. */
 export function styleFullLabel(variant: string): string {

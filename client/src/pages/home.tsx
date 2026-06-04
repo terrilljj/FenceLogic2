@@ -110,7 +110,9 @@ const productOptions: ProductOption[] = [
   }
 ];
 
-function ProductVisual({ type }: { type: "frameless-glass" | "channel-glass" | "standoff-glass" | "semi-frameless-posts" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail" }) {
+export type ProductVisualType = "frameless-glass" | "channel-glass" | "standoff-glass" | "semi-frameless-posts" | "aluminium-slats" | "aluminium-vertical" | "aluminium-blade" | "aluminium-tubular" | "pvc-pickets" | "pvc-hamptons-full" | "pvc-hamptons-combo" | "pvc-hamptons-vertical" | "pvc-hamptons-semi" | "pvc-hamptons-3rail";
+
+export function ProductVisual({ type }: { type: ProductVisualType }) {
   if (type === "frameless-glass") {
     return (
       <div className="relative w-20 h-24 mx-auto">
