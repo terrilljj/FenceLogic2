@@ -60,10 +60,10 @@ describe("lookupSlot — discriminatorAttributes path", () => {
     ];
     const design = makeDesign("glass-pool-spigots", [1200]);
     const components = calculateComponents(design, slots, products);
-    const panels = components.filter(c => c.description.includes("Glass Panel 1200mm"));
-    // No slot for 1200mm → hardcoded fallback
-    expect(panels[0].description).toBe("Glass Panel 1200mm x 1200mm (12mm thick)");
-    expect(panels[0].sku).toBe("GP-1200-1200-12");
+    const panels = components.filter(c => (c.sku ?? "").startsWith("12N-"));
+    // No slot for 1200mm → real 12N pool-glass family fallback (zero-padded width)
+    expect(panels[0].description).toBe("12mm Clear Toughened Frameless Glass 1200W × 1200H");
+    expect(panels[0].sku).toBe("12N-1200");
   });
 
   it("legacy path — resolves by regex when discriminatorAttributes is null", () => {
