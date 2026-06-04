@@ -38,6 +38,17 @@ type ProductLookup = {
 
 type ProductDetails = { sku: string; description: string };
 
+// Snap a width/height to the nearest REAL stocked size for a product family, so the BOM
+// emits catalogue SKUs that exist in bh_storefront (verified via scripts/audit-skus.ts) —
+// never a made-up size. Sizes mirror bh_storefront.products.
+const SNAP = (v: number, sizes: number[]) =>
+  sizes.reduce((best, s) => (Math.abs(s - v) < Math.abs(best - v) ? s : best), sizes[0]);
+const pad4 = (n: number) => String(n).padStart(4, "0");
+const HINGE_PANEL_WIDTHS = [600, 800, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800]; // 12NPH
+const RAKED_PANEL_HEIGHTS = [1400, 1500, 1600, 1700, 1800];                                   // 12NRP-{h}HT
+const POLARIS_GATE_WIDTHS = [800, 900];                                                       // 12PGG / 12PWG
+const MASTER_GATE_WIDTHS = [750, 834, 890, 1000];                                             // 08SLG
+
 /**
  * Glass-balustrade panel line — real catalogue glass family per system. Widths are
  * stock sizes (the solver only uses stocked widths). The ONLY laminated option in the
@@ -161,12 +172,16 @@ function gateLatchSku(hardware: string, latchType: string, finish: string): stri
 }
 /** Gate panel glass: master = 8mm 08SLG (sizes 750/834/890/1000); polaris = 12mm 12PGG (g2g) / 12PWG (wall). */
 function gateGlassSku(hardware: string, hingeType: string, width: number): { sku: string; description: string } {
-  const w4 = String(width).padStart(4, "0");
-  if (hardware === "master") return { sku: `08SLG-${w4}`, description: `Master Range 8mm Toughened Gate Glass ${width}W` };
+  // Gate glass only comes in fixed stock widths — snap to the nearest so the SKU is real.
+  if (hardware === "master") {
+    const w = SNAP(width, MASTER_GATE_WIDTHS);
+    return { sku: `08SLG-${pad4(w)}`, description: `Master Range 8mm Toughened Gate Glass ${w}W` };
+  }
+  const w = SNAP(width, POLARIS_GATE_WIDTHS);
   const wall = hingeType !== "glass-to-glass";
   return wall
-    ? { sku: `12PWG-${w4}`, description: `Polaris 12mm Soft-Close Wall/Post Gate Glass ${width}W` }
-    : { sku: `12PGG-${w4}`, description: `Polaris 12mm Soft-Close Glass-to-Glass Gate Glass ${width}W` };
+    ? { sku: `12PWG-${pad4(w)}`, description: `Polaris 12mm Soft-Close Wall/Post Gate Glass ${w}W` }
+    : { sku: `12PGG-${pad4(w)}`, description: `Polaris 12mm Soft-Close Glass-to-Glass Gate Glass ${w}W` };
 }
 
 /**
@@ -1089,19 +1104,13 @@ function calculateComponentsForVariant(
           const isLeftRaked = index === 0 && span.leftRakedPanel?.enabled;
           const height = isLeftRaked ? span.leftRakedPanel?.height : span.rightRakedPanel?.height;
 
-          if (isLeftRaked) {
-            components.push({
-              qty: 1,
-              description: `Raked Glass Panel 1200mm wide (400mm horizontal at ${height}mm, steps down to 1200mm) 12mm thick`,
-              sku: `RP-L-1200-${height}-12`,
-            });
-          } else {
-            components.push({
-              qty: 1,
-              description: `Raked Glass Panel 1200mm wide (steps down from 1200mm to ${height}mm over 800mm, horizontal 400mm) 12mm thick`,
-              sku: `RP-R-1200-${height}-12`,
-            });
-          }
+          // Raked glass is the 12NRP-{height}HT family (12mm toughened, 1400–1800H).
+          const rakeH = SNAP(height ?? 1500, RAKED_PANEL_HEIGHTS);
+          components.push({
+            qty: 1,
+            description: `Raked Glass Panel 1200mm wide, ${rakeH}mm high (12mm toughened)`,
+            sku: `12NRP-${rakeH}HT`,
+          });
         } else if (panelType === "gate") {
           // Real gate glass — master = 8mm 08SLG; polaris = 12mm 12PGG (g2g) / 12PWG (wall).
           const gHw = (span.gateConfig?.hardware || "polaris") as string;
@@ -1116,10 +1125,12 @@ function calculateComponentsForVariant(
             sku: `GP-CUSTOM-${panelWidth}-${customHeight}-12`,
           });
         } else if (panelType === "hinge") {
+          // Hinge panel is the Polaris 12NPH-{width} family (soft-close, glass-to-glass).
+          const hw = SNAP(panelWidth, HINGE_PANEL_WIDTHS);
           components.push({
             qty: 1,
-            description: `Hinge Panel ${panelWidth}mm x 1200mm (12mm thick)`,
-            sku: `GP-HINGE-${panelWidth}-1200-12`,
+            description: `Polaris 12mm Soft-Close Hinge Panel ${hw}mm × 1200mm`,
+            sku: `12NPH-${pad4(hw)}`,
           });
         }
 
