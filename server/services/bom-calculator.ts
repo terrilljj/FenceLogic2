@@ -187,7 +187,13 @@ export function calculateComponents(
 ): Component[] {
   const variants = designVariants(design);
   if (variants.length <= 1) {
-    return calculateComponentsForVariant(design, slotMappings, products);
+    // Single style — but the one variant may come from a SPAN override (e.g. design default
+    // is glass yet every section was switched to BARR in Step 1). Resolve to the actual
+    // variant + its slots, not design.productVariant, so the BOM matches what's drawn.
+    const variant = (variants[0] ?? design.productVariant) as FenceDesign["productVariant"];
+    const subDesign: FenceDesign = { ...design, productVariant: variant };
+    const variantSlots = slotsByVariant?.[variant] ?? slotMappings;
+    return calculateComponentsForVariant(subDesign, variantSlots, products);
   }
   const merged: Component[] = [];
   for (const variant of variants) {
