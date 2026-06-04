@@ -167,3 +167,44 @@ describe("lookupSlot — discriminatorAttributes path", () => {
     expect(panelComponents.map(c => c.description)).toContain("Glass Panel 1500mm x 1200mm (12mm)");
   });
 });
+
+describe("gate hardware → real catalogue SKUs (Master Range / Polaris+Atlantic)", () => {
+  function gateDesign(hardware: string, hingeType: string, latchType: string, finish: string, gateSize: number) {
+    return {
+      name: "Gate", productType: "glass-pool", productVariant: "glass-pool-spigots", shape: "inline",
+      spans: [{
+        spanId: "s1", length: 5000, maxPanelWidth: 1500, desiredGap: 50, spigotColor: finish, layoutMode: "auto-equalize",
+        gateConfig: { required: true, gateSize, hingePanelSize: 1200, position: 0, flipped: false, hingeFrom: "glass", hardware, hingeType, latchType },
+        panelLayout: { panels: [1000, gateSize, 1000], gaps: [50, 50, 50], totalPanelWidth: 2000 + gateSize, totalGapWidth: 150, averageGap: 50, panelTypes: ["standard", "gate", "standard"] },
+      }],
+    } as unknown as FenceDesign;
+  }
+
+  it("master g2g polished → MR-GGH-P hinge, MR-FLGG-P latch, 08SLG gate glass", () => {
+    const c = calculateComponents(gateDesign("master", "glass-to-glass", "glass-to-glass", "polished", 890), [], []);
+    expect(c.some(x => x.sku === "MR-GGH-P")).toBe(true);
+    expect(c.some(x => x.sku === "MR-FLGG-P")).toBe(true);
+    expect(c.some(x => x.sku === "08SLG-0890")).toBe(true);
+    expect(c.some(x => /^(HINGE-|LATCH-|GP-GATE)/.test(x.sku ?? ""))).toBe(false);
+  });
+
+  it("master black hinge uses BLK; wall hinge → MR-SPH; corner-in latch → MR-FL90I", () => {
+    const c = calculateComponents(gateDesign("master", "glass-to-wall", "corner-in", "black", 1000), [], []);
+    expect(c.some(x => x.sku === "MR-SPH-BLK")).toBe(true);  // hinge black = BLK
+    expect(c.some(x => x.sku === "MR-FL90I-B")).toBe(true);  // latch black = B
+  });
+
+  it("polaris g2g satin → PSC-125GG-S hinge + Atlantic LAT180-S latch + 12PGG glass", () => {
+    const c = calculateComponents(gateDesign("polaris", "glass-to-glass", "glass-to-glass", "satin", 900), [], []);
+    expect(c.some(x => x.sku === "PSC-125GG-S")).toBe(true);
+    expect(c.some(x => x.sku === "LAT180-S")).toBe(true);
+    expect(c.some(x => x.sku === "12PGG-0900")).toBe(true);
+  });
+
+  it("polaris wall white → PSC-125W-MW hinge, Atlantic LATWALL-W latch, 12PWG glass", () => {
+    const c = calculateComponents(gateDesign("polaris", "glass-to-wall", "glass-to-wall", "white", 800), [], []);
+    expect(c.some(x => x.sku === "PSC-125W-MW")).toBe(true);  // Polaris white = MW
+    expect(c.some(x => x.sku === "LATWALL-W")).toBe(true);     // Atlantic white = W
+    expect(c.some(x => x.sku === "12PWG-0800")).toBe(true);
+  });
+});
