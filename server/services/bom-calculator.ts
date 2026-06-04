@@ -1177,7 +1177,7 @@ function calculateComponentsForVariant(
         const mountLabel = face ? "Face-Mount" : "Deck-Mount";
 
         components.push({ qty: channels, description: `VersaTilt Channel 4200mm ${mountLabel} Kit (${finLabel})`, sku: face ? `VER-4200-FMK-${chF}` : `VER-4200-DMK-${chF}` });
-        components.push({ qty: channels, description: `VersaTilt 12mm Glass Glazing Rubber Kit`, sku: `VER-12KIT-RUB-2PK` });
+        // 12mm glazing rubber ships INSIDE the standard VersaTilt kit — not a separate line.
         components.push({ qty: channels, description: `VersaTilt Stabilising Washer Pack`, sku: `VER-WASHER-14PK` });
 
         // Pressure plates — per-panel formula (100mm wide, 25mm setback, 300mm max centres).
@@ -1261,7 +1261,7 @@ function calculateComponentsForVariant(
           const face = span.channelMounting === "wall";
           const finLabel = chF === "B" ? "Matt Black" : "Satin";
           components.push({ qty: numChannels, description: `VersaTilt Channel 4200mm ${face ? "Face" : "Deck"}-Mount Kit (${finLabel})`, sku: face ? `VER-4200-FMK-${chF}` : `VER-4200-DMK-${chF}` });
-          components.push({ qty: numChannels, description: `VersaTilt 12mm Glass Glazing Rubber Kit`, sku: `VER-12KIT-RUB-2PK` });
+          // 12mm glazing rubber ships INSIDE the standard VersaTilt kit — not a separate line.
           components.push({ qty: numChannels, description: `VersaTilt Stabilising Washer Pack`, sku: `VER-WASHER-14PK` });
           components.push({ qty: 1, description: `VersaTilt Channel End Plate 2-Pack (${finLabel})`, sku: face ? `VER-2FMEP-${chF}` : `VER-2DMEP-${chF}` });
         }

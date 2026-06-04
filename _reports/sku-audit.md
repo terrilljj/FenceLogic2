@@ -1,6 +1,6 @@
 # SKU audit (real layout solver + BOM)
 
-SELLABLE 64 · UNPLACED 1 · NO-PRICE 0 · PHANTOM 0  (of 65 distinct SKUs)
+SELLABLE 64 · UNPLACED 0 · NO-PRICE 0 · PHANTOM 0  (of 64 distinct SKUs)
 
 | Status | SKU | Price | Styles | Description |
 |---|---|---|---|---|
@@ -68,4 +68,3 @@ SELLABLE 64 · UNPLACED 1 · NO-PRICE 0 · PHANTOM 0  (of 65 distinct SKUs)
 | ✅ SELLABLE | `XP-DC-2P-B` | 7.7 | alu-pool-barr alu-bal-barr alu-bal-blade | BARR 50×50 Domical Cover — gate post (Satin Black) |
 | ✅ SELLABLE | `XP-DR-B` | 3.05 | alu-pool-barr alu-pool-blade alu-bal-barr alu-bal-blade | BARR 50×50 Dress Ring — gate post (Satin Black) |
 | ✅ SELLABLE | `XP-TP-B` | 5.25 | alu-bal-barr alu-bal-blade | Post Top Plate (Satin Black) |
-| 🟡 UNPLACED | `VER-12KIT-RUB-2PK` | 19.37 | glass-pool-channel | VersaTilt 12mm Glass Glazing Rubber Kit |
