@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowDownToLine, ChevronLeft, ChevronRight, CircleDot, FlipHorizontal, Layers, Pencil, Square } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ChevronLeft, ChevronRight, CircleDot, FlipHorizontal, Layers, Pencil, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -120,10 +120,9 @@ const SUBSTRATE_HARDWARE: Record<
     coverTitle: "M12 Dome Nut 4-pack",
     xPostSku: (c) => `AR-1500-FMLR-${c}-2PK`,
     xPostTitle: "AIRE Face-Mount L+R End 2-pack",
-    fixingSku: "GS150ROD",
-    fixingTitle: "M12 Rods + Anchor",
-    fixingChip: "4 / post",
-    fixingTip: "AIRE face-mount posts bolt to a vertical face (fascia or slab edge) with M12 fixings + a dome-nut pack per post. Currently assumes a concrete face (rod + chemical anchor) — a timber/concrete/steel picker is coming.",
+    fixingTitle: "M12 post fixings",
+    fixingTip: "Match the Fixing surface you pick above: timber → M12×160 LAG screws, concrete → M12 rod + chemical anchor, steel → you supply M12. Dome nuts for the visible face are always included.",
+    supplyNote: "Fixings per your selected surface",
   },
 };
 
@@ -467,6 +466,28 @@ export function AluPoolBarrConfig({ span, updateSpan, allSpans }: AluPoolBarrCon
               ]}
             />
           </div>
+
+          {/* Fixing surface — side-mount only; drives the AIRE post fixings. */}
+          {substrate === "side-mounted" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Fixing surface</Label>
+                <InfoTooltip content="The face the AIRE side-mount posts bolt to. Timber takes M12 LAG screws; concrete takes M12 threaded rod + chemical anchor; steel is customer-supplied M12. Dome nuts are included either way." />
+              </div>
+              <IconOptionPicker
+                spanId={span.spanId}
+                idPrefix="barr-material"
+                value={(span.fieldValues?.["barr-material"] as string) || "concrete"}
+                onSelect={(v) => updateSpan({ fieldValues: { ...span.fieldValues, "barr-material": v } })}
+                columns={3}
+                options={[
+                  { value: "timber", label: "Timber", blurb: "M12 LAG screws", icon: <Layers className="h-5 w-5" /> },
+                  { value: "concrete", label: "Concrete", blurb: "Rod + chem anchor", icon: <CircleDot className="h-5 w-5" /> },
+                  { value: "steel", label: "Steel", blurb: "You supply M12", icon: <AlertTriangle className="h-5 w-5" /> },
+                ]}
+              />
+            </div>
+          )}
 
           {/* Inline hardware — product cards (finish-matched SKUs). */}
           <div className="space-y-1.5">
