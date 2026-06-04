@@ -7,13 +7,19 @@ import type { ProductVariant } from "@shared/schema";
 
 // Helper function to get display name for product variant
 function getProductDisplayName(variant: ProductVariant): string {
-  const productMap: Record<ProductVariant, string> = {
+  const productMap: Partial<Record<ProductVariant, string>> = {
     "glass-pool-spigots": "Glass Pool - Spigots",
     "glass-pool-channel": "Glass Pool - Channel",
+    "glass-pool-channel-std": "Glass Pool - Channel",
     "glass-bal-spigots": "Glass Balustrade - Spigots",
+    "glass-bal-spigots-12mm": "Glass Balustrade - Spigots (12mm)",
+    "glass-bal-spigots-15mm": "Glass Balustrade - Spigots (15mm)",
     "glass-bal-channel": "Glass Balustrade - Channel",
+    "glass-bal-channel-std": "Glass Balustrade - Channel",
     "glass-bal-channel-hd": "Glass Balustrade - Channel (HD 17.52)",
     "glass-bal-standoffs": "Glass Balustrade - Standoffs",
+    "semi-frameless-1000": "Semi-Frameless 1000",
+    "semi-frameless-1800": "Semi-Frameless 1800",
     "alu-pool-barr": "Aluminium Pool - BARR",
     "alu-pool-blade": "Aluminium Pool - Blade",
     "alu-pool-tubular": "Aluminium Pool - Tubular Flat Top",
@@ -34,7 +40,7 @@ function getProductDisplayName(variant: ProductVariant): string {
     "custom-frameless": "Custom Frameless Spigots",
   };
   
-  return productMap[variant] || "Glass Pool Fence Calculator";
+  return productMap[variant] || "Barrier Calculator";
 }
 
 interface AppHeaderProps {
@@ -70,7 +76,7 @@ export function AppHeader({ progress, onSave, onLoad, onReset, onDownloadPDF, is
             <div>
               <h1 className="text-lg font-semibold">Fence Logic</h1>
               <p className="text-xs text-muted-foreground">
-                {productVariant ? getProductDisplayName(productVariant) : "Glass Pool Fence Calculator"}
+                {productVariant ? getProductDisplayName(productVariant) : "Barrier Calculator"}
               </p>
             </div>
           </div>

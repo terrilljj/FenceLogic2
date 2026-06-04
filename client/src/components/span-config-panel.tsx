@@ -23,6 +23,7 @@ import { GlassBalStandoffsConfig } from "./configure-blocks/glass-bal-standoffs-
 import { AluPoolBladeConfig } from "./configure-blocks/alu-pool-blade-config";
 import { AluPoolBarrConfig } from "./configure-blocks/alu-pool-barr-config";
 import { AluPoolTubularConfig } from "./configure-blocks/alu-pool-tubular-config";
+import { AluBalConfig } from "./configure-blocks/alu-bal-config";
 
 interface SpanConfigPanelProps {
   span: SpanConfig;
@@ -69,6 +70,9 @@ export function SpanConfigPanel({
   // Flat Top Tubular — wizard accordion. 3 finishes (3000mm Black-only), cross-range
   // White posts, shrouds, swivel shrouds at angled corners, finish-asymmetric gate.
   const isAluPoolTubular = productVariant === "alu-pool-tubular";
+  // Aluminium balustrade — shared AIRE/substrate wizard (BARR 2 finishes, Blade Black-only).
+  const isAluBalBarr = productVariant === "alu-bal-barr";
+  const isAluBalBlade = productVariant === "alu-bal-blade";
 
   // Determine if gates are allowed based on calculator config features
   const gatesAllowed = calculatorConfig?.features?.enableGates ?? !productVariant.includes("bal-");
@@ -254,6 +258,8 @@ export function SpanConfigPanel({
             tubularPanelWidth: span.tubularPanelWidth,
             tubularLayoutMode: span.tubularLayoutMode,
             balBarrPanelHeight: span.balBarrPanelHeight,
+            // BARR Bal: <1m → full 1733mm panels; ≥1m → 1365mm c-to-c cap.
+            balFallHeight: span.fieldValues?.["bal-fall-height"] as string | undefined,
             hamptonsLayoutMode: span.hamptonsLayoutMode,
           },
         });
@@ -293,7 +299,8 @@ export function SpanConfigPanel({
       span.barrHeight, span.barrLayoutMode, // Add BARR-specific dependencies
       span.tubularHeight, span.tubularPanelWidth, span.tubularLayoutMode, // Add Tubular-specific dependencies
       span.hamptonsStyle, span.hamptonsLayoutMode, // Add Hamptons PVC-specific dependencies
-      span.balBarrPanelHeight, span.balBladePostMounting, // Add Aluminium Balustrade dependencies
+      span.balBarrPanelHeight, // Add Aluminium Balustrade dependencies
+      span.fieldValues?.["bal-fall-height"], // BARR Bal fall band → full vs capped panels
       productVariant, gatesAllowed, onUpdate]);
 
   // Validate panel layout
@@ -562,6 +569,16 @@ export function SpanConfigPanel({
             />
           )}
 
+          {/* ── Aluminium Balustrade BARR / Blade: shared accordion (Configure/Posts) ── */}
+          {(isAluBalBarr || isAluBalBlade) && (
+            <AluBalConfig
+              span={span}
+              updateSpan={updateSpan}
+              allSpans={allSpans}
+              style={isAluBalBarr ? "barr" : "blade"}
+            />
+          )}
+
           {/* Hamptons PVC Configuration - appears right after section length */}
           {productVariant.startsWith("pvc-hamptons-") && (
             <div className="space-y-4 pt-4 border-t border-card-border">
@@ -685,111 +702,10 @@ export function SpanConfigPanel({
             </div>
           )}
 
-          {productVariant === "alu-bal-barr" && (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold">Bal BARR Configuration</h4>
-                <InfoTooltip content="Bal BARR aluminium balustrade. 1000mm height = 1733mm panels, 1200mm height = 2205mm panels. Available in Black or White." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Panel Height</Label>
-                  <Select
-                    value={span.balBarrPanelHeight || "1000mm"}
-                    onValueChange={(value) => updateSpan({ balBarrPanelHeight: value as "1000mm" | "1200mm" })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-bal-barr-height`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1000mm">1000mm (1733mm wide panels)</SelectItem>
-                      <SelectItem value="1200mm">1200mm (2205mm wide panels)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Finish</Label>
-                  <Select
-                    value={span.balBarrFinish || "black"}
-                    onValueChange={(value) => updateSpan({ balBarrFinish: value as "black" | "white" })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-bal-barr-finish`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="black">Black</SelectItem>
-                      <SelectItem value="white">White</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Post Mounting</Label>
-                <Select
-                  value={span.balBarrPostMounting || "face-mount"}
-                  onValueChange={(value) => updateSpan({ balBarrPostMounting: value as "face-mount" | "base-plated" | "full-post-core-drill" })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-bal-barr-post-mounting`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="face-mount">Face-Mount</SelectItem>
-                    <SelectItem value="base-plated">Base-Plated</SelectItem>
-                    <SelectItem value="full-post-core-drill">Full Post (Core-Drill)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <Label className="text-sm font-medium">Include Raked Panels</Label>
-                <Switch
-                  checked={span.balBarrIncludeRakedPanels || false}
-                  onCheckedChange={(checked) => updateSpan({ balBarrIncludeRakedPanels: checked })}
-                  data-testid={`span-${span.spanId}-bal-barr-raked-toggle`}
-                />
-              </div>
-            </div>
-          )}
-
-          {productVariant === "alu-bal-blade" && (
-            <div className="space-y-4 pt-4 border-t border-card-border">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold">Bal Blade Configuration</h4>
-                <InfoTooltip content="Bal Blade aluminium balustrade. Fixed 1700×1000mm panels. Black only." />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Post Mounting</Label>
-                <Select
-                  value={span.balBladePostMounting || "face-mount"}
-                  onValueChange={(value) => updateSpan({ balBladePostMounting: value as "face-mount" | "full-post" })}
-                >
-                  <SelectTrigger data-testid={`span-${span.spanId}-bal-blade-post-mounting`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="face-mount">Face-Mount</SelectItem>
-                    <SelectItem value="full-post">Full Post</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {(span.balBladePostMounting || "face-mount") === "full-post" && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Full Post Length</Label>
-                  <Select
-                    value={span.balBladeFullPostLength || "2400"}
-                    onValueChange={(value) => updateSpan({ balBladeFullPostLength: value as "2400" | "6000" })}
-                  >
-                    <SelectTrigger data-testid={`span-${span.spanId}-bal-blade-full-post-length`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="2400">2400mm</SelectItem>
-                      <SelectItem value="6000">6000mm</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-          )}
+          {/* alu-bal-barr / alu-bal-blade: configured entirely by <AluBalConfig> (finish picker +
+              substrate-driven post mounting). The old per-span Panel Height / Finish / Post Mounting
+              dropdowns were removed — "Post Mounting" duplicated the Substrate picker and could drift
+              out of sync with it. Panel height is pinned 1000mm for V1 (see alu-bal-config.tsx). */}
 
           {/* Gap Configurations - Hide for BARR, Blade, Tubular, Hamptons PVC, alu-bal-*, and glass-pool-spigots (uses 4-col grid) */}
           {!isGlassSpigots && !isGlassPoolChannel && !isGlassBalChannel && !isGlassBalStandoffs && !isGlassBalSpigots && productVariant !== "alu-pool-barr" && productVariant !== "alu-pool-blade" && productVariant !== "alu-pool-tubular" && productVariant !== "alu-bal-barr" && productVariant !== "alu-bal-blade" && !productVariant.startsWith("pvc-hamptons-") && (showLeftGap || showRightGap) && (
