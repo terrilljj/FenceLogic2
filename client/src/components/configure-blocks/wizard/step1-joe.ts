@@ -28,15 +28,28 @@ const ATTACH_TIPS: Record<string, Tip> = {
   },
   "base-plate": {
     title: "Base-plated",
-    body: "On a deck — or any finished surface you don't want to core — use a base-plated post. It bolts straight down, no coring needed, and it's my go-to for timber decks and new slabs with a tiled or paved finish.",
+    body: "On a deck — or any finished surface you don't want to core — use a base-plated spigot. It bolts straight down, no coring needed, and it's my go-to for timber decks and new slabs with a tiled or paved finish.",
   },
-  "side-mounted": {
-    title: "Side-mounted",
-    body: "Reach for this when the top surface is precious or there's no slab to fix to — it fixes to a vertical face (a fascia, the edge of a slab, a wall). Best on raised decks and stair edges.",
+  "base-plated": {
+    title: "Base-plated",
+    body: "On a deck or finished slab, base-plate the posts — they bolt straight down, no coring needed. My go-to for timber decks and tiled/paved slabs.",
   },
-  "inground": {
+  "face-mounted": {
+    title: "Face-mounted",
+    body: "Face-mount the posts to a vertical edge (a fascia or the edge of a slab) when you want to keep the top surface clear — the run cantilevers up from the side. Best on raised decks and stair edges.",
+  },
+  // aluminium pool substrate
+  "decking": {
+    title: "Decking",
+    body: "On a timber deck, base-plate the posts down to the deck framing — no coring. The everyday deck fix; the batten screws are included.",
+  },
+  "concrete-slab": {
+    title: "Concrete slab",
+    body: "On a finished concrete slab, bolt the base plates down — the standard fix where you don't want to core. Fixings into the slab are customer-sourced.",
+  },
+  "in-ground": {
     title: "In-ground",
-    body: "Where the fence runs across dirt, grass or a garden bed with no slab, set the posts in-ground into a concrete footing. That's the one to use off-slab — don't base-plate onto pavers sitting on sand.",
+    body: "Where the fence runs across dirt, grass or a garden bed with no slab, set the posts in-ground in concrete footings. That's the one to use off-slab — don't base-plate onto pavers sitting on sand.",
   },
   // channel
   "ground": {
