@@ -452,6 +452,13 @@ export type PanelLayout = {
 export const spanConfigSchema = z.object({
   spanId: z.string(),
   name: z.string().optional(), // Display-only section label (e.g. "North RHS"); not sent to the solver
+  // Per-section STYLE for multi-style designs — a single fence can mix styles/mountings across
+  // sections (e.g. glass spigots + BARR pool + BARR in-ground). Optional so old saved designs
+  // (JSON spans without it) keep validating; falls back to design.productVariant via spanVariant().
+  // Permissive string (the design enum is the canonical set); resolve through spanVariant() which
+  // returns a typed ProductVariant.
+  productVariant: z.string().optional(),
+  productType: z.string().optional(),
   length: z.number().min(0),
   maxPanelWidth: z.number().min(200).max(2000),
   desiredGap: z.number().min(0).max(99), // Target gap - panels will adjust to accommodate
@@ -664,6 +671,21 @@ export const fenceDesignSchema = z.object({
 });
 
 export type FenceDesign = z.infer<typeof fenceDesignSchema>;
+
+// ── Multi-style designs ─────────────────────────────────────────────────────────
+// A section's effective style/type: its own override, else the design default. EVERY
+// consumer (config dispatch, BOM, layout, visualization) must resolve the variant through
+// these instead of reading design.productVariant directly, so mixed-style designs work.
+export function spanVariant(design: { productVariant: string }, span: { productVariant?: string }): ProductVariant {
+  return ((span.productVariant && span.productVariant.length > 0 ? span.productVariant : design.productVariant) as ProductVariant);
+}
+export function spanProductType(design: { productType?: string }, span: { productType?: string }): string {
+  return (span.productType && span.productType.length > 0 ? span.productType : (design.productType ?? "glass-pool"));
+}
+/** Distinct styles across a design's sections — drives the multi-variant code paths. */
+export function designVariants(design: { productVariant: string; spans: { productVariant?: string }[] }): ProductVariant[] {
+  return Array.from(new Set(design.spans.map((s) => spanVariant(design, s))));
+}
 
 // Database table for saved designs
 export const fenceDesigns = pgTable("fence_designs", {
