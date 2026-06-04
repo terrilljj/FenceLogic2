@@ -94,6 +94,36 @@ describe("balustrade branches — slot resolution with template-literal fallback
     });
   });
 
+  describe("spigot hardware → real family SKUs (MAD/NOV/MADDEL/POOLMAD)", () => {
+    it("madrid base-plate satin → MAD-SBP-S; nova core-drill black → NOV-S-B; 2 per panel", () => {
+      const mad = calculateComponents(
+        makeBalustradeDesign("glass-bal-spigots-12mm", [1200, 1200], {
+          spigotColor: "satin", spigotMounting: "base-plate", fieldValues: { "spigot-family": "madrid" },
+        }), [], [],
+      );
+      const m = mad.find(c => c.sku === "MAD-SBP-S");
+      expect(m).toBeDefined();
+      expect(m?.qty).toBe(4); // 2 panels × 2
+      expect(mad.some(c => /^SPIGOT-/.test(c.sku ?? ""))).toBe(false);
+
+      const nov = calculateComponents(
+        makeBalustradeDesign("glass-bal-spigots-12mm", [1200], {
+          spigotColor: "black", spigotMounting: "core-drilled", fieldValues: { "spigot-family": "nova" },
+        }), [], [],
+      );
+      expect(nov.some(c => c.sku === "NOV-S-B")).toBe(true);
+    });
+
+    it("madrid-deluxe core-drill white → MADDEL-S-MW", () => {
+      const comps = calculateComponents(
+        makeBalustradeDesign("glass-bal-spigots-15mm", [1400], {
+          spigotColor: "white", spigotMounting: "core-drilled", fieldValues: { "spigot-family": "madrid-deluxe" },
+        }), [], [],
+      );
+      expect(comps.some(c => c.sku === "MADDEL-S-MW")).toBe(true);
+    });
+  });
+
   describe("35-Series rail → real SER35 catalogue SKUs", () => {
     it("emits SER35-R5800-{finish} + real terminators, no RAIL-* placeholder", () => {
       const design = makeBalustradeDesign("glass-bal-spigots-15mm", [1400, 1400], {
