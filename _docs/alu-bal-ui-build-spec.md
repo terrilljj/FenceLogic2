@@ -17,16 +17,26 @@ BOM helper, because BARR Bal and Blade Bal use the SAME AIRE post family + XP co
   - Face-mounted → `AR-1500-FMID-{code}` mid posts + `AR-1500-FMLR-{code}-2PK` L+R end pack + dome nuts
 - **Substrate-driven corner topology**: face-mount corners = 2 posts back-to-back; core/base share. Corners stepper in the config.
 - **3D fixings matrix** (substrate × material): base timber `S-110LAG-4PK` / concrete `S-120ROD-4PK`+`SOUD-CA1400`÷20 / steel customer; face timber `GS160LAG`×4 / concrete `GS150ROD`×4+`SOUD`÷15 / steel customer; dome nuts on all face-mount (Black `GS-DN-4PK-B`, Silver `GS-DN-4PK` for White).
-- **Fall-height band** (<1m / 1m-5m default / >5m): >5m shows a manual-quote notice (no BOM).
 - Material question conditional: shown for base-plated + face-mounted; hidden for core-drilled (uniform chemical bond).
 - BOM emitted ONCE at span 0 with design-level totals (corner topology is cross-section).
+
+## Fall height — 3-band glass treatment dropped; BARR keeps a binary (operator rulings 2026-06-04)
+The original `<1m / 1m-5m / >5m` band was the **AS1288 GLASS-selection** concept (Madrid 4.8m
+section limit doesn't apply under 1m; all glass over a 5m fall must be laminated) and was wrongly
+applied wholesale to metal. The glass-specific parts are gone from the metal variants: the 3-way
+picker, the `1m-5m` middle label, and the **>5m manual-quote / laminated tier**.
+
+BUT for **BARR** a **binary `<1m / ≥1m`** stays, because it decides whether full panels can be used:
+- `under-1m` → no barrier-load case → **full 1733mm panels** (`barrBalMax = undefined`).
+- `over-1m` (default) → barrier → **cap 1365mm** (1425mm post centres) (`barrBalMax = 1365`).
+- **Blade has NO control** — its 40×40 SHS rail spans full stock at any fall height, so no cap ever.
+Field `bal-fall-height` (values `under-1m` | `over-1m`); plumbed via the layout POST →
+`LayoutRequestSpan.balFallHeight` → `calculateBarrPanelLayout` `maxPanelOverride`.
 
 ## BARR Bal (alu-bal-barr)
 - 2 finishes (Satin Black / Pearl White) — finish picker drives every SKU.
 - Panel `BR-PANEL-1733-1000-{B/W}` (1733 stock). Brackets `BR-BR60-{B/W}-4PK` + `BR-BRCAP` cap (paired, per panel).
-- **Fall-height c-to-c ceiling**: 1m-5m → panels capped 1365mm (1425mm post centres);
-  <1m → 1733 stock. SOLVER change: `calculateBarrPanelLayout` gains `maxPanelOverride`;
-  layout-service passes 1365 at 1m-5m. `balFallHeight` plumbed through the layout request.
+- **Fall-height binary** (see above): `<1m` → full 1733 panels; `≥1m` → 1365mm cap.
 
 ## Blade Bal (alu-bal-blade)
 - **Black only** (no finish picker). Panel `BLA-PNL-1700-1000-B` (1700 stock).

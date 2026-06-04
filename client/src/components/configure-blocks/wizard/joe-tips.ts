@@ -78,17 +78,17 @@ export function step2Tips(productVariant: string, span: SpanConfig): Tip[] {
         ? "Pre-fab picket panels on AIRE 50×50 posts with extended C-brackets — architectural aluminium for balconies, decks and stairs. No gates, no electrical earthing (that's pool-only)."
         : "Blade-profile panels on AIRE 50×50 posts with enclosed FastFit brackets. The 40×40 rail spans the full panel width, so there's no width limit at the usual fall heights.",
     });
-    const fall = (fv["bal-fall-height"] as string) || "1m-5m";
-    if (fall === "over-5m") {
-      tips.push({
-        title: "Over 5m is a manual quote",
-        body: "Above a 5m fall, the engineering changes — we sign these off individually. Email hello@barrierhub.com.au with your run and we'll price it.",
-      });
-    } else if (isBarrBal && fall === "1m-5m") {
-      tips.push({
-        title: "Panel width at 1m–5m",
-        body: "For the standard 1m–5m balustrade load, BARR panels cap at 1365mm wide (1425mm between post centres) — so a long run just uses a few more posts.",
-      });
+    if (isBarrBal) {
+      const fall = (fv["bal-fall-height"] as string) || "over-1m";
+      tips.push(fall === "under-1m"
+        ? {
+            title: "Under 1m — full panels",
+            body: "Below a 1m fall there's no barrier-load case, so BARR can run the full 1733mm panels — fewer posts.",
+          }
+        : {
+            title: "Over 1m — barrier load",
+            body: "At a 1m+ fall the balustrade is a barrier, so BARR panels cap at 1365mm wide (1425mm between post centres) — a long run just uses a few more posts.",
+          });
     }
     const balSub = (fv["bal-substrate"] as string) || "base-plated";
     if (balSub === "core-drilled") {

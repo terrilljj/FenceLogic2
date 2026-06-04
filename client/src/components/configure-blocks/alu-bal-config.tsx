@@ -96,7 +96,7 @@ const FIXING_INFO: Record<string, { sku: string; title: string; chip?: string; t
 
 const TIP = {
   finish: "Satin Black or Pearl White — the finish flows through to every post, bracket and cover.",
-  fall: "How far someone could fall over the balustrade. Under 1m has no barrier-load case. 1m–5m is the standard balustrade case. Over 5m needs separate engineering — we'll quote it manually.",
+  fall: "How far someone could fall over the balustrade. Under 1m has no barrier-load case, so full 1733mm panels can be used. 1m or more is a barrier — panels cap at 1365mm (1425mm post centres), so a long run just uses a few more posts.",
   substrate: "What the posts fix to. Core-drilled sets into concrete; base-plated bolts onto a slab or deck; face-mounted bolts to a vertical edge. No in-ground for balustrade.",
   material: "What's behind the fixing surface — it sets the fixing type. Steel is customer-supplied (thickness-dependent).",
   corners: "How many corners your run turns. Face-mounted corners use two posts back-to-back (they can only fix to one face); core-drilled and base-plated share a single corner post.",
@@ -131,16 +131,18 @@ export function AluBalConfig({ span, updateSpan, allSpans, style }: AluBalConfig
   const substrate = ((span.fieldValues?.["bal-substrate"] as string) || "base-plated") as Substrate;
   const subMeta = SUBSTRATE_META[substrate];
   const material = ((span.fieldValues?.["bal-material"] as string) || "timber") as Material;
-  const fallHeight = (span.fieldValues?.["bal-fall-height"] as string) || "1m-5m";
-  const over5m = fallHeight === "over-5m";
   const corners = parseInt(String(span.fieldValues?.["bal-corners"] ?? "0"), 10) || 0;
+  // BARR only: <1m fall has no barrier-load case → full 1733mm panels; ≥1m → 1365mm cap.
+  // (Not a glass/AS1288 band — Blade has no cap at any fall height, so no control there.)
+  const fallBand = (span.fieldValues?.["bal-fall-height"] as string) || "over-1m";
+  const fullPanelsAllowed = style === "barr" && fallBand === "under-1m";
 
-  // Defaults — height 1000mm, base-plated, 1m-5m fall.
+  // Defaults — height 1000mm, base-plated, ≥1m fall (BARR).
   useEffect(() => {
     const fv: Record<string, any> = { ...span.fieldValues };
     let changed = false;
     if (!span.fieldValues?.["bal-substrate"]) { fv["bal-substrate"] = "base-plated"; changed = true; }
-    if (!span.fieldValues?.["bal-fall-height"]) { fv["bal-fall-height"] = "1m-5m"; changed = true; }
+    if (style === "barr" && !span.fieldValues?.["bal-fall-height"]) { fv["bal-fall-height"] = "over-1m"; changed = true; }
     const updates: Partial<SpanConfig> = {};
     if (changed) updates.fieldValues = fv;
     if (style === "barr" && span.balBarrPanelHeight !== "1000mm") updates.balBarrPanelHeight = "1000mm";
@@ -179,15 +181,15 @@ export function AluBalConfig({ span, updateSpan, allSpans, style }: AluBalConfig
   const setFV = (key: string, value: string) => updateSpan({ fieldValues: { ...span.fieldValues, [key]: value } });
 
   const configureSummary = span.panelLayout
-    ? `${meta.hasFinish ? finishName + " · " : ""}${fallHeight === "under-1m" ? "<1m" : fallHeight === "over-5m" ? ">5m" : "1–5m"} fall · ${totalPanels} panel${totalPanels === 1 ? "" : "s"}`
-    : `${meta.hasFinish ? finishName + " · " : ""}${fallHeight === "under-1m" ? "<1m" : fallHeight === "over-5m" ? ">5m" : "1–5m"} fall`;
+    ? `${meta.hasFinish ? finishName + " · " : ""}${totalPanels} panel${totalPanels === 1 ? "" : "s"}`
+    : meta.hasFinish ? finishName : meta.panelTitle;
   const postsSummary = span.panelLayout
     ? `${subMeta.short}${subMeta.needsMaterial ? " · " + material : ""}${corners > 0 ? ` · ${corners} corner${corners > 1 ? "s" : ""}` : ""}`
     : subMeta.short;
 
   return (
     <Accordion type="multiple" defaultValue={["configure", "posts"]} className="rounded-md border border-card-border">
-      {/* 1. Configure — finish (BARR) + fall-height band + panel cut plan. */}
+      {/* 1. Configure — finish (BARR) + panel cut plan. */}
       <AccordionItem value="configure" className="border-b border-card-border px-3">
         <AccordionTrigger className="py-2.5 hover:no-underline [&[data-state=open]_.acc-summary]:hidden" data-testid={`span-${span.spanId}-accordion-configure`}>
           <SectionHeader n={1} title="Configure" summary={configureSummary} />
@@ -229,61 +231,55 @@ export function AluBalConfig({ span, updateSpan, allSpans, style }: AluBalConfig
             </p>
           )}
 
-          {/* Fall-height band. */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">
-              <Label className="text-xs text-muted-foreground">Fall Height</Label>
-              <InfoTooltip content={TIP.fall} />
-            </div>
-            <IconOptionPicker
-              spanId={span.spanId}
-              idPrefix="bal-fall"
-              value={fallHeight}
-              onSelect={(v) => setFV("bal-fall-height", v)}
-              columns={3}
-              options={[
-                { value: "under-1m", label: "Under 1m", blurb: "No barrier case", icon: <ArrowDownToLine className="h-5 w-5" /> },
-                { value: "1m-5m", label: "1m – 5m", blurb: "Standard", icon: <PanelTop className="h-5 w-5" /> },
-                { value: "over-5m", label: "Over 5m", blurb: "Manual quote", icon: <AlertTriangle className="h-5 w-5" /> },
-              ]}
-            />
-          </div>
-
-          {over5m ? (
-            <div className="rounded-md border border-amber-300 bg-amber-50 p-2.5 dark:border-amber-900 dark:bg-amber-950/30" data-testid={`span-${span.spanId}-over5m-notice`}>
-              <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">Over 5m needs separate engineering</p>
-              <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
-                Balustrades above a 5m fall need a specific engineering sign-off. Email us at
-                hello@barrierhub.com.au and we'll quote it manually.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-[96px_1fr] gap-2.5 rounded-md border border-card-border p-2.5" data-testid={`span-${span.spanId}-panel-cut-plan`}>
-              <HardwareCard imageSku={meta.panelSku(finishCode)} title={meta.panelTitle} chip={span.panelLayout ? `× ${stockPanelsNeeded}` : undefined} testId={`span-${span.spanId}-panel-card`} />
-              <div className="min-w-0 space-y-1">
-                <div className="flex items-center gap-1">
-                  <p className="text-[11px] font-semibold">Panels &amp; cuts</p>
-                  <InfoTooltip content={TIP.cuts} />
-                </div>
-                {span.panelLayout ? (
-                  <ul className="space-y-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                    <li>
-                      {stockPanelsNeeded} × {meta.stockWidth}mm stock
-                      {cutPlan.fullPanels > 0 ? ` · ${cutPlan.fullPanels} full` : ""}
-                      {cutPlan.cutPanels > 0 ? ` · ${cutPlan.cutPanels} cut → ${cutPlan.cutWidths.map((w) => Math.round(w)).join(", ")}mm` : ""}
-                    </li>
-                    {cutPlan.claimed.length > 0 && (
-                      <li className="font-medium text-primary">{cutPlan.claimed.length} cut from offcuts — saved {cutPlan.claimed.length} panel{cutPlan.claimed.length > 1 ? "s" : ""}</li>
-                    )}
-                    <li>{cutPlan.offcutsOut.length > 0 ? `Offcuts left: ${cutPlan.offcutsOut.map((o) => Math.round(o)).join(", ")}mm (auto-reused)` : "No usable offcuts"}</li>
-                    {style === "barr" && fallHeight === "1m-5m" && <li className="text-[10px]">Panels capped at 1365mm (1425mm post centres) for the 1m–5m barrier load.</li>}
-                  </ul>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">Cuts appear once the layout is calculated.</p>
-                )}
+          {/* BARR only: fall height decides if full 1733mm panels can be used (<1m) or the
+              barrier-load cap applies (≥1m → 1365mm). Blade has no cap, so no control. */}
+          {style === "barr" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Fall Height</Label>
+                <InfoTooltip content={TIP.fall} />
               </div>
+              <IconOptionPicker
+                spanId={span.spanId}
+                idPrefix="bal-fall"
+                value={fallBand}
+                onSelect={(v) => setFV("bal-fall-height", v)}
+                columns={2}
+                options={[
+                  { value: "under-1m", label: "Under 1m", blurb: "Full panels", icon: <ArrowDownToLine className="h-5 w-5" /> },
+                  { value: "over-1m", label: "Over 1m", blurb: "Barrier — 1365 cap", icon: <PanelTop className="h-5 w-5" /> },
+                ]}
+              />
             </div>
           )}
+
+          <div className="grid grid-cols-[96px_1fr] gap-2.5 rounded-md border border-card-border p-2.5" data-testid={`span-${span.spanId}-panel-cut-plan`}>
+            <HardwareCard imageSku={meta.panelSku(finishCode)} title={meta.panelTitle} chip={span.panelLayout ? `× ${stockPanelsNeeded}` : undefined} testId={`span-${span.spanId}-panel-card`} />
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-1">
+                <p className="text-[11px] font-semibold">Panels &amp; cuts</p>
+                <InfoTooltip content={TIP.cuts} />
+              </div>
+              {span.panelLayout ? (
+                <ul className="space-y-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                  <li>
+                    {stockPanelsNeeded} × {meta.stockWidth}mm stock
+                    {cutPlan.fullPanels > 0 ? ` · ${cutPlan.fullPanels} full` : ""}
+                    {cutPlan.cutPanels > 0 ? ` · ${cutPlan.cutPanels} cut → ${cutPlan.cutWidths.map((w) => Math.round(w)).join(", ")}mm` : ""}
+                  </li>
+                  {cutPlan.claimed.length > 0 && (
+                    <li className="font-medium text-primary">{cutPlan.claimed.length} cut from offcuts — saved {cutPlan.claimed.length} panel{cutPlan.claimed.length > 1 ? "s" : ""}</li>
+                  )}
+                  <li>{cutPlan.offcutsOut.length > 0 ? `Offcuts left: ${cutPlan.offcutsOut.map((o) => Math.round(o)).join(", ")}mm (auto-reused)` : "No usable offcuts"}</li>
+                  {style === "barr" && (fullPanelsAllowed
+                    ? <li className="text-[10px]">Full 1733mm panels — no barrier cap under a 1m fall.</li>
+                    : <li className="text-[10px]">Panels capped at 1365mm (1425mm post centres) for the ≥1m barrier load.</li>)}
+                </ul>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">Cuts appear once the layout is calculated.</p>
+              )}
+            </div>
+          </div>
         </AccordionContent>
       </AccordionItem>
 

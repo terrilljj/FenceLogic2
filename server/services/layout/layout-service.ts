@@ -303,8 +303,10 @@ export function computeSpanLayout(request: LayoutRequest): LayoutResponse {
       hasGate ? span.gateConfig?.centreFromLeft : undefined,
     );
   } else if (productVariant === "alu-bal-barr") {
-    // BARR Balustrade: equally-spaced panels, capped at the fall-height c-to-c ceiling.
-    // 1m–5m fall → 1365mm max panel (1425mm c-to-c); <1m → 1733mm stock (no cap).
+    // BARR Balustrade: equally-spaced panels. Fall height decides whether full panels can be
+    // used: <1m fall has no barrier-load case → full 1733mm stock; ≥1m fall is a barrier →
+    // cap at 1365mm panel / 1425mm post centres. (Binary only — NOT the glass/AS1288 band;
+    // the >5m laminated tier is glass-specific and does not apply to aluminium.)
     const barrBalMax = span.balFallHeight === "under-1m" ? undefined : 1365;
     layout = calculateBarrPanelLayout(
       span.length,
