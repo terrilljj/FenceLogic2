@@ -10,47 +10,31 @@ import { IconOptionPicker } from "./hardware-card";
  * Unlike the aluminium balustrade band (which is a structural panel-cap toggle),
  * the glass band drives the AS1288 §7 GLASS SELECTION:
  *   <1m  — not an NCC fall-prevention barrier; the system run-length limit is lifted.
- *   1-5m — standard barrier; toughened MONOLITHIC glass; run-length limit applies.
- *   >5m  — toughened LAMINATED glass is MANDATORY (AS1288 §7, no exceptions). Frameless
- *          spigot/channel/standoff systems have no Deemed-to-Satisfy pathway, so site-
- *          specific engineering certification is required (we proceed with the laminated spec).
+ *   1-5m — standard barrier; toughened glass; run-length limit applies.
+ *   >5m  — AS1288 §7 mandates LAMINATED glass. These styles are toughened-only — the ONLY
+ *          laminated option in the range is the VersaTilt HD Channel (17.52mm SGP), so >5m
+ *          REDIRECTS the customer there (no laminated SKU is emitted for these styles).
  *
- * Glass build per system (from the PTS engineering extractions in the ECO Vault):
- *   spigots-12mm (Madrid Standard) 12mm mono / 11.52mm laminated
- *   spigots-15mm (Madrid Deluxe)   15mm mono / 16mm laminated
- *   channel      (VersaTilt)       15mm mono / 15mm laminated
- *   standoffs    (Standoff PF)     15mm mono / 15mm laminated
+ * Glass build per style: spigots-12mm 970NTG (12mm) · spigots-15mm + channel 1000FBG (15mm)
+ * · standoffs 1280S (15mm). All toughened.
  */
 
 export type GlassFallBand = "under-1m" | "1m-5m" | "over-5m";
 
 export const GLASS_FALL_FIELD = "glass-bal-fall-height";
 
-interface GlassBuild {
-  /** Monolithic (toughened) thickness label for <5m. */
-  mono: string;
-  /** Laminated thickness label for >=5m. */
-  laminated: string;
-}
-
-/** Per-variant glass build, keyed by the base style (suffix-insensitive). */
-export function glassBuildFor(variant: ProductVariant | string): GlassBuild {
-  if (variant.includes("15mm")) return { mono: "15mm toughened monolithic", laminated: "16mm toughened laminated" };
-  if (variant.includes("12mm")) return { mono: "12mm toughened monolithic", laminated: "11.52mm toughened laminated" };
-  // channel + standoffs are both 15mm, laminated stays 15mm
-  return { mono: "15mm toughened monolithic", laminated: "15mm toughened laminated" };
+/** Toughened glass build per standard style — the ONLY build these styles offer.
+ * The single laminated option in the range is the VersaTilt HD Channel (17.52mm SGP);
+ * these styles have no laminated SKU, so >5m redirects there. */
+export function glassBuildFor(variant: ProductVariant | string): string {
+  if (variant.includes("15mm")) return "15mm toughened monolithic";
+  if (variant.includes("12mm")) return "12mm toughened monolithic";
+  return "15mm toughened monolithic"; // channel + standoffs
 }
 
 /** Resolve the current band off the span (defaults to the standard 1-5m case). */
 export function glassFallBand(span: SpanConfig): GlassFallBand {
   return ((span.fieldValues?.[GLASS_FALL_FIELD] as GlassFallBand) || "1m-5m");
-}
-
-/** The glass build that applies for a given band (laminated at >=5m). */
-export function glassBuildForBand(variant: ProductVariant | string, band: GlassFallBand): { build: string; laminated: boolean } {
-  const b = glassBuildFor(variant);
-  const laminated = band === "over-5m";
-  return { build: laminated ? b.laminated : b.mono, laminated };
 }
 
 interface Props {
@@ -63,7 +47,8 @@ interface Props {
 
 export function GlassBalFallBand({ span, updateSpan, productVariant, showRunCapNote = false }: Props) {
   const band = glassFallBand(span);
-  const { build, laminated } = glassBuildForBand(productVariant, band);
+  const build = glassBuildFor(productVariant);
+  const over5m = band === "over-5m"; // these styles can't go laminated → redirect to HD
 
   const setBand = (v: string) =>
     updateSpan({ fieldValues: { ...span.fieldValues, [GLASS_FALL_FIELD]: v } });
@@ -83,7 +68,7 @@ export function GlassBalFallBand({ span, updateSpan, productVariant, showRunCapN
         options={[
           { value: "under-1m", label: "Under 1m", blurb: "No barrier case", icon: <ArrowDownToLine className="h-5 w-5" /> },
           { value: "1m-5m", label: "1m – 5m", blurb: "Toughened", icon: <PanelTop className="h-5 w-5" /> },
-          { value: "over-5m", label: "Over 5m", blurb: "Laminated", icon: <Layers className="h-5 w-5" /> },
+          { value: "over-5m", label: "Over 5m", blurb: "Laminated → HD", icon: <Layers className="h-5 w-5" /> },
         ]}
       />
 
@@ -91,14 +76,14 @@ export function GlassBalFallBand({ span, updateSpan, productVariant, showRunCapN
       <div
         className={
           "rounded-md border p-2.5 text-[11px] leading-relaxed " +
-          (laminated
+          (over5m
             ? "border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
             : "border-card-border bg-muted/30")
         }
         data-testid={`span-${span.spanId}-glass-spec`}
       >
         <p className="font-semibold">
-          Glass: {build}
+          Glass: {over5m ? "laminated required — see below" : build}
         </p>
         {band === "under-1m" && (
           <p className="text-muted-foreground">
@@ -110,9 +95,9 @@ export function GlassBalFallBand({ span, updateSpan, productVariant, showRunCapN
             Standard balustrade barrier. Toughened monolithic glass to AS1288 §7{showRunCapNote ? "; the 4.88m certified run-length limit applies" : ""}.
           </p>
         )}
-        {band === "over-5m" && (
+        {over5m && (
           <p className="text-amber-800 dark:text-amber-300">
-            Above a 5m fall, AS1288 §7 mandates toughened <strong>laminated</strong> glass — no exceptions. Frameless systems have no Deemed-to-Satisfy pathway, so site-specific engineering certification is required. We&apos;ve set the laminated spec and will proceed.
+            Above a 5m fall, AS1288 §7 mandates <strong>laminated</strong> glass — and this style is toughened only. The only laminated option is the <strong>VersaTilt HD Channel</strong> (17.52mm SGP). Switch this section to the HD Channel style.
           </p>
         )}
       </div>

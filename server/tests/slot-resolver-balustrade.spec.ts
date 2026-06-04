@@ -197,13 +197,15 @@ describe("balustrade branches — slot resolution with template-literal fallback
       expect(monoGlass?.description).toContain("15mm Toughened Frameless Bal Glass");
       expect(monoGlass?.sku).toBe("1000FBG-1150");
 
-      const lam = calculateComponents(
+      // >5m does NOT emit a laminated SKU — these styles are toughened-only; the UI
+      // redirects to the HD channel (the only laminated option). Glass stays toughened.
+      const over5m = calculateComponents(
         makeBalustradeDesign("glass-bal-spigots-15mm", [1150, 1150], { fieldValues: { "glass-bal-fall-height": "over-5m" } }),
         [], [],
       );
-      const lamGlass = lam.find(c => /Bal Glass/.test(c.description ?? ""));
-      expect(lamGlass?.description).toContain("16mm Toughened Laminated");
-      expect(lamGlass?.sku).toBe("1000FBG-1150-LAM");
+      const g5 = over5m.find(c => /Bal Glass/.test(c.description ?? ""));
+      expect(g5?.sku).toBe("1000FBG-1150");                  // still toughened, no -LAM
+      expect(over5m.some(c => /-LAM$/.test(c.sku ?? ""))).toBe(false);
     });
 
     it("sub-1000 widths are zero-padded to 4 digits (exact catalogue match)", () => {
@@ -217,14 +219,15 @@ describe("balustrade branches — slot resolution with template-literal fallback
       expect(comps.some(c => /^1000FBG-\d{3}$/.test(c.sku ?? ""))).toBe(false);
     });
 
-    it("spigots-12mm: 11.52mm laminated at >=5m (970H)", () => {
-      const lam = calculateComponents(
+    it("spigots-12mm: toughened 970NTG at every band (no laminated -LAM)", () => {
+      const comps = calculateComponents(
         makeBalustradeDesign("glass-bal-spigots-12mm", [1450], { fieldValues: { "glass-bal-fall-height": "over-5m" } }),
         [], [],
       );
-      const g = lam.find(c => /Bal Glass/.test(c.description ?? ""));
-      expect(g?.description).toContain("11.52mm Toughened Laminated Frameless Bal Glass 1450W × 970H");
-      expect(g?.sku).toBe("970NTG-1450-LAM");
+      const g = comps.find(c => /Bal Glass/.test(c.description ?? ""));
+      expect(g?.description).toContain("12mm Toughened Frameless Bal Glass 1450W × 970H");
+      expect(g?.sku).toBe("970NTG-1450");
+      expect(comps.some(c => /-LAM$/.test(c.sku ?? ""))).toBe(false);
     });
 
     it("standoffs: 15mm 1280H pre-drilled; no stale pool GP- line", () => {

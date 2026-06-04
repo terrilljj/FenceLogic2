@@ -37,47 +37,37 @@ type ProductLookup = {
 type ProductDetails = { sku: string; description: string };
 
 /**
- * Glass-balustrade panel line — correct family / height / thickness per system, with the
- * AS1288 §7 laminated swap at a ≥5m fall (fallBand "over-5m"). Widths are made-to-size
- * (equalised by the solver), mirroring the existing GP-…-1200-12 made-to-size convention.
- *
- * SKU families are the calc's catalogue bal-glass families (1000FBG / 970NTG / 1280S);
- * the "-LAM" laminated suffix is DERIVED — no laminated SKU exists in the catalogue yet
- * (operator to ratify / seed). Glass builds per system are from the PTS extractions:
- *   spigots-12mm (Madrid Standard) 12mm mono / 11.52mm laminated, 970H
- *   spigots-15mm (Madrid Deluxe)   15mm mono / 16mm laminated,     1000H
- *   channel      (VersaTilt)       15mm mono / 15mm laminated,     1000H
- *   standoffs    (Standoff PF)     15mm mono / 15mm laminated,     1280H (pre-drilled)
+ * Glass-balustrade panel line — real catalogue glass family per system. Widths are
+ * stock sizes (the solver only uses stocked widths). The ONLY laminated option in the
+ * range is the VersaTilt HD Channel (1100SGP, 17.52mm SGP) — the other styles are
+ * toughened-only and have no laminated SKU, so >5m on them redirects to HD (handled in
+ * the UI fall band); they never emit a laminated line here.
+ *   spigots-12mm (Madrid Standard) 970NTG · 12mm · 970H
+ *   spigots-15mm (Madrid Deluxe)   1000FBG · 15mm · 1000H
+ *   channel      (VersaTilt)       1000FBG · 15mm · 1000H
+ *   standoffs    (Standoff PF)     1280S  · 15mm · 1280H (pre-drilled)
+ *   channel-hd   (VersaTilt HD)    1100SGP · 17.52mm SGP laminated · 1100H
  */
-function balGlassLine(productVariant: string, fallBand: string, width: number): ProductDetails {
-  // Catalogue codes are zero-padded to 4 digits (e.g. 1000FBG-0850) — pad so the emitted
-  // SKU is an EXACT catalogue match, not a near-miss.
+function balGlassLine(productVariant: string, _fallBand: string, width: number): ProductDetails {
+  // Catalogue codes are zero-padded to 4 digits (e.g. 1000FBG-0850).
   const w4 = String(width).padStart(4, "0");
   if (productVariant === "glass-bal-channel-hd") {
-    // Real storefront SGP family: 1100SGP-{width} (17.52mm SGP laminated, 1100H).
-    return {
-      sku: `1100SGP-${w4}`,
-      description: `17.52mm SGP Laminated HD Channel Bal Glass ${width}W × 1100H`,
-    };
+    return { sku: `1100SGP-${w4}`, description: `17.52mm SGP Laminated HD Channel Bal Glass ${width}W × 1100H` };
   }
-  const laminated = fallBand === "over-5m";
-  let family: string, height: number, mono: number, lam: number, label: string;
+  let family: string, height: number, thick: number, label: string;
   if (productVariant.includes("15mm")) {
-    family = "1000FBG"; height = 1000; mono = 15; lam = 16; label = "Frameless Bal Glass";
+    family = "1000FBG"; height = 1000; thick = 15; label = "Frameless Bal Glass";
   } else if (productVariant.includes("12mm")) {
-    family = "970NTG"; height = 970; mono = 12; lam = 11.52; label = "Frameless Bal Glass";
+    family = "970NTG"; height = 970; thick = 12; label = "Frameless Bal Glass";
   } else if (productVariant === "glass-bal-standoffs") {
-    family = "1280S"; height = 1280; mono = 15; lam = 15; label = "Standoff Bal Glass";
+    family = "1280S"; height = 1280; thick = 15; label = "Standoff Bal Glass";
   } else {
-    // glass-bal-channel — shares the 15mm/1000H frameless bal glass family
-    family = "1000FBG"; height = 1000; mono = 15; lam = 15; label = "Channel Bal Glass";
+    family = "1000FBG"; height = 1000; thick = 15; label = "Channel Bal Glass"; // glass-bal-channel
   }
-  const thick = laminated ? lam : mono;
-  const buildWord = laminated ? "Toughened Laminated" : "Toughened";
   const drilled = productVariant === "glass-bal-standoffs" ? ", pre-drilled" : "";
   return {
-    sku: laminated ? `${family}-${w4}-LAM` : `${family}-${w4}`,
-    description: `${thick}mm ${buildWord} ${label} ${width}W × ${height}H${drilled}`,
+    sku: `${family}-${w4}`,
+    description: `${thick}mm Toughened ${label} ${width}W × ${height}H${drilled}`,
   };
 }
 
