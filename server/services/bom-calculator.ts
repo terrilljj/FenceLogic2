@@ -1130,7 +1130,11 @@ function calculateComponentsForVariant(
           const fieldValues = (span as any).fieldValues || {};
           const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
           const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
-          const family = fieldValues['spigot-family'] || '';
+          // Default the spigot family so the BOM always emits a REAL catalogue SKU (never the
+          // generic fallback, which isn't sellable). Pool → Madrid Pool, balustrade → Madrid
+          // (ADR 0044 cheapest-fit default). The UI lets the customer change it.
+          const family = fieldValues['spigot-family']
+            || (design.productVariant.startsWith('glass-pool') ? 'madrid-pool' : 'madrid');
           const discriminators: Record<string, string> = { mounting, finish };
           if (family) discriminators.family = family;
 
@@ -1220,7 +1224,11 @@ function calculateComponentsForVariant(
           const fieldValues = (span as any).fieldValues || {};
           const mounting = fieldValues['spigot-mounting'] || (span as any).spigotMounting || 'base-plate';
           const finish = fieldValues['spigot-color'] || (span as any).spigotColor || 'polished';
-          const family = fieldValues['spigot-family'] || '';
+          // Default the spigot family so the BOM always emits a REAL catalogue SKU (never the
+          // generic fallback, which isn't sellable). Pool → Madrid Pool, balustrade → Madrid
+          // (ADR 0044 cheapest-fit default). The UI lets the customer change it.
+          const family = fieldValues['spigot-family']
+            || (design.productVariant.startsWith('glass-pool') ? 'madrid-pool' : 'madrid');
           const discriminators: Record<string, string> = { mounting, finish };
           if (family) discriminators.family = family;
           const slotResult = lookupSlot('spigot-hardware', discriminators);
