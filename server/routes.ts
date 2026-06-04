@@ -12,6 +12,7 @@ import { pdfRouter } from "./routes/pdf";
 import adminConfigRouter from "./routes/adminConfig";
 import adminSheetsRouter from "./routes/adminSheets";
 import { calculateComponents, stripSkus } from "./services/bom-calculator";
+import { loadDesignSlots } from "./services/slot-loader";
 import { computeSpanLayout } from "./services/layout/layout-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -251,21 +252,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid design data" });
       }
 
-      // Load slot mappings and products server-side (never sent to client)
-      const [slotMappings, products] = await Promise.all([
-        design.productVariant
-          ? storage.getAllSlotsByVariant(design.productVariant)
-          : Promise.resolve([]),
+      // Load slot mappings (per variant for mixed designs) + products server-side
+      const [{ slotData, slotsByVariant }, products] = await Promise.all([
+        loadDesignSlots(design),
         storage.getAllProducts(),
       ]);
-
-      const slotData = slotMappings.map(s => ({
-        internalId: s.internalId,
-        fieldName: s.fieldName,
-        productId: s.productId,
-        label: s.label,
-        discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
-      }));
 
       const productData = products.map(p => ({
         id: p.id,
@@ -274,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: p.price,
       }));
 
-      const components = calculateComponents(design, slotData, productData);
+      const components = calculateComponents(design, slotData, productData, slotsByVariant);
 
       // Strip SKUs — public response contains descriptions only
       res.json({ components: stripSkus(components) });
@@ -293,20 +284,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid design data" });
       }
 
-      const [slotMappings, allProducts] = await Promise.all([
-        design.productVariant
-          ? storage.getAllSlotsByVariant(design.productVariant)
-          : Promise.resolve([]),
+      const [{ slotData, slotsByVariant }, allProducts] = await Promise.all([
+        loadDesignSlots(design),
         storage.getAllProducts(),
       ]);
-
-      const slotData = slotMappings.map(s => ({
-        internalId: s.internalId,
-        fieldName: s.fieldName,
-        productId: s.productId,
-        label: s.label,
-        discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
-      }));
 
       const productData = allProducts.map(p => ({
         id: p.id,
@@ -315,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: p.price,
       }));
 
-      const components = calculateComponents(design, slotData, productData);
+      const components = calculateComponents(design, slotData, productData, slotsByVariant);
 
       // Enrich each component with price from the products table
       const productByCode = new Map(allProducts.map(p => [p.code, p]));
@@ -349,21 +330,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields (email, design)" });
       }
 
-      // Compute BOM server-side
-      const [slotMappings, products] = await Promise.all([
-        design.productVariant
-          ? storage.getAllSlotsByVariant(design.productVariant)
-          : Promise.resolve([]),
+      // Compute BOM server-side (per-variant slots for mixed designs)
+      const [{ slotData, slotsByVariant }, products] = await Promise.all([
+        loadDesignSlots(design),
         storage.getAllProducts(),
       ]);
-
-      const slotData = slotMappings.map(s => ({
-        internalId: s.internalId,
-        fieldName: s.fieldName,
-        productId: s.productId,
-        label: s.label,
-        discriminatorAttributes: s.discriminatorAttributes as Record<string, string> | null,
-      }));
 
       const productData = products.map(p => ({
         id: p.id,
@@ -372,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: p.price,
       }));
 
-      const components = calculateComponents(design, slotData, productData);
+      const components = calculateComponents(design, slotData, productData, slotsByVariant);
 
       // In a real implementation, this would send an email
       console.log("Sending quote email to:", email);
