@@ -1,0 +1,128 @@
+style,sku,description,status,price_inc_gst,has_image
+glass-pool-spigots,GP-1000-1200-12,"Glass Panel 1000mm x 1200mm (12mm thick)",MISSING (seed),,false
+glass-pool-spigots,HINGE-MASTER-G2G-975,"Master Range Glass-to-Glass Hinge Set (for 975mm gate)",MISSING (seed),,false
+glass-pool-spigots,LATCH-G2G-975,"Glass-to-Glass Latch (for 975mm gate)",MISSING (seed),,false
+glass-pool-spigots,SPIGOT-BASE_PLATE-BLACK,"Spigot Base Plate Mount (Black)",MISSING (seed),,false
+glass-pool-spigots,SPIGOT-BASE_PLATE-POLISHED,"Spigot Base Plate Mount (Polished)",MISSING (seed),,false
+glass-pool-spigots,SPIGOT-CORE_DRILLED-POLISHED,"Spigot Core Drilled (Polished)",MISSING (seed),,false
+glass-pool-channel,CEC-STD,"Channel End Cap",MISSING (seed),,false
+glass-pool-channel,CFC-300,"Channel Friction Clamp (300mm spacing)",MISSING (seed),,false
+glass-pool-channel,GP-1000-1200-12,"Glass Panel 1000mm x 1200mm (12mm thick)",MISSING (seed),,false
+glass-pool-channel,VC-4200-ground,"Versatilt Aluminum Channel 4200mm (Ground Mount)",MISSING (seed),,false
+glass-pool-channel,VC-4200-wall,"Versatilt Aluminum Channel 4200mm (Wall Mount)",MISSING (seed),,false
+glass-bal-spigots-12mm,970NTG-1000,"12mm Toughened Frameless Bal Glass 1000W × 970H",PRICED,98.95,true
+glass-bal-spigots-12mm,970NTG-1000-LAM,"11.52mm Toughened Laminated Frameless Bal Glass 1000W × 970H",MADE-TO-SIZE (family exists),,false
+glass-bal-spigots-12mm,RAIL-OPT-NOTE,"Rail Optimization: 3000mm total required, 2800mm wastage from 1 × 5800mm lengths",MISSING (seed),,false
+glass-bal-spigots-12mm,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-BLACK,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-spigots-12mm,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-SATIN,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-spigots-12mm,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-BLACK,"35×35mm Series 35 End Cap (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-spigots-12mm,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-SATIN,"35×35mm Series 35 End Cap (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-spigots-12mm,SPIGOT-BASE_PLATE-BLACK,"Spigot Base Plate Mount (Black)",MISSING (seed),,false
+glass-bal-spigots-12mm,SPIGOT-CORE_DRILLED-POLISHED,"Spigot Core Drilled (Polished)",MISSING (seed),,false
+glass-bal-spigots-15mm,1000FBG-1000,"15mm Toughened Frameless Bal Glass 1000W × 1000H",PRICED,104.01,true
+glass-bal-spigots-15mm,1000FBG-1000-LAM,"16mm Toughened Laminated Frameless Bal Glass 1000W × 1000H",MADE-TO-SIZE (family exists),,false
+glass-bal-spigots-15mm,RAIL-OPT-NOTE,"Rail Optimization: 3000mm total required, 2800mm wastage from 1 × 5800mm lengths",MISSING (seed),,false
+glass-bal-spigots-15mm,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-BLACK,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-spigots-15mm,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-SATIN,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-spigots-15mm,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-BLACK,"35×35mm Series 35 End Cap (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-spigots-15mm,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-SATIN,"35×35mm Series 35 End Cap (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-spigots-15mm,SPIGOT-BASE_PLATE-BLACK,"Spigot Base Plate Mount (Black)",MISSING (seed),,false
+glass-bal-spigots-15mm,SPIGOT-BASE_PLATE-POLISHED,"Spigot Base Plate Mount (Polished)",MISSING (seed),,false
+glass-bal-channel,1000FBG-1000,"15mm Toughened Channel Bal Glass 1000W × 1000H",PRICED,104.01,true
+glass-bal-channel,1000FBG-1000-LAM,"15mm Toughened Laminated Channel Bal Glass 1000W × 1000H",MADE-TO-SIZE (family exists),,false
+glass-bal-channel,RAIL-OPT-NOTE,"Rail Optimization: 3000mm total required, 2800mm wastage from 1 × 5800mm lengths",MISSING (seed),,false
+glass-bal-channel,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-BLACK,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-channel,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-SATIN,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-channel,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-BLACK,"35×35mm Series 35 End Cap (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-channel,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-SATIN,"35×35mm Series 35 End Cap (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-channel,SPIGOT-BASE_PLATE-POLISHED,"Spigot Base Plate Mount (Polished)",MISSING (seed),,false
+glass-bal-channel,VER-15KIT-RUB,"15mm Glass Channel Glazing Rubber Kit",MISSING (seed),22.2,true
+glass-bal-channel,VER-2DMEP-B,"VersaTilt Channel End Plate 2-Pack (Black)",MISSING (seed),16.4,true
+glass-bal-channel,VER-2DMEP-SA,"VersaTilt Channel End Plate 2-Pack (Satin Anodised)",MISSING (seed),16.4,true
+glass-bal-channel,VER-4200-DMK-B,"VersaTilt Channel 4200mm Deck-Mount Kit (Black)",MISSING (seed),704.95,true
+glass-bal-channel,VER-4200-DMK-SA,"VersaTilt Channel 4200mm Deck-Mount Kit (Satin Anodised)",MISSING (seed),731.56,true
+glass-bal-channel,VER-PPKIT-15MM,"VersaTilt Friction Plate (suits 15mm)",MISSING (seed),25.7,true
+glass-bal-channel,VER-WASHER-14PK,"VersaTilt Stabilising Washer Pack",MISSING (seed),26.1,true
+glass-bal-channel-hd,1000SGP1752-1000,"17.52mm Toughened SGP Laminated HD Channel Bal Glass 1000W × 1000H",MISSING (seed),,false
+glass-bal-channel-hd,RAIL-OPT-NOTE,"Rail Optimization: 3000mm total required, 2800mm wastage from 1 × 5800mm lengths",MISSING (seed),,false
+glass-bal-channel-hd,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-BLACK,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-channel-hd,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-SATIN,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-channel-hd,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-BLACK,"35×35mm Series 35 End Cap (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-channel-hd,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-SATIN,"35×35mm Series 35 End Cap (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-channel-hd,SER35-17KIT-RUB,"35-Series Rail 17.52 Runner Insert",MISSING (seed),,false
+glass-bal-channel-hd,SPIGOT-BASE_PLATE-POLISHED,"Spigot Base Plate Mount (Polished)",MISSING (seed),,false
+glass-bal-channel-hd,VER-HD-17KIT-RUB,"17.52mm Glass Channel Glazing Rubber Kit",MISSING (seed),,false
+glass-bal-channel-hd,VER-HD-2DMEP-B,"VersaTilt HD Channel End Plate 2-Pack (Black)",MISSING (seed),18.4,true
+glass-bal-channel-hd,VER-HD-2DMEP-SA,"VersaTilt HD Channel End Plate 2-Pack (Satin Anodised)",MISSING (seed),18.4,true
+glass-bal-channel-hd,VER-HD-3600-DMK-B,"VersaTilt HD Channel 3600mm Deck-Mount Kit (Black)",MISSING (seed),674.05,true
+glass-bal-channel-hd,VER-HD-3600-DMK-SA,"VersaTilt HD Channel 3600mm Deck-Mount Kit (Satin Anodised)",MISSING (seed),674.05,true
+glass-bal-channel-hd,VER-HD-PPKIT-17-4PK,"VersaTilt HD Friction Plate (suits 17.52mm), 4-pack",MISSING (seed),74.9,true
+glass-bal-channel-hd,VER-HD-WASHER-18PK,"VersaTilt HD Stabilising Washer Pack",MISSING (seed),36.8,true
+glass-bal-standoffs,1280S-1000,"15mm Toughened Standoff Bal Glass 1000W × 1280H, pre-drilled",PRICED,189.26,true
+glass-bal-standoffs,RAIL-OPT-NOTE,"Rail Optimization: 3000mm total required, 2800mm wastage from 1 × 5800mm lengths",MISSING (seed),,false
+glass-bal-standoffs,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-BLACK,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-standoffs,RAIL-SERIES-35X35-5800-ANODISED-ALUMINIUM-SATIN,"Top Rail 35×35mm Series 35 5800mm (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-standoffs,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-BLACK,"35×35mm Series 35 End Cap (Anodised Aluminium, Black)",MISSING (seed),,false
+glass-bal-standoffs,RAIL-SERIES-35X35-END-CAP-ANODISED-ALUMINIUM-SATIN,"35×35mm Series 35 End Cap (Anodised Aluminium, Satin)",MISSING (seed),,false
+glass-bal-standoffs,STANDOFF-50-BLACK,"50mm Glass Standoff black",MISSING (seed),,false
+glass-bal-standoffs,STANDOFF-50-POLISHED,"50mm Glass Standoff polished",MISSING (seed),,false
+alu-pool-tubular,CSK-100-4PK,"M10 x 100mm Countersunk Batten Screws 4-pack",PRICED,9.96,true
+alu-pool-tubular,GROUT-SETFAST-10KG,"Setfast Non-Shrink Grout 10kg (incl. spare)",PRICED,45.4,true
+alu-pool-tubular,ML-TL-TC-H-AT,"D&D Magna-Latch + TruClose Hinge Kit (Black, pool compliant)",PRICED,115.95,true
+alu-pool-tubular,SS-1300-BP-B,"Flat Top 1300mm Base Plate Post (Black)",PRICED,39.11,true
+alu-pool-tubular,SS-BH4-B,"Flat Top Shroud Kit 4-pack (Black)",PRICED,7.65,true
+alu-pool-tubular,SS-BH4-W,"Flat Top Shroud Kit 4-pack (White)",PRICED,9.5,true
+alu-pool-tubular,SS-DC-B,"Flat Top Domical Cover (Black)",PRICED,7.21,true
+alu-pool-tubular,SS-FTG-0975-B,"Flat Top Gate 975 x 1200mm (Black)",PRICED,104.95,true
+alu-pool-tubular,SS-FTP-2450-B,"Flat Top Panel 1200H, cut to 2400mm from 2450mm (Black)",PRICED,103.85,true
+alu-pool-tubular,SS-FTP-2450-W,"Flat Top Panel 1200H, cut to 2400mm from 2450mm (White)",PRICED,139.07,true
+alu-pool-tubular,XP-1800-FP-W,"Flat Top 1800mm Post (White)",PRICED,38.75,true
+alu-pool-barr,BR-1280-BP-B,"BARR 1280mm Base Plate Post (Satin Black)",PRICED,48.55,true
+alu-pool-barr,BR-1800-W,"BARR 1800mm Post (Pearl White)",PRICED,51.85,true
+alu-pool-barr,BR-BR25-B-4PK,"BARR 25mm C-Bracket Kit 4-pack (Satin Black)",PRICED,13.95,true
+alu-pool-barr,BR-BR25-W-4PK,"BARR 25mm C-Bracket Kit 4-pack (Pearl White)",PRICED,13.95,true
+alu-pool-barr,BR-BRCAP-B-4PK,"BARR Bracket Cap 4-pack (Satin Black)",PRICED,1.95,true
+alu-pool-barr,BR-BRCAP-W-4PK,"BARR Bracket Cap 4-pack (Pearl White)",PRICED,1.95,true
+alu-pool-barr,BR-DC-2P-B,"BARR Domical Cover 2-pack (Satin Black)",PRICED,7.65,true
+alu-pool-barr,BR-DR-W,"BARR Dress Ring (Pearl White)",PRICED,3.2,true
+alu-pool-barr,BR-GATE-0975-1200-B,"BARR Gate 975 x 1200mm (Satin Black)",PRICED,194.95,true
+alu-pool-barr,BR-PANEL-2205-1200-B,"BARR Panel 2205 x 1200mm (Satin Black)",PRICED,295.75,true
+alu-pool-barr,BR-PANEL-2205-1200-W,"BARR Panel 2205 x 1200mm (Pearl White)",PRICED,295.75,true
+alu-pool-barr,CSK-100-4PK,"M10 x 100mm Countersunk Batten Screws 4-pack",PRICED,9.96,true
+alu-pool-barr,GROUT-SETFAST-10KG,"Setfast Non-Shrink Grout 10kg (incl. spare)",PRICED,45.4,true
+alu-pool-barr,ML-TL-TC-H-AT,"D&D Magna-Latch + TruClose Hinge Kit (Black, pool compliant)",PRICED,115.95,true
+alu-pool-barr,SS-1300-BP-B,"BARR 50×50 Base Plate Post — gate (Satin Black)",PRICED,39.11,true
+alu-pool-barr,XP-DC-2P-B,"BARR 50×50 Domical Cover — gate post (Satin Black)",PRICED,7.7,true
+alu-pool-blade,BLA-GATE-0975-1200-B,"Blade Gate 975 x 1200mm (Satin Black)",PRICED,193.45,true
+alu-pool-blade,BLA-PNL-2200-1200-B,"Blade Panel 2200 x 1200mm (Satin Black)",PRICED,272.95,true
+alu-pool-blade,CSK-100-4PK,"M10 x 100mm Countersunk Batten Screws 4-pack",PRICED,9.96,true
+alu-pool-blade,FF-BH-OPEN-4PK-B,"Blade FastFit Open Bracket 4-pack (Satin Black)",PRICED,16.65,true
+alu-pool-blade,ML-TL-TC-H-AT,"D&D Magna-Latch + TruClose Hinge Kit (Black, pool compliant)",PRICED,115.95,true
+alu-pool-blade,SS-1300-BP-B,"Blade 50×50 1300mm Base Plate Post (Satin Black)",PRICED,39.11,true
+alu-pool-blade,SS-DC-B,"Blade 50×50 Domical Cover (Satin Black)",PRICED,7.21,true
+alu-bal-barr,AR-1050-FPBP-B,"AIRE 1050mm Base Plate Post (Satin Black)",PRICED,58.5,true
+alu-bal-barr,AR-1500-FMID-B,"AIRE 1500mm Face-Mount Mid Post (Satin Black)",PRICED,70.2,true
+alu-bal-barr,AR-1500-FMLR-B-2PK,"AIRE 1500mm Face-Mount L+R End Post 2-pack (Satin Black)",PRICED,151.1,true
+alu-bal-barr,AR-5800-FP-W,"AIRE 5800mm Core-Drill Post — cut to length (Pearl White)",PRICED,164.65,true
+alu-bal-barr,BR-BR60-B-4PK,"BARR Extended C-Bracket Kit 4-pack (Satin Black)",PRICED,18.45,true
+alu-bal-barr,BR-BR60-W-4PK,"BARR Extended C-Bracket Kit 4-pack (Pearl White)",PRICED,18.45,true
+alu-bal-barr,BR-BRCAP-B-4PK,"BARR Bracket Cap 4-pack (Satin Black)",PRICED,1.95,true
+alu-bal-barr,BR-BRCAP-W-4PK,"BARR Bracket Cap 4-pack (Pearl White)",PRICED,1.95,true
+alu-bal-barr,BR-PANEL-1733-1000-B,"BARR Balustrade Panel 1000H, cut to 1365mm from 1733mm (Satin Black)",PRICED,280.5,true
+alu-bal-barr,BR-PANEL-1733-1000-W,"BARR Balustrade Panel 1000H, cut to 1365mm from 1733mm (Pearl White)",PRICED,287.75,true
+alu-bal-barr,GROUT-SETFAST-10KG,"Setfast Non-Shrink Grout 10kg (incl. spare)",PRICED,45.4,true
+alu-bal-barr,GS-DN-4PK-B,"M12 Dome Nut 4-pack (Black)",PRICED,6.11,true
+alu-bal-barr,GS150ROD,"M12 x 150mm Threaded Rod (4 per post)",PRICED,2.15,true
+alu-bal-barr,S-110LAG-4PK,"M10 LAG Screw 4-pack (4 per post)",PRICED,13.9,true
+alu-bal-barr,SOUD-CA1400,"Chemical Anchor 400ml (1 per 15 posts)",PRICED,29.85,true
+alu-bal-barr,XP-DC-2P-B,"Domical Cover 2-part (Satin Black)",PRICED,7.7,true
+alu-bal-barr,XP-DR-W,"Dress Ring (Pearl White)",PRICED,5.25,true
+alu-bal-barr,XP-TP-W,"Post Top Plate (Pearl White)",PRICED,5.25,true
+alu-bal-blade,AR-1050-FPBP-B,"AIRE 1050mm Base Plate Post (Black)",PRICED,58.5,true
+alu-bal-blade,AR-1500-FMID-B,"AIRE 1500mm Face-Mount Mid Post (Black)",PRICED,70.2,true
+alu-bal-blade,AR-1500-FMLR-B-2PK,"AIRE 1500mm Face-Mount L+R End Post 2-pack (Black)",PRICED,151.1,true
+alu-bal-blade,BLA-PNL-1700-1000-B,"Blade Balustrade Panel 1700 x 1000mm (Black)",PRICED,282.1,true
+alu-bal-blade,FF-BH-OPEN-4PK-B,"Blade FastFit Open Bracket 4-pack (Black)",PRICED,16.65,true
+alu-bal-blade,GS-DN-4PK-B,"M12 Dome Nut 4-pack (Black)",PRICED,6.11,true
+alu-bal-blade,S-110LAG-4PK,"M10 LAG Screw 4-pack (4 per post)",PRICED,13.9,true
+alu-bal-blade,XP-DC-2P-B,"Domical Cover 2-part (Black)",PRICED,7.7,true
