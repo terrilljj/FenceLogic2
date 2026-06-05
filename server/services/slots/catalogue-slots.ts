@@ -22,6 +22,7 @@ import { ALU_POOL_TUBULAR_SLOTS } from "../../data/slots/alu-pool-tubular.slots"
 import { ALU_POOL_BARR_SLOTS } from "../../data/slots/alu-pool-barr.slots";
 import { ALU_POOL_BLADE_SLOTS } from "../../data/slots/alu-pool-blade.slots";
 import { ALU_BAL_BARR_SLOTS } from "../../data/slots/alu-bal-barr.slots";
+import { ALU_BAL_BLADE_SLOTS } from "../../data/slots/alu-bal-blade.slots";
 
 export type CatalogueSlot = {
   sku: string;
@@ -49,6 +50,7 @@ const STYLE_SLOTS: Record<string, CatalogueSlot[]> = {
   "alu-pool-barr": ALU_POOL_BARR_SLOTS,
   "alu-pool-blade": ALU_POOL_BLADE_SLOTS,
   "alu-bal-barr": ALU_BAL_BARR_SLOTS,
+  "alu-bal-blade": ALU_BAL_BLADE_SLOTS,
 };
 
 export type SlotQuery = {
