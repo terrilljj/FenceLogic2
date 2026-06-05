@@ -26,6 +26,7 @@ import { emitGlassPoolChannelSpan } from "./bom/glass-pool-channel-emit";
 import { emitGlassBalChannelSpan } from "./bom/glass-bal-channel-emit";
 import { emitGlassBalChannelHdSpan } from "./bom/glass-bal-channel-hd-emit";
 import { emitGlassBalStandoffsSpan } from "./bom/glass-bal-standoffs-emit";
+import { emitAluPoolTubularSpan } from "./bom/alu-pool-tubular-emit";
 
 export type SlotMapping = {
   internalId: string;
@@ -442,6 +443,7 @@ function calculateComponentsForVariant(
     "glass-bal-channel": emitGlassBalChannelSpan,
     "glass-bal-channel-hd": emitGlassBalChannelHdSpan,
     "glass-bal-standoffs": emitGlassBalStandoffsSpan,
+    "alu-pool-tubular": emitAluPoolTubularSpan,
   };
   const slotEmitter = SLOT_EMITTERS[design.productVariant];
   if (slotEmitter) {

@@ -17,6 +17,8 @@ import { GLASS_POOL_CHANNEL_SLOTS } from "../../data/slots/glass-pool-channel.sl
 import { GLASS_BAL_CHANNEL_SLOTS } from "../../data/slots/glass-bal-channel.slots";
 import { GLASS_BAL_CHANNEL_HD_SLOTS } from "../../data/slots/glass-bal-channel-hd.slots";
 import { GLASS_BAL_STANDOFFS_SLOTS } from "../../data/slots/glass-bal-standoffs.slots";
+import { SIDE_MOUNT_POSTS_SLOTS } from "../../data/slots/side-mount-posts.slots";
+import { ALU_POOL_TUBULAR_SLOTS } from "../../data/slots/alu-pool-tubular.slots";
 
 export type CatalogueSlot = {
   sku: string;
@@ -38,6 +40,9 @@ const STYLE_SLOTS: Record<string, CatalogueSlot[]> = {
   "glass-bal-channel": GLASS_BAL_CHANNEL_SLOTS,
   "glass-bal-channel-hd": GLASS_BAL_CHANNEL_HD_SLOTS,
   "glass-bal-standoffs": GLASS_BAL_STANDOFFS_SLOTS,
+  // shared (non-dispatched) — alu emitters resolve side-mount from here
+  "side-mount-posts": SIDE_MOUNT_POSTS_SLOTS,
+  "alu-pool-tubular": ALU_POOL_TUBULAR_SLOTS,
 };
 
 export type SlotQuery = {
