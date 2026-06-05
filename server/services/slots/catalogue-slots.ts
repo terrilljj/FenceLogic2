@@ -20,6 +20,8 @@ import { GLASS_BAL_STANDOFFS_SLOTS } from "../../data/slots/glass-bal-standoffs.
 import { SIDE_MOUNT_POSTS_SLOTS } from "../../data/slots/side-mount-posts.slots";
 import { ALU_POOL_TUBULAR_SLOTS } from "../../data/slots/alu-pool-tubular.slots";
 import { ALU_POOL_BARR_SLOTS } from "../../data/slots/alu-pool-barr.slots";
+import { ALU_POOL_BLADE_SLOTS } from "../../data/slots/alu-pool-blade.slots";
+import { ALU_BAL_BARR_SLOTS } from "../../data/slots/alu-bal-barr.slots";
 
 export type CatalogueSlot = {
   sku: string;
@@ -45,6 +47,8 @@ const STYLE_SLOTS: Record<string, CatalogueSlot[]> = {
   "side-mount-posts": SIDE_MOUNT_POSTS_SLOTS,
   "alu-pool-tubular": ALU_POOL_TUBULAR_SLOTS,
   "alu-pool-barr": ALU_POOL_BARR_SLOTS,
+  "alu-pool-blade": ALU_POOL_BLADE_SLOTS,
+  "alu-bal-barr": ALU_BAL_BARR_SLOTS,
 };
 
 export type SlotQuery = {
