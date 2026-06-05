@@ -32,9 +32,14 @@ def clean(v):
 # Derive finish + size from the SKU when the sheet has no explicit column (most sheets
 # carry only calslot tagging — finish/size are mechanical from the SKU string).
 FINISHES = {"B", "MW", "P", "S", "SG", "W", "BLK", "SA", "MN"}
+_PACK = re.compile(r"^\d*PK$", re.I)  # 4PK / 2PK / 10PK / PK
 def derive_finish(sku):
-    last = sku.split("-")[-1]
-    return last if last in FINISHES else None
+    parts = sku.split("-")
+    last = parts[-1]
+    if last in FINISHES: return last
+    # finish sometimes sits before a pack suffix, e.g. BR-BR25-B-4PK -> B (but NOT S-110LAG-4PK)
+    if _PACK.match(last) and len(parts) >= 2 and parts[-2] in FINISHES: return parts[-2]
+    return None
 def derive_size(sku, cs1, cs2):
     # size lives in the SKU's LAST hyphen segment (the width/height), e.g. 970NTG-1200 -> 1200,
     # 12NRP-1800HT -> 1800. Avoids grabbing a leading family/height prefix like 970NTG or 12N.
