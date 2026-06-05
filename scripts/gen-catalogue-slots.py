@@ -29,20 +29,40 @@ def clean(v):
     s = str(v).strip()
     return s or None
 
+# Derive finish + size from the SKU when the sheet has no explicit column (most sheets
+# carry only calslot tagging — finish/size are mechanical from the SKU string).
+FINISHES = {"B", "MW", "P", "S", "SG", "W", "BLK", "SA"}
+def derive_finish(sku):
+    last = sku.split("-")[-1]
+    return last if last in FINISHES else None
+def derive_size(sku, cs1, cs2):
+    # size lives in the SKU's LAST hyphen segment (the width/height), e.g. 970NTG-1200 -> 1200,
+    # 12NRP-1800HT -> 1800. Avoids grabbing a leading family/height prefix like 970NTG or 12N.
+    hay = f"{cs1 or ''} {cs2 or ''}".lower()
+    if any(t in hay for t in ("panel", "glass", "gate", "hinge")):
+        m = re.search(r"(\d{3,4})", sku.split("-")[-1])
+        if m: return int(m.group(1))
+    return None
+
 rows = []
 for r in ws.iter_rows(min_row=2):
     if not truthy(gv(r, "calc_include")): continue
     sku = clean(gv(r, "sku"))
     if not sku: continue
+    cs1, cs2, cs3 = clean(gv(r, "calslot_1")), clean(gv(r, "calslot_2")), clean(gv(r, "calslot_3"))
+    # Disambiguate raised/domed dress rings from flat (both share cs2="Dress Ring"): tag cs3
+    # so the flat ring (blank cs3) resolves uniquely. -RAISED- (Madrid/Lifestyle) and Rio's -SDC-.
+    if cs3 is None and cs2 and "dress" in cs2.lower() and ("RAISED" in sku.upper() or "SDC" in sku.upper()):
+        cs3 = "Raised"
+    finish = clean(gv(r, "finish")) or derive_finish(sku)
     size = gv(r, "size_mm")
+    size_mm = int(size) if isinstance(size, (int, float)) and size != "" else derive_size(sku, cs1, cs2)
     rows.append({
         "sku": sku,
         "description": clean(gv(r, "description")),
-        "cs1": clean(gv(r, "calslot_1")),
-        "cs2": clean(gv(r, "calslot_2")),
-        "cs3": clean(gv(r, "calslot_3")),
-        "finish": clean(gv(r, "finish")),
-        "size_mm": int(size) if isinstance(size, (int, float)) and size != "" else None,
+        "cs1": cs1, "cs2": cs2, "cs3": cs3,
+        "finish": finish,
+        "size_mm": size_mm,
         "price": float(gv(r, "retail_price_inc_gst")) if gv(r, "retail_price_inc_gst") not in (None, "") else None,
         "category_slug": clean(gv(r, "category_slug")),
     })

@@ -20,6 +20,8 @@ import {
   spanVariant,
 } from "@shared/schema";
 import { emitGlassPoolSpigotsSpan } from "./bom/glass-pool-spigots-emit";
+import { emitGlassBalSpigots12mmSpan } from "./bom/glass-bal-spigots-12mm-emit";
+import { emitGlassBalSpigots15mmSpan } from "./bom/glass-bal-spigots-15mm-emit";
 
 export type SlotMapping = {
   internalId: string;
@@ -424,17 +426,26 @@ function calculateComponentsForVariant(
   // Cast spans to any — design JSON from clients may carry extra dynamic properties
   // (e.g. postFinish, bladeHeight) that aren't on the strict SpanConfig type.
   const isMultiSpanCorner = design.shape === "l-shape" || design.shape === "u-shape";
-  (design.spans as any[]).forEach((span: any, spanIndex: number) => {
-    // Slot-driven path: glass-pool-spigots resolves every SKU from the operator-curated
-    // catalogue (server/data/slots) via the dedicated emitter — no hardcoded fallbacks, and
-    // misses surface as a visible [UNMAPPED] line. Other styles fall through to legacy below.
-    if (design.productVariant === "glass-pool-spigots") {
+  // Slot-driven styles emit the WHOLE BOM from the curated catalogue (server/data/slots) and
+  // bypass ALL legacy passes (the main span loop + the later design-level rail/channel/post
+  // passes). A miss surfaces a visible [UNMAPPED] line — never a guessed SKU. Adding a style is
+  // one line here once its emitter + slot data exist.
+  const SLOT_EMITTERS: Record<string, (d: any, s: any, u: string[]) => any[]> = {
+    "glass-pool-spigots": emitGlassPoolSpigotsSpan,
+    "glass-bal-spigots-12mm": emitGlassBalSpigots12mmSpan,
+    "glass-bal-spigots-15mm": emitGlassBalSpigots15mmSpan,
+  };
+  const slotEmitter = SLOT_EMITTERS[design.productVariant];
+  if (slotEmitter) {
+    for (const span of design.spans as any[]) {
       const unmapped: string[] = [];
-      for (const line of emitGlassPoolSpigotsSpan(design, span, unmapped)) components.push(line);
+      for (const line of slotEmitter(design, span, unmapped)) components.push(line);
       for (const u of unmapped) components.push({ qty: 1, description: `[UNMAPPED] ${u}`, sku: "UNMAPPED" });
-      return;
     }
+    return consolidateAndSort(components);
+  }
 
+  (design.spans as any[]).forEach((span: any, spanIndex: number) => {
     // Semi-Frameless
     if (isSemiFrameless && span.panelLayout && span.panelLayout.panels.length > 0) {
       const glassHeight = design.productVariant === "semi-frameless-1000" ? 1000 : 1800;

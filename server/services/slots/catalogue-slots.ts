@@ -11,6 +11,8 @@
  * for the binding of each component group → calslot key.
  */
 import { GLASS_POOL_SPIGOTS_SLOTS } from "../../data/slots/glass-pool-spigots.slots";
+import { GLASS_BAL_SPIGOTS_12MM_SLOTS } from "../../data/slots/glass-bal-spigots-12mm.slots";
+import { GLASS_BAL_SPIGOTS_15MM_SLOTS } from "../../data/slots/glass-bal-spigots-15mm.slots";
 
 export type CatalogueSlot = {
   sku: string;
@@ -26,6 +28,8 @@ export type CatalogueSlot = {
 
 const STYLE_SLOTS: Record<string, CatalogueSlot[]> = {
   "glass-pool-spigots": GLASS_POOL_SPIGOTS_SLOTS,
+  "glass-bal-spigots-12mm": GLASS_BAL_SPIGOTS_12MM_SLOTS,
+  "glass-bal-spigots-15mm": GLASS_BAL_SPIGOTS_15MM_SLOTS,
 };
 
 export type SlotQuery = {
