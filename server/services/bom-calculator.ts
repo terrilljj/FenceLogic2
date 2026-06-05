@@ -19,6 +19,7 @@ import {
   designVariants,
   spanVariant,
 } from "@shared/schema";
+import { emitGlassPoolSpigotsSpan } from "./bom/glass-pool-spigots-emit";
 
 export type SlotMapping = {
   internalId: string;
@@ -53,10 +54,18 @@ const MASTER_GATE_WIDTHS = [750, 834, 890, 1000];                               
 // Records every lookupSlot call so scripts/audit-slot-coverage.ts can show, per variant,
 // which components are driven by the configured slot mapping vs. fell back to hardcoded code.
 type SlotAuditEntry = { fieldName: string; discriminators: Record<string, string>; hit: boolean };
+type SlotRow = { fieldName: string; discriminators: Record<string, string>; sku: string; description: string; resolvedFromSlot: boolean };
 let __slotAuditOn = false;
 const __slotAuditLog: SlotAuditEntry[] = [];
-export function startSlotAudit() { __slotAuditOn = true; __slotAuditLog.length = 0; }
+const __slotRows: SlotRow[] = [];
+export function startSlotAudit() { __slotAuditOn = true; __slotAuditLog.length = 0; __slotRows.length = 0; }
 export function readSlotAudit(): SlotAuditEntry[] { return __slotAuditLog.slice(); }
+export function readSlotRows(): SlotRow[] { return __slotRows.slice(); }
+// Records the exact (field, discriminators) → emitted SKU at a slot-backed resolution site, for
+// the slot-mapping CSVs (scripts/gen-slot-csvs.ts). No-op in production (only on under audit).
+function logSlotRow(fieldName: string, discriminators: Record<string, string>, sku: string, description: string, resolvedFromSlot: boolean) {
+  if (__slotAuditOn) __slotRows.push({ fieldName, discriminators: { ...discriminators }, sku, description, resolvedFromSlot });
+}
 
 /**
  * Glass-balustrade panel line — real catalogue glass family per system. Widths are
@@ -290,8 +299,10 @@ function calculateComponentsForVariant(
     const slot = lookupSlot(fieldName, discriminators);
     if (slot) {
       components.push({ qty, description: slot.description, sku: slot.sku });
+      logSlotRow(fieldName, discriminators, slot.sku, slot.description, true);
     } else {
       components.push({ qty, description: fallback.description, sku: fallback.sku });
+      logSlotRow(fieldName, discriminators, fallback.sku, fallback.description, false);
     }
   };
 
@@ -414,6 +425,16 @@ function calculateComponentsForVariant(
   // (e.g. postFinish, bladeHeight) that aren't on the strict SpanConfig type.
   const isMultiSpanCorner = design.shape === "l-shape" || design.shape === "u-shape";
   (design.spans as any[]).forEach((span: any, spanIndex: number) => {
+    // Slot-driven path: glass-pool-spigots resolves every SKU from the operator-curated
+    // catalogue (server/data/slots) via the dedicated emitter — no hardcoded fallbacks, and
+    // misses surface as a visible [UNMAPPED] line. Other styles fall through to legacy below.
+    if (design.productVariant === "glass-pool-spigots") {
+      const unmapped: string[] = [];
+      for (const line of emitGlassPoolSpigotsSpan(design, span, unmapped)) components.push(line);
+      for (const u of unmapped) components.push({ qty: 1, description: `[UNMAPPED] ${u}`, sku: "UNMAPPED" });
+      return;
+    }
+
     // Semi-Frameless
     if (isSemiFrameless && span.panelLayout && span.panelLayout.panels.length > 0) {
       const glassHeight = design.productVariant === "semi-frameless-1000" ? 1000 : 1800;
@@ -1101,14 +1122,14 @@ function calculateComponentsForVariant(
                 description: mappedProduct.description,
                 sku: mappedProduct.sku,
               });
+              logSlotRow("glass-panels", { size_mm: String(panelWidth) }, mappedProduct.sku, mappedProduct.description, true);
             } else {
               // Real 12mm frameless pool-glass family (12N-{width}, zero-padded to 4 digits).
               // Off-step equalised widths are made-to-size against this family.
-              components.push({
-                qty: 1,
-                description: `12mm Clear Toughened Frameless Glass ${panelWidth}W × 1200H`,
-                sku: `12N-${String(panelWidth).padStart(4, "0")}`,
-              });
+              const glassSku = `12N-${String(panelWidth).padStart(4, "0")}`;
+              const glassDesc = `12mm Clear Toughened Frameless Glass ${panelWidth}W × 1200H`;
+              components.push({ qty: 1, description: glassDesc, sku: glassSku });
+              logSlotRow("glass-panels", { size_mm: String(panelWidth) }, glassSku, glassDesc, false);
             }
           }
         } else if (panelType === "raked") {
@@ -1164,14 +1185,17 @@ function calculateComponentsForVariant(
           const slotResult = lookupSlot('spigot-hardware', discriminators);
           if (slotResult) {
             components.push({ qty: 2, description: slotResult.description, sku: slotResult.sku });
+            logSlotRow('spigot-hardware', discriminators, slotResult.sku, slotResult.description, true);
           } else {
             // Real catalogue spigot SKU keyed by family; placeholder only for unmapped families.
             const real = spigotSku(family, mounting, finish);
             if (real) {
               components.push({ qty: 2, description: real.label, sku: real.sku });
+              logSlotRow('spigot-hardware', discriminators, real.sku, real.label, false);
             } else {
               const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
               components.push({ qty: 2, description: fallback.description, sku: fallback.sku });
+              logSlotRow('spigot-hardware', discriminators, fallback.sku, fallback.description, false);
             }
           }
         }
@@ -1257,13 +1281,16 @@ function calculateComponentsForVariant(
           const slotResult = lookupSlot('spigot-hardware', discriminators);
           if (slotResult) {
             components.push({ qty: numPanels * 2, description: slotResult.description, sku: slotResult.sku });
+            logSlotRow('spigot-hardware', discriminators, slotResult.sku, slotResult.description, true);
           } else {
             const real = spigotSku(family, mounting, finish);
             if (real) {
               components.push({ qty: numPanels * 2, description: real.label, sku: real.sku });
+              logSlotRow('spigot-hardware', discriminators, real.sku, real.label, false);
             } else {
               const fallback = getSpigotDetails(mounting as SpigotMounting, finish as SpigotColor);
               components.push({ qty: numPanels * 2, description: fallback.description, sku: fallback.sku });
+              logSlotRow('spigot-hardware', discriminators, fallback.sku, fallback.description, false);
             }
           }
         } else if (isChannelSystem) {
