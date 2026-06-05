@@ -13,6 +13,10 @@
 import { GLASS_POOL_SPIGOTS_SLOTS } from "../../data/slots/glass-pool-spigots.slots";
 import { GLASS_BAL_SPIGOTS_12MM_SLOTS } from "../../data/slots/glass-bal-spigots-12mm.slots";
 import { GLASS_BAL_SPIGOTS_15MM_SLOTS } from "../../data/slots/glass-bal-spigots-15mm.slots";
+import { GLASS_POOL_CHANNEL_SLOTS } from "../../data/slots/glass-pool-channel.slots";
+import { GLASS_BAL_CHANNEL_SLOTS } from "../../data/slots/glass-bal-channel.slots";
+import { GLASS_BAL_CHANNEL_HD_SLOTS } from "../../data/slots/glass-bal-channel-hd.slots";
+import { GLASS_BAL_STANDOFFS_SLOTS } from "../../data/slots/glass-bal-standoffs.slots";
 
 export type CatalogueSlot = {
   sku: string;
@@ -30,6 +34,10 @@ const STYLE_SLOTS: Record<string, CatalogueSlot[]> = {
   "glass-pool-spigots": GLASS_POOL_SPIGOTS_SLOTS,
   "glass-bal-spigots-12mm": GLASS_BAL_SPIGOTS_12MM_SLOTS,
   "glass-bal-spigots-15mm": GLASS_BAL_SPIGOTS_15MM_SLOTS,
+  "glass-pool-channel": GLASS_POOL_CHANNEL_SLOTS,
+  "glass-bal-channel": GLASS_BAL_CHANNEL_SLOTS,
+  "glass-bal-channel-hd": GLASS_BAL_CHANNEL_HD_SLOTS,
+  "glass-bal-standoffs": GLASS_BAL_STANDOFFS_SLOTS,
 };
 
 export type SlotQuery = {
@@ -68,7 +76,10 @@ export function resolveSlot(style: string, q: SlotQuery): SlotMatch | null {
     }
   }
 
-  if (cand.length !== 1) return null; // 0 = miss; >1 = ambiguous (under-specified query) — both are bugs to surface
+  if (cand.length === 0) return null;
+  // Duplicate rows for the same SKU are fine (e.g. a SKU placed under two sub-categories); only
+  // DISTINCT SKUs under one key are genuinely ambiguous (under-specified query) → surface that.
+  if (new Set(cand.map((c) => c.sku)).size > 1) return null;
   const r = cand[0];
   return { sku: r.sku, description: r.description, price: r.price, category_slug: r.category_slug };
 }

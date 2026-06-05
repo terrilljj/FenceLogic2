@@ -54,6 +54,10 @@ for r in ws.iter_rows(min_row=2):
     # so the flat ring (blank cs3) resolves uniquely. -RAISED- (Madrid/Lifestyle) and Rio's -SDC-.
     if cs3 is None and cs2 and "dress" in cs2.lower() and ("RAISED" in sku.upper() or "SDC" in sku.upper()):
         cs3 = "Raised"
+    # AH-530W is the Atlantic WALL hinge, recurrently mis-tagged "Glass to Glass" (it collides
+    # with the AH-530G glass-to-glass hinge). Correct it to Post/Wall so each resolves uniquely.
+    if sku.upper().startswith("AH-530W-") and cs3 == "Glass to Glass":
+        cs3 = "Post/Wall"
     finish = clean(gv(r, "finish")) or derive_finish(sku)
     size = gv(r, "size_mm")
     size_mm = int(size) if isinstance(size, (int, float)) and size != "" else derive_size(sku, cs1, cs2)

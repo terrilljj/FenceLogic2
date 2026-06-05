@@ -22,6 +22,10 @@ import {
 import { emitGlassPoolSpigotsSpan } from "./bom/glass-pool-spigots-emit";
 import { emitGlassBalSpigots12mmSpan } from "./bom/glass-bal-spigots-12mm-emit";
 import { emitGlassBalSpigots15mmSpan } from "./bom/glass-bal-spigots-15mm-emit";
+import { emitGlassPoolChannelSpan } from "./bom/glass-pool-channel-emit";
+import { emitGlassBalChannelSpan } from "./bom/glass-bal-channel-emit";
+import { emitGlassBalChannelHdSpan } from "./bom/glass-bal-channel-hd-emit";
+import { emitGlassBalStandoffsSpan } from "./bom/glass-bal-standoffs-emit";
 
 export type SlotMapping = {
   internalId: string;
@@ -434,6 +438,10 @@ function calculateComponentsForVariant(
     "glass-pool-spigots": emitGlassPoolSpigotsSpan,
     "glass-bal-spigots-12mm": emitGlassBalSpigots12mmSpan,
     "glass-bal-spigots-15mm": emitGlassBalSpigots15mmSpan,
+    "glass-pool-channel": emitGlassPoolChannelSpan,
+    "glass-bal-channel": emitGlassBalChannelSpan,
+    "glass-bal-channel-hd": emitGlassBalChannelHdSpan,
+    "glass-bal-standoffs": emitGlassBalStandoffsSpan,
   };
   const slotEmitter = SLOT_EMITTERS[design.productVariant];
   if (slotEmitter) {
