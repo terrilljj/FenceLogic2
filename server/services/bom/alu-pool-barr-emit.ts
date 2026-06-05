@@ -79,7 +79,7 @@ export function emitAluPoolBarrSpan(design: DesignLike, span: SpanLike, unmapped
       want("gate hardware kit", { cs1: "Hinge & Latch kit for monument and black", cs2: "", cs3: "", finish: "" });
     }
     if (!sideMounted) {
-      const xCs1 = basePlated ? "base plated post for corners and gates" : "core drill and inground posts for gates and corner";
+      const xCs1 = basePlated ? "base plated post for corners and gates" : "core drill and inground posts for gates and corners";
       want("gate posts (cross-range)", { cs1: xCs1, cs2: "", cs3: "", finish: code, __qty: 2 });
     }
   }
