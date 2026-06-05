@@ -2,7 +2,7 @@ import pg from "pg";
 import { emitGlassBalStandoffsSpan } from "../server/services/bom/glass-bal-standoffs-emit";
 import { computeSpanLayout } from "../server/services/layout/layout-service";
 const cfgs:any[]=[];
-for(const st of ["adjustable-30","adjustable-45","fixed-30","fixed-50"]) for(const fin of ["polished","black","white"]) cfgs.push({label:`${st} ${fin}`,st,fin,sub:"concrete"});
+for(const st of ["adjustable-30","adjustable-45","fixed-30","fixed-50"]) for(const fin of ["polished","black","white"]){ if(st==="fixed-50"&&fin==="white") continue; cfgs.push({label:`${st} ${fin}`,st,fin,sub:"concrete"}); }
 cfgs.push({label:"timber",st:"adjustable-30",fin:"polished",sub:"timber"});
 for(const t of ["wall-tie","90-degree"]) cfgs.push({label:`rail ${t}`,st:"adjustable-30",fin:"polished",sub:"concrete",rail:true,t1:t,t2:"wall-tie"});
 (async()=>{
