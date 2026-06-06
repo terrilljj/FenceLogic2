@@ -57,7 +57,7 @@ export function emitAluPoolBarrSpan(design: DesignLike, span: SpanLike, unmapped
     if (mid > 0) want("side-mount mid", { cs1: "side mount post mid post", cs2: "", cs3: "", finish: code, __qty: mid });
     want("side-mount end pack", { cs1: "side mount post l&r pack", cs2: "", cs3: "", finish: code });
     want("side-mount dome nut", { cs1: "pair with side mount post fixings 4x per 4 pack", cs2: "", cs3: "", finish: "", __qty: facePosts });
-    if (material === "timber") want("side-mount timber fixing", { cs1: "Side mount post for timber\nSide mount post for con", cs2: "", cs3: "", finish: "", __qty: facePosts });
+    if (material === "timber") want("side-mount timber fixing", { cs1: "Side mount post for timber", cs2: "", cs3: "", finish: "", __qty: facePosts });
     else want("side-mount concrete fixing", { cs1: "Side mount post for concrete", cs2: "", cs3: "", finish: "", __qty: facePosts });
   } else if (inlinePosts > 0) {
     if (basePlated) {

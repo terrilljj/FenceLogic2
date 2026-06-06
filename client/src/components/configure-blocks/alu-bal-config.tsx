@@ -142,6 +142,9 @@ export function AluBalConfig({ span, updateSpan, allSpans, style }: AluBalConfig
     const fv: Record<string, any> = { ...span.fieldValues };
     let changed = false;
     if (!span.fieldValues?.["bal-substrate"]) { fv["bal-substrate"] = "base-plated"; changed = true; }
+    // Persist the displayed material default so the BOM uses what the user sees. Without this the
+    // field stays unset and the emitter fell back to "concrete" → concrete rods on a timber job.
+    if (subMeta.needsMaterial && !span.fieldValues?.["bal-material"]) { fv["bal-material"] = material; changed = true; }
     if (style === "barr" && !span.fieldValues?.["bal-fall-height"]) { fv["bal-fall-height"] = "over-1m"; changed = true; }
     const updates: Partial<SpanConfig> = {};
     if (changed) updates.fieldValues = fv;

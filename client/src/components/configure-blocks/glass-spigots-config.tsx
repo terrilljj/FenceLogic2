@@ -1074,6 +1074,7 @@ export function GlassSpigotsConfig({
                         config={span.gateConfig}
                         spanId={span.spanId}
                         onUpdate={(gateConfig) => updateSpan({ gateConfig: { ...gateConfig, postAdapterPlate: gateConfig.postAdapterPlate ?? false } })}
+                        hardwareFinish={hardwareFinish === "match" ? currentFinish : hardwareFinish}
                         calculatedHingePanelSize={optimalHingePanelSize}
                         numPanels={span.panelLayout?.panels.length}
                         actualGateCentre={actualGateCentre}

@@ -33,7 +33,7 @@ export function emitAluBalBladeSpan(design: DesignLike, span: SpanLike, unmapped
   const basePlated = substrate === "base-plated";
   const coreDrilled = substrate === "core-drilled";
   const faceMounted = substrate === "face-mounted" || substrate === "side-mounted";
-  const material = fieldOf(span, "bal-material") || "concrete";
+  const material = fieldOf(span, "bal-material") || "timber"; // matches the UI's displayed default
 
   // panels + brackets
   const n = panels.length;
