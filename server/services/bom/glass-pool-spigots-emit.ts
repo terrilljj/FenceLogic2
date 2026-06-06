@@ -27,12 +27,20 @@ const MOUNT_CS2: Record<string, string> = { "base-plate": "Base Plate", "core-dr
 
 /** finish token → catalogue suffix code (White is `W` for Insuluxe, `MW` elsewhere). */
 function finishCode(family: string, token: string): string {
+  // Insuluxe is a polymer spigot stocked ONLY in Black / Silver-Grey / White — it has no
+  // polished or satin tier, so both collapse to Silver-Grey (matches the catalogue + the old
+  // solver). Without this, an (unscoped) UI finish pick of polished/satin → an UNMAPPED spigot.
+  if (family === "insuluxe") {
+    if (token === "black") return "B";
+    if (token === "white") return "W";
+    return "SG"; // polished / satin / silver-grey all map to the only stocked tier
+  }
   switch (token) {
     case "silver-grey": return "SG";
     case "polished": return "P";
     case "satin": return "S";
     case "black": return "B";
-    case "white": return family === "insuluxe" ? "W" : "MW";
+    case "white": return "MW";
     default: return token.toUpperCase();
   }
 }
@@ -76,6 +84,22 @@ export function emitGlassPoolSpigotsSpan(design: DesignLike, span: SpanLike, unm
     const m = resolveSlot(STYLE, q);
     if (m && m.category_slug) out.push({ qty: q.__qty ?? 1, description: m.description || m.sku, sku: m.sku });
     else unmapped.push(`${label} [${JSON.stringify({ ...q, __qty: undefined })}]${m && !m.category_slug ? ` (${m.sku} UNPLACED)` : ""}`);
+  };
+
+  // Gate hinges/latches DON'T share the spigot's finish-code convention: Master hinges are
+  // coded BLK (not B) and Atlantic soft-close hardware is coded W for white (not MW). Try the
+  // catalogue's plausible finish codes for the chosen colour in order and take the first that
+  // resolves — robust to the per-brand coding differences in the operator sheet.
+  const HW_FINISH_TRY: Record<string, string[]> = {
+    black: ["B", "BLK"], white: ["MW", "W"], polished: ["P"], satin: ["S"], "silver-grey": ["SG"],
+  };
+  const wantHardware = (label: string, base: any, color: string): void => {
+    const tries = HW_FINISH_TRY[color] || [finishCode(family, color)];
+    for (const f of tries) {
+      const m = resolveSlot(STYLE, { ...base, finish: f });
+      if (m && m.category_slug) { out.push({ qty: base.__qty ?? 1, description: m.description || m.sku, sku: m.sku }); return; }
+    }
+    unmapped.push(`${label} [${JSON.stringify({ ...base, finish: tries.join("|"), __qty: undefined })}]`);
   };
 
   // count non-gate panels (spigots are 2 per panel, gate excluded)
@@ -134,12 +158,18 @@ export function emitGlassPoolSpigotsSpan(design: DesignLike, span: SpanLike, unm
   if (span.gateConfig?.required) {
     const master = (span.gateConfig.hardware || "polaris") === "master";
     const hingeMount = (span.gateConfig.hingeType || "glass-to-glass") === "glass-to-glass" ? "Glass to Glass" : "Post/Wall";
-    const latchMount = (span.gateConfig.latchType || "glass-to-glass") === "glass-to-glass" ? "Glass to Glass" : "Post/Wall";
+    // Latch mount maps 1:1 to the catalogue cs3 — NOT a binary g2g/else collapse, which sent
+    // Corner In/Out AND Glass-to-Wall all to the wall latch. (Glass-to-Wall → "Post/Wall".)
+    const LATCH_MOUNT: Record<string, string> = {
+      "glass-to-glass": "Glass to Glass", "glass-to-wall": "Post/Wall",
+      "corner-out": "Corner Out", "corner-in": "Corner In",
+    };
+    const latchMount = LATCH_MOUNT[span.gateConfig.latchType || "glass-to-glass"] || "Glass to Glass";
     // soft-close default brand = Atlantic
     const hingeBrand = master ? "Master" : (fieldOf(span, "hinge-brand") === "polaris" ? "Soft Close - Polaris" : "Soft Close - Atlantic");
     const latchBrand = master ? "Master" : "Atlantic";
-    want("hinge", { cs1: "Hinge", cs2: hingeBrand, cs3: hingeMount, finish: fin });
-    want("latch", { cs1: "Latch", cs2: latchBrand, cs3: latchMount, finish: fin });
+    wantHardware("hinge", { cs1: "Hinge", cs2: hingeBrand, cs3: hingeMount }, colorToken);
+    wantHardware("latch", { cs1: "Latch", cs2: latchBrand, cs3: latchMount }, colorToken);
   }
 
   // ---- Fixings / grout (per substrate × mounting; §6) ----

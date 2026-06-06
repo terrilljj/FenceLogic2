@@ -36,6 +36,9 @@ interface GateControlsProps {
   config: GateConfig;
   spanId: string | number;
   onUpdate: (config: GateConfig) => void;
+  /** Effective gate-hardware finish token (polished|satin|black|white|silver-grey) — drives
+   *  the hardware card images so they match the user's chosen finish. */
+  hardwareFinish?: string;
   calculatedHingePanelSize?: number; // Auto-calculated hinge panel size when auto is enabled
   numPanels?: number; // Number of panels in the span for position limits
   /** The gate's ACTUAL centre distance (mm) from the left end, computed from the live
@@ -52,16 +55,24 @@ interface GateControlsProps {
 // Master Range gate panels have drilled bolt holes, Soft Close panels have a hinge
 // cutout, so cross-pairing is physically impossible (SF-1 hard rule).
 // Placeholder tiles show the SKU until VITE_STOREFRONT_IMAGE_BASE provides photos
-// (same mechanism as the spigot family cards).
-const HARDWARE_CARDS: { value: "polaris" | "master"; label: string; blurb: string; imageSku: string }[] = [
-  { value: "polaris", label: "Soft Close", blurb: "Polaris / Atlantic self-closing hinges.", imageSku: "PSC-125GG-B" },
-  { value: "master", label: "Master Range", blurb: "Budget select; manual-close hinge set.", imageSku: "MR-GGH-B" },
+// (same mechanism as the spigot family cards). The card image follows the SELECTED
+// finish — per-brand codes differ (Master black = BLK, Polaris black = B; white = MW).
+const HW_IMG_FINISH: Record<"polaris" | "master", Record<string, string>> = {
+  polaris: { black: "B", white: "MW", polished: "P", satin: "S", "silver-grey": "S" },
+  master: { black: "BLK", white: "MW", polished: "P", satin: "S", "silver-grey": "S" },
+};
+const HARDWARE_CARDS: { value: "polaris" | "master"; label: string; blurb: string }[] = [
+  { value: "polaris", label: "Soft Close", blurb: "Polaris / Atlantic self-closing hinges." },
+  { value: "master", label: "Master Range", blurb: "Budget select; manual-close hinge set." },
 ];
+const hardwareImageSku = (value: "polaris" | "master", finish: string): string =>
+  `${value === "polaris" ? "PSC-125GG" : "MR-GGH"}-${HW_IMG_FINISH[value][finish] ?? HW_IMG_FINISH[value].black}`;
 
 export function GateControls({
   config,
   spanId,
   onUpdate,
+  hardwareFinish = "black",
   calculatedHingePanelSize,
   numPanels = 1,
   actualGateCentre,
@@ -299,7 +310,8 @@ export function GateControls({
           <div className="grid max-w-md grid-cols-2 gap-2.5" data-testid={`gate-${spanId}-hardware`}>
             {HARDWARE_CARDS.map((hw) => {
               const isActive = config.hardware === hw.value;
-              const img = storefrontImageUrl(imageMap?.[hw.imageSku]);
+              const sku = hardwareImageSku(hw.value, hardwareFinish);
+              const img = storefrontImageUrl(imageMap?.[sku]);
               return (
                 <button
                   key={hw.value}
@@ -325,7 +337,7 @@ export function GateControls({
                       <span className="px-1 text-[9px] leading-tight text-muted-foreground">
                         image soon
                         <br />
-                        <span className="font-mono">{hw.imageSku}</span>
+                        <span className="font-mono">{sku}</span>
                       </span>
                     )}
                     {isActive && (
