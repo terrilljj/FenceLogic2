@@ -79,9 +79,11 @@ const SPIGOT_MOUNTS: AttachmentOption[] = [
   { value: "core-drilled", label: "Core-drill", blurb: "Set into a cored hole in concrete", icon: "core-drill" },
   { value: "base-plate", label: "Base-plate", blurb: "Bolt-down on a slab or deck", icon: "base-plate" },
 ];
+// Deck mount only for V1 launch. Face-mount channel (bolts to a vertical edge) is out of
+// launch scope — no VER-*-FMK kit SKU exists yet (operator ruling: not a launch calculator
+// option). Re-add the "wall" option when the face-mount kit is catalogued.
 const CHANNEL_MOUNTS: AttachmentOption[] = [
   { value: "ground", label: "Deck mount", blurb: "Channel sits on top of the deck / slab", icon: "deck" },
-  { value: "wall", label: "Face mount", blurb: "Channel bolts to a vertical edge", icon: "face" },
 ];
 const SUBSTRATES: AttachmentOption[] = [
   { value: "concrete", label: "Concrete", blurb: "Cored or chem-anchored into concrete", icon: "concrete" },

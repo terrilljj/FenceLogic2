@@ -1231,17 +1231,16 @@ function calculateComponentsForVariant(
       });
 
       // Channel system hardware (per span) — real VersaTilt POOL SKUs (12mm glass).
-      // Deck mount (ground) → DMK; face mount (wall) → FMK. (Was made-up VC-/CFC/CEC.)
+      // Deck mount (ground) → DMK only. Face mount is out of launch scope (no FMK SKU).
       if (isChannelSystem) {
         const panels: number[] = span.panelLayout?.panels ?? [];
         const runMm = span.panelLayout?.totalPanelWidth || panels.reduce((a: number, b: number) => a + b, 0) || span.length;
         const channels = Math.max(1, Math.ceil(runMm / 4200));
         const chF = ((span.fieldValues?.["channel-finish"]) === "black") ? "B" : "SA";
-        const face = span.channelMounting === "wall";
+        // Deck mount only — face-mount channel is out of launch scope (no VER-*-FMK SKU).
         const finLabel = chF === "B" ? "Matt Black" : "Satin";
-        const mountLabel = face ? "Face-Mount" : "Deck-Mount";
 
-        components.push({ qty: channels, description: `VersaTilt Channel 4200mm ${mountLabel} Kit (${finLabel})`, sku: face ? `VER-4200-FMK-${chF}` : `VER-4200-DMK-${chF}` });
+        components.push({ qty: channels, description: `VersaTilt Channel 4200mm Deck-Mount Kit (${finLabel})`, sku: `VER-4200-DMK-${chF}` });
         // 12mm glazing rubber ships INSIDE the standard VersaTilt kit — not a separate line.
         components.push({ qty: channels, description: `VersaTilt Stabilising Washer Pack`, sku: `VER-WASHER-14PK` });
 
@@ -1250,7 +1249,7 @@ function calculateComponentsForVariant(
         if (plates > 0) components.push({ qty: plates, description: `VersaTilt Pressure Plate (12mm glass)`, sku: `VER-PPKIT` });
 
         // End plates — one 2-pack caps the section's channel run.
-        components.push({ qty: 1, description: `VersaTilt Channel End Plate 2-Pack (${finLabel})`, sku: face ? `VER-2FMEP-${chF}` : `VER-2DMEP-${chF}` });
+        components.push({ qty: 1, description: `VersaTilt Channel End Plate 2-Pack (${finLabel})`, sku: `VER-2DMEP-${chF}` });
 
         // Alignment pins — 2 per inline channel-to-channel join.
         const pins = 2 * Math.max(0, channels - 1);
@@ -1326,12 +1325,12 @@ function calculateComponentsForVariant(
           // Real VersaTilt POOL channel SKUs (12mm) — see the layout path above.
           const numChannels = Math.max(1, Math.ceil(span.length / 4200));
           const chF = ((span.fieldValues?.["channel-finish"]) === "black") ? "B" : "SA";
-          const face = span.channelMounting === "wall";
+          // Deck mount only — face-mount channel is out of launch scope (no VER-*-FMK/FMEP SKU).
           const finLabel = chF === "B" ? "Matt Black" : "Satin";
-          components.push({ qty: numChannels, description: `VersaTilt Channel 4200mm ${face ? "Face" : "Deck"}-Mount Kit (${finLabel})`, sku: face ? `VER-4200-FMK-${chF}` : `VER-4200-DMK-${chF}` });
+          components.push({ qty: numChannels, description: `VersaTilt Channel 4200mm Deck-Mount Kit (${finLabel})`, sku: `VER-4200-DMK-${chF}` });
           // 12mm glazing rubber ships INSIDE the standard VersaTilt kit — not a separate line.
           components.push({ qty: numChannels, description: `VersaTilt Stabilising Washer Pack`, sku: `VER-WASHER-14PK` });
-          components.push({ qty: 1, description: `VersaTilt Channel End Plate 2-Pack (${finLabel})`, sku: face ? `VER-2FMEP-${chF}` : `VER-2DMEP-${chF}` });
+          components.push({ qty: 1, description: `VersaTilt Channel End Plate 2-Pack (${finLabel})`, sku: `VER-2DMEP-${chF}` });
         }
 
         if (gatesAllowed && span.gateConfig?.required) {
