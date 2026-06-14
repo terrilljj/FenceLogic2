@@ -70,7 +70,8 @@ export function emitAluPoolBladeSpan(design: DesignLike, span: SpanLike, unmappe
   if (hasGate) want("gate hardware kit", { cs1: "Hinge & Latch kit for monument and black", cs2: "", cs3: "", finish: "" });
 
   // fixings
-  if (substrate === "decking") want("timber fixing", { cs1: "timber fixing base plated", cs2: "", cs3: "", finish: "", __qty: Math.ceil(totalPosts / 4) });
+  if (substrate === "decking") want("timber fixing", { cs1: "timber fixing base plated", cs2: "", cs3: "", finish: "", __qty: totalPosts });
+  else if (substrate === "concrete-slab") want("concrete fixing", { cs1: "concrete fixing base plated", cs2: "", cs3: "", finish: "", __qty: totalPosts });
   else if (coreDrilled) want("grout", { cs1: "core dilled posts", cs2: "", cs3: "", finish: "", __qty: Math.ceil(totalPosts / 15) + 1 });
 
   return out;
