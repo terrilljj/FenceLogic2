@@ -76,6 +76,7 @@ export function emitAluPoolTubularSpan(design: DesignLike, span: SpanLike, unmap
 
   // fixings (substrate-driven)
   if (substrate === "decking") want("timber fixing", { cs1: "timber fixing", cs2: "", cs3: "", finish: "", __qty: Math.ceil(numPosts / 4) });
+  else if (substrate === "concrete-slab") want("concrete fixing", { cs1: "concrete fixing", cs2: "", cs3: "", finish: "", __qty: Math.ceil(numPosts / 4) });
   else if (coreDrilled) want("grout", { cs1: "core dilled posts", cs2: "", cs3: "", finish: "", __qty: Math.ceil(numPosts / 15) + 1 });
 
   return out;

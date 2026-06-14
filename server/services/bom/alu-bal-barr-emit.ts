@@ -55,6 +55,7 @@ export function emitAluBalBarrSpan(design: DesignLike, span: SpanLike, unmapped:
     want("base post", { cs1: "base plated post", cs2: "", cs3: "", finish: code, __qty: posts });
     want("domical cover", { cs1: "domical cover", cs2: "", cs3: "", finish: code, __qty: posts });
     if (material === "timber") want("timber fixing", { cs1: "timber fixing base plated", cs2: "", cs3: "", finish: "", __qty: posts });
+    else want("concrete fixing", { cs1: "concrete fixing base plated", cs2: "", cs3: "", finish: "", __qty: posts });
   } else if (coreDrilled) {
     want("core post", { cs1: "core drill and inground posts", cs2: "", cs3: "", finish: code, __qty: posts });
     want("dress ring", { cs1: "dress ring used for core drilled posts", cs2: "", cs3: "", finish: code, __qty: posts });
